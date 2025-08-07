@@ -4,9 +4,8 @@ from promptrepo.auth.auth_state import AuthState
 from promptrepo.components.layout import layout
 from promptrepo.components.prbox import prbox
 
+@rx.page()
 def index() -> rx.Component:
-    # Welcome Page (Index)
-    """The Index page."""
     return layout(
         prbox(
             rx.text(

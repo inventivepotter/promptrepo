@@ -55,6 +55,7 @@ class AuthState(rx.State):
     async def logout(self):
         self.access_token = ""
         await self.user
+        return rx.redirect("/")
 
     @rx.var(cache=True)
     async def user(self) -> Optional[User]:
@@ -78,35 +79,3 @@ class AuthState(rx.State):
                     email=user_data.get("email"),
                 )
         return None
-
-    # @rx.event
-    # async def authenticate(self):
-    #     """Extract the OAuth code from URL query parameters when page loads."""
-    #     # This method is called automatically when the page loads
-    #     print("DEBUG: on_load event triggered for auth callback")
-        
-    #     code = self.router.page.params.get("code")
-    #     print(f"DEBUG: Extracted code from URL: {code}")
-        
-    #     if code or self.oauth_code:
-    #         if code:
-    #             self.oauth_code = code
-    #         print(f"DEBUG: OAuth code set in state: {self.oauth_code}")
-    #     else:
-    #         print("DEBUG: No code found in URL parameters")
-    #         self.is_authenticated = False
-    #         self.user = None
-    #         #self.login()
-
-        
-
-    #     if self.access_token:
-    #         await self.fetch_user_info()
-    #         self.is_authenticated = True
-    #         print(f"Authenticated, user: {self.user}")
-    #         # Set a flag to indicate successful authentication for redirect
-    #         self.auth_success = True
-
-    #     else:
-    #         # Handle error, maybe redirect to an error page or show a message
-    #         print("DEBUG: Failed to get access token.")

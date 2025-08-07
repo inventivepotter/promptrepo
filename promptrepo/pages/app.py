@@ -1,8 +1,8 @@
 import reflex as rx
 from promptrepo.components import layout
 
-def app_page() -> rx.Component:
-    """The app page."""
+@rx.page()
+def app() -> rx.Component:
     return layout(
         rx.vstack(
             rx.heading("App Page", size="9"),

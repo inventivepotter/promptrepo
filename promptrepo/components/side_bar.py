@@ -43,7 +43,7 @@ def side_bar() -> rx.Component:
             rx.vstack(
                 rx.cond(
                     AuthState.access_token,
-                    side_bar_item("log-out", "Logout", "", on_click=AuthState.logout),
+                    side_bar_item("log-out", "Logout", "/logout"),
                     side_bar_item("github", "Sign in with github", "/login"),
                 ),
                 side_bar_item("chevron-right", "Collapse", "", on_click=SideBar.toggle_nav),
