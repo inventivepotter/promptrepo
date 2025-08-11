@@ -1,6 +1,6 @@
 import reflex as rx
 
-from promptrepo.auth.auth_state import AuthState
+from promptrepo.states.auth_state import AuthState
 
 @rx.page(on_load=AuthState.login)
 def login() -> rx.Component:

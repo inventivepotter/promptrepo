@@ -1,6 +1,6 @@
 import reflex as rx
 
-from promptrepo.auth.auth_state import AuthState
+from promptrepo.states.auth_state import AuthState
 from promptrepo.components.layout import layout
 from promptrepo.components.prbox import prbox
 

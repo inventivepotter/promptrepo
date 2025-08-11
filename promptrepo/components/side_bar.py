@@ -3,7 +3,7 @@ import reflex as rx
 
 import os
 from dotenv import load_dotenv
-from promptrepo.auth.auth_state import AuthState
+from promptrepo.states.auth_state import AuthState
 from promptrepo.components import branding, small_branding
 
 load_dotenv()
@@ -37,7 +37,8 @@ def side_bar() -> rx.Component:
             ),
             rx.vstack(
                 side_bar_item("home", "Home", "/"),
-                side_bar_item("braces", "Prompts", "/app"),
+                side_bar_item("book-copy", "Repos", "/repos"),
+                side_bar_item("braces", "Prompts", "/prompts"),
                 width="100%",
             ),
             rx.vstack(

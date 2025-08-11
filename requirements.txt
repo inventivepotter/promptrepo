@@ -2,3 +2,4 @@
 reflex
 httpx
 python-dotenv
+PyGithub
