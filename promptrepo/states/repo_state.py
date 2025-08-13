@@ -3,6 +3,9 @@ from promptrepo.states.auth_state import AuthState
 from github import Github, Auth
 from typing import List, Any, Dict
 import json
+from git import Repo as GitRepo
+import shutil
+import os
 
 class Repo(rx.Base):
     id: int
@@ -17,6 +20,23 @@ class RepoState(rx.State):
     repos: Dict[int, Repo] = {}
     selected_repo_ids_json: str = rx.LocalStorage("[]", sync=True)
     current_repo: str = ""
+
+    async def get_auth_token(self) -> str | None:
+        """Retrieve the GitHub auth token from AuthState."""
+        auth_state = await self.get_state(AuthState)
+        if not getattr(auth_state, "access_token", None):
+            return None
+        return auth_state.access_token
+
+    @rx.var
+    async def authenticated_git(self) -> Github | None:
+        """Return an authenticated Github client using the user's token."""
+        git_auth_token = await self.get_auth_token()
+        if not git_auth_token:
+            return None
+        auth_token = Auth.Token(git_auth_token)
+        git = Github(auth=auth_token)
+        return git
 
     @rx.event
     def set_current_repo(self, repo_name: str):
@@ -48,33 +68,31 @@ class RepoState(rx.State):
         return [repo.name for repo in self.unselected_repos]
 
     @rx.event
-    def add_repo(self, repo_name: str):
+    async def add_repo(self, repo_name: str):
         """Add a repo to the selected list by name."""
         for repo in self.unselected_repos:
             if repo.name == repo_name:
-                self.select_repo(repo.id)
+                await self.select_repo(repo.id)
                 return
 
     @rx.event
-    def select_repo(self, repo_id: int):
+    async def select_repo(self, repo_id: int):
         """Toggle the selection of a repository."""
         selected_ids = self.selected_repo_ids
         self.repos[repo_id].selected = not self.repos[repo_id].selected
         if repo_id in selected_ids:
+            self.remove_repo(repo_id)
             selected_ids.remove(repo_id)
         else:
+            await self.clone_repo(self.repos[repo_id], f"repos/{self.repos[repo_id].name}")
             selected_ids.append(repo_id)
         self.selected_repo_ids_json = json.dumps(selected_ids)
 
     @rx.event
     async def get_repos(self) -> None:
         """Fetch the list of repositories for the authenticated user."""
-        auth_state = await self.get_state(AuthState)
-        if not auth_state.access_token:
-            return
-        if not self.repos:
-            auth = Auth.Token(auth_state.access_token)
-            git = Github(auth=auth)
+        git = await self.authenticated_git
+        if not self.repos and git:
             repos_map = {}
             selected_ids_set = set(self.selected_repo_ids)
             for repo in git.get_user().get_repos():
@@ -88,3 +106,24 @@ class RepoState(rx.State):
                     private=repo.private,
                 )
             self.repos = repos_map
+
+    async def clone_repo(self, repo: Repo, destination: str) -> None:
+        """Clone the given repository to the specified destination."""
+        git = await self.authenticated_git
+        if git:
+            git_auth_token = await self.get_auth_token()
+            if not git_auth_token:
+                return
+            GitRepo.clone_from(
+                f"https://github.com/{repo.full_name}.git",
+                destination,
+                env={"GIT_AUTH_TOKEN": git_auth_token}
+            )
+
+    def remove_repo(self, repo_id: int) -> None:
+        """Remove the cloned repository from local storage."""
+        repo = self.repos.get(repo_id)
+        if repo:
+            repo_path = f"repos/{repo.name}"
+            if os.path.exists(repo_path):
+                shutil.rmtree(repo_path)

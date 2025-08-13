@@ -3,3 +3,4 @@ reflex
 httpx
 python-dotenv
 PyGithub
+GitPython
