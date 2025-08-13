@@ -20,6 +20,19 @@ class RepoState(rx.State):
     repos: Dict[int, Repo] = {}
     selected_repo_ids_json: str = rx.LocalStorage("[]", sync=True)
     current_repo: str = ""
+    local_repos: list[str] = []
+
+    @rx.event
+    def refresh_local_repos(self):
+        """Refresh the list of local repo directories in the repos folder."""
+        repos_path = os.path.join(os.path.dirname(__file__), "..", "..", "repos")
+        try:
+            self.local_repos = [
+                name for name in os.listdir(repos_path)
+                if os.path.isdir(os.path.join(repos_path, name))
+            ]
+        except Exception:
+            self.local_repos = []
 
     async def get_auth_token(self) -> str | None:
         """Retrieve the GitHub auth token from AuthState."""
@@ -87,6 +100,7 @@ class RepoState(rx.State):
             await self.clone_repo(self.repos[repo_id], f"repos/{self.repos[repo_id].name}")
             selected_ids.append(repo_id)
         self.selected_repo_ids_json = json.dumps(selected_ids)
+        self.refresh_local_repos()
 
     @rx.event
     async def get_repos(self) -> None:
@@ -127,3 +141,4 @@ class RepoState(rx.State):
             repo_path = f"repos/{repo.name}"
             if os.path.exists(repo_path):
                 shutil.rmtree(repo_path)
+        self.refresh_local_repos()
