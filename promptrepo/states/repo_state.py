@@ -175,6 +175,7 @@ class RepoState(rx.State):
                 env={"GIT_AUTH_TOKEN": git_auth_token}
             )
 
+    @rx.event
     def remove_repo(self, repo_id: int) -> None:
         """Remove the cloned repository from local storage."""
         repo = self.repos.get(repo_id)
