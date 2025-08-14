@@ -21,11 +21,46 @@ class RepoState(rx.State):
     selected_repo_ids_json: str = rx.LocalStorage("[]", sync=True)
     current_repo: str = ""
     local_repos: list[str] = []
+    local_repo_branches: dict[str, list[str]] = {}
+    selected_branch: dict[str, str] = {}
+
+    @rx.event
+    def fetch_local_repo_branches(self, repo_name: str):
+        """Fetch available branches for a local repo."""
+        repo_path = os.path.join("repos", repo_name)
+        try:
+            repo = GitRepo(repo_path)
+            branches = [h.name for h in repo.heads]
+            self.local_repo_branches[repo_name] = branches
+            # Default to current branch if not set
+            if repo_name not in self.selected_branch and branches:
+                self.selected_branch[repo_name] = repo.active_branch.name
+        except Exception:
+            self.local_repo_branches[repo_name] = []
+            self.selected_branch[repo_name] = ""
+
+    @rx.event
+    def set_selected_branch(self, repo_name: str, branch: str):
+        """Set the selected branch for a repo."""
+        self.selected_branch[repo_name] = branch
+
+    @rx.event
+    def checkout_local_repo_branch(self, repo_name: str):
+        """Checkout the selected branch for a local repo."""
+        repo_path = os.path.join("repos", repo_name)
+        branch = self.selected_branch.get(repo_name, "")
+        try:
+            repo = GitRepo(repo_path)
+            repo.git.checkout(branch)
+            # Refresh branches and selected branch
+            self.fetch_local_repo_branches(repo_name)
+        except Exception:
+            pass
 
     @rx.event
     def refresh_local_repos(self):
         """Refresh the list of local repo directories in the repos folder."""
-        repos_path = os.path.join(os.path.dirname(__file__), "..", "..", "repos")
+        repos_path = os.path.join("repos")
         try:
             self.local_repos = [
                 name for name in os.listdir(repos_path)
@@ -33,6 +68,9 @@ class RepoState(rx.State):
             ]
         except Exception:
             self.local_repos = []
+        # Fetch branches for each repo
+        for name in self.local_repos:
+            self.fetch_local_repo_branches(name)
 
     async def get_auth_token(self) -> str | None:
         """Retrieve the GitHub auth token from AuthState."""
@@ -109,11 +147,14 @@ class RepoState(rx.State):
         if not self.repos and git:
             repos_map = {}
             selected_ids_set = set(self.selected_repo_ids)
+            local_repo_set = set(self.local_repos)
             for repo in git.get_user().get_repos():
+                # Mark selected if either selected_ids or exists locally
+                is_selected = repo.id in selected_ids_set or repo.name in local_repo_set
                 repos_map[repo.id] = Repo(
                     id=repo.id,
                     name=repo.name,
-                    selected=repo.id in selected_ids_set,
+                    selected=is_selected,
                     full_name=repo.full_name,
                     html_url=repo.html_url,
                     description=repo.description,

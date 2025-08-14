@@ -21,8 +21,13 @@ def banner() -> rx.Component:
                     #rx.text(f"email: {AuthState.user.email}, Avatar: {AuthState.user.avatar_url}, {AuthState.user.url}, {AuthState.user.login}, {AuthState.user.name}", size="3"),
                 ),
                 rx.vstack(
-                    rx.heading("Hello there!", size="6"),
-                    rx.text("Please login with GitHub to start prompting!", size="3"),
+                    rx.heading("Hello Geek!", size="6"),
+                    rx.text(
+                        "Please clone your repositories into the ",
+                        rx.code("repos/"),
+                        " directory manually, or log in with GitHub to clone them automatically.",
+                        size="2",
+                    )
                 ),
             ),
         )
