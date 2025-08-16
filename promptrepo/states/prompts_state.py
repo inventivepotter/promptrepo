@@ -1,6 +1,8 @@
 import reflex as rx
 from typing import Dict, List, Optional
 from dataclasses import dataclass
+import os
+import yaml
 
 @dataclass
 class PromptMeta:
@@ -8,6 +10,8 @@ class PromptMeta:
     version: str
     prompt: str
     model: str
+    name: Optional[str] = None
+    description: Optional[str] = None
     temperature: Optional[float] = None
     max_tokens: Optional[int] = None
     top_p: Optional[float] = None
@@ -19,6 +23,13 @@ class PromptsState(rx.State):
     prompts: Dict[str, PromptMeta] = {}
     selected_prompt_ids_json: str = rx.LocalStorage("[]", sync=True)
     current_prompt: str = ""
+
+    @rx.event
+    def set_field(self, prompt_id: str, field: str, value: str):
+        """Set a field value for a prompt."""
+        if prompt_id in self.prompts:
+            setattr(self.prompts[prompt_id], field, value)
+
 
     @rx.var
     def selected_prompt_ids(self) -> List[str]:
@@ -69,3 +80,35 @@ class PromptsState(rx.State):
             selected_ids.remove(prompt_id)
         import json
         self.selected_prompt_ids_json = json.dumps(selected_ids)
+
+    @rx.event
+    async def load_prompts_from_repos(self):
+        """Scan repos/ for YAML files and load PromptMeta entries."""
+        print("Starting to load prompts from repos")  # Debug print
+        for root, dirs, files in os.walk("repos"):
+            for file in files:
+                if file.endswith(".yaml"):
+                    path = os.path.join(root, file)
+                    try:
+                        with open(path, "r") as f:
+                            data = yaml.safe_load(f)
+                        # Check for PromptMeta structure
+                        # Only treat as prompt if it has 'id' and 'prompt'
+                        if isinstance(data, dict) and "id" in data and "prompt" in data:
+                            prompt_id = data.get("id")
+                            if prompt_id is not None:
+                                print(f"Loading prompt: {prompt_id}")  # Debug print
+                                prompt = PromptMeta(
+                                    id=str(prompt_id),
+                                    name=str(data.get("name", "")),
+                                    version=str(data.get("version", "")),
+                                    prompt=str(data.get("prompt", "")),
+                                    model=str(data.get("model", "")),
+                                    description=str(data.get("description", "")),
+                                )
+                                self.prompts[prompt.id] = prompt
+                                print(f"Loaded prompt: {prompt.id}")  # Debug print
+                    except Exception as e:
+                        print(f"Failed to load prompt from {path}: {str(e)}")
+                        continue
+        print(f"Finished loading prompts. Total: {len(self.prompts)}")  # Debug print

@@ -9,8 +9,8 @@ def branding(font_size: str = "24px") -> rx.Component:
     """
     return rx.hstack(
         #rx.image(src="/static/logo.png", height="40px"),
-        rx.text("{Prompt}", font_size=font_size, font_weight="light"),
-        rx.text("Repo", font_size=font_size, font_weight="bold"),
+        rx.text("{Prompt}", font_size=font_size, font_weight="300"),
+        rx.text("Repo", font_size=font_size, font_weight="800"),
         spacing="1",
     )
 
@@ -18,8 +18,8 @@ def small_branding(font_size: str = "24px") -> rx.Component:
     """Returns a smaller branding component for compact views."""
     return rx.hstack(
         #rx.image(src="/static/logo.png", height="24px"),
-        rx.text("{P", font_size=font_size, font_weight="light"),
-        rx.text("R", font_size=font_size, font_weight="bold"),
-        rx.text("}", font_size=font_size, font_weight="light"),
+        rx.text("{P", font_size=font_size, font_weight="300"),
+        rx.text("R", font_size=font_size, font_weight="800"),
+        rx.text("}", font_size=font_size, font_weight="300"),
         spacing="0",
     )

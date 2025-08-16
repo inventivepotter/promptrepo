@@ -2,6 +2,17 @@ import reflex as rx
 from promptrepo.states import RepoState, AuthState
 from promptrepo.components import layout, prbox
 
+@rx.page(on_load=[RepoState.refresh_local_repos, RepoState.get_repos])
+def repos() -> rx.Component:
+    return layout(
+        rx.cond(
+            AuthState.is_authenticated,
+            remote_repositories_box(),
+            None
+        ),
+        local_repositories_box(),
+    )
+
 def repo_actions() -> rx.Component:
     """The repo actions component."""
     return rx.hstack(
@@ -13,7 +24,6 @@ def repo_actions() -> rx.Component:
         ),
         width="100%",
     )
-
 
 def confirm_delete_modal(repo_id: int, repo_name: str) -> rx.Component:
     return rx.dialog(
@@ -34,6 +44,7 @@ def confirm_delete_modal(repo_id: int, repo_name: str) -> rx.Component:
         ),
         is_open=True,
     )
+
 def selected_repo_table() -> rx.Component:
     """The selected repo table component."""
     return rx.table.root(
@@ -80,18 +91,6 @@ def selected_repo_table() -> rx.Component:
         size="3",
     )
 
-
-@rx.page(on_load=[RepoState.refresh_local_repos, RepoState.get_repos])
-def repos() -> rx.Component:
-    return layout(
-        rx.cond(
-            AuthState.is_authenticated,
-            remote_repositories_box(),
-            None
-        ),
-        local_repositories_box(),
-    )
-
 def remote_repositories_box() -> rx.Component:
     """The remote repositories box component."""
     return prbox(
@@ -104,8 +103,6 @@ def remote_repositories_box() -> rx.Component:
             spacing="4",
         ),
     )
-
-import os
 
 def local_repo_table() -> rx.Component:
     """Table of local repositories with branch selection and checkout."""
