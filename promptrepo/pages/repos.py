@@ -20,7 +20,7 @@ def repo_actions() -> rx.Component:
             RepoState.unselected_repo_names,
             placeholder="Add a repository...",
             value=RepoState.current_repo,
-            on_change=lambda value: [RepoState.add_repo(value), RepoState.set_current_repo("")],
+            on_change=lambda value: [RepoState.add_repo(value), RepoState.set_current_repo("")]
         ),
         width="100%",
     )

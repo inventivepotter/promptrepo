@@ -5,3 +5,7 @@ python-dotenv
 PyGithub
 GitPython
 ruamel.yaml
+boto3
+openai
+any-llm-sdk[all]
+reflex-chakra

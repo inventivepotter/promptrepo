@@ -39,6 +39,7 @@ def side_bar() -> rx.Component:
                 side_bar_item("home", "Home", "/"),
                 side_bar_item("book-copy", "Repos", "/repos"),
                 side_bar_item("braces", "Prompts", "/prompts"),
+                side_bar_item("settings", "Settings", "/settings"),
                 width="100%",
             ),
             rx.vstack(
