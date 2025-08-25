@@ -109,26 +109,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
         </Box>
 
         {/* Prompts */}
-        <Button
-          variant="ghost"
-          justifyContent={isCollapsed ? "center" : "flex-start"}
-          size="sm"
-          _hover={{ bg: hoverBg, transform: "translateX(2px)" }}
-          _active={{ bg: activeBg }}
-          px={isCollapsed ? 2 : 3}
-          py={2}
-          height="36px"
-          borderRadius="6px"
-          fontWeight="500"
-          transition="all 0.15s ease"
-        >
-          <LuFileText size={16} color={mutedTextColor} />
-          {!isCollapsed && (
-            <Text ml={3} fontSize="14px" color={textColor} fontWeight="500">
-              Prompts
-            </Text>
-          )}
-        </Button>
+        <Box as="span" width="100%">
+          <a href="/prompts" style={{ textDecoration: 'none' }}>
+            <Button
+              variant="ghost"
+              justifyContent={isCollapsed ? "center" : "flex-start"}
+              size="sm"
+              _hover={{ bg: hoverBg, transform: "translateX(2px)" }}
+              _active={{ bg: activeBg }}
+              px={isCollapsed ? 2 : 3}
+              py={2}
+              height="36px"
+              borderRadius="6px"
+              fontWeight="500"
+              transition="all 0.15s ease"
+              width="100%"
+            >
+              <LuFileText size={16} color={mutedTextColor} />
+              {!isCollapsed && (
+                <Text ml={3} fontSize="14px" color={textColor} fontWeight="500">
+                  Prompts
+                </Text>
+              )}
+            </Button>
+          </a>
+        </Box>
       </Stack>
 
       {/* Bottom section */}
