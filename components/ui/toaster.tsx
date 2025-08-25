@@ -26,9 +26,25 @@ export const Toaster = () => {
               <Toast.Indicator />
             )}
             <Stack gap="1" flex="1" maxWidth="100%">
-              {toast.title && <Toast.Title>{toast.title}</Toast.Title>}
+              {toast.title && (
+                <Toast.Title
+                  fontSize={toast.type === "success" ? "sm" : "md"}
+                  fontWeight={toast.type === "success" ? "normal" : "bold"}
+                  color={toast.type === "success" ? "green.600" : undefined}
+                  style={toast.type === "success" ? { letterSpacing: "0.01em" } : undefined}
+                >
+                  {toast.title}
+                </Toast.Title>
+              )}
               {toast.description && (
-                <Toast.Description>{toast.description}</Toast.Description>
+                <Toast.Description
+                  fontSize={toast.type === "success" ? "xs" : "sm"}
+                  fontWeight={toast.type === "success" ? "normal" : "medium"}
+                  color={toast.type === "success" ? "green.500" : undefined}
+                  style={toast.type === "success" ? { letterSpacing: "0.01em" } : undefined}
+                >
+                  {toast.description}
+                </Toast.Description>
               )}
             </Stack>
             {toast.action && (

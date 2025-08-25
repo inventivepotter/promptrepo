@@ -222,14 +222,15 @@ export default function SetupPage() {
       case 1:
         return (
           <VStack gap={6} align="stretch">
-            <Text fontSize="lg" fontWeight="bold">How do you want to host this application?</Text>
+            <Text fontSize="xl" fontWeight="bold">Hosting Configuration</Text>
+            <Text fontSize="sm" opacity={0.7}>How do you want to host this application?</Text>
             <VStack gap={4}>
               <Button
                 variant={setupData.hostingType === 'self' ? 'solid' : 'outline'}
                 colorScheme="blue"
                 size="lg"
                 width="100%"
-                p={6}
+                p={8}
                 onClick={() => setSetupData(prev => ({ ...prev, hostingType: 'self' }))}
               >
                 <VStack gap={2}>
@@ -244,7 +245,7 @@ export default function SetupPage() {
                 colorScheme="blue"
                 size="lg"
                 width="100%"
-                p={6}
+                p={8}
                 onClick={() => setSetupData(prev => ({ ...prev, hostingType: 'multi-user' }))}
               >
                 <VStack gap={2}>
@@ -262,9 +263,9 @@ export default function SetupPage() {
         if (setupData.hostingType === 'self') {
           return (
             <VStack gap={4}>
-              <Box p={4} bg="blue.subtle" borderRadius="md" borderLeft="4px solid" borderColor="blue.solid">
-                <Text fontWeight="bold" color="blue.fg">
-                  ℹ For self-use hosting, no additional authentication setup is required.
+              <Box p={2} bg="blue.subtle" borderRadius="md" borderLeft="4px solid" borderColor="blue.solid">
+                <Text fontWeight="normal" fontSize="sm" color="blue.fg">
+                  For self-use hosting, no additional authentication setup is required.
                 </Text>
               </Box>
               <Text>You can proceed to the next step.</Text>
@@ -274,7 +275,7 @@ export default function SetupPage() {
         return (
           <VStack gap={6} align="stretch">
             <Text fontSize="lg" fontWeight="bold">GitHub OAuth Configuration</Text>
-            <Text color="gray.muted">
+            <Text opacity={0.7} fontSize="sm">
               To enable multi-user access, you will need to create a GitHub OAuth App and provide the credentials.
             </Text>
             <VStack gap={4} align="stretch">
@@ -294,7 +295,7 @@ export default function SetupPage() {
                   value={setupData.githubClientSecret}
                   onChange={(e) => setSetupData(prev => ({ ...prev, githubClientSecret: e.target.value }))}
                 />
-                <Text fontSize="sm" color="gray.muted" mt={1}>
+                <Text fontSize="sm" opacity={0.7} mt={1}>
                   Keep this secret safe. It will be stored in your .env file.
                 </Text>
               </Box>
@@ -306,6 +307,9 @@ export default function SetupPage() {
         return (
           <VStack gap={6} align="stretch">
             <Text fontSize="lg" fontWeight="bold">LLM Provider Configuration</Text>
+            <Text fontSize="sm" opacity={0.7} mb={2}>
+              Setup your AI provider and model to enable intelligent features in your application.
+            </Text>
             
             {/* Add new LLM configuration */}
             <Box p={4} borderWidth="1px" borderColor="border.muted" borderRadius="md" bg="bg.subtle">
@@ -408,7 +412,7 @@ export default function SetupPage() {
                 <VStack gap={2}>
                   {setupData.llmConfigs.map((config, index) => (
                     <HStack key={index} justify="space-between" width="100%" p={2} bg="bg.muted" borderRadius="md">
-                      <Text>
+                      <Text fontSize="sm">
                         {LLM_PROVIDERS.find(p => p.id === config.provider)?.name} - {config.model}
                       </Text>
                       <Button size="sm" colorScheme="red" onClick={() => removeLLMConfig(index)}>
@@ -430,7 +434,12 @@ export default function SetupPage() {
                     This file contains your API keys and configuration.
                   </Text>
                   <Button variant="outline" onClick={downloadEnvFile}>
-                    ⬇ Download .env File
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 16v-8m0 8l-4-4m4 4l4-4M4 20h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Download .env File
+                    </span>
                   </Button>
                 </VStack>
               </Box>
@@ -454,8 +463,19 @@ export default function SetupPage() {
               </Box>
             ) : (
               <VStack gap={4}>
-                <Box p={4} bg="green.subtle" borderRadius="md" borderLeft="4px solid" borderColor="green.solid">
-                  <Text fontWeight="bold" color="green.fg">
+                <Box
+                  p={2}
+                  bg="green.subtle"
+                  borderRadius="sm"
+                  borderLeft="4px solid"
+                  borderColor="green.solid"
+                  position="fixed"
+                  top="20px"
+                  right="20px"
+                  zIndex={1000}
+                  boxShadow="md"
+                >
+                  <Text fontWeight="normal" fontSize="sm" color="green.600" letterSpacing="0.01em">
                     ✓ Successfully logged in to GitHub!
                   </Text>
                 </Box>
@@ -463,7 +483,7 @@ export default function SetupPage() {
                 <Text>Select repositories and branches to clone:</Text>
                 
                 {/* Repository Selection */}
-                <Box p={4} borderWidth="1px" borderColor="border.muted" borderRadius="md" bg="bg.subtle">
+                <Box p={4} borderWidth="1px" borderColor="border.muted" borderRadius="md" bg="bg.subtle" width="100%">
                   <VStack gap={4}>
                     <Box width="100%">
                       <Text mb={2} fontWeight="medium">Repository</Text>
@@ -551,14 +571,14 @@ export default function SetupPage() {
                 </Box>
 
                 {setupData.selectedRepos.length > 0 && (
-                  <Box p={4} borderWidth="1px" borderColor="border.muted" borderRadius="md" bg="bg.subtle">
+                  <Box p={4} borderWidth="1px" borderColor="border.muted" borderRadius="md" bg="bg.subtle" width="100%">
                     <Text fontWeight="bold" mb={4}>Selected Repositories</Text>
                     <VStack gap={2}>
                       {setupData.selectedRepos.map((selected, index) => {
                         const repo = SAMPLE_REPOS.find(r => r.id === selected.repoId)
                         return (
                           <HStack key={index} justify="space-between" width="100%" p={2} bg="bg.muted" borderRadius="md">
-                            <Text>
+                            <Text fontSize="sm">
                               {repo?.fullName} ({selected.branch})
                             </Text>
                             <Button size="sm" colorScheme="red" onClick={() => toggleRepoSelection(selected.repoId, selected.branch)}>
@@ -584,8 +604,10 @@ export default function SetupPage() {
     <Container maxW="4xl" py={8}>
       <VStack gap={8}>
         <VStack gap={2} textAlign="center">
-          <Text fontSize="3xl" fontWeight="bold">Setup Your Application</Text>
-          <Text color="gray.muted">Follow these steps to configure your prompt repository</Text>
+          <Text fontSize="3xl" fontWeight="bold" maxWidth="700px" width="100%">Setup Your Application</Text>
+          <Text opacity={0.7} fontSize="sm" maxWidth="700px" width="100%">
+            Follow these steps to configure your prompt repository
+          </Text>
         </VStack>
 
         {/* Progress Steps */}
@@ -609,7 +631,7 @@ export default function SetupPage() {
                 >
                   {index + 1}
                 </Box>
-                <Text fontSize="sm" textAlign="center" fontWeight="medium" maxWidth="80px">
+                <Text fontSize="xs" textAlign="center" fontWeight="medium" maxWidth="160px">
                   {step.title}
                 </Text>
                 {/* Progress line */}
@@ -645,7 +667,7 @@ export default function SetupPage() {
             ← Previous
           </Button>
           
-          <Text color="gray.muted">
+          <Text opacity={0.7} fontSize="sm">
             Step {currentStep} of {steps.length}
           </Text>
           
