@@ -52,7 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       borderColor={borderColor}
       transition="all 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
       position="relative"
-      boxShadow="0 0 0 1px rgba(0, 0, 0, 0.05)"
+      boxShadow={useColorModeValue('sm', 'dark-lg')}
     >
       {/* Header with branding */}
       <Box p={isCollapsed ? 2 : 4} borderBottom="1px solid" borderColor={borderColor}>
@@ -82,26 +82,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       {/* Navigation Menu */}
       <Stack gap={1} p={2} pt={3}>
         {/* Setup */}
-        <Button
-          variant="ghost"
-          justifyContent={isCollapsed ? "center" : "flex-start"}
-          size="sm"
-          _hover={{ bg: hoverBg, transform: "translateX(2px)" }}
-          _active={{ bg: activeBg }}
-          px={isCollapsed ? 2 : 3}
-          py={2}
-          height="36px"
-          borderRadius="6px"
-          fontWeight="500"
-          transition="all 0.15s ease"
-        >
-          <LuSettings size={16} color={mutedTextColor} />
-          {!isCollapsed && (
-            <Text ml={3} fontSize="14px" color={textColor} fontWeight="500">
-              Setup
-            </Text>
-          )}
-        </Button>
+        <Box as="span" width="100%">
+          <a href="/setup" style={{ textDecoration: 'none' }}>
+            <Button
+              variant="ghost"
+              justifyContent={isCollapsed ? "center" : "flex-start"}
+              size="sm"
+              _hover={{ bg: hoverBg, transform: "translateX(2px)" }}
+              _active={{ bg: activeBg }}
+              px={isCollapsed ? 2 : 3}
+              py={2}
+              height="36px"
+              borderRadius="6px"
+              fontWeight="500"
+              transition="all 0.15s ease"
+              width="100%"
+            >
+              <LuSettings size={16} color={mutedTextColor} />
+              {!isCollapsed && (
+                <Text ml={3} fontSize="14px" color={textColor} fontWeight="500">
+                  Setup
+                </Text>
+              )}
+            </Button>
+          </a>
+        </Box>
 
         {/* Prompts */}
         <Button

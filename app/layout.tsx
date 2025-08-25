@@ -10,7 +10,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
         <Provider>
           <Stack direction="row" gap={0} align="stretch" minHeight="100vh">
             <Sidebar />
-            <Box flex={1} overflow="hidden">
+            <Box flex={1} overflow="auto" height="100vh">
               {children}
             </Box>
           </Stack>
