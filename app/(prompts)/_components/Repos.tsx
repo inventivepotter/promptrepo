@@ -12,7 +12,7 @@ import {
   HStack,
 } from '@chakra-ui/react'
 import { getReposNBranches } from "../_lib/getReposNBranches";
-import { SelectedRepo } from "../_types/repository";
+import { Repo } from "@/types/Repo";
 
 interface ReposProps {
   isLoggedIn: boolean
@@ -21,8 +21,8 @@ interface ReposProps {
   setSelectedRepo: (id: string) => void
   selectedBranch: string
   setSelectedBranch: (branch: string) => void
-  selectedRepos: SelectedRepo[]
-  toggleRepoSelection: (id: number, branch: string, name: string) => void
+  selectedRepos: Repo[]
+  toggleRepoSelection: (id: string, branch: string, name: string) => void
 }
 
 export default function Repos({
@@ -83,7 +83,7 @@ export default function Repos({
                   <Text mb={2} fontWeight="medium">Repository</Text>
                   <Combobox.Root
                     collection={createListCollection({
-                      items: repos.map(r => ({ label: r.name, value: r.id.toString() }))
+                      items: repos.map(r => ({ label: r.name, value: r.id }))
                     })}
                     value={[selectedRepo]}
                     onValueChange={(e) => {
@@ -109,7 +109,7 @@ export default function Repos({
                     <Combobox.Positioner>
                       <Combobox.Content>
                         {repos.map(repo => (
-                          <Combobox.Item key={repo.id} item={repo.id.toString()}>
+                          <Combobox.Item key={repo.id} item={repo.id}>
                             <Combobox.ItemText>{repo.name}</Combobox.ItemText>
                             <Combobox.ItemIndicator />
                           </Combobox.Item>
@@ -123,7 +123,7 @@ export default function Repos({
                     <Text mb={2} fontWeight="medium">Branch</Text>
                     <Combobox.Root
                       collection={createListCollection({
-                        items: (repos.find(r => r.id.toString() === selectedRepo)?.branches || []).map(b => ({ label: b, value: b }))
+                        items: (repos.find(r => r.id === selectedRepo)?.all_branches || []).map(b => ({ label: b, value: b }))
                       })}
                       value={[selectedBranch]}
                       onValueChange={(e) => setSelectedBranch(e.value[0] || '')}
@@ -140,7 +140,7 @@ export default function Repos({
                       </Combobox.Control>
                       <Combobox.Positioner>
                         <Combobox.Content>
-                          {repos.find(r => r.id.toString() === selectedRepo)?.branches.map(branch => (
+                          {repos.find(r => r.id === selectedRepo)?.all_branches?.map(branch => (
                             <Combobox.Item key={branch} item={branch}>
                               <Combobox.ItemText>{branch}</Combobox.ItemText>
                               <Combobox.ItemIndicator />
@@ -154,7 +154,7 @@ export default function Repos({
                 <Button
                   onClick={() => {
                     if (selectedRepo && selectedBranch) {
-                      const repo = repos.find(r => r.id.toString() === selectedRepo);
+                      const repo = repos.find(r => r.id === selectedRepo);
                       if (repo) {
                         toggleRepoSelection(repo.id, selectedBranch, repo.name)
                         setSelectedRepo('')
@@ -177,13 +177,13 @@ export default function Repos({
                     return (
                       <HStack key={index} justify="space-between" width="100%" p={2} bg="bg.subtle" borderRadius="md">
                         <Text fontSize="sm" fontWeight="400">
-                          {repo?.name} ({selected.branch})
+                          {repo?.name} ({selected.base_branch})
                         </Text>
                         <Button size="sm" onClick={() => {
                           const repo = repos.find(r => r.id === selected.id);
                           if (repo) {
                             const name = repo.name;
-                            toggleRepoSelection(selected.id, selected.branch, name);
+                            toggleRepoSelection(selected.id, selected.base_branch || '', name);
                           }
                         }}>
                           Remove

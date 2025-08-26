@@ -3,7 +3,8 @@
 import React, { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Box } from '@chakra-ui/react';
-import { usePromptsState, Prompt } from '../_state/promptState';
+import { Prompt } from '@/types/Prompt';
+import { usePromptsState } from '../_state/promptState';
 import { PromptEditor } from '../_components/PromptEditor';
 import { updatePromptInPersistance } from '../_lib/updatePromptInPersistance';
 
@@ -18,7 +19,6 @@ export default function EditorPage() {
     updatePrompt,
     setCurrentPrompt,
     currentPrompt,
-    toggleRepoSelection,
   } = usePromptsState();
 
 

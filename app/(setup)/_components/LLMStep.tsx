@@ -13,7 +13,8 @@ import {
 import React from "react";
 import { FaChevronDown } from 'react-icons/fa';
 import { getProviderModels } from '../_lib/getProvidersNModels';
-import { Provider, LLMConfig } from '../_types/provider';
+import { LLMConfig } from "@/types/Configuration";
+import { LLMProvider } from "@/types/LLMProvider";
 
 interface LLMStepProps {
   selectedProvider: string
@@ -26,6 +27,7 @@ interface LLMStepProps {
   addLLMConfig: () => void
   removeLLMConfig: (index: number) => void
   downloadEnvFile: () => void
+  disabled?: boolean
 }
 
 export default function LLMStep({
@@ -38,8 +40,9 @@ export default function LLMStep({
   llmConfigs,
   addLLMConfig,
   removeLLMConfig,
+  disabled = false,
 }: LLMStepProps) {
-  const providers: Provider[] = getProviderModels();
+  const providers: LLMProvider[] = getProviderModels();
 
   return (
     <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.emphasized">
@@ -66,11 +69,13 @@ export default function LLMStep({
                   }
                 }}
                 openOnClick
+                disabled={disabled}
               >
                 <Combobox.Control position="relative">
                   <Combobox.Input
                     placeholder="Select or search provider"
                     paddingRight="2rem"
+                    disabled={disabled}
                   />
                   <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
                     <FaChevronDown size={16} />
@@ -98,11 +103,13 @@ export default function LLMStep({
                   value={[selectedModel]}
                   onValueChange={(e) => setSelectedModel(e.value[0] || '')}
                   openOnClick
+                  disabled={disabled}
                 >
                   <Combobox.Control position="relative">
                     <Combobox.Input
                       placeholder="Select or search model"
                       paddingRight="2rem"
+                      disabled={disabled}
                     />
                     <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
                       <FaChevronDown size={16} />
@@ -129,12 +136,13 @@ export default function LLMStep({
                   placeholder="Enter API key"
                   value={apiKey || ''}
                   onChange={(e) => setApiKey(e.target.value)}
+                  disabled={disabled}
                 />
               </Box>
             )}
             <Button
               onClick={addLLMConfig}
-              disabled={!selectedProvider || !selectedModel || !apiKey}
+              disabled={!selectedProvider || !selectedModel || !apiKey || disabled}
             >
               Add Configuration
             </Button>
@@ -150,7 +158,11 @@ export default function LLMStep({
                   <Text fontSize="sm" fontWeight="400">
                     {providers.find(p => p.id === config.provider)?.name} - {config.model}
                   </Text>
-                  <Button size="sm" onClick={() => removeLLMConfig(index)}>
+                  <Button
+                    size="sm"
+                    onClick={() => removeLLMConfig(index)}
+                    disabled={disabled}
+                  >
                     Remove
                   </Button>
                 </HStack>

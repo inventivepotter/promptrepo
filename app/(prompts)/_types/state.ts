@@ -1,21 +1,5 @@
-import { SelectedRepo } from './repository';
-
-export interface Prompt {
-  id: string;
-  name: string;
-  description: string;
-  prompt: string;
-  model: string;
-  failover_model: string;
-  temperature: number;
-  top_p: number;
-  max_tokens: number;
-  thinking_enabled: boolean;
-  thinking_budget: number;
-  repo?: SelectedRepo;
-  created_at: Date;
-  updated_at: Date;
-}
+import { Prompt } from '@/types/Prompt';
+import { Repo } from "@/types/Repo";
 
 export interface PromptsState {
   prompts: Prompt[];
@@ -25,7 +9,7 @@ export interface PromptsState {
   itemsPerPage: number;
   sortBy: 'name' | 'updated_at';
   sortOrder: 'asc' | 'desc';
-  selectedRepos: Array<SelectedRepo>;
+  selectedRepos: Array<Repo>;
   repoFilter: string;
   currentRepoStep: {
     isLoggedIn: boolean;

@@ -12,7 +12,7 @@ import {
 import { Tooltip } from '@/components/ui/tooltip';
 import { LuInfo } from 'react-icons/lu';
 import { useColorModeValue } from '@/components/ui/color-mode';
-import { Prompt } from '../_state/promptState';
+import { Prompt } from '@/types/Prompt';
 
 interface EnableThinkingFieldGroupProps {
   formData: Partial<Prompt>;

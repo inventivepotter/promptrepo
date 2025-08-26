@@ -3,28 +3,26 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Box,
   VStack,
   HStack,
   Text,
   Button,
   Grid,
+  Box,
   Container,
 } from '@chakra-ui/react';
-import { LuPlus, LuFolderGit } from 'react-icons/lu';
-import { useColorModeValue } from '../../../components/ui/color-mode';
-import { usePromptsState, Prompt } from '../_state/promptState';
+import { LuPlus } from 'react-icons/lu';
+import { Prompt } from '@/types/Prompt';
+import { usePromptsState } from '../_state/promptState';
 import { PromptSearch } from '../_components/PromptSearch';
 import { PromptCard } from '../_components/PromptCard';
 import { Pagination } from '../_components/Pagination';
 import { RepoModal } from '../_components/RepoModal';
+import { PromptsHeader } from '@/components/PromptsHeader';
 
 export default function PromptsPage() {
   const router = useRouter();
   const [isRepoModalOpen, setIsRepoModalOpen] = React.useState(false);
-  
-  // Theme-aware colors
-  const headerBg = useColorModeValue('gray.50', 'gray.900');
 
   const {
     filteredPrompts,
@@ -56,9 +54,7 @@ export default function PromptsPage() {
 
 
   const handleCreateNew = () => {
-    // Use the first selected repository if available, otherwise create without repo
-    const selectedRepo = promptsState.selectedRepos.length > 0 ? promptsState.selectedRepos[0] : undefined;
-    const newPrompt = createPrompt(selectedRepo);
+    const newPrompt = createPrompt();
     router.push(`/editor?id=${newPrompt.id}`);
   };
 
@@ -74,52 +70,11 @@ export default function PromptsPage() {
   };
 
   return (
-    <Box minH="100vh">
-      {/* Header */}
-      <Box
-        bg={headerBg}
-        borderBottom="1px solid"
-        borderColor="border.muted"
-        py={4}
-        position="sticky"
-        top={0}
-        zIndex={10}
-      >
-        <Container maxW="7xl">
-          <HStack justify="space-between" align="center">
-            <VStack align="start" gap={1}>
-              <Text fontSize="2xl" fontWeight="bold">
-                Prompts
-              </Text>
-              <Text fontSize="sm" opacity={0.7}>
-                Manage and organize your AI prompts
-              </Text>
-            </VStack>
-            <HStack gap={3}>
-              <Button
-                onClick={() => setIsRepoModalOpen(true)}
-                variant="outline"
-                colorPalette="gray"
-              >
-                <HStack gap={2}>
-                  <LuFolderGit size={16} />
-                  <Text>Add Prompt Repo</Text>
-                </HStack>
-              </Button>
-              <Button
-                onClick={handleCreateNew}
-                colorPalette="blue"
-              >
-                <HStack gap={2}>
-                  <LuPlus size={16} />
-                  <Text>New Prompt</Text>
-                </HStack>
-              </Button>
-            </HStack>
-          </HStack>
-        </Container>
-      </Box>
-
+    <VStack minH="100vh" align="stretch">
+      <PromptsHeader
+        onCreateNew={handleCreateNew}
+        onAddRepoClick={() => setIsRepoModalOpen(true)}
+      />
       {/* Main content */}
       <Container maxW="7xl" py={6}>
         <VStack gap={6} align="stretch">
@@ -141,7 +96,7 @@ export default function PromptsPage() {
             <Box textAlign="center" py={12}>
               <VStack gap={4}>
                 <Text fontSize="lg" color="gray.500">
-                  {promptsState.searchQuery 
+                  {promptsState.searchQuery
                     ? 'No prompts found matching your search.'
                     : 'No prompts yet. Create your first prompt to get started!'
                   }
@@ -205,6 +160,6 @@ export default function PromptsPage() {
         selectedRepos={promptsState.selectedRepos}
         toggleRepoSelection={toggleRepoSelection}
       />
-    </Box>
+    </VStack>
   );
 }

@@ -1,4 +1,4 @@
-import type { Provider } from '../../(setup)/_types/provider';
+import type { LLMProvider } from "@/types/LLMProvider";
 
 export const getModelOptions = () => {
   return getConfiguredProvidersNModels().flatMap(provider =>
@@ -9,7 +9,7 @@ export const getModelOptions = () => {
   );
 };
 
-export const getConfiguredProvidersNModels = (): Provider[] => {
+export const getConfiguredProvidersNModels = (): LLMProvider[] => {
   return [
     {
       id: 'openai',

@@ -2,7 +2,6 @@
 
 import React from 'react';
 import {
-  Box,
   HStack,
   VStack,
   Text,
@@ -10,7 +9,7 @@ import {
 } from '@chakra-ui/react';
 import { LuArrowLeft } from 'react-icons/lu';
 import { useColorModeValue } from '@/components/ui/color-mode';
-import { Prompt } from '../_state/promptState';
+import { Prompt } from '@/types/Prompt';
 
 interface PromptEditorHeaderProps {
   displayPrompt: Prompt;
@@ -37,11 +36,6 @@ export function PromptEditorHeader({ displayPrompt, onBack }: PromptEditorHeader
           <Text fontSize="2xl" fontWeight="bold">
             {displayPrompt.name || 'New Prompt'}
           </Text>
-          {displayPrompt.repo?.name && (
-            <Text fontSize="sm" color={mutedTextColor}>
-              Repository: {displayPrompt.repo.name}
-            </Text>
-          )}
           <Text fontSize="sm" color={mutedTextColor}>
             Edit prompt settings and configuration. Changes are saved automatically.
           </Text>

@@ -8,7 +8,8 @@ import {
   VStack,
   Text,
 } from '@chakra-ui/react';
-import Repos, { SelectedRepo } from './Repos';
+import Repos from './Repos';
+import { Repo } from '@/types/Repo';
 
 interface RepoModalProps {
   isOpen: boolean;
@@ -19,8 +20,8 @@ interface RepoModalProps {
   setSelectedRepo: (id: string) => void;
   selectedBranch: string;
   setSelectedBranch: (branch: string) => void;
-  selectedRepos: Array<SelectedRepo>;
-  toggleRepoSelection: (id: number, branch: string, name: string) => void;
+  selectedRepos: Array<Repo>;
+  toggleRepoSelection: (id: string, branch: string, name: string) => void;
 }
 
 export function RepoModal({

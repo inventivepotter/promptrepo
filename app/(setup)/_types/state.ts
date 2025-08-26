@@ -1,16 +1,12 @@
-export interface SetupData {
-  hostingType: "self" | "multi-user" | "";
-  githubClientId: string;
-  githubClientSecret: string;
-  llmConfigs: Array<{
-    provider: string;
-    model: string;
-    apiKey: string;
-  }>;
+import { Configuration } from "@/types/Configuration";
+
+export interface ConfigState {
+  config: Configuration;
   currentStep: {
     step: number;
     selectedProvider: string;
     selectedModel: string;
     apiKey: string;
   };
+  isLoading: boolean;
 }

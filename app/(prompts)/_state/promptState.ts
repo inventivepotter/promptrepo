@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { getPromptsFromPersistance } from '../_lib/getPromptsFromPersistance';
-import { Prompt, PromptsState } from '../_types/state';
-import { SelectedRepo } from '../_types/repository';
+import { PromptsState } from '../_types/state';
+import { Prompt } from '@/types/Prompt';
+import { Repo } from '@/types/Repo';
 
 // Re-export types for backward compatibility
-export type { Prompt, PromptsState } from '../_types/state';
-export type { SelectedRepo } from '../_types/repository';
+export type { PromptsState } from '../_types/state';
 
 const defaultPrompt: Omit<Prompt, 'id' | 'created_at' | 'updated_at'> = {
   name: "",
@@ -125,13 +125,12 @@ export function usePromptsState() {
     });
   }, []);
 
-  const createPrompt = useCallback((selectedRepo?: { id: number; branch: string; name: string }) => {
+  const createPrompt = useCallback(() => {
     const newPrompt: Prompt = {
       ...defaultPrompt,
       id: `prompt_${Date.now()}_${Math.random().toString(36).substring(2)}`,
       created_at: new Date(),
       updated_at: new Date(),
-      repo: selectedRepo,
     };
     
     updatePromptsState(prev => ({
@@ -228,22 +227,22 @@ export function usePromptsState() {
     }));
   }, [updatePromptsState]);
 
-  const toggleRepoSelection = useCallback((id: number, branch: string, name: string) => {
+  const toggleRepoSelection = useCallback((id: string, base_branch: string, name: string) => {
     updatePromptsState(prev => {
       const existingIndex = prev.selectedRepos.findIndex(r => r.id === id);
       let newSelectedRepos;
       
       if (existingIndex >= 0) {
         const existing = prev.selectedRepos[existingIndex];
-        if (existing.branch === branch) {
+        if (existing.base_branch === base_branch) {
           newSelectedRepos = prev.selectedRepos.filter(r => r.id !== id);
         } else {
           newSelectedRepos = prev.selectedRepos.map((r, i) =>
-            i === existingIndex ? { ...r, branch } : r
+            i === existingIndex ? { ...r, base_branch: base_branch } : r
           );
         }
       } else {
-        newSelectedRepos = [...prev.selectedRepos, { id, branch, name }];
+        newSelectedRepos = [...prev.selectedRepos, { id, base_branch, name }];
       }
       
       // Persist the updated selected repos

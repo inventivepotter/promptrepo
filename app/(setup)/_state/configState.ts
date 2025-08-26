@@ -1,93 +1,75 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { SetupData } from '../_types/state';
+import { ConfigState } from '../_types/state';
+import { fetchConfigFromBackend } from '../_lib/getConfigData';
 
-const defaultSetupData: SetupData = {
-  hostingType: "",
-  githubClientId: "",
-  githubClientSecret: "",
-  llmConfigs: [],
+const defaultSetupData: ConfigState = {
+  config: {
+    hostingType: "",
+    githubClientId: "",
+    githubClientSecret: "",
+    llmConfigs: [],
+  },
   currentStep: {
     step: 1,
     selectedProvider: "",
     selectedModel: "",
     apiKey: "",
   },
-};
-
-// Immediate persistence helper
-const persistState = (state: SetupData) => {
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem("interviewSetupData", JSON.stringify(state));
-  }
+  isLoading: false,
 };
 
 export function useConfigState() {
-  const [configState, setConfigState] = useState<SetupData>(defaultSetupData);
+  const [configState, setConfigState] = useState<ConfigState>(defaultSetupData);
   const hasRestoredSetupData = useRef(false);
 
   useEffect(() => {
-    if (!hasRestoredSetupData.current && typeof window !== "undefined") {
-      const saved = window.localStorage.getItem("interviewSetupData");
-      if (saved) {
+      const loadConfigFromBackend = async () => {
         try {
-          const parsed = JSON.parse(saved);
-          const valid =
-            typeof parsed === "object" &&
-            parsed !== null &&
-            typeof parsed.currentStep === "object" &&
-            typeof parsed.currentStep.step === "number" &&
-            parsed.currentStep.step >= 1 &&
-            typeof parsed.hostingType === "string" &&
-            typeof parsed.githubClientId === "string" &&
-            typeof parsed.githubClientSecret === "string" &&
-            Array.isArray(parsed.llmConfigs);
-          
-          if (valid) {
-            // Clear temporary LLM fields on page load/refresh
-            const restoredState = {
-              ...parsed,
-              currentStep: {
-                ...parsed.currentStep,
-                selectedProvider: "",
-                selectedModel: "",
-                apiKey: "",
-              }
-            };
-            setConfigState(restoredState);
-          } else {
-            setConfigState(defaultSetupData);
-          }
-        } catch {
-          setConfigState(defaultSetupData);
-        }
-      }
-      hasRestoredSetupData.current = true;
-    }
-  }, []);
+          console.log('Loading config from backend...');
+          const config = await fetchConfigFromBackend();
+          const cleanedState: ConfigState = {
+            config,
+            currentStep: {
+              step: 1,
+              selectedProvider: "",
+              selectedModel: "",
+              apiKey: "",
+            },
+            isLoading: false,
+          };
 
-  // Enhanced setter that immediately persists
-  const updateConfigState = useCallback((updater: SetupData | ((prev: SetupData) => SetupData)) => {
+          setConfigState(cleanedState);
+        } catch (error) {
+          console.error('Failed to load config from backend, using defaults:', error);
+          setConfigState(defaultSetupData);
+        } finally {
+          hasRestoredSetupData.current = true;
+        }
+      };
+      loadConfigFromBackend();
+    }
+  , []);
+
+  const updateConfigState = useCallback((updater: ConfigState | ((prev: ConfigState) => ConfigState)) => {
     setConfigState(prev => {
       const newState = typeof updater === 'function' ? updater(prev) : updater;
-      persistState(newState);
+      // Don't persist to backend - only persist when user clicks save
       return newState;
     });
   }, []);
 
-  // Individual field updaters with immediate persistence
-  const updateHostingType = useCallback((type: "self" | "multi-user" | "") => {
-    updateConfigState(prev => ({ ...prev, hostingType: type }));
+  // Generic field updater for config fields
+  const updateConfigField = useCallback(<K extends keyof ConfigState['config']>(
+    field: K,
+    value: ConfigState['config'][K]
+  ) => {
+    updateConfigState(prev => ({
+      ...prev,
+      config: { ...prev.config, [field]: value }
+    }));
   }, [updateConfigState]);
 
-  const updateGithubClientId = useCallback((id: string) => {
-    updateConfigState(prev => ({ ...prev, githubClientId: id }));
-  }, [updateConfigState]);
-
-  const updateGithubClientSecret = useCallback((secret: string) => {
-    updateConfigState(prev => ({ ...prev, githubClientSecret: secret }));
-  }, [updateConfigState]);
-
-  const updateCurrentStepField = useCallback((field: keyof SetupData['currentStep'], value: string | number | boolean) => {
+  const updateCurrentStepField = useCallback((field: keyof ConfigState['currentStep'], value: string | number | boolean) => {
     updateConfigState(prev => ({
       ...prev,
       currentStep: { ...prev.currentStep, [field]: value }
@@ -104,7 +86,10 @@ export function useConfigState() {
       };
       updateConfigState(prev => ({
         ...prev,
-        llmConfigs: [...prev.llmConfigs, newConfig],
+        config: {
+          ...prev.config,
+          llmConfigs: [...prev.config.llmConfigs, newConfig],
+        },
         currentStep: {
           ...prev.currentStep,
           selectedProvider: "",
@@ -118,18 +103,27 @@ export function useConfigState() {
   const removeLLMConfig = useCallback((index: number) => {
     updateConfigState(prev => ({
       ...prev,
-      llmConfigs: prev.llmConfigs.filter((_, i) => i !== index)
+      config: {
+        ...prev.config,
+        llmConfigs: prev.config.llmConfigs.filter((_, i) => i !== index)
+      }
+    }));
+  }, [updateConfigState]);
+
+  const setIsLoading = useCallback((loading: boolean) => {
+    updateConfigState(prev => ({
+      ...prev,
+      isLoading: loading
     }));
   }, [updateConfigState]);
 
   return {
     configState,
     setConfigState: updateConfigState,
-    updateHostingType,
-    updateGithubClientId,
-    updateGithubClientSecret,
+    updateConfigField,
     updateCurrentStepField,
     addLLMConfig,
     removeLLMConfig,
+    setIsLoading,
   };
 }

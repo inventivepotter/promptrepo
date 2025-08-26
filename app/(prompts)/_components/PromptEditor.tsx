@@ -6,9 +6,9 @@ import {
   VStack,
   createListCollection,
 } from '@chakra-ui/react';
-import { Prompt } from '../_state/promptState';
+import { Prompt } from '@/types/Prompt';
 import { getModelOptions } from '../_lib/getConfiguredModels';
-import { SelectedRepo } from './Repos';
+import { Repo } from '@/types/Repo';
 import { PromptEditorHeader } from './PromptEditorHeader';
 import { PromptFieldGroup } from './PromptFieldGroup';
 import { ModelFieldGroup } from './ModelFieldGroup';
@@ -19,7 +19,7 @@ interface PromptEditorProps {
   prompt: Prompt | null;
   onSave: (updates: Partial<Prompt>) => void;
   onBack: () => void;
-  selectedRepos?: Array<SelectedRepo>;
+  selectedRepos?: Array<Repo>;
 }
 
 export function PromptEditor({ prompt, onSave, onBack, selectedRepos = [] }: PromptEditorProps) {
@@ -73,6 +73,7 @@ export function PromptEditor({ prompt, onSave, onBack, selectedRepos = [] }: Pro
         max_tokens: 2048,
         thinking_enabled: false,
         thinking_budget: 20000,
+        repo: undefined,
       });
     }
   }, [prompt]);
@@ -90,7 +91,7 @@ export function PromptEditor({ prompt, onSave, onBack, selectedRepos = [] }: Pro
     onSave(updatedData);
   };
 
-  const updateRepoField = (repo: SelectedRepo | undefined) => {
+  const updateRepoField = (repo: Repo | undefined) => {
     const updatedData = { ...formData, repo };
     setFormData(updatedData);
     setShowRepoError(false); // Clear error when repository is selected

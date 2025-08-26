@@ -12,7 +12,7 @@ import {
 } from '@chakra-ui/react';
 import { LuPencil, LuTrash, LuClock } from 'react-icons/lu';
 import { useColorModeValue } from '../../../components/ui/color-mode';
-import { Prompt } from '../_state/promptState';
+import { Prompt } from '@/types/Prompt';
 
 interface PromptCardProps {
   prompt: Prompt;

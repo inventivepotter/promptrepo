@@ -1,7 +1,7 @@
-import { Provider } from '../_types/provider';
+import { LLMProvider } from "../../../types/LLMProvider";
 
 
-export function getProviderModels(): Provider[] {
+export function getProviderModels(): LLMProvider[] {
   return [
     {
       id: 'openai',

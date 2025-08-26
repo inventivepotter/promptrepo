@@ -13,7 +13,7 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { FaChevronDown } from 'react-icons/fa';
 import { LuInfo } from 'react-icons/lu';
 import { useColorModeValue } from '@/components/ui/color-mode';
-import { Prompt } from '../_state/promptState';
+import { Prompt } from '@/types/Prompt';
 
 interface ModelFieldGroupProps {
   formData: Partial<Prompt>;

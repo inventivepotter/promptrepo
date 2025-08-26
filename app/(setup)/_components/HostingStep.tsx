@@ -5,9 +5,10 @@ import { VStack, Text, Button, Box } from '@chakra-ui/react'
 interface HostingStepProps {
   hostingType: string
   setHostingType: (type: 'self' | 'multi-user') => void
+  disabled?: boolean
 }
 
-export default function HostingStep({ hostingType, setHostingType }: HostingStepProps) {
+export default function HostingStep({ hostingType, setHostingType, disabled = false }: HostingStepProps) {
   return (
     <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.emphasized">
       <VStack gap={6} align="stretch">
@@ -20,6 +21,7 @@ export default function HostingStep({ hostingType, setHostingType }: HostingStep
             width="100%"
             p={8}
             onClick={() => setHostingType('self')}
+            disabled={disabled}
           >
             <VStack gap={2}>
               <Text fontWeight="bold">Self Use Only</Text>
@@ -34,6 +36,7 @@ export default function HostingStep({ hostingType, setHostingType }: HostingStep
             width="100%"
             p={8}
             onClick={() => setHostingType('multi-user')}
+            disabled={disabled}
           >
             <VStack gap={2}>
               <Text fontWeight="bold">Multi-User Deployment</Text>

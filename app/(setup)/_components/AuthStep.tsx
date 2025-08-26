@@ -8,6 +8,7 @@ interface AuthStepProps {
   githubClientSecret: string
   setGithubClientId: (id: string) => void
   setGithubClientSecret: (secret: string) => void
+  disabled?: boolean
 }
 
 export default function AuthStep({
@@ -15,7 +16,8 @@ export default function AuthStep({
   githubClientId,
   githubClientSecret,
   setGithubClientId,
-  setGithubClientSecret
+  setGithubClientSecret,
+  disabled = false
 }: AuthStepProps) {
   if (hostingType === 'self') {
     return (
@@ -43,6 +45,7 @@ export default function AuthStep({
               placeholder="Enter your GitHub Client ID"
               value={githubClientId}
               onChange={(e) => setGithubClientId(e.target.value)}
+              disabled={disabled}
             />
           </Box>
           <Box>
@@ -52,6 +55,7 @@ export default function AuthStep({
               placeholder="Enter your GitHub Client Secret"
               value={githubClientSecret}
               onChange={(e) => setGithubClientSecret(e.target.value)}
+              disabled={disabled}
             />
             <Text fontSize="sm" opacity={0.7} mt={1}>
               Keep this secret safe. It will be stored in your .env file.

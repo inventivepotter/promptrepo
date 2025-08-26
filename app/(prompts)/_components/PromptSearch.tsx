@@ -11,7 +11,7 @@ import {
   Combobox,
   createListCollection,
 } from '@chakra-ui/react';
-import { LuSearch, LuArrowUp, LuArrowDown, LuFilter } from 'react-icons/lu';
+import { LuSearch, LuArrowUp, LuArrowDown } from 'react-icons/lu';
 import { FaChevronDown } from 'react-icons/fa';
 import { useColorModeValue } from '../../../components/ui/color-mode';
 

@@ -4,10 +4,11 @@ import React from "react";
 import { Flex, Box, Text, Button } from "@chakra-ui/react"
 import { Container } from '@chakra-ui/react'
 import { useConfigState } from "../_state/configState"
+import { LoadingOverlay } from "@/components/LoadingOverlay"
 import HostingStep from '../_components/HostingStep'
 import AuthStep from '../_components/AuthStep'
 import LLMStep from '../_components/LLMStep'
-import Configurations from '../_components/Configurations'
+import Configurations from '../_components/DownloadConfigurations'
 import { postConfigData } from "../_lib/postConfigData"
 
 
@@ -15,11 +16,10 @@ export default function InterviewPage() {
   const {
     configState,
     setConfigState,
-    updateHostingType,
-    updateGithubClientId,
-    updateGithubClientSecret,
+    updateConfigField,
     addLLMConfig: addLLMConfigAction,
     removeLLMConfig: removeLLMConfigAction,
+    setIsLoading,
   } = useConfigState();
   const currentStep = configState.currentStep;
 
@@ -29,7 +29,6 @@ export default function InterviewPage() {
     { title: 'LLM Configuration', description: 'Setup AI providers' },
     { title: 'Configuration', description: 'Download your .env file' }
   ]
-
 
   const addLLMConfig = () => {
     addLLMConfigAction();
@@ -41,14 +40,14 @@ export default function InterviewPage() {
 
   const generateEnvFile = () => {
     let envContent = '# Generated Environment Configuration\n\n'
-    envContent += `HOSTING_TYPE=${configState.hostingType}\n\n`
-    if (configState.hostingType === 'multi-user') {
+    envContent += `HOSTING_TYPE=${configState.config.hostingType}\n\n`
+    if (configState.config.hostingType === 'multi-user') {
       envContent += '# GitHub OAuth Configuration\n'
-      envContent += `GITHUB_CLIENT_ID=${configState.githubClientId}\n`
-      envContent += `GITHUB_CLIENT_SECRET=${configState.githubClientSecret}\n\n`
+      envContent += `GITHUB_CLIENT_ID=${configState.config.githubClientId}\n`
+      envContent += `GITHUB_CLIENT_SECRET=${configState.config.githubClientSecret}\n\n`
     }
     envContent += '# LLM Provider Configurations\n'
-    configState.llmConfigs.forEach((config) => {
+    configState.config.llmConfigs.forEach((config) => {
       const providerKey = config.provider.toUpperCase()
       envContent += `${providerKey}_API_KEY=${config.apiKey}\n`
       envContent += `${providerKey}_MODEL=${config.model}\n`
@@ -75,18 +74,18 @@ export default function InterviewPage() {
       case 1:
         return (
           <HostingStep
-            hostingType={configState.hostingType}
-            setHostingType={updateHostingType}
+            hostingType={configState.config.hostingType}
+            setHostingType={(type) => updateConfigField("hostingType", type)}
           />
         )
       case 2:
         return (
           <AuthStep
-            hostingType={configState.hostingType}
-            githubClientId={configState.githubClientId}
-            githubClientSecret={configState.githubClientSecret}
-            setGithubClientId={updateGithubClientId}
-            setGithubClientSecret={updateGithubClientSecret}
+            hostingType={configState.config.hostingType}
+            githubClientId={configState.config.githubClientId}
+            githubClientSecret={configState.config.githubClientSecret}
+            setGithubClientId={(id) => updateConfigField("githubClientId", id)}
+            setGithubClientSecret={(secret) => updateConfigField("githubClientSecret", secret)}
           />
         )
       case 3:
@@ -113,7 +112,7 @@ export default function InterviewPage() {
                 currentStep: { ...prev.currentStep, apiKey: key }
               }))
             }
-            llmConfigs={configState.llmConfigs}
+            llmConfigs={configState.config.llmConfigs}
             addLLMConfig={addLLMConfig}
             removeLLMConfig={removeLLMConfig}
             downloadEnvFile={downloadEnvFile}
@@ -129,7 +128,13 @@ export default function InterviewPage() {
   }
 
   return (
-    <Container maxW="4xl" py={8}>
+    <>
+      <LoadingOverlay
+        isVisible={configState.isLoading}
+        title="Completing Setup..."
+        subtitle="Please wait while we finalize your configuration"
+      />
+      <Container maxW="4xl" py={8}>
       <Flex align="flex-start" justify="center" mb={8} gap={0}>
         {steps.map((stepObj, index) => (
           <React.Fragment key={stepObj.title}>
@@ -217,20 +222,26 @@ export default function InterviewPage() {
               }))
             }
             disabled={
-              (currentStep.step === 1 && !configState.hostingType) ||
-              (currentStep.step === 2 && configState.hostingType === 'multi-user' &&
-                (!configState.githubClientId || !configState.githubClientSecret)) ||
-              (currentStep.step === 3 && configState.llmConfigs.length === 0)
+              (currentStep.step === 1 && !configState.config.hostingType) ||
+              (currentStep.step === 2 && configState.config.hostingType === 'multi-user' &&
+                (!configState.config.githubClientId || !configState.config.githubClientSecret)) ||
+              (currentStep.step === 3 && configState.config.llmConfigs.length === 0)
             }
           >
             Next →
           </Button>
         ) : (
           <Button
-            onClick={() => {
+            onClick={async () => {
               // Setup complete - use optimized version with current state
-              postConfigData(configState);
+              setIsLoading(true);
+              try {
+                await postConfigData(configState.config);
+              } finally {
+                setIsLoading(false);
+              }
             }}
+            loading={configState.isLoading}
           >
             Complete Setup
           </Button>
@@ -241,5 +252,6 @@ export default function InterviewPage() {
         <Configurations downloadEnvFile={downloadEnvFile} />
       )}
     </Container>
+    </>
   )
 }

@@ -1,4 +1,5 @@
-import { Prompt, PromptJson } from '../_types/state';
+import { PromptJson } from '../_types/state';
+import { Prompt } from '@/types/Prompt';
 import prompts from './prompts.json';
 
 export function getPromptsFromPersistance(): Prompt[] {

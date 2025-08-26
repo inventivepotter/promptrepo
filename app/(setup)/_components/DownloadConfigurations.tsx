@@ -6,7 +6,7 @@ interface EnvReadyStepProps {
   downloadEnvFile: () => void
 }
 
-export default function EnvReadyStep({ downloadEnvFile }: EnvReadyStepProps) {
+export default function DownloadConfigurations({ downloadEnvFile }: EnvReadyStepProps) {
   return (
     <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.emphasized">
       <VStack gap={4} align="stretch">

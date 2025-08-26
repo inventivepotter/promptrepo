@@ -1,0 +1,17 @@
+{
+  "hostingType": "multi-user",
+  "githubClientId": "adsfadsf",
+  "githubClientSecret": "adsfsdfasdf",
+  "llmConfigs": [
+    {
+      "provider": "openai",
+      "model": "gpt-4o-mini",
+      "apiKey": "asdfdsf"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-4o-mini",
+      "apiKey": "adsfasdfdsf"
+    }
+  ]
+}
