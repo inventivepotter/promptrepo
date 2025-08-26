@@ -1,10 +1,5 @@
-import { Prompt } from '../_state/promptState';
+import { Prompt, PromptJson } from '../_types/state';
 import prompts from './prompts.json';
-
-type PromptJson = Omit<Prompt, 'created_at' | 'updated_at'> & {
-  created_at: string;
-  updated_at: string;
-};
 
 export function getPromptsFromPersistance(): Prompt[] {
   return (prompts as PromptJson[]).map((p) => ({

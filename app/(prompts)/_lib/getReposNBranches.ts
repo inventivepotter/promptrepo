@@ -1,4 +1,4 @@
-import { Repo } from "../_components/Repos";
+import { Repo } from "../_types/repository";
 
 
 export function getReposNBranches(): Repo[] {

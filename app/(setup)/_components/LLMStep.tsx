@@ -13,18 +13,7 @@ import {
 import React from "react";
 import { FaChevronDown } from 'react-icons/fa';
 import { getProviderModels } from '../_lib/getProvidersNModels';
-
-interface LLMConfig {
-  provider: string
-  model: string
-  apiKey: string
-}
-
-export interface Provider {
-  id: string
-  name: string
-  models: Array<{ id: string; name: string }>
-}
+import { Provider, LLMConfig } from '../_types/provider';
 
 interface LLMStepProps {
   selectedProvider: string
@@ -50,7 +39,7 @@ export default function LLMStep({
   addLLMConfig,
   removeLLMConfig,
 }: LLMStepProps) {
-  const providers = getProviderModels();
+  const providers: Provider[] = getProviderModels();
 
   return (
     <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.emphasized">

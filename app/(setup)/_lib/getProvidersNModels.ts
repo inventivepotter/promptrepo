@@ -1,4 +1,4 @@
-import { Provider } from '../_components/LLMStep';
+import { Provider } from '../_types/provider';
 
 
 export function getProviderModels(): Provider[] {

@@ -1,40 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { getPromptsFromPersistance } from '../_lib/getPromptsFromPersistance';
-import { SelectedRepo } from "../_components/Repos";
+import { Prompt, PromptsState } from '../_types/state';
+import { SelectedRepo } from '../_types/repository';
 
-export interface Prompt {
-  id: string;
-  name: string;
-  description: string;
-  prompt: string;
-  model: string;
-  failover_model: string;
-  temperature: number;
-  top_p: number;
-  max_tokens: number;
-  thinking_enabled: boolean;
-  thinking_budget: number;
-  repo?: SelectedRepo;
-  created_at: Date;
-  updated_at: Date;
-}
-
-export interface PromptsState {
-  prompts: Prompt[];
-  currentPrompt: Prompt | null;
-  searchQuery: string;
-  currentPage: number;
-  itemsPerPage: number;
-  sortBy: 'name' | 'updated_at';
-  sortOrder: 'asc' | 'desc';
-  selectedRepos: Array<SelectedRepo>;
-  repoFilter: string;
-  currentRepoStep: {
-    isLoggedIn: boolean;
-    selectedRepo: string;
-    selectedBranch: string;
-  };
-}
+// Re-export types for backward compatibility
+export type { Prompt, PromptsState } from '../_types/state';
+export type { SelectedRepo } from '../_types/repository';
 
 const defaultPrompt: Omit<Prompt, 'id' | 'created_at' | 'updated_at'> = {
   name: "",

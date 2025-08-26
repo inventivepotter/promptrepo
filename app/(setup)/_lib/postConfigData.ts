@@ -1,10 +1,6 @@
-import { SetupData } from '../_state/configState';
+import { SetupData } from '../_types/state';
+import { PostConfigDataResponse } from '../_types/api';
 
-export interface PostConfigDataResponse {
-  success: boolean;
-  message?: string;
-  error?: string;
-}
 
 /**
  * Reads configuration data from localStorage

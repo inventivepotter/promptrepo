@@ -1,4 +1,4 @@
-import type { Provider } from '../../(setup)/_components/LLMStep';
+import type { Provider } from '../../(setup)/_types/provider';
 
 export const getModelOptions = () => {
   return getConfiguredProvidersNModels().flatMap(provider =>

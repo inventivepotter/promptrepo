@@ -1,22 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { postConfigDataDebounced } from '../_lib/postConfigData';
-
-export interface SetupData {
-  hostingType: "self" | "multi-user" | "";
-  githubClientId: string;
-  githubClientSecret: string;
-  llmConfigs: Array<{
-    provider: string;
-    model: string;
-    apiKey: string;
-  }>;
-  currentStep: {
-    step: number;
-    selectedProvider: string;
-    selectedModel: string;
-    apiKey: string;
-  };
-}
+import { SetupData } from '../_types/state';
 
 const defaultSetupData: SetupData = {
   hostingType: "",

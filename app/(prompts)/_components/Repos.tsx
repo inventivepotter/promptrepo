@@ -12,18 +12,7 @@ import {
   HStack,
 } from '@chakra-ui/react'
 import { getReposNBranches } from "../_lib/getReposNBranches";
-
-export interface Repo {
-  id: number
-  name: string
-  branches: string[]
-}
-
-export interface SelectedRepo {
-  id: number
-  name: string
-  branch: string
-}
+import { SelectedRepo } from "../_types/repository";
 
 interface ReposProps {
   isLoggedIn: boolean
