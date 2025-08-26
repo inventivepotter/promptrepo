@@ -47,79 +47,81 @@ export function PromptSearch({
   };
 
   return (
-    <VStack gap={4} align="stretch" mb={6}>
-      <HStack justify="space-between" align="start" flexWrap="wrap" gap={4}>
-        <Box flex={1} maxW="400px" position="relative">
-          <Input
-            placeholder="Search prompts by name or description..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            borderColor={borderColor}
-            paddingRight="2.5rem"
-            _focus={{
-              borderColor: activeColor,
-              boxShadow: `0 0 0 1px ${activeColor}`,
-            }}
-          />
-          <Box
-            position="absolute"
-            right="0.75rem"
-            top="50%"
-            transform="translateY(-50%)"
-            pointerEvents="none"
-          >
-            <LuSearch size={16} color={mutedTextColor} />
+    <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.emphasized">
+      <VStack gap={4} align="stretch" mb={0}>
+        <HStack justify="space-between" align="start" flexWrap="wrap" gap={4}>
+          <Box flex={1} maxW="400px" position="relative">
+            <Input
+              placeholder="Search prompts by name or description..."
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              borderColor={borderColor}
+              paddingRight="2.5rem"
+              _focus={{
+                borderColor: activeColor,
+                boxShadow: `0 0 0 1px ${activeColor}`,
+              }}
+            />
+            <Box
+              position="absolute"
+              right="0.75rem"
+              top="50%"
+              transform="translateY(-50%)"
+              pointerEvents="none"
+            >
+              <LuSearch size={16} color={mutedTextColor} />
+            </Box>
           </Box>
-        </Box>
 
-        <HStack gap={2} align="center">
-          <Text fontSize="sm" color={mutedTextColor}>
-            Sort by:
-          </Text>
-          <Button
-            size="sm"
-            variant={sortBy === 'name' ? 'solid' : 'ghost'}
-            onClick={() => handleSortToggle('name')}
-            bg={sortBy === 'name' ? activeBg : 'transparent'}
-            color={sortBy === 'name' ? activeColor : mutedTextColor}
-            _hover={{ bg: sortBy === 'name' ? activeBg : hoverBg }}
-          >
-            <HStack gap={1}>
-              <Text>Name</Text>
-              {sortBy === 'name' && (
-                sortOrder === 'asc' ? (
-                  <LuArrowUp size={12} />
-                ) : (
-                  <LuArrowDown size={12} />
-                )
-              )}
-            </HStack>
-          </Button>
-          <Button
-            size="sm"
-            variant={sortBy === 'updated_at' ? 'solid' : 'ghost'}
-            onClick={() => handleSortToggle('updated_at')}
-            bg={sortBy === 'updated_at' ? activeBg : 'transparent'}
-            color={sortBy === 'updated_at' ? activeColor : mutedTextColor}
-            _hover={{ bg: sortBy === 'updated_at' ? activeBg : hoverBg }}
-          >
-            <HStack gap={1}>
-              <Text>Last Updated</Text>
-              {sortBy === 'updated_at' && (
-                sortOrder === 'asc' ? (
-                  <LuArrowUp size={12} />
-                ) : (
-                  <LuArrowDown size={12} />
-                )
-              )}
-            </HStack>
-          </Button>
+          <HStack gap={2} align="center">
+            <Text fontSize="sm" color={mutedTextColor}>
+              Sort by:
+            </Text>
+            <Button
+              size="sm"
+              variant={sortBy === 'name' ? 'solid' : 'ghost'}
+              onClick={() => handleSortToggle('name')}
+              bg={sortBy === 'name' ? activeBg : 'transparent'}
+              color={sortBy === 'name' ? activeColor : mutedTextColor}
+              _hover={{ bg: sortBy === 'name' ? activeBg : hoverBg }}
+            >
+              <HStack gap={1}>
+                <Text>Name</Text>
+                {sortBy === 'name' && (
+                  sortOrder === 'asc' ? (
+                    <LuArrowUp size={12} />
+                  ) : (
+                    <LuArrowDown size={12} />
+                  )
+                )}
+              </HStack>
+            </Button>
+            <Button
+              size="sm"
+              variant={sortBy === 'updated_at' ? 'solid' : 'ghost'}
+              onClick={() => handleSortToggle('updated_at')}
+              bg={sortBy === 'updated_at' ? activeBg : 'transparent'}
+              color={sortBy === 'updated_at' ? activeColor : mutedTextColor}
+              _hover={{ bg: sortBy === 'updated_at' ? activeBg : hoverBg }}
+            >
+              <HStack gap={1}>
+                <Text>Last Updated</Text>
+                {sortBy === 'updated_at' && (
+                  sortOrder === 'asc' ? (
+                    <LuArrowUp size={12} />
+                  ) : (
+                    <LuArrowDown size={12} />
+                  )
+                )}
+              </HStack>
+            </Button>
+          </HStack>
         </HStack>
-      </HStack>
 
-      <Text fontSize="sm" color={mutedTextColor}>
-        {totalPrompts} prompt{totalPrompts !== 1 ? 's' : ''} found
-      </Text>
-    </VStack>
+        <Text fontSize="sm" color={mutedTextColor}>
+          {totalPrompts} prompt{totalPrompts !== 1 ? 's' : ''} found
+        </Text>
+      </VStack>
+    </Box>
   );
 }

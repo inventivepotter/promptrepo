@@ -51,7 +51,6 @@ export default function LLMStep({
   removeLLMConfig,
 }: LLMStepProps) {
   const providers = getProviderModels();
-  // Force re-render after provider selection to fix conditional rendering
 
   return (
     <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.emphasized">

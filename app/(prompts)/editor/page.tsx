@@ -3,7 +3,6 @@
 import React, { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Box } from '@chakra-ui/react';
-import { useColorModeValue } from '../../../components/ui/color-mode';
 import { usePromptsState, Prompt } from '../_state/promptState';
 import { PromptEditor } from '../_components/PromptEditor';
 import { updatePromptInPersistance } from '../_lib/updatePromptInPersistance';
@@ -13,8 +12,6 @@ export default function EditorPage() {
   const searchParams = useSearchParams();
   const promptId = searchParams.get('id');
   
-  // Theme colors
-  const containerBg = useColorModeValue('gray.50', 'gray.800');
 
   const {
     promptsState,
@@ -54,7 +51,7 @@ export default function EditorPage() {
   };
 
   return (
-    <Box minH="100vh" bg={containerBg}>
+    <Box minH="100vh">
       <PromptEditor
         prompt={currentPrompt}
         onSave={handleSave}

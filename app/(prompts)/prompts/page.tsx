@@ -21,9 +21,7 @@ export default function PromptsPage() {
   const router = useRouter();
   
   // Theme-aware colors
-  const headerBg = useColorModeValue('white', 'gray.900');
-  const containerBg = useColorModeValue('gray.50', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const headerBg = useColorModeValue('gray.50', 'gray.900');
 
   const {
     filteredPrompts,
@@ -56,12 +54,12 @@ export default function PromptsPage() {
   };
 
   return (
-    <Box minH="100vh" bg={containerBg}>
+    <Box minH="100vh">
       {/* Header */}
       <Box
         bg={headerBg}
         borderBottom="1px solid"
-        borderColor={borderColor}
+        borderColor="border.muted"
         py={4}
         position="sticky"
         top={0}

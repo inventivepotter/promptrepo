@@ -116,7 +116,7 @@ export function PromptEditor({ prompt, onSave, onBack }: PromptEditorProps) {
   }
 
   return (
-    <Container maxW="6xl" py={6}>
+    <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.emphasized">
       <VStack gap={6} align="stretch">
         {/* Header */}
         <HStack justify="space-between" align="center">
@@ -143,9 +143,8 @@ export function PromptEditor({ prompt, onSave, onBack }: PromptEditorProps) {
         </HStack>
 
         {/* Form */}
-        <Card.Root bg={cardBg} borderColor={borderColor}>
-          <Card.Body p={6}>
-            <VStack gap={6} align="stretch">
+        <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.muted">
+          <VStack gap={6} align="stretch">
               {/* Basic Info */}
               <Box>
                 <Text fontSize="lg" fontWeight="semibold" mb={4}>
@@ -406,9 +405,8 @@ export function PromptEditor({ prompt, onSave, onBack }: PromptEditorProps) {
                 </VStack>
               </Box>
             </VStack>
-          </Card.Body>
-        </Card.Root>
+        </Box>
       </VStack>
-    </Container>
+    </Box>
   );
 }

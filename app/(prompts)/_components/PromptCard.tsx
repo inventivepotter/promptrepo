@@ -25,9 +25,9 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
   const hoverBg = useColorModeValue('gray.50', 'gray.700');
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const promptPreviewBg = useColorModeValue('gray.50', 'gray.700');
-  const promptBorderColor = useColorModeValue('blue.200', 'blue.500');
+  const cardBg = useColorModeValue('gray.50', 'gray.900');
+  const promptPreviewBg = useColorModeValue('gray.100', 'gray.800');
+  const promptBorderColor = useColorModeValue('blue.200', 'blue.200');
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
