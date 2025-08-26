@@ -8,7 +8,7 @@ import {
   VStack,
   Text,
 } from '@chakra-ui/react';
-import Repos from './Repos';
+import Repos, { SelectedRepo } from './Repos';
 
 interface RepoModalProps {
   isOpen: boolean;
@@ -19,12 +19,8 @@ interface RepoModalProps {
   setSelectedRepo: (id: string) => void;
   selectedBranch: string;
   setSelectedBranch: (branch: string) => void;
-  selectedRepos: Array<{
-    repoId: number;
-    branch: string;
-    repoName: string;
-  }>;
-  toggleRepoSelection: (repoId: number, branch: string, repoName: string) => void;
+  selectedRepos: Array<SelectedRepo>;
+  toggleRepoSelection: (id: number, branch: string, name: string) => void;
 }
 
 export function RepoModal({
@@ -95,15 +91,8 @@ export function RepoModal({
               setSelectedRepo={setSelectedRepo}
               selectedBranch={selectedBranch}
               setSelectedBranch={setSelectedBranch}
-              selectedRepos={selectedRepos.map(repo => ({
-                repoId: repo.repoId,
-                branch: repo.branch
-              }))}
-              toggleRepoSelection={(repoId, branch) => {
-                // Get the repo name from the selected repos or generate it
-                const repoName = selectedRepos.find(r => r.repoId === repoId)?.repoName || `repo-${repoId}`;
-                toggleRepoSelection(repoId, branch, repoName);
-              }}
+              selectedRepos={selectedRepos}
+              toggleRepoSelection={toggleRepoSelection}
             />
           </Box>
           

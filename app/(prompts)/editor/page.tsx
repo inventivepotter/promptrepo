@@ -18,6 +18,7 @@ export default function EditorPage() {
     updatePrompt,
     setCurrentPrompt,
     currentPrompt,
+    toggleRepoSelection,
   } = usePromptsState();
 
 
@@ -56,6 +57,7 @@ export default function EditorPage() {
         prompt={currentPrompt}
         onSave={handleSave}
         onBack={handleBack}
+        selectedRepos={promptsState.selectedRepos}
       />
     </Box>
   );

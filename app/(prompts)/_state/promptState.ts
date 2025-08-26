@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { getPromptsFromPersistance } from '../_lib/getPromptsFromPersistance';
+import { SelectedRepo } from "../_components/Repos";
 
 export interface Prompt {
   id: string;
@@ -13,11 +14,7 @@ export interface Prompt {
   max_tokens: number;
   thinking_enabled: boolean;
   thinking_budget: number;
-  repo?: {
-    repoId: number;
-    branch: string;
-    repoName: string;
-  };
+  repo?: SelectedRepo;
   created_at: Date;
   updated_at: Date;
 }
@@ -30,11 +27,7 @@ export interface PromptsState {
   itemsPerPage: number;
   sortBy: 'name' | 'updated_at';
   sortOrder: 'asc' | 'desc';
-  selectedRepos: Array<{
-    repoId: number;
-    branch: string;
-    repoName: string;
-  }>;
+  selectedRepos: Array<SelectedRepo>;
   repoFilter: string;
   currentRepoStep: {
     isLoggedIn: boolean;
@@ -80,12 +73,35 @@ const persistPrompts = (prompts: Prompt[]) => {
   }
 };
 
+// Persistence helper for selected repos
+const persistSelectedRepos = (selectedRepos: PromptsState['selectedRepos']) => {
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem("selectedRepos", JSON.stringify(selectedRepos));
+  }
+};
+
+// Load selected repos from localStorage
+const loadSelectedRepos = (): PromptsState['selectedRepos'] => {
+  if (typeof window !== "undefined") {
+    const saved = window.localStorage.getItem("selectedRepos");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (error) {
+        console.error("Failed to restore selected repos:", error);
+      }
+    }
+  }
+  return [];
+};
+
 export function usePromptsState() {
   const [promptsState, setPromptsState] = useState<PromptsState>(defaultPromptsState);
   const hasRestoredData = useRef(false);
 
   useEffect(() => {
     if (!hasRestoredData.current && typeof window !== "undefined") {
+      // Load prompts from localStorage
       const saved = window.localStorage.getItem("promptsData");
       if (saved) {
         try {
@@ -105,7 +121,11 @@ export function usePromptsState() {
                 mp => !prompts.some(p => p.id === mp.id)
               ),
             ];
-            setPromptsState(prev => ({ ...prev, prompts: mergedPrompts }));
+            setPromptsState(prev => ({
+              ...prev,
+              prompts: mergedPrompts,
+              selectedRepos: loadSelectedRepos() // Load saved repos
+            }));
             persistPrompts(mergedPrompts);
           }
         } catch (error) {
@@ -114,7 +134,11 @@ export function usePromptsState() {
       } else {
         // If nothing in localStorage, insert all from getPrompts
         const mockPrompts = getPromptsFromPersistance();
-        setPromptsState(prev => ({ ...prev, prompts: mockPrompts }));
+        setPromptsState(prev => ({
+          ...prev,
+          prompts: mockPrompts,
+          selectedRepos: loadSelectedRepos() // Load saved repos
+        }));
         persistPrompts(mockPrompts);
       }
       hasRestoredData.current = true;
@@ -130,12 +154,13 @@ export function usePromptsState() {
     });
   }, []);
 
-  const createPrompt = useCallback(() => {
+  const createPrompt = useCallback((selectedRepo?: { id: number; branch: string; name: string }) => {
     const newPrompt: Prompt = {
       ...defaultPrompt,
       id: `prompt_${Date.now()}_${Math.random().toString(36).substring(2)}`,
       created_at: new Date(),
       updated_at: new Date(),
+      repo: selectedRepo,
     };
     
     updatePromptsState(prev => ({
@@ -193,10 +218,10 @@ export function usePromptsState() {
   const filteredPrompts = promptsState.prompts.filter(prompt => {
     const matchesSearch = prompt.name.toLowerCase().includes(promptsState.searchQuery.toLowerCase()) ||
       prompt.description.toLowerCase().includes(promptsState.searchQuery.toLowerCase()) ||
-      (prompt.repo?.repoName.toLowerCase().includes(promptsState.searchQuery.toLowerCase()) ?? false);
+      (prompt.repo?.name.toLowerCase().includes(promptsState.searchQuery.toLowerCase()) ?? false);
     
     const matchesRepo = !promptsState.repoFilter ||
-      (prompt.repo?.repoName === promptsState.repoFilter);
+      (prompt.repo?.name === promptsState.repoFilter);
     
     return matchesSearch && matchesRepo;
   });
@@ -217,10 +242,10 @@ export function usePromptsState() {
   const paginatedPrompts = sortedPrompts.slice(startIndex, startIndex + promptsState.itemsPerPage);
 
   // Repo management functions
-  const setRepoFilter = useCallback((repoName: string) => {
+  const setRepoFilter = useCallback((name: string) => {
     updatePromptsState(prev => ({
       ...prev,
-      repoFilter: repoName,
+      repoFilter: name,
       currentPage: 1 // Reset to first page when filtering
     }));
   }, [updatePromptsState]);
@@ -232,30 +257,31 @@ export function usePromptsState() {
     }));
   }, [updatePromptsState]);
 
-  const toggleRepoSelection = useCallback((repoId: number, branch: string, repoName: string) => {
+  const toggleRepoSelection = useCallback((id: number, branch: string, name: string) => {
     updatePromptsState(prev => {
-      const existingIndex = prev.selectedRepos.findIndex(r => r.repoId === repoId);
+      const existingIndex = prev.selectedRepos.findIndex(r => r.id === id);
+      let newSelectedRepos;
+      
       if (existingIndex >= 0) {
         const existing = prev.selectedRepos[existingIndex];
         if (existing.branch === branch) {
-          return {
-            ...prev,
-            selectedRepos: prev.selectedRepos.filter(r => r.repoId !== repoId)
-          };
+          newSelectedRepos = prev.selectedRepos.filter(r => r.id !== id);
         } else {
-          return {
-            ...prev,
-            selectedRepos: prev.selectedRepos.map((r, i) =>
-              i === existingIndex ? { ...r, branch } : r
-            )
-          };
+          newSelectedRepos = prev.selectedRepos.map((r, i) =>
+            i === existingIndex ? { ...r, branch } : r
+          );
         }
       } else {
-        return {
-          ...prev,
-          selectedRepos: [...prev.selectedRepos, { repoId, branch, repoName }]
-        };
+        newSelectedRepos = [...prev.selectedRepos, { id, branch, name }];
       }
+      
+      // Persist the updated selected repos
+      persistSelectedRepos(newSelectedRepos);
+      
+      return {
+        ...prev,
+        selectedRepos: newSelectedRepos
+      };
     });
   }, [updatePromptsState]);
 

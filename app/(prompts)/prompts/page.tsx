@@ -47,8 +47,8 @@ export default function PromptsPage() {
   const availableRepos = React.useMemo(() => {
     const repos = new Set<string>();
     promptsState.prompts.forEach(prompt => {
-      if (prompt.repo?.repoName) {
-        repos.add(prompt.repo.repoName);
+      if (prompt.repo?.name) {
+        repos.add(prompt.repo.name);
       }
     });
     return Array.from(repos).sort();
@@ -56,7 +56,9 @@ export default function PromptsPage() {
 
 
   const handleCreateNew = () => {
-    const newPrompt = createPrompt();
+    // Use the first selected repository if available, otherwise create without repo
+    const selectedRepo = promptsState.selectedRepos.length > 0 ? promptsState.selectedRepos[0] : undefined;
+    const newPrompt = createPrompt(selectedRepo);
     router.push(`/editor?id=${newPrompt.id}`);
   };
 

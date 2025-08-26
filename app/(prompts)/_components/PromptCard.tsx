@@ -93,6 +93,11 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
 
           <HStack justify="space-between" align="center" flexWrap="wrap" gap={2}>
             <HStack gap={2} flexWrap="wrap">
+              {prompt.repo?.name && (
+                <Badge size="sm" variant="subtle" colorPalette="green">
+                  {prompt.repo.name}
+                </Badge>
+              )}
               <Badge size="sm" variant="subtle" colorPalette="blue">
                 {prompt.model || 'No model'}
               </Badge>

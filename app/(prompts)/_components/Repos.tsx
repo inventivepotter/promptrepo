@@ -11,17 +11,17 @@ import {
   createListCollection,
   HStack,
 } from '@chakra-ui/react'
-import { getReposNBranches } from "../../(setup)/_lib/getReposNBranches";
+import { getReposNBranches } from "../_lib/getReposNBranches";
 
 export interface Repo {
   id: number
   name: string
-  fullName: string
   branches: string[]
 }
 
-interface SelectedRepo {
-  repoId: number
+export interface SelectedRepo {
+  id: number
+  name: string
   branch: string
 }
 
@@ -33,7 +33,7 @@ interface ReposProps {
   selectedBranch: string
   setSelectedBranch: (branch: string) => void
   selectedRepos: SelectedRepo[]
-  toggleRepoSelection: (repoId: number, branch: string, repoName: string) => void
+  toggleRepoSelection: (id: number, branch: string, name: string) => void
 }
 
 export default function Repos({
@@ -94,7 +94,7 @@ export default function Repos({
                   <Text mb={2} fontWeight="medium">Repository</Text>
                   <Combobox.Root
                     collection={createListCollection({
-                      items: repos.map(r => ({ label: r.fullName, value: r.id.toString() }))
+                      items: repos.map(r => ({ label: r.name, value: r.id.toString() }))
                     })}
                     value={[selectedRepo]}
                     onValueChange={(e) => {
@@ -121,7 +121,7 @@ export default function Repos({
                       <Combobox.Content>
                         {repos.map(repo => (
                           <Combobox.Item key={repo.id} item={repo.id.toString()}>
-                            <Combobox.ItemText>{repo.fullName}</Combobox.ItemText>
+                            <Combobox.ItemText>{repo.name}</Combobox.ItemText>
                             <Combobox.ItemIndicator />
                           </Combobox.Item>
                         ))}
@@ -166,10 +166,11 @@ export default function Repos({
                   onClick={() => {
                     if (selectedRepo && selectedBranch) {
                       const repo = repos.find(r => r.id.toString() === selectedRepo);
-                      const repoName = repo?.fullName || `repo-${selectedRepo}`;
-                      toggleRepoSelection(parseInt(selectedRepo), selectedBranch, repoName)
-                      setSelectedRepo('')
-                      setSelectedBranch('')
+                      if (repo) {
+                        toggleRepoSelection(repo.id, selectedBranch, repo.name)
+                        setSelectedRepo('')
+                        setSelectedBranch('')
+                      }
                     }
                   }}
                   disabled={!selectedRepo || !selectedBranch}
@@ -183,16 +184,18 @@ export default function Repos({
                 <Text fontWeight="bold" mb={4}>Selected Repositories</Text>
                 <VStack gap={2}>
                   {selectedRepos.map((selected, index) => {
-                    const repo = repos.find(r => r.id === selected.repoId)
+                    const repo = repos.find(r => r.id === selected.id)
                     return (
                       <HStack key={index} justify="space-between" width="100%" p={2} bg="bg.subtle" borderRadius="md">
                         <Text fontSize="sm" fontWeight="400">
-                          {repo?.fullName} ({selected.branch})
+                          {repo?.name} ({selected.branch})
                         </Text>
                         <Button size="sm" onClick={() => {
-                          const repo = repos.find(r => r.id === selected.repoId);
-                          const repoName = repo?.fullName || `repo-${selected.repoId}`;
-                          toggleRepoSelection(selected.repoId, selected.branch, repoName);
+                          const repo = repos.find(r => r.id === selected.id);
+                          if (repo) {
+                            const name = repo.name;
+                            toggleRepoSelection(selected.id, selected.branch, name);
+                          }
                         }}>
                           Remove
                         </Button>
