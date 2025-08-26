@@ -1,0 +1,9 @@
+{
+  "repos": [
+    { "id": "1", "name": "frontend", "base_branch": "main" },
+    { "id": "2", "name": "backend", "base_branch": "develop" },
+    { "id": "3", "name": "database", "base_branch": "main" },
+    { "id": "4", "name": "api-server", "base_branch": "main" },
+    { "id": "5", "name": "web-app", "base_branch": "main" }
+  ]
+}
