@@ -1,18 +1,19 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Box } from '@chakra-ui/react';
 import { Prompt } from '@/types/Prompt';
 import { usePromptsState } from '../_state/promptState';
 import { PromptEditor } from '../_components/PromptEditor';
 import { updatePromptInPersistance } from '../_lib/updatePromptInPersistance';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
 
 export default function EditorPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const promptId = searchParams.get('id');
-  
+  const [isSaving, setIsSaving] = useState(false);
 
   const {
     promptsState,
@@ -40,10 +41,18 @@ export default function EditorPage() {
 
   const handleSave = async (updates: Partial<Prompt>) => {
     if (currentPrompt) {
-      updatePrompt(currentPrompt.id, updates);
-      await updatePromptInPersistance(updates);
-      // Optionally show a success message or redirect
-      //router.push('/prompts');
+      setIsSaving(true);
+      try {
+        // First try to save to backend
+        await updatePromptInPersistance(updates);
+        // Only update localStorage if backend save was successful
+        updatePrompt(currentPrompt.id, updates, true);
+      } catch (error) {
+        console.error('Failed to save prompt:', error);
+        // Handle error (could add toast notification here)
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -52,13 +61,21 @@ export default function EditorPage() {
   };
 
   return (
-    <Box minH="100vh">
-      <PromptEditor
-        prompt={currentPrompt}
-        onSave={handleSave}
-        onBack={handleBack}
-        selectedRepos={promptsState.selectedRepos}
+    <>
+      <LoadingOverlay
+        isVisible={isSaving}
+        title="Saving Prompt..."
+        subtitle="Please wait while we save your changes"
       />
-    </Box>
+      <Box minH="100vh">
+        <PromptEditor
+          prompt={currentPrompt}
+          onSave={handleSave}
+          onBack={handleBack}
+          selectedRepos={promptsState.selectedRepos}
+          isSaving={isSaving}
+        />
+      </Box>
+    </>
   );
 }

@@ -116,11 +116,13 @@ export function usePromptsState() {
     }
   }, []);
 
-  const updatePromptsState = useCallback((updater: PromptsState | ((prev: PromptsState) => PromptsState)) => {
+  const updatePromptsState = useCallback((updater: PromptsState | ((prev: PromptsState) => PromptsState), shouldPersist: boolean = false) => {
     setPromptsState(prev => {
       const newState = typeof updater === 'function' ? updater(prev) : updater;
-      // Persist prompts whenever state changes
-      persistPrompts(newState.prompts);
+      // Only persist prompts when explicitly requested (e.g., on save)
+      if (shouldPersist) {
+        persistPrompts(newState.prompts);
+      }
       return newState;
     });
   }, []);
@@ -137,12 +139,12 @@ export function usePromptsState() {
       ...prev,
       prompts: [newPrompt, ...prev.prompts],
       currentPrompt: newPrompt,
-    }));
+    }), true); // Persist when creating new prompt
     
     return newPrompt;
   }, [updatePromptsState]);
 
-  const updatePrompt = useCallback((id: string, updates: Partial<Omit<Prompt, 'id' | 'created_at' | 'updated_at'>>) => {
+  const updatePrompt = useCallback((id: string, updates: Partial<Omit<Prompt, 'id' | 'created_at' | 'updated_at'>>, shouldPersist: boolean = true) => {
     updatePromptsState(prev => ({
       ...prev,
       prompts: prev.prompts.map(prompt =>
@@ -153,7 +155,7 @@ export function usePromptsState() {
       currentPrompt: prev.currentPrompt?.id === id
         ? { ...prev.currentPrompt, ...updates, updated_at: new Date() }
         : prev.currentPrompt,
-    }));
+    }), shouldPersist);
   }, [updatePromptsState]);
 
   const deletePrompt = useCallback((id: string) => {
@@ -161,7 +163,7 @@ export function usePromptsState() {
       ...prev,
       prompts: prev.prompts.filter(prompt => prompt.id !== id),
       currentPrompt: prev.currentPrompt?.id === id ? null : prev.currentPrompt,
-    }));
+    }), true); // Persist when deleting prompt
   }, [updatePromptsState]);
 
   const setCurrentPrompt = useCallback((prompt: Prompt | null) => {

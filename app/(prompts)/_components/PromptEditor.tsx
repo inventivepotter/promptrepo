@@ -20,9 +20,10 @@ interface PromptEditorProps {
   onSave: (updates: Partial<Prompt>) => void;
   onBack: () => void;
   selectedRepos?: Array<Repo>;
+  isSaving?: boolean;
 }
 
-export function PromptEditor({ prompt, onSave, onBack, selectedRepos = [] }: PromptEditorProps) {
+export function PromptEditor({ prompt, onSave, onBack, selectedRepos = [], isSaving = false }: PromptEditorProps) {
   const [formData, setFormData] = React.useState<Partial<Prompt>>({
     name: '',
     description: '',
@@ -87,16 +88,12 @@ export function PromptEditor({ prompt, onSave, onBack, selectedRepos = [] }: Pro
     
     const updatedData = { ...formData, [field]: value };
     setFormData(updatedData);
-    // Auto-save when data changes
-    onSave(updatedData);
   };
 
   const updateRepoField = (repo: Repo | undefined) => {
     const updatedData = { ...formData, repo };
     setFormData(updatedData);
     setShowRepoError(false); // Clear error when repository is selected
-    // Auto-save when data changes
-    onSave(updatedData);
   };
 
   const handleTemperatureChange = (value: string) => {
@@ -130,11 +127,25 @@ export function PromptEditor({ prompt, onSave, onBack, selectedRepos = [] }: Pro
     updated_at: new Date(),
   };
 
+  const handleSave = () => {
+    if (!formData.repo) {
+      setShowRepoError(true);
+      return;
+    }
+    onSave(formData);
+  };
+
   return (
     <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.emphasized">
       <VStack gap={6} align="stretch">
         {/* Header */}
-        <PromptEditorHeader displayPrompt={displayPrompt} onBack={onBack} />
+        <PromptEditorHeader
+          displayPrompt={displayPrompt}
+          onBack={onBack}
+          onSave={handleSave}
+          canSave={!!formData.repo}
+          isSaving={isSaving}
+        />
 
         {/* Form */}
         <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.muted">
@@ -170,6 +181,7 @@ export function PromptEditor({ prompt, onSave, onBack, selectedRepos = [] }: Pro
                 updateField={updateField}
               />
             </Box>
+
           </VStack>
         </Box>
       </VStack>
