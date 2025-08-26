@@ -7,7 +7,6 @@ import { useConfigState } from "../_state/configState"
 import HostingStep from '../_components/HostingStep'
 import AuthStep from '../_components/AuthStep'
 import LLMStep from '../_components/LLMStep'
-import RepoStep from '../_components/RepoStep'
 import Configurations from '../_components/Configurations'
 
 
@@ -20,8 +19,6 @@ export default function InterviewPage() {
     updateGithubClientSecret,
     addLLMConfig: addLLMConfigAction,
     removeLLMConfig: removeLLMConfigAction,
-    toggleRepoSelection: toggleRepoSelectionAction,
-    handleGitHubLogin: handleGitHubLoginAction
   } = useConfigState();
   const currentStep = configState.currentStep;
 
@@ -29,7 +26,6 @@ export default function InterviewPage() {
     { title: 'Hosting Configuration', description: 'Choose how you want to deploy' },
     { title: 'Authentication Setup', description: 'Configure GitHub OAuth' },
     { title: 'LLM Configuration', description: 'Setup AI providers' },
-    { title: 'Repository Selection', description: 'Choose your repositories' },
     { title: 'Configuration', description: 'Download your .env file' }
   ]
 
@@ -72,13 +68,6 @@ export default function InterviewPage() {
     URL.revokeObjectURL(url)
   }
 
-  const handleGitHubLogin = async () => {
-    handleGitHubLoginAction();
-  }
-
-  const toggleRepoSelection = (repoId: number, branch: string) => {
-    toggleRepoSelectionAction(repoId, branch);
-  }
 
   const renderStepContent = (step: number) => {
     switch (step) {
@@ -130,29 +119,6 @@ export default function InterviewPage() {
           />
         )
       case 4:
-        return (
-          <RepoStep
-            isLoggedIn={currentStep.isLoggedIn}
-            handleGitHubLogin={handleGitHubLogin}
-            selectedRepo={currentStep.selectedRepo}
-            setSelectedRepo={repo =>
-              setConfigState(prev => ({
-                ...prev,
-                currentStep: { ...prev.currentStep, selectedRepo: repo }
-              }))
-            }
-            selectedBranch={currentStep.selectedBranch}
-            setSelectedBranch={branch =>
-              setConfigState(prev => ({
-                ...prev,
-                currentStep: { ...prev.currentStep, selectedBranch: branch }
-              }))
-            }
-            selectedRepos={configState.selectedRepos}
-            toggleRepoSelection={toggleRepoSelection}
-          />
-        )
-      case 5:
         return (
           <Configurations downloadEnvFile={downloadEnvFile} />
         )
@@ -253,15 +219,13 @@ export default function InterviewPage() {
               (currentStep.step === 1 && !configState.hostingType) ||
               (currentStep.step === 2 && configState.hostingType === 'multi-user' &&
                 (!configState.githubClientId || !configState.githubClientSecret)) ||
-              (currentStep.step === 3 && configState.llmConfigs.length === 0) ||
-              (currentStep.step === 4 && !currentStep.isLoggedIn)
+              (currentStep.step === 3 && configState.llmConfigs.length === 0)
             }
           >
             Next →
           </Button>
         ) : (
           <Button
-            disabled={configState.selectedRepos.length === 0}
             onClick={() => {
               // Setup complete
             }}

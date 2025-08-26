@@ -8,8 +8,11 @@ import {
   Text,
   Button,
   Input,
+  Combobox,
+  createListCollection,
 } from '@chakra-ui/react';
-import { LuSearch, LuArrowUp, LuArrowDown } from 'react-icons/lu';
+import { LuSearch, LuArrowUp, LuArrowDown, LuFilter } from 'react-icons/lu';
+import { FaChevronDown } from 'react-icons/fa';
 import { useColorModeValue } from '../../../components/ui/color-mode';
 
 interface PromptSearchProps {
@@ -19,6 +22,9 @@ interface PromptSearchProps {
   sortOrder: 'asc' | 'desc';
   onSortChange: (sortBy: 'name' | 'updated_at', sortOrder: 'asc' | 'desc') => void;
   totalPrompts: number;
+  repoFilter: string;
+  onRepoFilterChange: (repo: string) => void;
+  availableRepos: string[];
 }
 
 export function PromptSearch({
@@ -28,6 +34,9 @@ export function PromptSearch({
   sortOrder,
   onSortChange,
   totalPrompts,
+  repoFilter,
+  onRepoFilterChange,
+  availableRepos,
 }: PromptSearchProps) {
   // Theme-aware colors
   const borderColor = useColorModeValue('gray.200', 'gray.600');
@@ -50,28 +59,75 @@ export function PromptSearch({
     <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.emphasized">
       <VStack gap={4} align="stretch" mb={0}>
         <HStack justify="space-between" align="start" flexWrap="wrap" gap={4}>
-          <Box flex={1} maxW="400px" position="relative">
-            <Input
-              placeholder="Search prompts by name or description..."
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              borderColor={borderColor}
-              paddingRight="2.5rem"
-              _focus={{
-                borderColor: activeColor,
-                boxShadow: `0 0 0 1px ${activeColor}`,
-              }}
-            />
-            <Box
-              position="absolute"
-              right="0.75rem"
-              top="50%"
-              transform="translateY(-50%)"
-              pointerEvents="none"
-            >
-              <LuSearch size={16} color={mutedTextColor} />
+          <HStack gap={4} flex={1}>
+            <Box flex={1} maxW="400px" position="relative">
+              <Input
+                placeholder="Search prompts by name, description, or repo..."
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                borderColor={borderColor}
+                paddingRight="2.5rem"
+                _focus={{
+                  borderColor: activeColor,
+                  boxShadow: `0 0 0 1px ${activeColor}`,
+                }}
+              />
+              <Box
+                position="absolute"
+                right="0.75rem"
+                top="50%"
+                transform="translateY(-50%)"
+                pointerEvents="none"
+              >
+                <LuSearch size={16} color={mutedTextColor} />
+              </Box>
             </Box>
-          </Box>
+            
+            {availableRepos.length > 0 && (
+              <Box minW="200px">
+                <Combobox.Root
+                  collection={createListCollection({
+                    items: [
+                      { label: 'All Repositories', value: '' },
+                      ...availableRepos.map(repo => ({ label: repo, value: repo }))
+                    ]
+                  })}
+                  value={[repoFilter]}
+                  onValueChange={(e) => onRepoFilterChange(e.value[0] || '')}
+                  openOnClick
+                >
+                  <Combobox.Control position="relative">
+                    <Combobox.Input
+                      placeholder="Filter by repository"
+                      paddingRight="2rem"
+                      borderColor={borderColor}
+                      _focus={{
+                        borderColor: activeColor,
+                        boxShadow: `0 0 0 1px ${activeColor}`,
+                      }}
+                    />
+                    <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
+                      <FaChevronDown size={16} />
+                    </Combobox.Trigger>
+                  </Combobox.Control>
+                  <Combobox.Positioner>
+                    <Combobox.Content>
+                      <Combobox.Item key="all" item="">
+                        <Combobox.ItemText>All Repositories</Combobox.ItemText>
+                        <Combobox.ItemIndicator />
+                      </Combobox.Item>
+                      {availableRepos.map(repo => (
+                        <Combobox.Item key={repo} item={repo}>
+                          <Combobox.ItemText>{repo}</Combobox.ItemText>
+                          <Combobox.ItemIndicator />
+                        </Combobox.Item>
+                      ))}
+                    </Combobox.Content>
+                  </Combobox.Positioner>
+                </Combobox.Root>
+              </Box>
+            )}
+          </HStack>
 
           <HStack gap={2} align="center">
             <Text fontSize="sm" color={mutedTextColor}>
@@ -118,9 +174,16 @@ export function PromptSearch({
           </HStack>
         </HStack>
 
-        <Text fontSize="sm" color={mutedTextColor}>
-          {totalPrompts} prompt{totalPrompts !== 1 ? 's' : ''} found
-        </Text>
+        <HStack justify="space-between">
+          <Text fontSize="sm" color={mutedTextColor}>
+            {totalPrompts} prompt{totalPrompts !== 1 ? 's' : ''} found
+          </Text>
+          {repoFilter && (
+            <Text fontSize="sm" color={activeColor}>
+              Filtered by: {repoFilter}
+            </Text>
+          )}
+        </HStack>
       </VStack>
     </Box>
   );

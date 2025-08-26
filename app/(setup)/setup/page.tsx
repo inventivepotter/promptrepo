@@ -4,7 +4,6 @@ import { Container, VStack, Box } from '@chakra-ui/react'
 import HostingStep from '../_components/HostingStep'
 import AuthStep from '../_components/AuthStep'
 import LLMStep from '../_components/LLMStep'
-import RepoStep from '../_components/RepoStep'
 import Configurations from '../_components/Configurations'
 import { useConfigState } from '../_state/configState'
 
@@ -18,8 +17,6 @@ export default function SetupPage() {
     updateCurrentStepField,
     addLLMConfig: addLLMConfigAction,
     removeLLMConfig: removeLLMConfigAction,
-    toggleRepoSelection: toggleRepoSelectionAction,
-    handleGitHubLogin: handleGitHubLoginAction
   } = useConfigState();
 
   return (
@@ -70,16 +67,6 @@ export default function SetupPage() {
             document.body.removeChild(a)
             URL.revokeObjectURL(url)
           }}
-        />
-        <RepoStep
-          isLoggedIn={configState.currentStep.isLoggedIn}
-          handleGitHubLogin={handleGitHubLoginAction}
-          selectedRepo={configState.currentStep.selectedRepo}
-          setSelectedRepo={(repo: string) => updateCurrentStepField('selectedRepo', repo)}
-          selectedBranch={configState.currentStep.selectedBranch}
-          setSelectedBranch={(branch: string) => updateCurrentStepField('selectedBranch', branch)}
-          selectedRepos={configState.selectedRepos}
-          toggleRepoSelection={toggleRepoSelectionAction}
         />
         <Configurations downloadEnvFile={() => {}} />
       </VStack>

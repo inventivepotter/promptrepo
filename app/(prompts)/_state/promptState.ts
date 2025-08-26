@@ -13,6 +13,11 @@ export interface Prompt {
   max_tokens: number;
   thinking_enabled: boolean;
   thinking_budget: number;
+  repo?: {
+    repoId: number;
+    branch: string;
+    repoName: string;
+  };
   created_at: Date;
   updated_at: Date;
 }
@@ -25,6 +30,17 @@ export interface PromptsState {
   itemsPerPage: number;
   sortBy: 'name' | 'updated_at';
   sortOrder: 'asc' | 'desc';
+  selectedRepos: Array<{
+    repoId: number;
+    branch: string;
+    repoName: string;
+  }>;
+  repoFilter: string;
+  currentRepoStep: {
+    isLoggedIn: boolean;
+    selectedRepo: string;
+    selectedBranch: string;
+  };
 }
 
 const defaultPrompt: Omit<Prompt, 'id' | 'created_at' | 'updated_at'> = {
@@ -48,6 +64,13 @@ const defaultPromptsState: PromptsState = {
   itemsPerPage: 9,
   sortBy: 'updated_at',
   sortOrder: 'desc',
+  selectedRepos: [],
+  repoFilter: "",
+  currentRepoStep: {
+    isLoggedIn: false,
+    selectedRepo: "",
+    selectedBranch: "",
+  },
 };
 
 // Persistence helper
@@ -167,10 +190,16 @@ export function usePromptsState() {
   }, [updatePromptsState]);
 
   // Filtered and sorted prompts
-  const filteredPrompts = promptsState.prompts.filter(prompt =>
-    prompt.name.toLowerCase().includes(promptsState.searchQuery.toLowerCase()) ||
-    prompt.description.toLowerCase().includes(promptsState.searchQuery.toLowerCase())
-  );
+  const filteredPrompts = promptsState.prompts.filter(prompt => {
+    const matchesSearch = prompt.name.toLowerCase().includes(promptsState.searchQuery.toLowerCase()) ||
+      prompt.description.toLowerCase().includes(promptsState.searchQuery.toLowerCase()) ||
+      (prompt.repo?.repoName.toLowerCase().includes(promptsState.searchQuery.toLowerCase()) ?? false);
+    
+    const matchesRepo = !promptsState.repoFilter ||
+      (prompt.repo?.repoName === promptsState.repoFilter);
+    
+    return matchesSearch && matchesRepo;
+  });
 
   const sortedPrompts = [...filteredPrompts].sort((a, b) => {
     let comparison = 0;
@@ -187,6 +216,55 @@ export function usePromptsState() {
   const startIndex = (promptsState.currentPage - 1) * promptsState.itemsPerPage;
   const paginatedPrompts = sortedPrompts.slice(startIndex, startIndex + promptsState.itemsPerPage);
 
+  // Repo management functions
+  const setRepoFilter = useCallback((repoName: string) => {
+    updatePromptsState(prev => ({
+      ...prev,
+      repoFilter: repoName,
+      currentPage: 1 // Reset to first page when filtering
+    }));
+  }, [updatePromptsState]);
+
+  const updateCurrentRepoStepField = useCallback((field: keyof PromptsState['currentRepoStep'], value: string | boolean) => {
+    updatePromptsState(prev => ({
+      ...prev,
+      currentRepoStep: { ...prev.currentRepoStep, [field]: value }
+    }));
+  }, [updatePromptsState]);
+
+  const toggleRepoSelection = useCallback((repoId: number, branch: string, repoName: string) => {
+    updatePromptsState(prev => {
+      const existingIndex = prev.selectedRepos.findIndex(r => r.repoId === repoId);
+      if (existingIndex >= 0) {
+        const existing = prev.selectedRepos[existingIndex];
+        if (existing.branch === branch) {
+          return {
+            ...prev,
+            selectedRepos: prev.selectedRepos.filter(r => r.repoId !== repoId)
+          };
+        } else {
+          return {
+            ...prev,
+            selectedRepos: prev.selectedRepos.map((r, i) =>
+              i === existingIndex ? { ...r, branch } : r
+            )
+          };
+        }
+      } else {
+        return {
+          ...prev,
+          selectedRepos: [...prev.selectedRepos, { repoId, branch, repoName }]
+        };
+      }
+    });
+  }, [updatePromptsState]);
+
+  const handleGitHubLogin = useCallback(async () => {
+    setTimeout(() => {
+      updateCurrentRepoStepField('isLoggedIn', true);
+    }, 1000);
+  }, [updateCurrentRepoStepField]);
+
   return {
     promptsState,
     filteredPrompts: paginatedPrompts,
@@ -200,5 +278,9 @@ export function usePromptsState() {
     setSearchQuery,
     setCurrentPage,
     setSortBy,
+    setRepoFilter,
+    updateCurrentRepoStepField,
+    toggleRepoSelection,
+    handleGitHubLogin,
   };
 }

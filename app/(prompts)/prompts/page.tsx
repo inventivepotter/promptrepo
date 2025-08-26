@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Box,
@@ -10,15 +11,17 @@ import {
   Grid,
   Container,
 } from '@chakra-ui/react';
-import { LuPlus } from 'react-icons/lu';
+import { LuPlus, LuFolderGit } from 'react-icons/lu';
 import { useColorModeValue } from '../../../components/ui/color-mode';
 import { usePromptsState, Prompt } from '../_state/promptState';
 import { PromptSearch } from '../_components/PromptSearch';
 import { PromptCard } from '../_components/PromptCard';
 import { Pagination } from '../_components/Pagination';
+import { RepoModal } from '../_components/RepoModal';
 
 export default function PromptsPage() {
   const router = useRouter();
+  const [isRepoModalOpen, setIsRepoModalOpen] = React.useState(false);
   
   // Theme-aware colors
   const headerBg = useColorModeValue('gray.50', 'gray.900');
@@ -34,7 +37,22 @@ export default function PromptsPage() {
     setSearchQuery,
     setCurrentPage,
     setSortBy,
+    setRepoFilter,
+    updateCurrentRepoStepField,
+    toggleRepoSelection,
+    handleGitHubLogin,
   } = usePromptsState();
+
+  // Get available repositories from prompts
+  const availableRepos = React.useMemo(() => {
+    const repos = new Set<string>();
+    promptsState.prompts.forEach(prompt => {
+      if (prompt.repo?.repoName) {
+        repos.add(prompt.repo.repoName);
+      }
+    });
+    return Array.from(repos).sort();
+  }, [promptsState.prompts]);
 
 
   const handleCreateNew = () => {
@@ -75,15 +93,27 @@ export default function PromptsPage() {
                 Manage and organize your AI prompts
               </Text>
             </VStack>
-            <Button
-              onClick={handleCreateNew}
-              colorPalette="blue"
-            >
-              <HStack gap={2}>
-                <LuPlus size={16} />
-                <Text>New Prompt</Text>
-              </HStack>
-            </Button>
+            <HStack gap={3}>
+              <Button
+                onClick={() => setIsRepoModalOpen(true)}
+                variant="outline"
+                colorPalette="gray"
+              >
+                <HStack gap={2}>
+                  <LuFolderGit size={16} />
+                  <Text>Add Prompt Repo</Text>
+                </HStack>
+              </Button>
+              <Button
+                onClick={handleCreateNew}
+                colorPalette="blue"
+              >
+                <HStack gap={2}>
+                  <LuPlus size={16} />
+                  <Text>New Prompt</Text>
+                </HStack>
+              </Button>
+            </HStack>
           </HStack>
         </Container>
       </Box>
@@ -99,6 +129,9 @@ export default function PromptsPage() {
             sortOrder={promptsState.sortOrder}
             onSortChange={setSortBy}
             totalPrompts={totalPrompts}
+            repoFilter={promptsState.repoFilter}
+            onRepoFilterChange={setRepoFilter}
+            availableRepos={availableRepos}
           />
 
           {/* Prompts grid */}
@@ -156,6 +189,20 @@ export default function PromptsPage() {
           )}
         </VStack>
       </Container>
+
+      {/* Repo Configuration Modal */}
+      <RepoModal
+        isOpen={isRepoModalOpen}
+        onClose={() => setIsRepoModalOpen(false)}
+        isLoggedIn={promptsState.currentRepoStep.isLoggedIn}
+        handleGitHubLogin={handleGitHubLogin}
+        selectedRepo={promptsState.currentRepoStep.selectedRepo}
+        setSelectedRepo={(repo: string) => updateCurrentRepoStepField('selectedRepo', repo)}
+        selectedBranch={promptsState.currentRepoStep.selectedBranch}
+        setSelectedBranch={(branch: string) => updateCurrentRepoStepField('selectedBranch', branch)}
+        selectedRepos={promptsState.selectedRepos}
+        toggleRepoSelection={toggleRepoSelection}
+      />
     </Box>
   );
 }

@@ -9,18 +9,11 @@ export interface SetupData {
     model: string;
     apiKey: string;
   }>;
-  selectedRepos: Array<{
-    repoId: number;
-    branch: string;
-  }>;
   currentStep: {
     step: number;
     selectedProvider: string;
     selectedModel: string;
     apiKey: string;
-    isLoggedIn: boolean;
-    selectedRepo: string;
-    selectedBranch: string;
   };
 }
 
@@ -29,15 +22,11 @@ const defaultSetupData: SetupData = {
   githubClientId: "",
   githubClientSecret: "",
   llmConfigs: [],
-  selectedRepos: [],
   currentStep: {
     step: 1,
     selectedProvider: "",
     selectedModel: "",
     apiKey: "",
-    isLoggedIn: false,
-    selectedRepo: "",
-    selectedBranch: "",
   },
 };
 
@@ -67,8 +56,7 @@ export function useConfigState() {
             typeof parsed.hostingType === "string" &&
             typeof parsed.githubClientId === "string" &&
             typeof parsed.githubClientSecret === "string" &&
-            Array.isArray(parsed.llmConfigs) &&
-            Array.isArray(parsed.selectedRepos);
+            Array.isArray(parsed.llmConfigs);
           
           if (valid) {
             // Clear temporary LLM fields on page load/refresh
@@ -79,8 +67,6 @@ export function useConfigState() {
                 selectedProvider: "",
                 selectedModel: "",
                 apiKey: "",
-                selectedRepo: "",
-                selectedBranch: "",
               }
             };
             setConfigState(restoredState);
@@ -152,39 +138,6 @@ export function useConfigState() {
     }));
   }, [updateConfigState]);
 
-  const toggleRepoSelection = useCallback((repoId: number, branch: string) => {
-    updateConfigState(prev => {
-      const existingIndex = prev.selectedRepos.findIndex(r => r.repoId === repoId);
-      if (existingIndex >= 0) {
-        const existing = prev.selectedRepos[existingIndex];
-        if (existing.branch === branch) {
-          return {
-            ...prev,
-            selectedRepos: prev.selectedRepos.filter(r => r.repoId !== repoId)
-          };
-        } else {
-          return {
-            ...prev,
-            selectedRepos: prev.selectedRepos.map((r, i) =>
-              i === existingIndex ? { ...r, branch } : r
-            )
-          };
-        }
-      } else {
-        return {
-          ...prev,
-          selectedRepos: [...prev.selectedRepos, { repoId, branch }]
-        };
-      }
-    });
-  }, [updateConfigState]);
-
-  const handleGitHubLogin = useCallback(async () => {
-    setTimeout(() => {
-      updateCurrentStepField('isLoggedIn', true);
-    }, 1000);
-  }, [updateCurrentStepField]);
-
   return {
     configState,
     setConfigState: updateConfigState,
@@ -194,7 +147,5 @@ export function useConfigState() {
     updateCurrentStepField,
     addLLMConfig,
     removeLLMConfig,
-    toggleRepoSelection,
-    handleGitHubLogin
   };
 }
