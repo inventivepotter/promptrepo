@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { getPromptsFromPersistance } from '../_lib/getPromptsFromPersistance';
 
 export interface Prompt {
   id: string;
@@ -44,7 +45,7 @@ const defaultPromptsState: PromptsState = {
   currentPrompt: null,
   searchQuery: "",
   currentPage: 1,
-  itemsPerPage: 10,
+  itemsPerPage: 9,
   sortBy: 'updated_at',
   sortOrder: 'desc',
 };
@@ -73,11 +74,25 @@ export function usePromptsState() {
               created_at: new Date(p.created_at),
               updated_at: new Date(p.updated_at),
             }));
-            setPromptsState(prev => ({ ...prev, prompts }));
+            // Merge new prompts from getPrompts if not already present
+            const mockPrompts = getPromptsFromPersistance();
+            const mergedPrompts = [
+              ...prompts,
+              ...mockPrompts.filter(
+                mp => !prompts.some(p => p.id === mp.id)
+              ),
+            ];
+            setPromptsState(prev => ({ ...prev, prompts: mergedPrompts }));
+            persistPrompts(mergedPrompts);
           }
         } catch (error) {
           console.error("Failed to restore prompts data:", error);
         }
+      } else {
+        // If nothing in localStorage, insert all from getPrompts
+        const mockPrompts = getPromptsFromPersistance();
+        setPromptsState(prev => ({ ...prev, prompts: mockPrompts }));
+        persistPrompts(mockPrompts);
       }
       hasRestoredData.current = true;
     }

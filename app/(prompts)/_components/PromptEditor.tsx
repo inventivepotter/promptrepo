@@ -21,7 +21,7 @@ import { FaChevronDown } from 'react-icons/fa';
 import { LuArrowLeft, LuInfo } from 'react-icons/lu';
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { Prompt } from '../_state/promptState';
-import { getModelOptions } from '../_lib/mockData';
+import { getModelOptions } from '../_lib/getConfiguredModels';
 
 interface PromptEditorProps {
   prompt: Prompt | null;

@@ -11,8 +11,9 @@ import {
   createListCollection,
   HStack,
 } from '@chakra-ui/react'
+import { getReposNBranches } from "../_lib/getReposNBranches";
 
-interface Repo {
+export interface Repo {
   id: number
   name: string
   fullName: string
@@ -35,12 +36,6 @@ interface RepoStepProps {
   toggleRepoSelection: (repoId: number, branch: string) => void
 }
 
-export const SAMPLE_REPOS: Repo[] = [
-  { id: 1, name: 'my-project', fullName: 'user/my-project', branches: ['main', 'develop', 'feature/auth'] },
-  { id: 2, name: 'web-app', fullName: 'user/web-app', branches: ['main', 'staging'] },
-  { id: 3, name: 'api-server', fullName: 'user/api-server', branches: ['main', 'v2', 'hotfix'] }
-];
-
 export default function RepoStep({
   isLoggedIn,
   handleGitHubLogin,
@@ -51,7 +46,7 @@ export default function RepoStep({
   selectedRepos,
   toggleRepoSelection
 }: RepoStepProps) {
-  const repos = SAMPLE_REPOS;
+  const repos = getReposNBranches();
   // Force re-render after repo selection to fix conditional rendering
   const [repoChanged, setRepoChanged] = React.useState(false);
 

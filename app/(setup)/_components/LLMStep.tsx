@@ -12,6 +12,7 @@ import {
 } from '@chakra-ui/react'
 import React from "react";
 import { FaChevronDown } from 'react-icons/fa';
+import { getProviderModels } from '../_lib/getProvidersNModels';
 
 interface LLMConfig {
   provider: string
@@ -19,7 +20,7 @@ interface LLMConfig {
   apiKey: string
 }
 
-interface Provider {
+export interface Provider {
   id: string
   name: string
   models: Array<{ id: string; name: string }>
@@ -38,35 +39,6 @@ interface LLMStepProps {
   downloadEnvFile: () => void
 }
 
-export const LLM_PROVIDERS: Provider[] = [
-  {
-    id: 'openai',
-    name: 'OpenAI',
-    models: [
-      { id: 'gpt-4o', name: 'GPT-4o' },
-      { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
-      { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' }
-    ]
-  },
-  {
-    id: 'anthropic',
-    name: 'Anthropic',
-    models: [
-      { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet' },
-      { id: 'claude-3-haiku', name: 'Claude 3 Haiku' }
-    ]
-  },
-  {
-    id: 'google',
-    name: 'Google',
-    models: [
-      { id: 'gemini-pro', name: 'Gemini Pro' },
-      { id: 'gemini-pro-vision', name: 'Gemini Pro Vision' }
-    ]
-  }
-];
-
-
 export default function LLMStep({
   selectedProvider,
   setSelectedProvider,
@@ -78,7 +50,7 @@ export default function LLMStep({
   addLLMConfig,
   removeLLMConfig,
 }: LLMStepProps) {
-  const providers = LLM_PROVIDERS;
+  const providers = getProviderModels();
   // Force re-render after provider selection to fix conditional rendering
 
   return (

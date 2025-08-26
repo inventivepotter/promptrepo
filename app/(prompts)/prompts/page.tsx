@@ -1,6 +1,5 @@
 'use client';
 
-import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Box,
@@ -14,7 +13,6 @@ import {
 import { LuPlus } from 'react-icons/lu';
 import { useColorModeValue } from '../../../components/ui/color-mode';
 import { usePromptsState, Prompt } from '../_state/promptState';
-import { mockPrompts } from '../_lib/mockData';
 import { PromptSearch } from '../_components/PromptSearch';
 import { PromptCard } from '../_components/PromptCard';
 import { Pagination } from '../_components/Pagination';
@@ -40,18 +38,6 @@ export default function PromptsPage() {
     setSortBy,
   } = usePromptsState();
 
-  // Initialize with mock data if no prompts exist
-  useEffect(() => {
-    if (promptsState.prompts.length === 0 && typeof window !== 'undefined') {
-      const existingData = localStorage.getItem('promptsData');
-      if (!existingData) {
-        // Only set mock data if there's nothing in localStorage
-        localStorage.setItem('promptsData', JSON.stringify(mockPrompts));
-        // Force refresh only once
-        window.location.reload();
-      }
-    }
-  }, [promptsState.prompts.length]);
 
   const handleCreateNew = () => {
     const newPrompt = createPrompt();
