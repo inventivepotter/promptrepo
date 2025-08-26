@@ -19,11 +19,11 @@ interface PromptEditorProps {
   prompt: Prompt | null;
   onSave: (updates: Partial<Prompt>) => void;
   onBack: () => void;
-  selectedRepos?: Array<Repo>;
+  configuredRepos?: Array<Repo>;
   isSaving?: boolean;
 }
 
-export function PromptEditor({ prompt, onSave, onBack, selectedRepos = [], isSaving = false }: PromptEditorProps) {
+export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], isSaving = false }: PromptEditorProps) {
   const [formData, setFormData] = React.useState<Partial<Prompt>>({
     name: '',
     description: '',
@@ -153,7 +153,7 @@ export function PromptEditor({ prompt, onSave, onBack, selectedRepos = [], isSav
             {/* Basic Info */}
             <PromptFieldGroup
               formData={formData}
-              selectedRepos={selectedRepos}
+              configuredRepos={configuredRepos}
               showRepoError={showRepoError}
               updateField={updateField}
               updateRepoField={updateRepoField}

@@ -72,7 +72,7 @@ export default function EditorPage() {
           prompt={currentPrompt}
           onSave={handleSave}
           onBack={handleBack}
-          selectedRepos={promptsState.selectedRepos}
+          configuredRepos={promptsState.configuredRepos}
           isSaving={isSaving}
         />
       </Box>

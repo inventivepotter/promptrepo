@@ -11,7 +11,7 @@ import {
   createListCollection,
   HStack,
 } from '@chakra-ui/react'
-import { getReposNBranches } from "../_lib/getReposNBranches";
+import { getAvailableRepos } from "../_lib/getAvailableRepos";
 import { Repo } from "@/types/Repo";
 
 interface ReposProps {
@@ -21,7 +21,7 @@ interface ReposProps {
   setSelectedRepo: (id: string) => void
   selectedBranch: string
   setSelectedBranch: (branch: string) => void
-  selectedRepos: Repo[]
+  configuredRepos: Repo[]
   toggleRepoSelection: (id: string, branch: string, name: string) => void
 }
 
@@ -32,10 +32,10 @@ export default function Repos({
   setSelectedRepo,
   selectedBranch,
   setSelectedBranch,
-  selectedRepos,
+  configuredRepos,
   toggleRepoSelection
 }: ReposProps) {
-  const repos = getReposNBranches();
+  const repos = getAvailableRepos();
   // Force re-render after repo selection to fix conditional rendering
   const [repoChanged, setRepoChanged] = React.useState(false);
 
@@ -168,11 +168,11 @@ export default function Repos({
                 </Button>
               </VStack>
             </Box>
-            {selectedRepos.length > 0 && (
+            {configuredRepos.length > 0 && (
               <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.muted" width="100%">
                 <Text fontWeight="bold" mb={4}>Selected Repositories</Text>
                 <VStack gap={2}>
-                  {selectedRepos.map((selected, index) => {
+                  {configuredRepos.map((selected, index) => {
                     const repo = repos.find(r => r.id === selected.id)
                     return (
                       <HStack key={index} justify="space-between" width="100%" p={2} bg="bg.subtle" borderRadius="md">

@@ -9,7 +9,7 @@ export interface PromptsState {
   itemsPerPage: number;
   sortBy: 'name' | 'updated_at';
   sortOrder: 'asc' | 'desc';
-  selectedRepos: Array<Repo>;
+  configuredRepos: Array<Repo>;
   repoFilter: string;
   currentRepoStep: {
     isLoggedIn: boolean;

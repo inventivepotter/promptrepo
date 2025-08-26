@@ -17,7 +17,7 @@ import { Prompt } from '@/types/Prompt';
 
 interface PromptFieldGroupProps {
   formData: Partial<Prompt>;
-  selectedRepos: Array<Repo>;
+  configuredRepos: Array<Repo>;
   showRepoError: boolean;
   updateField: (field: keyof Prompt, value: string | number | boolean) => void;
   updateRepoField: (repo: Repo | undefined) => void;
@@ -25,7 +25,7 @@ interface PromptFieldGroupProps {
 
 export function PromptFieldGroup({
   formData,
-  selectedRepos,
+  configuredRepos,
   showRepoError,
   updateField,
   updateRepoField
@@ -33,7 +33,7 @@ export function PromptFieldGroup({
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
 
   // Check if current repo exists and matches one of the available repos
-  const isRepoDisabled = Boolean(formData.repo?.id && selectedRepos.some(repo => repo.id === formData.repo?.id));
+  const isRepoDisabled = Boolean(formData.repo?.id && configuredRepos.some(repo => repo.id === formData.repo?.id));
 
   return (
     <Box>
@@ -54,7 +54,7 @@ export function PromptFieldGroup({
 
         <Combobox.Root
           collection={createListCollection({
-            items: selectedRepos.map(repo => ({
+            items: configuredRepos.map(repo => ({
               label: repo.name,
               value: repo.id
             }))
@@ -62,7 +62,7 @@ export function PromptFieldGroup({
           value={formData.repo?.id ? [formData.repo.id] : []}
           onValueChange={(e) => {
             const id = e.value[0] || '0';
-            const selectedRepo = selectedRepos.find(r => r.id === id);
+            const selectedRepo = configuredRepos.find(r => r.id === id);
             if (selectedRepo) {
               updateRepoField({
                 id: selectedRepo.id,
@@ -78,7 +78,7 @@ export function PromptFieldGroup({
         >
           <Combobox.Control position="relative">
             <Combobox.Input
-              placeholder={selectedRepos.length > 0 ? "Select repository" : "No repositories configured"}
+              placeholder={configuredRepos.length > 0 ? "Select repository" : "No repositories configured"}
               paddingRight="2rem"
             />
             <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
@@ -87,7 +87,7 @@ export function PromptFieldGroup({
           </Combobox.Control>
           <Combobox.Positioner>
             <Combobox.Content>
-              {selectedRepos.map(repo => (
+              {configuredRepos.map(repo => (
                 <Combobox.Item key={repo.id} item={repo.id.toString()}>
                   <Combobox.ItemText>{repo.name}</Combobox.ItemText>
                   <Combobox.ItemIndicator />

@@ -157,7 +157,7 @@ export default function PromptsPage() {
         setSelectedRepo={(repo: string) => updateCurrentRepoStepField('selectedRepo', repo)}
         selectedBranch={promptsState.currentRepoStep.selectedBranch}
         setSelectedBranch={(branch: string) => updateCurrentRepoStepField('selectedBranch', branch)}
-        selectedRepos={promptsState.selectedRepos}
+        configuredRepos={promptsState.configuredRepos}
         toggleRepoSelection={toggleRepoSelection}
       />
     </VStack>

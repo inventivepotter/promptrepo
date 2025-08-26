@@ -20,7 +20,7 @@ interface RepoModalProps {
   setSelectedRepo: (id: string) => void;
   selectedBranch: string;
   setSelectedBranch: (branch: string) => void;
-  selectedRepos: Array<Repo>;
+  configuredRepos: Array<Repo>;
   toggleRepoSelection: (id: string, branch: string, name: string) => void;
 }
 
@@ -33,7 +33,7 @@ export function RepoModal({
   setSelectedRepo,
   selectedBranch,
   setSelectedBranch,
-  selectedRepos,
+  configuredRepos,
   toggleRepoSelection
 }: RepoModalProps) {
   if (!isOpen) return null;
@@ -92,7 +92,7 @@ export function RepoModal({
               setSelectedRepo={setSelectedRepo}
               selectedBranch={selectedBranch}
               setSelectedBranch={setSelectedBranch}
-              selectedRepos={selectedRepos}
+              configuredRepos={configuredRepos}
               toggleRepoSelection={toggleRepoSelection}
             />
           </Box>

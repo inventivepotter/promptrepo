@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { getPromptsFromPersistance } from '../_lib/getPromptsFromPersistance';
+import { getConfiguredRepos } from '../_lib/getConfiguredRepos';
 import { PromptsState } from '../_types/state';
 import { Prompt } from '@/types/Prompt';
-import { Repo } from '@/types/Repo';
+import { LOCAL_STORAGE_KEYS } from '../_lib/localStorageConstants';
 
 // Re-export types for backward compatibility
 export type { PromptsState } from '../_types/state';
@@ -28,7 +29,7 @@ const defaultPromptsState: PromptsState = {
   itemsPerPage: 9,
   sortBy: 'updated_at',
   sortOrder: 'desc',
-  selectedRepos: [],
+  configuredRepos: [],
   repoFilter: "",
   currentRepoStep: {
     isLoggedIn: false,
@@ -40,30 +41,60 @@ const defaultPromptsState: PromptsState = {
 // Persistence helper
 const persistPrompts = (prompts: Prompt[]) => {
   if (typeof window !== "undefined") {
-    window.localStorage.setItem("promptsData", JSON.stringify(prompts));
+    window.localStorage.setItem(LOCAL_STORAGE_KEYS.PROMPTS_DATA, JSON.stringify(prompts));
   }
 };
 
-// Persistence helper for selected repos
-const persistSelectedRepos = (selectedRepos: PromptsState['selectedRepos']) => {
+// Cache selected repos to localStorage for fallback (primary source is now API via getConfiguredRepos)
+const persistSelectedRepos = (configuredRepos: PromptsState['configuredRepos']) => {
   if (typeof window !== "undefined") {
-    window.localStorage.setItem("selectedRepos", JSON.stringify(selectedRepos));
+    window.localStorage.setItem(LOCAL_STORAGE_KEYS.CONFIGURED_REPOS, JSON.stringify(configuredRepos));
   }
 };
 
-// Load selected repos from localStorage
-const loadSelectedRepos = (): PromptsState['selectedRepos'] => {
-  if (typeof window !== "undefined") {
-    const saved = window.localStorage.getItem("selectedRepos");
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (error) {
-        console.error("Failed to restore selected repos:", error);
+// Load configured repos from localStorage with API fallback
+const loadSelectedRepos = async (): Promise<PromptsState['configuredRepos']> => {
+  try {
+    // First check localStorage for existing configured repos
+    if (typeof window !== "undefined") {
+      const saved = window.localStorage.getItem(LOCAL_STORAGE_KEYS.CONFIGURED_REPOS);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          // Validate that we have an array of repos
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        } catch (parseError) {
+          console.error("Failed to parse selected repos from localStorage:", parseError);
+        }
       }
     }
+    
+    // If no valid data in localStorage, try to get from API
+    const configuredRepos = await getConfiguredRepos();
+    
+    // Update localStorage cache with fresh API data
+    if (typeof window !== "undefined" && configuredRepos.length > 0) {
+      window.localStorage.setItem(LOCAL_STORAGE_KEYS.CONFIGURED_REPOS, JSON.stringify(configuredRepos));
+    }
+    return configuredRepos;
+  } catch (error) {
+    console.error("Failed to load configured repos from API, falling back to localStorage:", error);
+    
+    // Fallback to localStorage if API call fails
+    if (typeof window !== "undefined") {
+      const saved = window.localStorage.getItem(LOCAL_STORAGE_KEYS.CONFIGURED_REPOS);
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (parseError) {
+          console.error("Failed to parse selected repos from localStorage:", parseError);
+        }
+      }
+    }
+    return [];
   }
-  return [];
 };
 
 export function usePromptsState() {
@@ -72,46 +103,66 @@ export function usePromptsState() {
 
   useEffect(() => {
     if (!hasRestoredData.current && typeof window !== "undefined") {
-      // Load prompts from localStorage
-      const saved = window.localStorage.getItem("promptsData");
-      if (saved) {
+      // Initialize data loading
+      const initializeData = async () => {
         try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
-            // Convert date strings back to Date objects
-            const prompts = parsed.map(p => ({
-              ...p,
-              created_at: new Date(p.created_at),
-              updated_at: new Date(p.updated_at),
-            }));
-            // Merge new prompts from getPrompts if not already present
+          // Load configured repos from API
+          const configuredRepos = await loadSelectedRepos();
+          
+          // Load prompts from localStorage
+          const saved = window.localStorage.getItem(LOCAL_STORAGE_KEYS.PROMPTS_DATA);
+          if (saved) {
+            try {
+              const parsed = JSON.parse(saved);
+              if (Array.isArray(parsed)) {
+                // Convert date strings back to Date objects
+                const prompts = parsed.map(p => ({
+                  ...p,
+                  created_at: new Date(p.created_at),
+                  updated_at: new Date(p.updated_at),
+                }));
+                // Merge new prompts from getPrompts if not already present
+                const mockPrompts = getPromptsFromPersistance();
+                const mergedPrompts = [
+                  ...prompts,
+                  ...mockPrompts.filter(
+                    mp => !prompts.some(p => p.id === mp.id)
+                  ),
+                ];
+                setPromptsState(prev => ({
+                  ...prev,
+                  prompts: mergedPrompts,
+                  configuredRepos: configuredRepos // Use repos from API
+                }));
+                persistPrompts(mergedPrompts);
+              }
+            } catch (error) {
+              console.error("Failed to restore prompts data:", error);
+            }
+          } else {
+            // If nothing in localStorage, insert all from getPrompts
             const mockPrompts = getPromptsFromPersistance();
-            const mergedPrompts = [
-              ...prompts,
-              ...mockPrompts.filter(
-                mp => !prompts.some(p => p.id === mp.id)
-              ),
-            ];
             setPromptsState(prev => ({
               ...prev,
-              prompts: mergedPrompts,
-              selectedRepos: loadSelectedRepos() // Load saved repos
+              prompts: mockPrompts,
+              configuredRepos: configuredRepos // Use repos from API
             }));
-            persistPrompts(mergedPrompts);
+            persistPrompts(mockPrompts);
           }
         } catch (error) {
-          console.error("Failed to restore prompts data:", error);
+          console.error("Failed to initialize data:", error);
+          // Continue with default empty configuredRepos if everything fails
+          const mockPrompts = getPromptsFromPersistance();
+          setPromptsState(prev => ({
+            ...prev,
+            prompts: mockPrompts,
+            configuredRepos: []
+          }));
+          persistPrompts(mockPrompts);
         }
-      } else {
-        // If nothing in localStorage, insert all from getPrompts
-        const mockPrompts = getPromptsFromPersistance();
-        setPromptsState(prev => ({
-          ...prev,
-          prompts: mockPrompts,
-          selectedRepos: loadSelectedRepos() // Load saved repos
-        }));
-        persistPrompts(mockPrompts);
-      }
+      };
+      
+      initializeData();
       hasRestoredData.current = true;
     }
   }, []);
@@ -231,20 +282,20 @@ export function usePromptsState() {
 
   const toggleRepoSelection = useCallback((id: string, base_branch: string, name: string) => {
     updatePromptsState(prev => {
-      const existingIndex = prev.selectedRepos.findIndex(r => r.id === id);
+      const existingIndex = prev.configuredRepos.findIndex(r => r.id === id);
       let newSelectedRepos;
       
       if (existingIndex >= 0) {
-        const existing = prev.selectedRepos[existingIndex];
+        const existing = prev.configuredRepos[existingIndex];
         if (existing.base_branch === base_branch) {
-          newSelectedRepos = prev.selectedRepos.filter(r => r.id !== id);
+          newSelectedRepos = prev.configuredRepos.filter(r => r.id !== id);
         } else {
-          newSelectedRepos = prev.selectedRepos.map((r, i) =>
+          newSelectedRepos = prev.configuredRepos.map((r, i) =>
             i === existingIndex ? { ...r, base_branch: base_branch } : r
           );
         }
       } else {
-        newSelectedRepos = [...prev.selectedRepos, { id, base_branch, name }];
+        newSelectedRepos = [...prev.configuredRepos, { id, base_branch, name }];
       }
       
       // Persist the updated selected repos
@@ -252,7 +303,7 @@ export function usePromptsState() {
       
       return {
         ...prev,
-        selectedRepos: newSelectedRepos
+        configuredRepos: newSelectedRepos
       };
     });
   }, [updatePromptsState]);
