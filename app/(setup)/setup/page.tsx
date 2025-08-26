@@ -1,6 +1,6 @@
 "use client"
 
-import { Container, VStack, Box } from '@chakra-ui/react'
+import { Container, VStack } from '@chakra-ui/react'
 import HostingStep from '../_components/HostingStep'
 import AuthStep from '../_components/AuthStep'
 import LLMStep from '../_components/LLMStep'

@@ -8,6 +8,7 @@ import HostingStep from '../_components/HostingStep'
 import AuthStep from '../_components/AuthStep'
 import LLMStep from '../_components/LLMStep'
 import Configurations from '../_components/Configurations'
+import { postConfigData } from "../_lib/postConfigData"
 
 
 export default function InterviewPage() {
@@ -227,7 +228,8 @@ export default function InterviewPage() {
         ) : (
           <Button
             onClick={() => {
-              // Setup complete
+              // Setup complete - use optimized version with current state
+              postConfigData(configState);
             }}
           >
             Complete Setup
