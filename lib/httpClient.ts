@@ -1,5 +1,4 @@
 import { ApiResponse, ApiResult, HttpMethod, RequestConfig } from '@/types/ApiResponse';
-import logger, { createRequestId } from '@/lib/logger';
 
 interface HttpClientConfig {
   baseUrl?: string;
@@ -35,14 +34,8 @@ class HttpClient {
     data?: unknown,
     config?: RequestConfig
   ): Promise<ApiResult<T>> {
-    const requestId = createRequestId();
-    const startTime = Date.now();
-    
     try {
       const url = `${this.baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
-      
-      logger.info({ method, url, endpoint, requestId, component: 'HttpClient' }, 'HTTP request started');
-      
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
@@ -62,7 +55,6 @@ class HttpClient {
       const response = await fetch(url, requestConfig);
       clearTimeout(timeoutId);
       
-      const duration = Date.now() - startTime;
       const statusCode = response.status;
 
       let responseData: ApiResponse<T>;
@@ -80,31 +72,12 @@ class HttpClient {
       }
 
       if (response.ok && responseData.success !== false) {
-        logger.info({
-          method,
-          url,
-          statusCode,
-          duration,
-          requestId,
-          component: 'HttpClient'
-        }, 'HTTP request completed successfully');
-        
         return {
           success: true,
           data: responseData.data || responseData as T,
           message: responseData.message
         };
       } else {
-        logger.warn({
-          method,
-          url,
-          statusCode,
-          duration,
-          error: responseData.error,
-          requestId,
-          component: 'HttpClient'
-        }, 'HTTP request completed with error');
-        
         return {
           success: false,
           error: responseData.error || `HTTP ${response.status}: ${response.statusText}`,
@@ -113,11 +86,8 @@ class HttpClient {
         };
       }
     } catch (error) {
-      const duration = Date.now() - startTime;
-      
       // Handle AbortError specifically
       if (error instanceof Error && error.name === 'AbortError') {
-        logger.warn({ method, endpoint, duration, error: 'timeout', requestId, component: 'HttpClient' }, 'HTTP request timed out');
         return {
           success: false,
           error: 'Request timeout',
@@ -129,16 +99,7 @@ class HttpClient {
       // Handle all other errors with proper error handling
       const errorMessage = error instanceof Error ? error.message :
                           (error ? String(error) : 'Unknown error occurred');
-      
-      logger.error({
-        method,
-        endpoint,
-        duration,
-        error: errorMessage,
-        requestId,
-        component: 'HttpClient'
-      }, 'HTTP request failed');
-      
+
       return {
         success: false,
         error: errorMessage,

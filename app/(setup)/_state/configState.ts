@@ -25,7 +25,6 @@ export function useConfigState() {
   useEffect(() => {
       const loadConfigFromBackend = async () => {
         try {
-          console.log('Loading config from backend...');
           const config = await fetchConfigFromBackend();
           const cleanedState: ConfigState = {
             config,
@@ -40,7 +39,6 @@ export function useConfigState() {
 
           setConfigState(cleanedState);
         } catch (error) {
-          console.error('Failed to load config from backend, using defaults:', error);
           setConfigState(defaultSetupData);
         } finally {
           hasRestoredSetupData.current = true;

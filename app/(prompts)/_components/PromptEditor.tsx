@@ -4,26 +4,26 @@ import React from 'react';
 import {
   Box,
   VStack,
-  createListCollection,
 } from '@chakra-ui/react';
 import { Prompt } from '@/types/Prompt';
-import { getModelOptions } from '../_lib/getConfiguredModels';
 import { Repo } from '@/types/Repo';
 import { PromptEditorHeader } from './PromptEditorHeader';
 import { PromptFieldGroup } from './PromptFieldGroup';
 import { ModelFieldGroup } from './ModelFieldGroup';
 import { ParametersFieldGroup } from './ParametersFieldGroup';
 import { EnableThinkingFieldGroup } from './EnableThinkingFieldGroup';
+import { LLMProvider } from '@/types/LLMProvider';
 
 interface PromptEditorProps {
   prompt: Prompt | null;
   onSave: (updates: Partial<Prompt>) => void;
   onBack: () => void;
   configuredRepos?: Array<Repo>;
+  configuredModels?: Array<LLMProvider>;
   isSaving?: boolean;
 }
 
-export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], isSaving = false }: PromptEditorProps) {
+export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], configuredModels = [], isSaving = false }: PromptEditorProps) {
   const [formData, setFormData] = React.useState<Partial<Prompt>>({
     name: '',
     description: '',
@@ -39,11 +39,7 @@ export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], isS
   
   const [showRepoError, setShowRepoError] = React.useState(false);
 
-
-  const modelOptions = getModelOptions();
-  const modelCollection = createListCollection({
-    items: modelOptions
-  });
+  
 
   // Initialize and update form data when prompt changes
   React.useEffect(() => {
@@ -162,7 +158,7 @@ export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], isS
             {/* Model Configuration */}
             <ModelFieldGroup
               formData={formData}
-              modelCollection={modelCollection}
+              configuredModels={configuredModels}
               updateField={updateField}
             />
 

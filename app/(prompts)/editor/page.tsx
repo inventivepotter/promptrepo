@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Box } from '@chakra-ui/react';
 import { Prompt } from '@/types/Prompt';
-import { usePromptsState } from '../_state/promptState';
+import { usePromptsState } from "../_state/promptState";
 import { PromptEditor } from '../_components/PromptEditor';
 import { updatePromptInPersistance } from '../_lib/updatePromptInPersistance';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
@@ -46,9 +46,8 @@ export default function EditorPage() {
         // First try to save to backend
         await updatePromptInPersistance(updates);
         // Only update localStorage if backend save was successful
-        updatePrompt(currentPrompt.id, updates, true);
+        updatePrompt(currentPrompt.id, updates);
       } catch (error) {
-        console.error('Failed to save prompt:', error);
         // Handle error (could add toast notification here)
       } finally {
         setIsSaving(false);
@@ -73,6 +72,7 @@ export default function EditorPage() {
           onSave={handleSave}
           onBack={handleBack}
           configuredRepos={promptsState.configuredRepos}
+          configuredModels={promptsState.configuredModels}
           isSaving={isSaving}
         />
       </Box>

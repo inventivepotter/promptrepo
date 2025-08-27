@@ -11,8 +11,6 @@ export const fetchConfigFromBackend = async (): Promise<Configuration> => {
     // TODO: Fetch config from backend API
     return fetchMockConfigData();
   } catch (error) {
-    console.error('Error fetching config from backend:', error);
-    
     // Return default data as fallback
     return {
         hostingType: "",

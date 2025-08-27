@@ -12,7 +12,7 @@ import {
 } from '@chakra-ui/react'
 import React from "react";
 import { FaChevronDown } from 'react-icons/fa';
-import { getProviderModels } from '../_lib/getProvidersNModels';
+import { getAvailableModels } from '../_lib/getAvailableModels';
 import { LLMConfig } from "@/types/Configuration";
 import { LLMProvider } from "@/types/LLMProvider";
 
@@ -42,7 +42,7 @@ export default function LLMStep({
   removeLLMConfig,
   disabled = false,
 }: LLMStepProps) {
-  const providers: LLMProvider[] = getProviderModels();
+  const providers: LLMProvider[] = getAvailableModels();
 
   return (
     <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.emphasized">

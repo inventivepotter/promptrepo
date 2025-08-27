@@ -19,8 +19,6 @@ export const postConfigData = async (config: Configuration): Promise<PostConfigD
       message: 'Configuration saved successfully',
     };
   } catch (error) {
-    console.error('Error posting configuration data:', error);
-    
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to post configuration data',

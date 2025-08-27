@@ -1,21 +1,11 @@
 import httpClient from '@/lib/httpClient';
 import type { Prompt } from '@/types/Prompt';
-import type { ApiResult } from '@/types/ApiResponse';
+import type { ApiResult, ApiResponse } from '@/types/ApiResponse';
 
 export const promptsApi = {
   // Get all prompts
-  getPrompts: async (): Promise<Prompt[]> => {
-    const result = await httpClient.get<Prompt[]>('/v0/prompts');
-    
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to fetch prompts');
-    }
-    
-    return result.data.map(p => ({
-      ...p,
-      created_at: new Date(p.created_at),
-      updated_at: new Date(p.updated_at)
-    }));
+  getPrompts: async (): Promise<ApiResponse<Prompt[]>> => {
+    return await httpClient.get<Prompt[]>('/v0/prompts');
   },
 
   // Update a prompt

@@ -1,6 +1,7 @@
 import { Provider } from "@/components/ui/provider"
 import { Box, Stack } from "@chakra-ui/react"
 import { Sidebar } from "@/components/Sidebar"
+import { Toaster } from "@/components/ui/toaster"
 
 export default function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props
@@ -14,6 +15,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
               {children}
             </Box>
           </Stack>
+          <Toaster />
         </Provider>
       </body>
     </html>

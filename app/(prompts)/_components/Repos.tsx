@@ -87,8 +87,6 @@ export default function Repos({
                     })}
                     value={[selectedRepo]}
                     onValueChange={(e) => {
-                      // Debug: log event and value
-                      console.log('Repo Combobox onValueChange', e);
                       setSelectedRepo(e.value?.[0] || '');
                       setRepoChanged(true);
                       if (selectedRepo !== e.value?.[0]) {

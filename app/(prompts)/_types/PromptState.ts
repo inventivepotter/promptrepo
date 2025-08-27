@@ -1,3 +1,4 @@
+import { LLMProvider } from '@/types/LLMProvider';
 import { Prompt } from '@/types/Prompt';
 import { Repo } from "@/types/Repo";
 
@@ -10,6 +11,7 @@ export interface PromptsState {
   sortBy: 'name' | 'updated_at';
   sortOrder: 'asc' | 'desc';
   configuredRepos: Array<Repo>;
+  configuredModels: Array<LLMProvider>;
   repoFilter: string;
   currentRepoStep: {
     isLoggedIn: boolean;

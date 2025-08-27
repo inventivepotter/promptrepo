@@ -12,21 +12,20 @@ import {
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaChevronDown } from 'react-icons/fa';
 import { LuInfo } from 'react-icons/lu';
-import { useColorModeValue } from '@/components/ui/color-mode';
 import { Prompt } from '@/types/Prompt';
+import { LLMProvider } from '@/types/LLMProvider';
 
 interface ModelFieldGroupProps {
   formData: Partial<Prompt>;
-  modelCollection: ReturnType<typeof createListCollection<{ value: string; label: string }>>;
+  configuredModels: Array<LLMProvider>;
   updateField: (field: keyof Prompt, value: string | number | boolean) => void;
 }
 
 export function ModelFieldGroup({
   formData,
-  modelCollection,
+  configuredModels,
   updateField
 }: ModelFieldGroupProps) {
-  const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
 
   return (
     <Box opacity={!formData.repo ? 0.5 : 1}>
@@ -45,7 +44,12 @@ export function ModelFieldGroup({
               </Tooltip>
             </HStack>
             <Combobox.Root
-              collection={modelCollection}
+              collection={createListCollection({
+                items: configuredModels.map(model => ({
+                  value: model.id + '/' + (model.models?.[0]?.id || ''),
+                  label: model.name + ` (${model.name})`
+                }))
+              })}
               value={[formData.model || '']}
               onValueChange={(e) => updateField('model', e.value[0] || '')}
               openOnClick
@@ -61,7 +65,12 @@ export function ModelFieldGroup({
               </Combobox.Control>
               <Combobox.Positioner>
                 <Combobox.Content>
-                  {modelCollection.items.map((option) => (
+                  {createListCollection({
+                    items: configuredModels.map(model => ({
+                      value: model.id + '/' + (model.models?.[0]?.id || ''),
+                      label: model.name + ` (${model.name})`
+                    }))
+                  }).items.map((option) => (
                     <Combobox.Item key={option.value} item={option.value}>
                       <Combobox.ItemText>{option.label}</Combobox.ItemText>
                       <Combobox.ItemIndicator />
@@ -82,7 +91,12 @@ export function ModelFieldGroup({
               </Tooltip>
             </HStack>
             <Combobox.Root
-              collection={modelCollection}
+              collection={createListCollection({
+                items: configuredModels.map(model => ({
+                  value: model.id + '/' + (model.models?.[0]?.id || ''),
+                  label: model.name + ` (${model.name})`
+                }))
+              })}
               value={[formData.failover_model || '']}
               onValueChange={(e) => updateField('failover_model', e.value[0] || '')}
               openOnClick
@@ -98,7 +112,12 @@ export function ModelFieldGroup({
               </Combobox.Control>
               <Combobox.Positioner>
                 <Combobox.Content>
-                  {modelCollection.items.map((option) => (
+                  {createListCollection({
+                    items: configuredModels.map(model => ({
+                      value: model.id + '/' + (model.models?.[0]?.id || ''),
+                      label: model.name + ` (${model.name})`
+                    }))
+                  }).items.map((option) => (
                     <Combobox.Item key={option.value} item={option.value}>
                       <Combobox.ItemText>{option.label}</Combobox.ItemText>
                       <Combobox.ItemIndicator />

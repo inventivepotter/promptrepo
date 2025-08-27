@@ -13,7 +13,7 @@ import {
 } from '@chakra-ui/react';
 import { LuPlus } from 'react-icons/lu';
 import { Prompt } from '@/types/Prompt';
-import { usePromptsState } from '../_state/promptState';
+import { usePromptsState } from "../_state/promptState";
 import { PromptSearch } from '../_components/PromptSearch';
 import { PromptCard } from '../_components/PromptCard';
 import { Pagination } from '../_components/Pagination';

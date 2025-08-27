@@ -26,7 +26,6 @@ export default function SetupPage() {
     try {
       await postConfigData(configState.config);
     } catch (error) {
-      console.error('Failed to persist config to backend:', error);
     } finally {
       setIsLoading(false);
     }
