@@ -1,0 +1,12 @@
+{
+  "user": {
+    "id": "12345678",
+    "login": "johndev",
+    "name": "John Developer", 
+    "email": "john@example.com",
+    "avatar_url": "https://avatars.githubusercontent.com/u/12345678?v=4",
+    "html_url": "https://github.com/johndev",
+    "created_at": "2020-01-15T10:00:00Z",
+    "updated_at": "2024-01-27T10:00:00Z"
+  }
+}

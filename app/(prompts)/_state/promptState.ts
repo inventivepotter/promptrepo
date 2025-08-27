@@ -7,11 +7,12 @@ import { loadPrompts, persistPromptsToBrowserStorage } from './loadPrompts';
 import { useManagePrompts } from './managePrompt';
 import { useManagePromptsList } from './managePromptsList';
 import { useManageRepoConfiguration } from './manageRepoConfiguration';
-import { useHandleGithubLogin } from './handleGithubLogin';
+import { useAuth } from '../../(auth)/_components/AuthProvider';
 
 export function usePromptsState() {
   const [promptsState, setPromptsState] = useState<PromptsState>(defaultPromptsState);
   const hasRestoredData = useRef(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!hasRestoredData.current && typeof window !== "undefined") {
@@ -19,7 +20,8 @@ export function usePromptsState() {
       const initializeData = async () => {
         try {
           // Load configured repos and models from localStorage with API fallback
-          const configuredRepos = await loadConfiguredRepos();
+          // Pass userId if user is authenticated
+          const configuredRepos = await loadConfiguredRepos(user?.id);
           const configuredModels = await loadConfiguredModels();
           const prompts = await loadPrompts();
 
@@ -37,7 +39,7 @@ export function usePromptsState() {
       initializeData();
       hasRestoredData.current = true;
     }
-  }, []);
+  }, [user?.id]);
 
   const updatePromptsState = useCallback((updater: PromptsState | ((prev: PromptsState) => PromptsState), shouldPersist: boolean = false) => {
     setPromptsState(prev => {
@@ -53,7 +55,6 @@ export function usePromptsState() {
   const promptManagement = useManagePrompts(updatePromptsState, defaultPrompt);
   const promptsListManagement = useManagePromptsList(promptsState, updatePromptsState);
   const repoConfigurationManagement = useManageRepoConfiguration(updatePromptsState);
-  const githubLoginManagement = useHandleGithubLogin(repoConfigurationManagement.updateCurrentRepoStepField);
 
   return {
     promptsState,
@@ -64,7 +65,6 @@ export function usePromptsState() {
     ...promptManagement,
     ...promptsListManagement.functions,
     ...repoConfigurationManagement,
-    ...githubLoginManagement,
   };
 }
 

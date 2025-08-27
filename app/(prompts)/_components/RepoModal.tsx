@@ -14,8 +14,6 @@ import { Repo } from '@/types/Repo';
 interface RepoModalProps {
   isOpen: boolean;
   onClose: () => void;
-  isLoggedIn: boolean;
-  handleGitHubLogin: () => void;
   selectedRepo: string;
   setSelectedRepo: (id: string) => void;
   selectedBranch: string;
@@ -27,8 +25,6 @@ interface RepoModalProps {
 export function RepoModal({
   isOpen,
   onClose,
-  isLoggedIn,
-  handleGitHubLogin,
   selectedRepo,
   setSelectedRepo,
   selectedBranch,
@@ -86,8 +82,6 @@ export function RepoModal({
           
           <Box p={6}>
             <Repos
-              isLoggedIn={isLoggedIn}
-              handleGitHubLogin={handleGitHubLogin}
               selectedRepo={selectedRepo}
               setSelectedRepo={setSelectedRepo}
               selectedBranch={selectedBranch}

@@ -4,9 +4,9 @@ import { reposApi } from './api/reposApi';
 import { errorNotification } from '@/lib/notifications';
 import { ApiResponse } from "@/types/ApiResponse";
 
-export async function getConfiguredRepos(): Promise<Repo[]> {
+export async function getConfiguredRepos(userId?: string): Promise<Repo[]> {
   try {
-    const result: ApiResponse<Repo[]> = await reposApi.getConfiguredRepos();
+    const result: ApiResponse<Repo[]> = await reposApi.getConfiguredRepos(userId);
     
     if (!result.success) {
       

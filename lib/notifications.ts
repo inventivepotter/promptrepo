@@ -10,7 +10,7 @@ export const createNotification = (options: NotificationOptions): void => {
     description: options.description,
     type: options.status,
     duration: options.duration || 5000,
-    isClosable: options.isClosable !== false,
+    closable: options.isClosable !== false,
   };
   
   toaster.create(notificationConfig);

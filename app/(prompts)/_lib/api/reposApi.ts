@@ -9,8 +9,9 @@ export const reposApi = {
   },
 
   // Get configured repositories
-  getConfiguredRepos: async (): Promise<ApiResponse<Repo[]>> => {
-    return await httpClient.get<Repo[]>('/v0/repos/configured');
+  getConfiguredRepos: async (userId?: string): Promise<ApiResponse<Repo[]>> => {
+    const endpoint = userId ? `/v0/repos/configured?userId=${userId}` : '/v0/repos/configured';
+    return await httpClient.get<Repo[]>(endpoint);
   },
 
   // Configure a new repository

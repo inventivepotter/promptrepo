@@ -33,14 +33,14 @@ export const getConfiguredReposFromBrowserStorage = (): PromptsState['configured
   return [];
 };
 
-export const loadConfiguredRepos = async (): Promise<PromptsState['configuredRepos']> => {
+export const loadConfiguredRepos = async (userId?: string): Promise<PromptsState['configuredRepos']> => {
   try {
     const localRepos = getConfiguredReposFromBrowserStorage();
     if (localRepos && localRepos.length > 0) {
       return localRepos;
     }
 
-    const apiRepos = await getConfiguredRepos();
+    const apiRepos = await getConfiguredRepos(userId);
 
     if (apiRepos.length > 0) {
       persistConfiguredReposToBrowserStorage(apiRepos);

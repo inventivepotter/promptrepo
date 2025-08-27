@@ -38,7 +38,6 @@ export default function PromptsPage() {
     setRepoFilter,
     updateCurrentRepoStepField,
     toggleRepoSelection,
-    handleGitHubLogin,
   } = usePromptsState();
 
   // Get available repositories from prompts
@@ -151,8 +150,6 @@ export default function PromptsPage() {
       <RepoModal
         isOpen={isRepoModalOpen}
         onClose={() => setIsRepoModalOpen(false)}
-        isLoggedIn={promptsState.currentRepoStep.isLoggedIn}
-        handleGitHubLogin={handleGitHubLogin}
         selectedRepo={promptsState.currentRepoStep.selectedRepo}
         setSelectedRepo={(repo: string) => updateCurrentRepoStepField('selectedRepo', repo)}
         selectedBranch={promptsState.currentRepoStep.selectedBranch}

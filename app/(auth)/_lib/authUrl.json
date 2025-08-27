@@ -1,0 +1,3 @@
+{
+  "authUrl": "https://github.com/login/oauth/authorize?client_id=mock_client_id&scope=repo,user:email&state=mock_state"
+}

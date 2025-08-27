@@ -13,10 +13,9 @@ import {
 } from '@chakra-ui/react'
 import { getAvailableRepos } from "../_lib/getAvailableRepos";
 import { Repo } from "@/types/Repo";
+import { useAuth } from "../../(auth)/_components/AuthProvider";
 
 interface ReposProps {
-  isLoggedIn: boolean
-  handleGitHubLogin: () => void
   selectedRepo: string
   setSelectedRepo: (id: string) => void
   selectedBranch: string
@@ -26,8 +25,6 @@ interface ReposProps {
 }
 
 export default function Repos({
-  isLoggedIn,
-  handleGitHubLogin,
   selectedRepo,
   setSelectedRepo,
   selectedBranch,
@@ -35,6 +32,7 @@ export default function Repos({
   configuredRepos,
   toggleRepoSelection
 }: ReposProps) {
+  const { isAuthenticated, user, login } = useAuth();
   const repos = getAvailableRepos();
   // Force re-render after repo selection to fix conditional rendering
   const [repoChanged, setRepoChanged] = React.useState(false);
@@ -49,33 +47,35 @@ export default function Repos({
         <Text fontSize="sm" opacity={0.7} mb={2}>
           Select repositories and branches to associate with prompts.
         </Text>
-        {!isLoggedIn ? (
+        {!isAuthenticated ? (
           <Box p={6} textAlign="center" borderWidth="1px" borderRadius="md" borderColor="border.muted">
             <VStack gap={4}>
               <Text>Please login with GitHub to access your repositories</Text>
-              <Button onClick={handleGitHubLogin}>
+              <Button onClick={() => login()}>
                 Login with GitHub
               </Button>
             </VStack>
           </Box>
         ) : (
           <VStack gap={4}>
-            <Box
-              p={2}
-              bg="green.subtle"
-              borderRadius="sm"
-              borderLeft="4px solid"
-              borderColor="green.solid"
-              position="fixed"
-              top="20px"
-              right="20px"
-              zIndex={1000}
-              boxShadow="md"
-            >
-              <Text fontWeight="normal" fontSize="sm" color="green.600" letterSpacing="0.01em">
-                Successfully logged in to GitHub!
-              </Text>
-            </Box>
+            {user && (
+              <Box
+                p={2}
+                bg="green.subtle"
+                borderRadius="sm"
+                borderLeft="4px solid"
+                borderColor="green.solid"
+                position="fixed"
+                top="20px"
+                right="20px"
+                zIndex={1000}
+                boxShadow="md"
+              >
+                <Text fontWeight="normal" fontSize="sm" color="green.600" letterSpacing="0.01em">
+                  Successfully logged in as {user.login}!
+                </Text>
+              </Box>
+            )}
             {/* Repository Selection */}
             <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.muted" width="100%">
               <VStack gap={4}>

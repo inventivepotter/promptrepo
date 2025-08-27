@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState } from 'react'
+import Link from 'next/link'
 import {
   Box,
   HStack,
@@ -17,8 +18,10 @@ import {
   LuChevronRight,
   LuMoon,
   LuSun,
+  LuLogOut,
 } from 'react-icons/lu'
 import { useColorMode, useColorModeValue } from './ui/color-mode'
+import { useAuth } from '@/app/(auth)/_state/authState'
 
 interface SidebarProps {
   className?: string
@@ -27,6 +30,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const { colorMode, toggleColorMode } = useColorMode()
+  const { isAuthenticated, user, login, logout } = useAuth()
 
   // Theme-aware semantic colors
   const bgColor = useColorModeValue('white', 'gray.900')
@@ -41,6 +45,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   }
 
   const sidebarWidth = isCollapsed ? '60px' : '240px'
+
+  const handleAuth = async () => {
+    try {
+      if (isAuthenticated) {
+        await logout()
+      } else {
+        await login()
+      }
+    } catch (error) {
+      console.error('Auth action failed:', error)
+    }
+  }
 
   return (
     <Box
@@ -83,7 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       <Stack gap={1} p={2} pt={3}>
         {/* Setup */}
         <Box as="span" width="100%">
-          <a href="/setup" style={{ textDecoration: 'none' }}>
+          <Link href="/setup" style={{ textDecoration: 'none' }}>
             <Button
               variant="ghost"
               justifyContent={isCollapsed ? "center" : "flex-start"}
@@ -105,12 +121,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                 </Text>
               )}
             </Button>
-          </a>
+          </Link>
         </Box>
 
         {/* Prompts */}
         <Box as="span" width="100%">
-          <a href="/prompts" style={{ textDecoration: 'none' }}>
+          <Link href="/prompts" style={{ textDecoration: 'none' }}>
             <Button
               variant="ghost"
               justifyContent={isCollapsed ? "center" : "flex-start"}
@@ -132,7 +148,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                 </Text>
               )}
             </Button>
-          </a>
+          </Link>
         </Box>
       </Stack>
 
@@ -141,7 +157,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
         <Stack gap={1}>
           <Separator borderColor={borderColor} />
           
-          {/* GitHub Login */}
+          {/* GitHub Login/Logout */}
           <Button
             variant="ghost"
             justifyContent={isCollapsed ? "center" : "flex-start"}
@@ -155,11 +171,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
             borderRadius="6px"
             fontWeight="500"
             transition="all 0.15s ease"
+            onClick={handleAuth}
+            disabled={false} // Remove loading state since it's handled by the button itself
           >
-            <LuGithub size={16} color={mutedTextColor} />
+            {isAuthenticated ? (
+              <LuLogOut size={16} color={mutedTextColor} />
+            ) : (
+              <LuGithub size={16} color={mutedTextColor} />
+            )}
             {!isCollapsed && (
               <Text ml={3} fontSize="14px" color={textColor} fontWeight="500">
-                Login with GitHub
+                {isAuthenticated ? `Logout ${user?.login}` : 'Login with GitHub'}
               </Text>
             )}
           </Button>
