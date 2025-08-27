@@ -1,14 +1,17 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { ConfigState } from '../_types/state';
-import { fetchConfigFromBackend } from '../_lib/getConfigData';
+import { getConfig } from '../_lib/getConfig';
+import { getAvailableModels } from '../_lib/getAvailableModels';
 
-const defaultSetupData: ConfigState = {
-  config: {
-    hostingType: "",
-    githubClientId: "",
-    githubClientSecret: "",
-    llmConfigs: [],
-  },
+export const initConfig: ConfigState['config'] = {
+  hostingType: "",
+  githubClientId: "",
+  githubClientSecret: "",
+  llmConfigs: [],
+};
+
+export const initConfigState: ConfigState = {
+  config: initConfig,
   currentStep: {
     step: 1,
     selectedProvider: "",
@@ -16,17 +19,29 @@ const defaultSetupData: ConfigState = {
     apiKey: "",
   },
   isLoading: false,
+  availableModels: [],
 };
 
 export function useConfigState() {
-  const [configState, setConfigState] = useState<ConfigState>(defaultSetupData);
+  const [configState, setConfigState] = useState<ConfigState>(initConfigState);
   const hasRestoredSetupData = useRef(false);
-
+  // Global state to prevent duplicate API calls
+  const globalLoadingRef = useRef(false);
+  const globalDataLoadedRef = useRef(false);
   useEffect(() => {
-      const loadConfigFromBackend = async () => {
+      const loadConfigAndModels = async () => {
+        // Skip if already loaded globally or currently loading
+        if (globalDataLoadedRef.current || globalLoadingRef.current) {
+          return;
+        }
+
+        globalLoadingRef.current = true;
+        
         try {
-          const config = await fetchConfigFromBackend();
-          const cleanedState: ConfigState = {
+          const config = await getConfig();
+          const availableModels = await getAvailableModels();
+          
+          setConfigState({
             config,
             currentStep: {
               step: 1,
@@ -35,16 +50,20 @@ export function useConfigState() {
               apiKey: "",
             },
             isLoading: false,
-          };
-
-          setConfigState(cleanedState);
+            availableModels,
+          });
+          
+          // Mark as globally loaded
+          globalDataLoadedRef.current = true;
         } catch (error) {
-          setConfigState(defaultSetupData);
+          globalLoadingRef.current = false;
+          setConfigState(initConfigState);
         } finally {
           hasRestoredSetupData.current = true;
         }
       };
-      loadConfigFromBackend();
+      
+      loadConfigAndModels();
     }
   , []);
 

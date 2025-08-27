@@ -1,5 +1,5 @@
 import { getConfiguredRepos } from "../_lib/getConfiguredRepos";
-import { LOCAL_STORAGE_KEYS } from "../_lib/localStorageConstants";
+import { LOCAL_STORAGE_KEYS } from "../../../utils/localStorageConstants";
 import { PromptsState } from "../_types/PromptState";
 import { Repo } from "@/types/Repo";
 

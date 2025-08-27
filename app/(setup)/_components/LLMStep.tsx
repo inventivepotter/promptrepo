@@ -12,7 +12,6 @@ import {
 } from '@chakra-ui/react'
 import React from "react";
 import { FaChevronDown } from 'react-icons/fa';
-import { getAvailableModels } from '../_lib/getAvailableModels';
 import { LLMConfig } from "@/types/Configuration";
 import { LLMProvider } from "@/types/LLMProvider";
 
@@ -28,6 +27,7 @@ interface LLMStepProps {
   removeLLMConfig: (index: number) => void
   downloadEnvFile: () => void
   disabled?: boolean
+  availableModels: LLMProvider[]
 }
 
 export default function LLMStep({
@@ -41,8 +41,8 @@ export default function LLMStep({
   addLLMConfig,
   removeLLMConfig,
   disabled = false,
+  availableModels,
 }: LLMStepProps) {
-  const providers: LLMProvider[] = getAvailableModels();
 
   return (
     <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.emphasized">
@@ -58,7 +58,7 @@ export default function LLMStep({
               <Text mb={2} fontWeight="medium">LLM Provider</Text>
               <Combobox.Root
                 collection={createListCollection({
-                  items: providers.map(p => ({ label: p.name, value: p.id }))
+                  items: availableModels.map(p => ({ label: p.name, value: p.id }))
                 })}
                 value={[selectedProvider]}
                 onValueChange={(e) => {
@@ -83,7 +83,7 @@ export default function LLMStep({
                 </Combobox.Control>
                 <Combobox.Positioner>
                   <Combobox.Content>
-                    {providers.map(provider => (
+                    {availableModels.map(provider => (
                       <Combobox.Item key={provider.id} item={provider.id}>
                         <Combobox.ItemText>{provider.name}</Combobox.ItemText>
                         <Combobox.ItemIndicator />
@@ -98,7 +98,7 @@ export default function LLMStep({
                 <Text mb={2} fontWeight="medium">Model</Text>
                 <Combobox.Root
                   collection={createListCollection({
-                    items: (providers.find(p => p.id === selectedProvider)?.models || []).map(m => ({ label: m.name, value: m.id }))
+                    items: (availableModels.find(p => p.id === selectedProvider)?.models || []).map(m => ({ label: m.name, value: m.id }))
                   })}
                   value={[selectedModel]}
                   onValueChange={(e) => setSelectedModel(e.value[0] || '')}
@@ -117,7 +117,7 @@ export default function LLMStep({
                   </Combobox.Control>
                   <Combobox.Positioner>
                     <Combobox.Content>
-                      {providers.find(p => p.id === selectedProvider)?.models.map(model => (
+                      {availableModels.find(p => p.id === selectedProvider)?.models.map(model => (
                         <Combobox.Item key={model.id} item={model.id}>
                           <Combobox.ItemText>{model.name}</Combobox.ItemText>
                           <Combobox.ItemIndicator />
@@ -156,7 +156,7 @@ export default function LLMStep({
               {llmConfigs.map((config, index) => (
                 <HStack key={index} justify="space-between" width="100%" p={2} bg="bg.subtle" borderRadius="md">
                   <Text fontSize="sm" fontWeight="400">
-                    {providers.find(p => p.id === config.provider)?.name} - {config.model}
+                    {availableModels.find(p => p.id === config.provider)?.name} - {config.model}
                   </Text>
                   <Button
                     size="sm"

@@ -1,26 +1,31 @@
 import { NotificationOptions } from '@/types/ApiResponse';
+import { toaster } from '@/components/ui/toaster';
 
-// This utility will work with any toast notification system (Chakra UI, react-hot-toast, etc.)
-// For now, it's designed to work with Chakra UI's useToast hook
+// This utility works with Chakra UI's toaster system
+// It creates and immediately displays notifications
 
-export const createNotification = (options: NotificationOptions): NotificationOptions => {
-  return {
-    duration: 5000,
-    isClosable: true,
-    ...options,
+export const createNotification = (options: NotificationOptions): void => {
+  const notificationConfig = {
+    title: options.title,
+    description: options.description,
+    type: options.status,
+    duration: options.duration || 5000,
+    isClosable: options.isClosable !== false,
   };
+  
+  toaster.create(notificationConfig);
 };
 
-export const successNotification = (title: string, description?: string): NotificationOptions => {
-  return createNotification({
+export const successNotification = (title: string, description?: string): void => {
+  createNotification({
     title,
     description,
     status: 'success',
   });
 };
 
-export const errorNotification = (title: string, description?: string): NotificationOptions => {
-  return createNotification({
+export const errorNotification = (title: string, description?: string): void => {
+  createNotification({
     title,
     description,
     status: 'error',
@@ -28,33 +33,33 @@ export const errorNotification = (title: string, description?: string): Notifica
   });
 };
 
-export const warningNotification = (title: string, description?: string): NotificationOptions => {
-  return createNotification({
+export const warningNotification = (title: string, description?: string): void => {
+  createNotification({
     title,
     description,
     status: 'warning',
   });
 };
 
-export const infoNotification = (title: string, description?: string): NotificationOptions => {
-  return createNotification({
+export const infoNotification = (title: string, description?: string): void => {
+  createNotification({
     title,
     description,
     status: 'info',
   });
 };
 
-// Helper to convert API errors to notification options
-export const apiErrorToNotification = (error: string, message?: string): NotificationOptions => {
-  return errorNotification(
+// Helper to convert API errors to notification
+export const apiErrorToNotification = (error: string, message?: string): void => {
+  errorNotification(
     'Operation Failed',
     message || error || 'An unexpected error occurred'
   );
 };
 
 // Helper to create success notification from API response
-export const apiSuccessToNotification = (message: string, description?: string): NotificationOptions => {
-  return successNotification(
+export const apiSuccessToNotification = (message: string, description?: string): void => {
+  successNotification(
     message || 'Operation Successful',
     description
   );

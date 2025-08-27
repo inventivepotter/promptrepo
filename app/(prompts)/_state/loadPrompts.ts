@@ -1,5 +1,5 @@
 import { Prompt } from '@/types/Prompt';
-import { LOCAL_STORAGE_KEYS } from '../_lib/localStorageConstants';
+import { LOCAL_STORAGE_KEYS } from '../../../utils/localStorageConstants';
 import { getPrompts } from '../_lib/getPrompts';
 import { PromptJson } from '../_types/PromptState';
 

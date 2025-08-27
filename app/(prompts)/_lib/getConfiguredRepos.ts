@@ -10,12 +10,11 @@ export async function getConfiguredRepos(): Promise<Repo[]> {
     
     if (!result.success) {
       
-      // Show user-friendly notification
       errorNotification(
         result.error || 'Repository Sync Failed',
         result.message || 'Unable to load configured repositories from server. Using local data.'
       );
-      
+      // return Promise.reject({error: result.error, message: result.message});
       return configuredRepos.repos;
     }
 
@@ -32,15 +31,10 @@ export async function getConfiguredRepos(): Promise<Repo[]> {
     
     return result.data;
   } catch (error: unknown) {
-    // Enhanced error handling with proper type checking
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    const errorName = error instanceof Error ? error.name : 'UnknownError';
-    
-    
-    // Show user-friendly notification
+    // return Promise.reject(error);
     errorNotification(
-      errorName || 'Connection Error',
-      errorMessage || 'Unable to connect to repository service. Using local data.'
+      'Connection Error',
+      'Unable to connect to repository service. Using local data.'
     );
     
     return configuredRepos.repos;

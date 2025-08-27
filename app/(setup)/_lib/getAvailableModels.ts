@@ -1,32 +1,35 @@
 import { LLMProvider } from "../../../types/LLMProvider";
+import availableModels from './availableModels.json';
+import { modelsApi } from './api/modelsApi';
+import { errorNotification } from '@/lib/notifications';
 
+function getMockAvailableModels(): LLMProvider[] {
+  return availableModels.providers;
+}
 
-export function getAvailableModels(): LLMProvider[] {
-  return [
-    {
-      id: 'openai',
-      name: 'OpenAI',
-      models: [
-        { id: 'gpt-4o', name: 'GPT-4o' },
-      { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
-      { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' }
-    ]
-    },
-    {
-        id: 'anthropic',
-        name: 'Anthropic',
-        models: [
-        { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet' },
-        { id: 'claude-3-haiku', name: 'Claude 3 Haiku' }
-        ]
-    },
-    {
-        id: 'google',
-        name: 'Google',
-        models: [
-        { id: 'gemini-pro', name: 'Gemini Pro' },
-        { id: 'gemini-pro-vision', name: 'Gemini Pro Vision' }
-        ]
+export async function getAvailableModels(): Promise<LLMProvider[]> {
+  try {
+    const result = await modelsApi.getAvailableModels();
+
+    if (!result.success) {
+
+      errorNotification(
+        result.error || 'No Available Providers',
+        result.message || 'The server returned no available providers. Using local data.'
+      );
+      // return Promise.reject({error: result.error, message: result.message});
+
+      return getMockAvailableModels();
     }
-  ]
-};
+
+    return result.data;
+  } catch (error: unknown) {
+    
+    errorNotification(
+      'Connection Error',
+      'Unable to connect to provider service. Using local data.'
+    );
+    // return Promise.reject(error);
+    return getMockAvailableModels();
+  }
+}

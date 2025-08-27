@@ -33,7 +33,7 @@ export async function getPrompts(): Promise<Prompt[]> {
         'No Prompts Found',
         'The server returned no prompts. Using local data.'
       );
-
+      // return Promise.reject({error: result.error, message: result.message});
       return getMockPrompts();
     }
 
@@ -45,15 +45,10 @@ export async function getPrompts(): Promise<Prompt[]> {
     }));
     return data;
   } catch (error: unknown) {
-    // Enhanced error handling with proper type checking
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    const errorName = error instanceof Error ? error.name : 'UnknownError';
-    
-    
-    // Show user-friendly notification
+    // return Promise.reject(error);
     errorNotification(
-      errorName || 'Connection Error',
-      errorMessage || 'Unable to connect to prompt service. Using local data.'
+      'Connection Error',
+      'Unable to connect to prompt service. Using local data.'
     );
 
     return getMockPrompts();

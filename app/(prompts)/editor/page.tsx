@@ -6,7 +6,7 @@ import { Box } from '@chakra-ui/react';
 import { Prompt } from '@/types/Prompt';
 import { usePromptsState } from "../_state/promptState";
 import { PromptEditor } from '../_components/PromptEditor';
-import { updatePromptInPersistance } from '../_lib/updatePromptInPersistance';
+import { updatePrompt as updatePromptBackend } from '../_lib/updatePrompt';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 
 export default function EditorPage() {
@@ -43,10 +43,13 @@ export default function EditorPage() {
     if (currentPrompt) {
       setIsSaving(true);
       try {
+        // Ensure the updates object includes the ID
+        const updatesWithId = { ...updates, id: currentPrompt.id };
+        
         // First try to save to backend
-        await updatePromptInPersistance(updates);
+        await updatePromptBackend(updatesWithId);
         // Only update localStorage if backend save was successful
-        updatePrompt(currentPrompt.id, updates);
+        updatePrompt(currentPrompt.id, updatesWithId);
       } catch (error) {
         // Handle error (could add toast notification here)
       } finally {

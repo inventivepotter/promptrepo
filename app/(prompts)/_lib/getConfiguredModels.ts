@@ -8,28 +8,25 @@ export const getMockConfiguredModels = (): LLMProvider[] => {
 
 export async function getConfiguredModels(): Promise<LLMProvider[]> {
   try {
-    const providers = await modelsApi.getConfiguredModels();
-    
-    if (!providers || providers.length === 0) {
-      
+    const result = await modelsApi.getConfiguredModels();
+
+    if (!result.success) {
+
       errorNotification(
-        'No Configured Providers',
-        'The server returned no configured providers. Using local data.'
+        result.error || 'No Configured Providers',
+        result.message || 'The server returned no configured providers. Using local data.'
       );
+      // return Promise.reject({error: result.error, message: result.message});
 
       return configuredModels.providers;
     }
 
-    
-    return providers;
+    return result.data;
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    const errorName = error instanceof Error ? error.name : 'UnknownError';
-    
-    
+    // return Promise.reject(error);
     errorNotification(
-      errorName || 'Connection Error',
-      errorMessage || 'Unable to connect to provider service. Using local data.'
+      'Connection Error',
+      'Unable to connect to provider service. Using local data.'
     );
     
     return configuredModels.providers;

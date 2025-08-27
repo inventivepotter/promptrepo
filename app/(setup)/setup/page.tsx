@@ -7,7 +7,7 @@ import LLMStep from '../_components/LLMStep'
 import Configurations from '../_components/DownloadConfigurations'
 import { useConfigState } from '../_state/configState'
 import { SetupHeader } from '../_components/SetupHeader'
-import { postConfigData } from '../_lib/postConfigData'
+import { postConfig } from '../_lib/postConfig'
 import { LoadingOverlay } from '@/components/LoadingOverlay'
 
 export default function SetupPage() {
@@ -24,8 +24,7 @@ export default function SetupPage() {
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      await postConfigData(configState.config);
-    } catch (error) {
+      await postConfig(configState.config);
     } finally {
       setIsLoading(false);
     }
@@ -94,6 +93,7 @@ export default function SetupPage() {
                 document.body.removeChild(a)
                 URL.revokeObjectURL(url)
               }}
+              availableModels={configState.availableModels}
             />
           </Box>
           <Box mb={6}>

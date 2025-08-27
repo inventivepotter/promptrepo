@@ -4,14 +4,8 @@ import type { ApiResult } from '@/types/ApiResponse';
 
 export const modelsApi = {
   // Get all configured LLM providers
-  getConfiguredModels: async (): Promise<LLMProvider[]> => {
-    const result = await httpClient.get<LLMProvider[]>('/v0/llm/providers/configured');
-    
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to fetch LLM providers');
-    }
-    
-    return result.data;
+  getConfiguredModels: async (): Promise<ApiResult<LLMProvider[]>> => {
+    return await httpClient.get<LLMProvider[]>('/v0/llm/providers/configured');
   },
 
   // Add a new LLM provider

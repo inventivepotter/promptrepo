@@ -19,6 +19,7 @@ export async function getAvailableReposWithApi(): Promise<Repo[]> {
         result.error || 'Repository Sync Failed',
         result.message || 'Unable to load latest repositories from server. Using local data.'
       );
+      // return Promise.reject({error: result.error, message: result.message});
       
       return availableRepos.repos;
     }
@@ -36,15 +37,11 @@ export async function getAvailableReposWithApi(): Promise<Repo[]> {
     
     return result.data;
   } catch (error: unknown) {
-    // Enhanced error handling with proper type checking
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    const errorName = error instanceof Error ? error.name : 'UnknownError';
     
-    
-    // Show user-friendly notification
+    // return Promise.reject(error);
     errorNotification(
-      errorName || 'Connection Error',
-      errorMessage || 'Unable to connect to repository service. Using local data.'
+      'Connection Error',
+      'Unable to connect to repository service. Using local data.'
     );
     
     return availableRepos.repos;

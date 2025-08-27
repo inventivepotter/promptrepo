@@ -9,7 +9,7 @@ import HostingStep from '../_components/HostingStep'
 import AuthStep from '../_components/AuthStep'
 import LLMStep from '../_components/LLMStep'
 import Configurations from '../_components/DownloadConfigurations'
-import { postConfigData } from "../_lib/postConfigData"
+import { postConfig } from "../_lib/postConfig"
 
 
 export default function InterviewPage() {
@@ -116,6 +116,7 @@ export default function InterviewPage() {
             addLLMConfig={addLLMConfig}
             removeLLMConfig={removeLLMConfig}
             downloadEnvFile={downloadEnvFile}
+            availableModels={configState.availableModels}
           />
         )
       case 4:
@@ -236,7 +237,7 @@ export default function InterviewPage() {
               // Setup complete - use optimized version with current state
               setIsLoading(true);
               try {
-                await postConfigData(configState.config);
+                await postConfig(configState.config);
               } finally {
                 setIsLoading(false);
               }

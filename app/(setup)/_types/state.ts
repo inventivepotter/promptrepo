@@ -1,4 +1,5 @@
 import { Configuration } from "@/types/Configuration";
+import { LLMProvider } from "@/types/LLMProvider";
 
 export interface ConfigState {
   config: Configuration;
@@ -9,4 +10,5 @@ export interface ConfigState {
     apiKey: string;
   };
   isLoading: boolean;
+  availableModels: LLMProvider[];
 }
