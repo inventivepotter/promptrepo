@@ -1,0 +1,32 @@
+# Use Python 3.11 slim image
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Set environment to dev
+ENV ENVIRONMENT=development
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy pyproject.toml, then install build backend
+COPY pyproject.toml ./
+COPY README.md ./
+
+RUN pip install --no-cache-dir hatchling
+RUN pip install --no-cache-dir .
+
+# Copy application code
+COPY . .
+
+# Expose port
+EXPOSE 7768
+
+# Install debug tools
+RUN pip install --no-cache-dir debugpy
+
+# Run the application in debug mode with auto-reloading
+CMD ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "--wait-for-client", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7768", "--reload"]

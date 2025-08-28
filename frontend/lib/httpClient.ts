@@ -13,7 +13,7 @@ class HttpClient {
   private timeout: number;
 
   constructor(config: HttpClientConfig = {}) {
-    this.baseUrl = config.baseUrl || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    this.baseUrl = config.baseUrl || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:7768';
     
     // Add port if specified
     if (config.port && !this.baseUrl.includes(':')) {

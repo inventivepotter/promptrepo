@@ -1,0 +1,23 @@
+# Use Node.js 22 LTS image with debugging support
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Set Node environment to development with debugging
+ENV NODE_ENV=development
+ENV DEBUG_PORT=9229
+
+COPY package*.json ./
+
+RUN npm install
+
+# Install Node debugging tools
+RUN npm install --save-dev @babel/core @babel/preset-env @babel/plugin-transform-runtime
+
+COPY . .
+
+EXPOSE 7376
+EXPOSE 9229
+
+# Start with npm debug script
+CMD ["npm", "run", "debug"]

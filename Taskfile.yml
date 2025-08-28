@@ -1,0 +1,35 @@
+version: '3'
+
+tasks:
+  up:
+    desc: "Build and run development containers in detached mode"
+    cmds:
+      - docker-compose -f docker-compose.dev.yml up --build -d
+      - echo "Development containers started"
+      - docker-compose -f docker-compose.dev.yml logs -f
+
+  logs:
+    desc: "Show development container logs"
+    cmds:
+      - docker-compose -f docker-compose.dev.yml logs -f
+
+  down:
+    desc: "Stop development containers"
+    cmds:
+      - docker-compose -f docker-compose.dev.yml down
+
+  rebuild:
+    desc: "Rebuild and restart development containers"
+    cmds:
+      - docker-compose -f docker-compose.dev.yml down
+      - docker-compose -f docker-compose.dev.yml up --build -d
+
+  backend-logs:
+    desc: "Show logs for backend service only"
+    cmds:
+      - docker-compose -f docker-compose.dev.yml logs -f backend
+
+  frontend-logs:
+    desc: "Show logs for frontend service only"
+    cmds:
+      - docker-compose -f docker-compose.dev.yml logs -f frontend

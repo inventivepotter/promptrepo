@@ -1,0 +1,41 @@
+### Pending
+All pending tasks in order of priority
+- [ ] Front End Backend seperation
+- [ ] Docker compose
+- [ ] Write Agent.md
+- [ ] Route HomePage
+    - [ ] Introduce a new API for `configsExists`
+    - [ ] Use `configsExists` to route HomePage to `/interview`
+    - [ ] `/interview` should only be visible `configsExists` `false` (either from state or from apiCall)
+    - [ ] if `configsExist` `true` the route to `/prompts`
+- [ ] Admin Authorization
+    - [ ] Update `Configuration` to hold github usernames for admins
+    - [ ] Enable Authorization in `(auth)`
+    - [ ] Show `/setup` page only for admins
+- [ ] Delete All Local Storage on Logout
+- [ ] Commit & Push for each prompt and all
+- [ ] Documentation
+    - [ ] About PromptRepo
+        - [ ] What is PromptRepo
+        - [ ] What other tools exist and differentiator
+    - [ ] CONTRIBUTING.md
+        - [ ] High level architecture
+        - [ ] Rules
+- [ ] git history
+    - [ ] on the side of editor
+    - [ ] compare option at each node
+    - [ ] Latest is draft version.
+- [ ] Migration (Agentic)
+- [ ] Generate Prompt (Agentic)
+- [ ] Transition to Evals from Editor view.
+- [ ] browser side caching
+- [ ] raise PR button
+- [ ] Open in git - prompt
+- [ ] HELM Chart
+- [ ] Breadcrumbs
+
+### Completed
+- [x] Migrate to `Next.js` from `reflex`
+- [x] AuthState & Routes
+- [x] Should Prompt Editor have saved button?
+- [x] State updates only after backend success and spinner

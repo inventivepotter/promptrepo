@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Box } from '@chakra-ui/react';
 import { Prompt } from '@/types/Prompt';
@@ -9,7 +9,7 @@ import { PromptEditor } from '../_components/PromptEditor';
 import { updatePrompt as updatePromptBackend } from '../_lib/updatePrompt';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 
-export default function EditorPage() {
+function EditorPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const promptId = searchParams.get('id');
@@ -21,7 +21,6 @@ export default function EditorPage() {
     setCurrentPrompt,
     currentPrompt,
   } = usePromptsState();
-
 
   // Find and set the current prompt based on the ID from URL
   useEffect(() => {
@@ -80,5 +79,13 @@ export default function EditorPage() {
         />
       </Box>
     </>
+  );
+}
+
+export default function EditorPage() {
+  return (
+    <Suspense fallback={<LoadingOverlay isVisible={true} title="Loading..." subtitle="Loading page data" />}>
+      <EditorPageContent />
+    </Suspense>
   );
 }
