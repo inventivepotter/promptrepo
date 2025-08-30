@@ -10,7 +10,7 @@ export const authApi = {
 
   // Exchange OAuth code for session token (called by backend after GitHub redirect)
   exchangeCodeForToken: async (code: string, state: string): Promise<ApiResult<LoginResponse>> => {
-    return await httpClient.post<LoginResponse>('/api/v0/auth/callback/github', { code, state });
+    return await httpClient.get<LoginResponse>(`/api/v0/auth/callback/github?code=${code}&state=${state}`);
   },
 
   // Verify current session and get user info

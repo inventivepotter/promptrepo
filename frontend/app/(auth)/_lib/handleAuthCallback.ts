@@ -15,14 +15,6 @@ export const getMockLoginResponse = (): LoginResponse => {
 
 export async function handleAuthCallback(code: string, state: string): Promise<LoginResponse | null> {
   try {
-    // In development, use mock data directly
-    if (process.env.NODE_ENV === 'development') {
-      const mockResponse = getMockLoginResponse();
-      storageState.setSession(mockResponse.sessionToken, mockResponse.expiresAt);
-      storageState.setUserData(mockResponse.user);
-      return mockResponse;
-    }
-
     const result = await authApi.exchangeCodeForToken(code, state);
 
     if (!result.success) {
@@ -44,15 +36,6 @@ export async function handleAuthCallback(code: string, state: string): Promise<L
       'Connection Error',
       'Unable to complete authentication. Using mock data in development.'
     );
-    
-    // Use mock data in development mode even on error
-    if (process.env.NODE_ENV === 'development') {
-      const mockResponse = getMockLoginResponse();
-      storageState.setSession(mockResponse.sessionToken, mockResponse.expiresAt);
-      storageState.setUserData(mockResponse.user);
-      return mockResponse;
-    }
-
     return null;
   }
 }
