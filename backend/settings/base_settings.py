@@ -22,11 +22,11 @@ class Settings(BaseSettings):
 
     # Server Configuration
     host: str = Field(default="0.0.0.0", description="Server host")
-    port: int = Field(default=7768, description="Server port")
+    port: int = Field(default=8080, description="Server port")
     reload: bool = Field(default=True, description="Auto-reload on changes")
 
     # OAuth Configuration
-    redirect_uri: str = Field(default="http://localhost:7768/auth/callback", description="OAuth redirect URI")
+    redirect_uri: str = Field(default="http://localhost:8080/auth/callback", description="OAuth redirect URI")
     session_key_expiry_minutes: int = Field(default=60, description="Session expiry in minutes")
 
     # Authentication & App Configuration (Required from ENV)
