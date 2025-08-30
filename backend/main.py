@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Import API routers
-from api.v1.auth import router as auth_router
+from api.v0.auth import router as auth_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -49,7 +49,7 @@ app.add_middleware(
 # Include API routers with versioning
 app.include_router(
     auth_router,
-    prefix="/api/v1/auth",
+    prefix="/api/v0/auth",
     tags=["authentication"]
 )
 
