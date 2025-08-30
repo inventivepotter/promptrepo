@@ -4,7 +4,7 @@ Provides factory functions for creating service instances.
 """
 from typing import Optional
 from .github_service import GitHubService
-from ..settings.base_settings import settings
+from settings.base_settings import settings
 
 
 def create_github_service() -> GitHubService:

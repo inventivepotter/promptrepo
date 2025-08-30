@@ -13,10 +13,10 @@ from datetime import UTC
 import logging
 
 # Import services and database
-from backend.services import create_github_service
-from backend.services.github_service import GitHubService
-from backend.services.session_service import SessionService
-from backend.models.database import get_session
+from services import create_github_service
+from services.github_service import GitHubService
+from services.session_service import SessionService
+from models.database import get_session
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -325,7 +325,7 @@ async def auth_health_check(db: Session = Depends(get_session)):
 
     # Get session count
     from sqlmodel import select, func
-    from backend.models.user_sessions import User_Sessions
+    from models.user_sessions import User_Sessions
 
     statement = select(func.count(User_Sessions.id))
     active_sessions_count = db.exec(statement).one()
@@ -335,47 +335,6 @@ async def auth_health_check(db: Session = Depends(get_session)):
         "service": "authentication",
         "active_sessions": active_sessions_count,
         "expired_sessions_cleaned": expired_count,
-        "pending_oauth_states": len(oauth_states),
-        "endpoints": [
-            "GET /login/github",
-            "POST /callback/github",
-            "GET /verify",
-            "POST /logout",
-            "POST /refresh"
-        ]
-    }# Check if session has expired
-    expires_at = datetime.fromisoformat(session_data['expires_at'].replace('Z', '+00:00'))
-    if datetime.now(UTC) > expires_at:
-        active_sessions.pop(token, None)
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Session has expired"
-        )
-
-    # Generate new session token and extend expiry
-    new_session_token = secrets.token_urlsafe(32)
-    new_expires_at = datetime.now(UTC) + timedelta(hours=24)
-
-    # Move session data to new token
-    session_data['expires_at'] = new_expires_at.isoformat() + "Z"
-    active_sessions[new_session_token] = session_data
-    active_sessions.pop(token, None)
-
-    logger.info("Session successfully refreshed")
-    return RefreshResponse(
-        sessionToken=new_session_token,
-        expiresAt=new_expires_at.isoformat() + "Z"
-    )
-
-# Health check for auth routes
-@router.get("/health")
-async def auth_health_check():
-    """Health check specifically for auth routes."""
-    cleanup_expired_states()
-
-    return {
-        "status": "healthy",
-        "service": "authentication",
         "pending_oauth_states": len(oauth_states),
         "endpoints": [
             "GET /login/github",

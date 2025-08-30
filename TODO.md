@@ -1,7 +1,7 @@
 ### Pending
 All pending tasks in order of priority
-- [ ] Front End Backend seperation
-- [ ] Docker compose
+- [x] Front End Backend seperation
+- [x] Docker compose
 - [ ] Write Agent.md
 - [ ] Route HomePage
     - [ ] Introduce a new API for `configsExists`

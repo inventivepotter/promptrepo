@@ -14,7 +14,7 @@ from sqlalchemy import pool
 
 from alembic import context
 from sqlmodel import SQLModel
-from backend.models.user_sessions import User_Sessions
+from models.user_sessions import User_Sessions
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

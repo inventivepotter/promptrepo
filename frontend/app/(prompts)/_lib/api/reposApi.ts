@@ -5,19 +5,19 @@ import type { ApiResult, ApiResponse } from '@/types/ApiResponse';
 export const reposApi = {
   // Get all available repositories
   getAvailableRepos: async (): Promise<ApiResponse<Repo[]>> => {
-    return await httpClient.get<Repo[]>('/v0/repos/available');
+    return await httpClient.get<Repo[]>('/api/v0/repos/available');
   },
 
   // Get configured repositories
   getConfiguredRepos: async (userId?: string): Promise<ApiResponse<Repo[]>> => {
-    const endpoint = userId ? `/v0/repos/configured?userId=${userId}` : '/v0/repos/configured';
+    const endpoint = userId ? `/api/v0/repos/configured?userId=${userId}` : '/api/v0/repos/configured';
     return await httpClient.get<Repo[]>(endpoint);
   },
 
   // Configure a new repository
   configureRepo: async (repo: Omit<Repo, 'id'>): Promise<ApiResult<Repo>> => {
     return await httpClient.post<Repo>(
-      '/v0/repos/configure',
+      '/api/v0/repos/configure',
       repo
     );
   },
@@ -25,14 +25,14 @@ export const reposApi = {
   // Update repository configuration
   updateRepoConfig: async (id: string, updates: Partial<Repo>): Promise<ApiResult<Repo>> => {
     return await httpClient.patch<Repo>(
-      `/v0/repos/${id}/config`,
+      `/api/v0/repos/${id}/config`,
       updates
     );
   },
 
   // Remove repository from configured list
   removeRepo: async (repoId: string): Promise<ApiResult<void>> => {
-    return await httpClient.delete<void>(`/v0/repos/${repoId}`);
+    return await httpClient.delete<void>(`/api/v0/repos/${repoId}`);
   },
 };
 

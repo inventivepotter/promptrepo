@@ -8,7 +8,7 @@ import logging
 from contextlib import asynccontextmanager
 
 # Import database setup
-from backend.models.database import create_db_and_tables
+from models.database import create_db_and_tables
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 # Import API routers
 from api.v0.auth import router as auth_router
+from api.v0.llm import router as llm_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -53,6 +54,12 @@ app.include_router(
     tags=["authentication"]
 )
 
+app.include_router(
+    llm_router,
+    prefix="/api/v0/llm",
+    tags=["llm"]
+)
+
 # Health check response model
 class HealthResponse(BaseModel):
     status: str
@@ -82,7 +89,8 @@ async def root() -> dict[str, str]:
             "/api/v0/auth/callback/github",
             "/api/v0/auth/verify",
             "/api/v0/auth/logout",
-            "/api/v0/auth/refresh"
+            "/api/v0/auth/refresh",
+            "/api/v0/llm/providers/available"
         ]
     return {
         "message": "Welcome to PromptRepo API",

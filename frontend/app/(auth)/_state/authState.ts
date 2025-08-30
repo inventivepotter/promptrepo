@@ -6,6 +6,7 @@ import { handleLogout } from '../_lib/handleLogout';
 import { handleAuthCallback } from '../_lib/handleAuthCallback';
 import { refreshAuthSession } from '../_lib/refreshAuthSession';
 import { storageState } from './storageState';
+import { errorNotification } from '@/lib/notifications';
 
 // Initialize with stored auth state if available
 const getInitialAuthState = (): AuthState => {
@@ -94,32 +95,18 @@ export function useAuthState(): AuthContextType {
   const login = useCallback(async () => {
     try {
       updateAuthState(prev => ({ ...prev, isLoading: true }));
-      
+
       const authUrl = await getAuthUrl();
-      // TODO: Remove after Auth testing
-      // In development, directly handle the mock auth callback
-      if (process.env.NODE_ENV === 'development') {
-        const result = await handleAuthCallback('mock_code', 'mock_state');
-        if (result) {
-          updateAuthState({
-            isAuthenticated: true,
-            isLoading: false,
-            user: result.user,
-            sessionToken: result.sessionToken,
-          });
-          return;
-        }
-      }
-      // TODO: Remove after Auth testing
-      if (authUrl && process.env.NODE_ENV !== 'development') {
+
+      if (authUrl) {
         window.location.href = authUrl;
       } else {
-        throw new Error('Failed to get auth URL');
+        errorNotification('Login Failed', 'Unable to initiate login. Please try again.');
       }
     } catch (error) {
       console.error('Login failed:', error);
       updateAuthState(prev => ({ ...prev, isLoading: false }));
-      throw error;
+      errorNotification('Login Failed', 'Unable to initiate login. Please try again.');
     }
   }, [updateAuthState]);
 
