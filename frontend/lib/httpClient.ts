@@ -13,7 +13,8 @@ class HttpClient {
   private timeout: number;
 
   constructor(config: HttpClientConfig = {}) {
-    this.baseUrl = config.baseUrl || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+    // Use the Next.js API proxy instead of calling backend directly
+    this.baseUrl = config.baseUrl || process.env.NEXT_PUBLIC_FRONTEND_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
     
     // Add port if specified
     if (config.port && !this.baseUrl.includes(':')) {
@@ -35,7 +36,9 @@ class HttpClient {
     config?: RequestConfig
   ): Promise<ApiResult<T>> {
     try {
-      const url = `${this.baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+      // Route through the Next.js API proxy
+      const proxyEndpoint = endpoint.startsWith('/api/') ? endpoint : `/api${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+      const url = `${this.baseUrl}${proxyEndpoint}`;
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 

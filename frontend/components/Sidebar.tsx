@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   Box,
@@ -9,6 +9,7 @@ import {
   Button,
   Separator,
   Stack,
+  VStack,
 } from '@chakra-ui/react'
 import {
   LuSettings,
@@ -19,9 +20,11 @@ import {
   LuMoon,
   LuSun,
   LuLogOut,
+  LuUser,
 } from 'react-icons/lu'
 import { useColorMode, useColorModeValue } from './ui/color-mode'
 import { useAuth } from '@/app/(auth)/_state/authState'
+import { Branding } from './Branding'
 
 interface SidebarProps {
   className?: string
@@ -29,6 +32,19 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   const [isCollapsed, setIsCollapsed] = useState(false)
+
+  // Load saved sidebar state from localStorage on component mount
+  useEffect(() => {
+    const savedState = localStorage.getItem('sidebarCollapsed')
+    if (savedState !== null) {
+      setIsCollapsed(JSON.parse(savedState))
+    }
+  }, [])
+
+  // Save sidebar state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('sidebarCollapsed', JSON.stringify(isCollapsed))
+  }, [isCollapsed])
   const { colorMode, toggleColorMode } = useColorMode()
   const { isAuthenticated, user, login, logout } = useAuth()
 
@@ -39,6 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400')
   const hoverBg = useColorModeValue('gray.50', 'gray.800')
   const activeBg = useColorModeValue('blue.50', 'blue.900')
+  const userProfileBg = useColorModeValue('gray.50', 'gray.800')
 
   const toggleCollapsed = () => {
     setIsCollapsed(!isCollapsed)
@@ -68,30 +85,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       borderColor={borderColor}
       transition="all 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
       position="relative"
+      zIndex={10}
       boxShadow={useColorModeValue('sm', 'dark-lg')}
     >
       {/* Header with branding */}
       <Box p={isCollapsed ? 2 : 4} borderBottom="1px solid" borderColor={borderColor}>
         <HStack justify="space-between" align="center" minH="40px">
-          {isCollapsed ? (
-            <Text
-              fontSize="lg"
-              color={textColor}
-              fontWeight="300"
-              letterSpacing="tight"
-            >
-              {'{'}P<Text as="span" fontWeight="700">R</Text>{'}'}
-            </Text>
-          ) : (
-            <Text
-              fontSize="xl"
-              color={textColor}
-              fontWeight="300"
-              letterSpacing="tight"
-            >
-              {'{'}Prompt{'}'}<Text as="span" fontWeight="700"> Repo</Text>
-            </Text>
-          )}
+          <Branding collapsed={isCollapsed} color={textColor} />
         </HStack>
       </Box>
 
@@ -152,39 +152,141 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
         </Box>
       </Stack>
 
+      {/* User Profile Section - Only show when authenticated */}
+      {isAuthenticated && user && (
+        <Box p={2} mt="auto" mb={2}>
+          <Separator borderColor={borderColor} mb={3} />
+          
+          {/* User Profile */}
+          <Box
+            p={isCollapsed ? 2 : 3}
+            bg={userProfileBg}
+            borderRadius="8px"
+            border="1px solid"
+            borderColor={borderColor}
+          >
+            {isCollapsed ? (
+              <HStack justify="center">
+                <Box
+                  width="32px"
+                  height="32px"
+                  borderRadius="full"
+                  bg={mutedTextColor}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  backgroundImage={user.avatar_url ? `url(${user.avatar_url})` : undefined}
+                  backgroundSize="cover"
+                  backgroundPosition="center"
+                >
+                  {!user.avatar_url && (
+                    <LuUser size={16} color="white" />
+                  )}
+                </Box>
+              </HStack>
+            ) : (
+              <VStack gap={2} align="stretch">
+                <HStack gap={3} align="center">
+                  <Box
+                    width="32px"
+                    height="32px"
+                    borderRadius="full"
+                    bg={mutedTextColor}
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    backgroundImage={user.avatar_url ? `url(${user.avatar_url})` : undefined}
+                    backgroundSize="cover"
+                    backgroundPosition="center"
+                  >
+                    {!user.avatar_url && (
+                      <LuUser size={16} color="white" />
+                    )}
+                  </Box>
+                  <VStack gap={0} align="flex-start" flex={1} minW={0}>
+                    <Text
+                      fontSize="13px"
+                      fontWeight="600"
+                      color={textColor}
+                      width="100%"
+                      overflow="hidden"
+                      textOverflow="ellipsis"
+                      whiteSpace="nowrap"
+                    >
+                      {user.name || user.login}
+                    </Text>
+                    <Text
+                      fontSize="12px"
+                      color={mutedTextColor}
+                      width="100%"
+                      overflow="hidden"
+                      textOverflow="ellipsis"
+                      whiteSpace="nowrap"
+                    >
+                      @{user.login}
+                    </Text>
+                  </VStack>
+                </HStack>
+              </VStack>
+            )}
+          </Box>
+        </Box>
+      )}
+
       {/* Bottom section */}
       <Box position="absolute" bottom={0} left={0} right={0} p={2}>
         <Stack gap={1}>
-          <Separator borderColor={borderColor} />
+          {!isAuthenticated && <Separator borderColor={borderColor} />}
           
-          {/* GitHub Login/Logout */}
-          <Button
-            variant="ghost"
-            justifyContent={isCollapsed ? "center" : "flex-start"}
-            size="sm"
-            width="100%"
-            _hover={{ bg: hoverBg, transform: "translateX(2px)" }}
-            _active={{ bg: activeBg }}
-            px={isCollapsed ? 2 : 3}
-            py={2}
-            height="36px"
-            borderRadius="6px"
-            fontWeight="500"
-            transition="all 0.15s ease"
-            onClick={handleAuth}
-            disabled={false} // Remove loading state since it's handled by the button itself
-          >
-            {isAuthenticated ? (
+          {/* GitHub Login or Logout Button */}
+          {isAuthenticated ? (
+            <Button
+              variant="outline"
+              justifyContent={isCollapsed ? "center" : "flex-start"}
+              size="sm"
+              width="100%"
+              _hover={{ bg: hoverBg, transform: "translateX(2px)" }}
+              _active={{ bg: activeBg }}
+              px={isCollapsed ? 2 : 3}
+              py={2}
+              height="36px"
+              borderRadius="6px"
+              fontWeight="500"
+              transition="all 0.15s ease"
+              onClick={handleAuth}
+              colorScheme="red"
+            >
               <LuLogOut size={16} color={mutedTextColor} />
-            ) : (
+              {!isCollapsed && (
+                <Text ml={3} fontSize="14px" color={textColor} fontWeight="500">
+                  Logout
+                </Text>
+              )}
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              justifyContent={isCollapsed ? "center" : "flex-start"}
+              size="sm"
+              width="100%"
+              _hover={{ bg: hoverBg, transform: "translateX(2px)" }}
+              _active={{ bg: activeBg }}
+              px={isCollapsed ? 2 : 3}
+              py={2}
+              height="36px"
+              borderRadius="6px"
+              fontWeight="500"
+              transition="all 0.15s ease"
+              onClick={handleAuth}
+            >
               <LuGithub size={16} color={mutedTextColor} />
-            )}
-            {!isCollapsed && (
-              <Text ml={3} fontSize="14px" color={textColor} fontWeight="500">
-                {isAuthenticated ? `Logout ${user?.login}` : 'Login with GitHub'}
-              </Text>
-            )}
-          </Button>
+              {!isCollapsed && (
+                <Text ml={3} fontSize="14px" color={textColor} fontWeight="500">
+                  Login with GitHub
+                </Text>
+              )}
+            </Button>
+          )}
 
           {/* Theme Toggle */}
           <Button
