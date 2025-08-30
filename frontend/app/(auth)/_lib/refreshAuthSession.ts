@@ -2,7 +2,6 @@ import type { User } from '../_types/AuthState';
 import { authApi } from './api/authApi';
 import { errorNotification } from '@/lib/notifications';
 import { storageState } from '../_state/storageState';
-import { getMockAuthUser } from './getAuthUser';
 
 interface RefreshResult {
   success: boolean;
@@ -30,17 +29,6 @@ export async function refreshAuthSession(): Promise<RefreshResult> {
         result.message || 'Could not refresh your session. Please log in again.'
       );
 
-      // In development, extend mock session
-      if (process.env.NODE_ENV === 'development') {
-        const mockUser = getMockAuthUser();
-        const newExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
-        
-        storageState.setSession('mock_session_token', newExpiresAt);
-        storageState.setUserData(mockUser);
-        
-        return { success: true, user: mockUser };
-      }
-
       storageState.clearSession();
       storageState.clearUserData();
       return { success: false, user: null };
@@ -67,17 +55,6 @@ export async function refreshAuthSession(): Promise<RefreshResult> {
       'Connection Error',
       'Unable to refresh session. Using cached data.'
     );
-
-    // In development, extend mock session
-    if (process.env.NODE_ENV === 'development') {
-      const mockUser = getMockAuthUser();
-      const newExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
-      
-      storageState.setSession('mock_session_token', newExpiresAt);
-      storageState.setUserData(mockUser);
-      
-      return { success: true, user: mockUser };
-    }
 
     // Try to get cached user data
     const cachedUser = storageState.getUserData();

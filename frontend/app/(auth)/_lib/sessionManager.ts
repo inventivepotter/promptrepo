@@ -1,4 +1,4 @@
-import { AuthSession, User } from '../_types/AuthState';
+import { User } from '../_types/AuthState';
 
 const SESSION_COOKIE_NAME = 'auth_session';
 const REFRESH_TOKEN_COOKIE_NAME = 'refresh_token';
