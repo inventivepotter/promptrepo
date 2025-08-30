@@ -4,11 +4,13 @@ from sqlmodel import Session as DBSession, select
 from datetime import datetime, timedelta, UTC
 from typing import Optional
 import uuid
-from ..settings import base_settings
+from backend.settings import base_settings
 
 
 class User_Sessions(SQLModel, table=True):
     __tablename__ = "user_sessions"
+    __table_args__ = {'extend_existing': True}  # Add this line
+
 
     # Primary key as UUID
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)

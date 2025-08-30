@@ -49,7 +49,7 @@ app.add_middleware(
 # Include API routers with versioning
 app.include_router(
     auth_router,
-    prefix="/api/v0/auth",
+    prefix="/api/v1/auth",
     tags=["authentication"]
 )
 
