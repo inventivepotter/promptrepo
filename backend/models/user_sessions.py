@@ -1,10 +1,11 @@
 # models/user_sessions.py
 from sqlmodel import SQLModel, Field, Column, func
 from sqlmodel import Session as DBSession, select
+from sqlalchemy import DateTime
 from datetime import datetime, timedelta, UTC
 from typing import Optional
 import uuid
-from backend.settings import base_settings
+from settings import base_settings
 
 
 class User_Sessions(SQLModel, table=True):
@@ -22,13 +23,13 @@ class User_Sessions(SQLModel, table=True):
 
     # Timestamps for tracking
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC),
-                                 sa_column=Column(
+                                 sa_column=Column(DateTime,
                                      default=func.now(),  # Database default
                                      nullable=False
                                  )
                                  )
     modified_at: datetime = Field(default_factory=lambda: datetime.now(UTC),
-                                  sa_column=Column(
+                                  sa_column=Column(DateTime,
                                       default=func.now(),  # Initial value on insert
                                       onupdate=func.now(),  # Auto-update on row update
                                       nullable=False)

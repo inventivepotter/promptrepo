@@ -1,9 +1,9 @@
 # backend/settings.py
 from pydantic_settings import BaseSettings
 from pydantic import Field
-from typing import List, Optional
-from pathlib import Path
-import os
+from typing import Literal
+import json
+from schemas.config import AppConfig
 
 
 class Settings(BaseSettings):
@@ -25,21 +25,32 @@ class Settings(BaseSettings):
     port: int = Field(default=7768, description="Server port")
     reload: bool = Field(default=True, description="Auto-reload on changes")
 
-    # Authentication
-    github_client_id: Optional[str] = Field(default=None, description="GitHub OAuth client ID")
-    github_client_secret: Optional[str] = Field(default=None, description="GitHub OAuth client secret")
+    # OAuth Configuration
     redirect_uri: str = Field(default="http://localhost:7768/auth/callback", description="OAuth redirect URI")
     session_key_expiry_minutes: int = Field(default=60, description="Session expiry in minutes")
-    # LLM Configuration
-    openai_api_key: Optional[str] = Field(default=None, description="OpenAI API key")
-    openai_model: str = Field(default="gpt-4", description="Default OpenAI model")
-    anthropic_api_key: Optional[str] = Field(default=None, description="Anthropic API key")
-    anthropic_model: str = Field(default="claude-3-sonnet", description="Default Anthropic model")
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+    # Authentication & App Configuration (Required from ENV)
+    hosting_type: Literal["multi-user", "single-user"] = Field(default="multi-user", description="Hosting type: multi-user or single-user", alias="HOSTING_TYPE")
+    github_client_id: str = Field(default="", description="GitHub OAuth client ID", alias="GITHUB_CLIENT_ID")
+    github_client_secret: str = Field(default="", description="GitHub OAuth client secret", alias="GITHUB_CLIENT_SECRET")
+    llm_configs_json: str = Field(default="[]", description="LLM configurations as JSON string", alias="LLM_CONFIGS")
+
+    @property
+    def app_config(self) -> AppConfig:
+        """Get the structured app configuration"""
+        llm_configs = json.loads(self.llm_configs_json) if self.llm_configs_json else []
+        return AppConfig(
+            hostingType=self.hosting_type,
+            githubClientId=self.github_client_id,
+            githubClientSecret=self.github_client_secret,
+            llmConfigs=llm_configs
+        )
+
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "case_sensitive": False
+    }
 
 
 # Create global settings instance

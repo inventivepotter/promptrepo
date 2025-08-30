@@ -133,5 +133,8 @@ dmypy.json
 uv.lock
 .idea/
 database.db
+
+backend/.env
+frontend/.env
 repos/*
 !repos/.gitkeep
