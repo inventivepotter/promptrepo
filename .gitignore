@@ -133,3 +133,5 @@ dmypy.json
 uv.lock
 .idea/
 database.db
+repos/*
+!repos/.gitkeep
