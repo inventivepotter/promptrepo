@@ -12,6 +12,7 @@ services:
     volumes:
       - ./backend:/app
       - /app/.venv
+      - ./database/data.db:/app/database.db
     command: ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
     networks:
       - promptrepo-network

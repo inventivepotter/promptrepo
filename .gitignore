@@ -138,3 +138,4 @@ backend/.env
 frontend/.env
 repos/*
 !repos/.gitkeep
+database
