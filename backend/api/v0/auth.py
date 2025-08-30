@@ -90,7 +90,7 @@ async def initiate_github_login():
         github_service = create_github_service()
 
         # Generate authorization URL with required scopes
-        scopes = ["user:email", "read:user"]
+        scopes = ["repo", "user:email", "read:user"]
         auth_url, state = github_service.generate_auth_url(scopes=scopes)
 
         # Store state for CSRF verification
