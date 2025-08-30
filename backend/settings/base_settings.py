@@ -26,34 +26,17 @@ class Settings(BaseSettings):
     # Authentication
     github_client_id: Optional[str] = Field(default=None, description="GitHub OAuth client ID")
     github_client_secret: Optional[str] = Field(default=None, description="GitHub OAuth client secret")
-
+    session_key_expiry_minutes: int = Field(default=60, description="Session expiry in minutes")
     # LLM Configuration
     openai_api_key: Optional[str] = Field(default=None, description="OpenAI API key")
     openai_model: str = Field(default="gpt-4", description="Default OpenAI model")
     anthropic_api_key: Optional[str] = Field(default=None, description="Anthropic API key")
     anthropic_model: str = Field(default="claude-3-sonnet", description="Default Anthropic model")
 
-    # File paths
-    data_dir: Path = Field(default=Path("./data"), description="Data directory")
-    logs_dir: Path = Field(default=Path("./logs"), description="Logs directory")
-
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = False
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        # Create necessary directories
-        self.data_dir.mkdir(exist_ok=True, parents=True)
-        self.logs_dir.mkdir(exist_ok=True, parents=True)
-
-        # Adjust database path to be absolute if using SQLite
-        if self.database_url.startswith("sqlite:///"):
-            db_path = self.database_url.replace("sqlite:///", "")
-            if not os.path.isabs(db_path):
-                absolute_path = self.data_dir / db_path.lstrip("./")
-                self.database_url = f"sqlite:///{absolute_path}"
 
 
 # Create global settings instance
