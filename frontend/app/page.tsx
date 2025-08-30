@@ -2,7 +2,7 @@
 
 import { Button, HStack, VStack, Text, Box, Spinner, Image, Container, Flex } from "@chakra-ui/react";
 import { useAuth } from "./(auth)/_components/AuthProvider";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect } from "react";
 import { PromptQuotes } from "@/components/PromptQuotes";
 import { Branding } from "@/components/Branding";
 
@@ -55,44 +55,6 @@ const Demo = () => {
     checkAuth();
   }, [checkAuth]);
 
-  // Track window dimensions for background
-  const [dimensions, setDimensions] = useState({ width: 1200, height: 800 });
-
-  useEffect(() => {
-    const updateDimensions = () => {
-      setDimensions({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    };
-
-    // Set initial dimensions
-    updateDimensions();
-    
-    // Update on resize
-    window.addEventListener('resize', updateDimensions);
-
-    return () => {
-      window.removeEventListener('resize', updateDimensions);
-    };
-  }, []);
-
-  // Generate random positions for curly braces across entire screen
-  const bracePositions = useMemo(() => {
-    const positions = [];
-    const braceCount = 800;
-    
-    for (let i = 0; i < braceCount; i++) {
-      positions.push({
-        x: Math.random() * dimensions.width,
-        y: Math.random() * dimensions.height,
-        scale: 0.3 + Math.random() * 2.0,
-        isOpening: Math.random() > 0.5,
-        rotation: Math.random() * 360,
-      });
-    }
-    return positions;
-  }, [dimensions.width, dimensions.height]);
 
   return (
     <>
@@ -114,66 +76,7 @@ const Demo = () => {
       </Flex>
 
       <Box position="relative">
-        {/* SVG Background with scattered curly braces */}
-        <Box
-          position="fixed"
-          top={0}
-          left={0}
-          right={0}
-          bottom={0}
-          zIndex={0}
-          overflow="hidden"
-          pointerEvents="none"
-        >
-          <svg
-            width="100%"
-            height="100%"
-            viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
-            preserveAspectRatio="xMidYMid slice"
-            style={{
-              opacity: 0.4,
-            }}
-          >
-            {/* Define curly brace paths - simpler, regular font style */}
-            <defs>
-              <g id="opening-brace">
-                <text
-                  fontSize="64"
-                  fill="#374151"
-                  fontFamily="monospace"
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                >
-                  {"{"}
-                </text>
-              </g>
-              <g id="closing-brace">
-                <text
-                  fontSize="64"
-                  fill="#374151"
-                  fontFamily="monospace"
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                >
-                  {"}"}
-                </text>
-              </g>
-            </defs>
-
-            {/* Dynamically positioned braces */}
-            {bracePositions.map((brace, index) => (
-              <use
-                key={index}
-                href={brace.isOpening ? "#opening-brace" : "#closing-brace"}
-                x={brace.x}
-                y={brace.y}
-                transform={`scale(${brace.scale}) rotate(${brace.rotation} ${brace.x} ${brace.y})`}
-              />
-            ))}
-          </svg>
-        </Box>
-
-        {/* Main content - positioned above background */}
+        {/* Main content */}
         <Box position="relative" zIndex={1}>
         <Container maxW="4xl" py={16}>
           <VStack gap={16} alignItems="center" textAlign="center">
@@ -221,7 +124,7 @@ const Demo = () => {
                   _dark={{ color: "gray.100" }}
                   lineHeight="1.1"
                 >
-                  Master Prompt Engineering
+                  Craft Better Prompts
                 </Text>
                 <Text
                   fontSize={{ base: "lg", md: "xl" }}
@@ -230,8 +133,8 @@ const Demo = () => {
                   maxW="2xl"
                   lineHeight="1.6"
                 >
-                  Discover, create, and share powerful prompts that unlock
-                  the full potential of AI agents and guide them to your goals.
+                  Evaluate, test, and optimize your prompts to make informed
+                  decisions and build AI agents that work better for you.
                 </Text>
               </VStack>
             </Box>
