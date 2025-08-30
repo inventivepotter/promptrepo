@@ -9,11 +9,13 @@ import os
 class Settings(BaseSettings):
     # App Configuration
     app_name: str = Field(default="PromptRepo", description="Application name")
+    description: str = Field(default="A repository for AI prompts", description="Application description")
     environment: str = Field(default="development", description="Environment")
+    version: str = Field(default="0.1.0", description="Application version")
 
     # Database Configuration
     database_url: str = Field(
-        default="sqlite:///./data/promptrepo.db",
+        default="sqlite:///./database.db",
         description="Database URL"
     )
     database_echo: bool = Field(default=True, description="Echo SQL queries")
@@ -26,6 +28,7 @@ class Settings(BaseSettings):
     # Authentication
     github_client_id: Optional[str] = Field(default=None, description="GitHub OAuth client ID")
     github_client_secret: Optional[str] = Field(default=None, description="GitHub OAuth client secret")
+    redirect_uri: str = Field(default="http://localhost:7768/auth/callback", description="OAuth redirect URI")
     session_key_expiry_minutes: int = Field(default=60, description="Session expiry in minutes")
     # LLM Configuration
     openai_api_key: Optional[str] = Field(default=None, description="OpenAI API key")

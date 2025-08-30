@@ -4,21 +4,53 @@ FastAPI backend application for PromptRepo.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import logging
+from contextlib import asynccontextmanager
 
-# Create FastAPI app
+# Import database setup
+from backend.models.database import create_db_and_tables
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Import API routers
+from api.v1.auth import router as auth_router
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    create_db_and_tables()
+    logger.info("PromptRepo API started successfully")
+    yield
+    # Shutdown (if needed)
+    logger.info("PromptRepo API shutting down")
+
+# Create FastAPI app with lifespan
 app = FastAPI(
     title="PromptRepo API",
-    description="Backend API for PromptRepo application",
+    description="Backend API for PromptRepo application with GitHub OAuth",
     version="0.1.0",
+    lifespan=lifespan
 )
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:7376"],  # Frontend URL
+    allow_origins=[
+        "http://localhost:7376",  # Frontend URL
+        "http://localhost:3000",  # Alternative frontend port
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# Include API routers with versioning
+app.include_router(
+    auth_router,
+    prefix="/api/v0/auth",
+    tags=["authentication"]
 )
 
 # Health check response model
@@ -45,10 +77,18 @@ async def root() -> dict[str, str]:
     """
     Root endpoint with basic API information.
     """
+    routes = [
+            "/api/v0/auth/login/github",
+            "/api/v0/auth/callback/github",
+            "/api/v0/auth/verify",
+            "/api/v0/auth/logout",
+            "/api/v0/auth/refresh"
+        ]
     return {
         "message": "Welcome to PromptRepo API",
         "version": "0.1.0",
-        "docs": "/docs"
+        "docs": "/docs",
+        "available_routes": " ".join(routes)
     }
 
 
