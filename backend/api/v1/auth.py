@@ -9,6 +9,7 @@ from sqlmodel import Session
 import uuid
 import secrets
 from datetime import datetime, timedelta
+from datetime import UTC
 import logging
 
 # Import services and database
@@ -53,7 +54,7 @@ oauth_states: dict[str, datetime] = {}
 
 def cleanup_expired_states():
     """Remove expired OAuth states"""
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     expired_states = [state for state, created_at in oauth_states.items()
                      if now - created_at > timedelta(minutes=10)]
     for state in expired_states:
@@ -93,7 +94,7 @@ async def initiate_github_login():
         auth_url, state = github_service.generate_auth_url(scopes=scopes)
 
         # Store state for CSRF verification
-        oauth_states[state] = datetime.utcnow()
+        oauth_states[state] = datetime.now(UTC)
 
         logger.info(f"Generated GitHub OAuth URL for state: {state}")
 
@@ -170,7 +171,7 @@ async def github_oauth_callback(
             )
 
             # Calculate expiry time
-            expires_at = datetime.utcnow() + timedelta(hours=24)
+            expires_at = datetime.now(UTC) + timedelta(hours=24)
 
             logger.info(f"Successfully authenticated user: {github_user.login}")
 
@@ -297,7 +298,7 @@ async def refresh_session(token: str = Depends(get_bearer_token), db: Session = 
         SessionService.delete_session(db, token)
 
         # Calculate new expiry
-        new_expires_at = datetime.utcnow() + timedelta(hours=24)
+        new_expires_at = datetime.now(UTC) + timedelta(hours=24)
 
         logger.info(f"Session refreshed for user: {user_session.username}")
 
@@ -344,7 +345,7 @@ async def auth_health_check(db: Session = Depends(get_session)):
         ]
     }# Check if session has expired
     expires_at = datetime.fromisoformat(session_data['expires_at'].replace('Z', '+00:00'))
-    if datetime.utcnow() > expires_at:
+    if datetime.now(UTC) > expires_at:
         active_sessions.pop(token, None)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -353,7 +354,7 @@ async def auth_health_check(db: Session = Depends(get_session)):
 
     # Generate new session token and extend expiry
     new_session_token = secrets.token_urlsafe(32)
-    new_expires_at = datetime.utcnow() + timedelta(hours=24)
+    new_expires_at = datetime.now(UTC) + timedelta(hours=24)
 
     # Move session data to new token
     session_data['expires_at'] = new_expires_at.isoformat() + "Z"
