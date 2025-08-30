@@ -16,7 +16,7 @@ RUN npm install --save-dev @babel/core @babel/preset-env @babel/plugin-transform
 
 COPY . .
 
-EXPOSE 7376
+EXPOSE 3000
 EXPOSE 9229
 
 # Start with npm debug script
