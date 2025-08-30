@@ -30,11 +30,14 @@ class AuthUrlResponse(BaseModel):
     authUrl: str
 
 class User(BaseModel):
-    id: str
+    id: Optional[uuid.UUID] = Field(default_factory=uuid.uuid4)
     username: str
     name: str
     email: str
-    avatar_url: str
+    avatar_url: Optional[str] = None
+    github_id: Optional[int] = None
+    html_url: Optional[str] = None
+    sessions: Optional[list] = None  # List of session IDs or session info
 
 class LoginResponse(BaseModel):
     user: User
@@ -156,11 +159,14 @@ async def github_oauth_callback(
 
             # Create user object
             user = User(
-                id=str(github_user.id),
                 username=github_user.login,
                 name=github_user.name or github_user.login,
                 email=primary_email or "",
-                avatar_url=github_user.avatar_url
+                avatar_url=github_user.avatar_url,
+                github_id=github_user.id,
+                html_url=github_user.html_url,
+
+
             )
 
             # Create session in database

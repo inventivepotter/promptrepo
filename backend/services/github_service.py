@@ -40,7 +40,6 @@ class GitHubTokenResponse(BaseModel):
     token_type: str = "bearer"
     scope: str = ""
 
-
 class GitHubService:
     """
     GitHub OAuth service implementing the OAuth App flow.
