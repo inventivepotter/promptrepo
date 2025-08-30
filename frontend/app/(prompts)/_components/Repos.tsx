@@ -32,7 +32,7 @@ export default function Repos({
   configuredRepos,
   toggleRepoSelection
 }: ReposProps) {
-  const { isAuthenticated, user, login } = useAuth();
+  const { user } = useAuth();
   const repos = getAvailableRepos();
   // Force re-render after repo selection to fix conditional rendering
   const [repoChanged, setRepoChanged] = React.useState(false);
@@ -47,17 +47,7 @@ export default function Repos({
         <Text fontSize="sm" opacity={0.7} mb={2}>
           Select repositories and branches to associate with prompts.
         </Text>
-        {!isAuthenticated ? (
-          <Box p={6} textAlign="center" borderWidth="1px" borderRadius="md" borderColor="border.muted">
-            <VStack gap={4}>
-              <Text>Please login with GitHub to access your repositories</Text>
-              <Button onClick={() => login()}>
-                Login with GitHub
-              </Button>
-            </VStack>
-          </Box>
-        ) : (
-          <VStack gap={4}>
+        <VStack gap={4}>
             {user && (
               <Box
                 p={2}
@@ -192,8 +182,7 @@ export default function Repos({
                 </VStack>
               </Box>
             )}
-          </VStack>
-        )}
+        </VStack>
       </VStack>
     </Box>
   )
