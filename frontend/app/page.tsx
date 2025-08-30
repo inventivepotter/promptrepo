@@ -3,6 +3,7 @@
 import { Button, HStack, VStack, Text, Box, Spinner, Image, Container, Flex } from "@chakra-ui/react";
 import { useAuth } from "./(auth)/_components/AuthProvider";
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { PromptQuotes } from "@/components/PromptQuotes";
 import { Branding } from "@/components/Branding";
 
@@ -48,12 +49,20 @@ const AuthButton = () => {
 };
 
 const Demo = () => {
-  const { checkAuth } = useAuth();
+  const { checkAuth, isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     // Check authentication status on component mount
     checkAuth();
   }, [checkAuth]);
+
+  useEffect(() => {
+    // Redirect authenticated users to prompts page
+    if (isAuthenticated && !isLoading) {
+      router.push('/prompts');
+    }
+  }, [isAuthenticated, isLoading, router]);
 
 
   return (
