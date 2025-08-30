@@ -136,3 +136,5 @@ database.db
 
 backend/.env
 frontend/.env
+repos/*
+!repos/.gitkeep
