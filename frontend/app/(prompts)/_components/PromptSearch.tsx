@@ -38,12 +38,25 @@ export function PromptSearch({
   onRepoFilterChange,
   availableRepos,
 }: PromptSearchProps) {
+  const [repoSearchValue, setRepoSearchValue] = React.useState('');
+
   // Theme-aware colors
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
   const activeBg = useColorModeValue('blue.50', 'blue.900');
   const activeColor = useColorModeValue('blue.600', 'blue.300');
   const hoverBg = useColorModeValue('gray.50', 'gray.700');
+
+  // Filter repositories based on search value
+  const filteredRepos = availableRepos.filter(repo =>
+    repo.toLowerCase().includes(repoSearchValue.toLowerCase())
+  );
+
+  // Create filtered collection for combobox
+  const repoCollection = [
+    { label: 'All Repositories', value: '' },
+    ...filteredRepos.map(repo => ({ label: repo, value: repo }))
+  ];
 
   const handleSortToggle = (field: 'name' | 'updated_at') => {
     if (sortBy === field) {
@@ -87,13 +100,12 @@ export function PromptSearch({
               <Box minW="200px">
                 <Combobox.Root
                   collection={createListCollection({
-                    items: [
-                      { label: 'All Repositories', value: '' },
-                      ...availableRepos.map(repo => ({ label: repo, value: repo }))
-                    ]
+                    items: repoCollection
                   })}
                   value={[repoFilter]}
                   onValueChange={(e) => onRepoFilterChange(e.value[0] || '')}
+                  inputValue={repoSearchValue}
+                  onInputValueChange={(e) => setRepoSearchValue(e.inputValue)}
                   openOnClick
                 >
                   <Combobox.Control position="relative">
@@ -116,7 +128,7 @@ export function PromptSearch({
                         <Combobox.ItemText>All Repositories</Combobox.ItemText>
                         <Combobox.ItemIndicator />
                       </Combobox.Item>
-                      {availableRepos.map(repo => (
+                      {filteredRepos.map(repo => (
                         <Combobox.Item key={repo} item={repo}>
                           <Combobox.ItemText>{repo}</Combobox.ItemText>
                           <Combobox.ItemIndicator />

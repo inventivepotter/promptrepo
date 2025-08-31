@@ -52,10 +52,26 @@ export default function LLMStep({
 }: LLMStepProps) {
   const [availableModels, setAvailableModels] = useState<LLMProviderModel[]>([]);
   const [isFetchingModels, setIsFetchingModels] = useState(false);
+  const [providerSearchValue, setProviderSearchValue] = useState('');
+  const [modelSearchValue, setModelSearchValue] = useState('');
 
   // Find the current provider to check if it requires custom API base
   const currentProvider = availableProviders.find(p => p.id === selectedProvider);
   const requiresApiBase = currentProvider?.custom_api_base || false;
+
+  // Filter providers based on search value
+  const filteredProviders = (Array.isArray(availableProviders) ? availableProviders : [])
+    .filter(provider =>
+      provider.name.toLowerCase().includes(providerSearchValue.toLowerCase()) ||
+      provider.id.toLowerCase().includes(providerSearchValue.toLowerCase())
+    );
+
+  // Filter models based on search value
+  const filteredModels = (Array.isArray(availableModels) ? availableModels : [])
+    .filter(model =>
+      model.name.toLowerCase().includes(modelSearchValue.toLowerCase()) ||
+      model.id.toLowerCase().includes(modelSearchValue.toLowerCase())
+    );
 
   // Fetch models when provider and API key are available
   useEffect(() => {
@@ -123,13 +139,15 @@ export default function LLMStep({
                 <Box flex={1}>
                   <Combobox.Root
                     collection={createListCollection({
-                      items: (Array.isArray(availableProviders) ? availableProviders : []).map((p: LLMProvider) => ({ label: p.name, value: p.id }))
+                      items: filteredProviders.map((p: LLMProvider) => ({ label: p.name, value: p.id }))
                     })}
                     value={[selectedProvider]}
                     onValueChange={(e) => {
                       const newProvider = e.value?.[0] || '';
                       handleProviderChange(newProvider);
                     }}
+                    inputValue={providerSearchValue}
+                    onInputValueChange={(e) => setProviderSearchValue(e.inputValue)}
                     openOnClick
                     disabled={disabled || isLoadingProviders}
                   >
@@ -145,7 +163,7 @@ export default function LLMStep({
                     </Combobox.Control>
                     <Combobox.Positioner>
                       <Combobox.Content>
-                        {(Array.isArray(availableProviders) ? availableProviders : []).map((provider: LLMProvider) => (
+                        {filteredProviders.map((provider: LLMProvider) => (
                           <Combobox.Item key={provider.id} item={provider.id}>
                             <Combobox.ItemText>{provider.name}</Combobox.ItemText>
                             <Combobox.ItemIndicator />
@@ -175,7 +193,7 @@ export default function LLMStep({
               <Box width="100%">
                 <Text mb={2} fontWeight="medium">API Base URL</Text>
                 <Input
-                  placeholder="Enter API base URL (e.g., http://localhost:1234/v1)"
+                  placeholder="Enter API base URL (e.g., http://localhost:1234/v1, http://host.docker.internal:1234/v1)"
                   value={apiBaseUrl || ''}
                   onChange={(e) => setApiBaseUrl(e.target.value)}
                   disabled={disabled}
@@ -192,10 +210,12 @@ export default function LLMStep({
                 <Text mb={2} fontWeight="medium">2. Model</Text>
                 <Combobox.Root
                   collection={createListCollection({
-                    items: (Array.isArray(availableModels) ? availableModels : []).map((m: LLMProviderModel) => ({ label: m.name, value: m.id }))
+                    items: filteredModels.map((m: LLMProviderModel) => ({ label: m.name, value: m.id }))
                   })}
                   value={[selectedModel]}
                   onValueChange={(e) => setSelectedModel(e.value[0] || '')}
+                  inputValue={modelSearchValue}
+                  onInputValueChange={(e) => setModelSearchValue(e.inputValue)}
                   openOnClick
                   disabled={disabled || isFetchingModels}
                 >
@@ -211,7 +231,7 @@ export default function LLMStep({
                   </Combobox.Control>
                   <Combobox.Positioner>
                     <Combobox.Content>
-                      {(Array.isArray(availableModels) ? availableModels : []).map((model: LLMProviderModel) => (
+                      {filteredModels.map((model: LLMProviderModel) => (
                         <Combobox.Item key={model.id} item={model.id}>
                           <Combobox.ItemText>{model.name}</Combobox.ItemText>
                           <Combobox.ItemIndicator />

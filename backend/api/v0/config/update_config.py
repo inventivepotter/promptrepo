@@ -50,9 +50,12 @@ async def update_config(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Admin privileges required to update configuration"
                 )
-        
-        # Update environment variables from the config
-        update_env_vars_from_config(config)
+            
+            # Validate uniqueness of LLM configurations
+            _validate_llm_configs_uniqueness(config.llmConfigs)
+            
+            # Update environment variables from the config
+            update_env_vars_from_config(config)
         
         # Reload settings to reflect the changes
         # Note: In production, you might want to restart the application
@@ -70,3 +73,28 @@ async def update_config(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update config: {str(e)}"
         )
+
+
+def _validate_llm_configs_uniqueness(llm_configs):
+    """
+    Validates that LLM configurations are unique based on the combination of
+    provider, model, apiKey, and apiBaseUrl.
+    """
+    seen_configs = set()
+    
+    for config in llm_configs:
+        # Create a tuple to represent the unique combination
+        config_key = (
+            config.provider,
+            config.model,
+            config.apiKey,
+            config.apiBaseUrl or ""  # Handle None as empty string for consistency
+        )
+        
+        if config_key in seen_configs:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Duplicate LLM configuration found. The combination of provider, model, API base URL, and API key must be unique."
+            )
+        
+        seen_configs.add(config_key)

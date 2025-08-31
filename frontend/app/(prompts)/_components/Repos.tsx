@@ -36,6 +36,20 @@ export default function Repos({
   const repos = getAvailableRepos();
   // Force re-render after repo selection to fix conditional rendering
   const [repoChanged, setRepoChanged] = React.useState(false);
+  const [repoSearchValue, setRepoSearchValue] = React.useState('');
+  const [branchSearchValue, setBranchSearchValue] = React.useState('');
+
+  // Filter repositories based on search value
+  const filteredRepos = repos.filter(repo =>
+    repo.name.toLowerCase().includes(repoSearchValue.toLowerCase()) ||
+    repo.id.toLowerCase().includes(repoSearchValue.toLowerCase())
+  );
+
+  // Filter branches based on search value
+  const currentRepo = repos.find(r => r.id === selectedRepo);
+  const filteredBranches = currentRepo?.all_branches?.filter(branch =>
+    branch.toLowerCase().includes(branchSearchValue.toLowerCase())
+  ) || [];
 
   React.useEffect(() => {
     setRepoChanged(false);
@@ -62,7 +76,7 @@ export default function Repos({
                 boxShadow="md"
               >
                 <Text fontWeight="normal" fontSize="sm" color="green.600" letterSpacing="0.01em">
-                  Successfully logged in as {user.login}!
+                  Successfully logged in as {user.name}!
                 </Text>
               </Box>
             )}
@@ -73,7 +87,7 @@ export default function Repos({
                   <Text mb={2} fontWeight="medium">Repository</Text>
                   <Combobox.Root
                     collection={createListCollection({
-                      items: repos.map(r => ({ label: r.name, value: r.id }))
+                      items: filteredRepos.map(r => ({ label: r.name, value: r.id }))
                     })}
                     value={[selectedRepo]}
                     onValueChange={(e) => {
@@ -83,6 +97,8 @@ export default function Repos({
                         setSelectedBranch('');
                       }
                     }}
+                    inputValue={repoSearchValue}
+                    onInputValueChange={(e) => setRepoSearchValue(e.inputValue)}
                     openOnClick
                   >
                     <Combobox.Control position="relative">
@@ -96,7 +112,7 @@ export default function Repos({
                     </Combobox.Control>
                     <Combobox.Positioner>
                       <Combobox.Content>
-                        {repos.map(repo => (
+                        {filteredRepos.map(repo => (
                           <Combobox.Item key={repo.id} item={repo.id}>
                             <Combobox.ItemText>{repo.name}</Combobox.ItemText>
                             <Combobox.ItemIndicator />
@@ -111,10 +127,12 @@ export default function Repos({
                     <Text mb={2} fontWeight="medium">Branch</Text>
                     <Combobox.Root
                       collection={createListCollection({
-                        items: (repos.find(r => r.id === selectedRepo)?.all_branches || []).map(b => ({ label: b, value: b }))
+                        items: filteredBranches.map(b => ({ label: b, value: b }))
                       })}
                       value={[selectedBranch]}
                       onValueChange={(e) => setSelectedBranch(e.value[0] || '')}
+                      inputValue={branchSearchValue}
+                      onInputValueChange={(e) => setBranchSearchValue(e.inputValue)}
                       openOnClick
                     >
                       <Combobox.Control position="relative">
@@ -128,7 +146,7 @@ export default function Repos({
                       </Combobox.Control>
                       <Combobox.Positioner>
                         <Combobox.Content>
-                          {repos.find(r => r.id === selectedRepo)?.all_branches?.map(branch => (
+                          {filteredBranches.map(branch => (
                             <Combobox.Item key={branch} item={branch}>
                               <Combobox.ItemText>{branch}</Combobox.ItemText>
                               <Combobox.ItemIndicator />

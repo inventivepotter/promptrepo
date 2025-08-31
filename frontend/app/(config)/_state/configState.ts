@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { ConfigState } from '../_types/state';
 import { getConfig } from '../_lib/getConfig';
 import { modelsApi } from '../_lib/api/modelsApi';
+import { errorNotification } from '@/lib/notifications';
 
 export const initConfig: ConfigState['config'] = {
   hostingType: "",
@@ -183,6 +184,23 @@ export function useConfigState() {
         apiKey: currentStep.apiKey,
         apiBaseUrl: currentStep.apiBaseUrl
       };
+
+      // Check for uniqueness: combination of provider, model, apiBaseUrl, and apiKey must be unique
+      const isDuplicate = configState.config.llmConfigs.some(existingConfig =>
+        existingConfig.provider === newConfig.provider &&
+        existingConfig.model === newConfig.model &&
+        existingConfig.apiKey === newConfig.apiKey &&
+        existingConfig.apiBaseUrl === newConfig.apiBaseUrl
+      );
+
+      if (isDuplicate) {
+        errorNotification(
+          'Duplicate Configuration',
+          'This LLM configuration already exists. The combination of provider, model, API base URL, and API key must be unique.'
+        );
+        return;
+      }
+
       updateConfigState(prev => ({
         ...prev,
         config: {

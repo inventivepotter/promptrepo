@@ -26,6 +26,19 @@ export function ModelFieldGroup({
   configuredModels,
   updateField
 }: ModelFieldGroupProps) {
+  const [primaryModelSearchValue, setPrimaryModelSearchValue] = React.useState('');
+  const [failoverModelSearchValue, setFailoverModelSearchValue] = React.useState('');
+
+  // Filter models based on search values
+  const filteredModelsForPrimary = configuredModels.filter(model =>
+    model.name.toLowerCase().includes(primaryModelSearchValue.toLowerCase()) ||
+    model.id.toLowerCase().includes(primaryModelSearchValue.toLowerCase())
+  );
+
+  const filteredModelsForFailover = configuredModels.filter(model =>
+    model.name.toLowerCase().includes(failoverModelSearchValue.toLowerCase()) ||
+    model.id.toLowerCase().includes(failoverModelSearchValue.toLowerCase())
+  );
 
   return (
     <Box opacity={!formData.repo ? 0.5 : 1}>
@@ -45,13 +58,15 @@ export function ModelFieldGroup({
             </HStack>
             <Combobox.Root
               collection={createListCollection({
-                items: configuredModels.map(model => ({
-                  value: model.id + '/' + (model.models?.[0]?.id || ''),
-                  label: model.name + ` (${model.name})`
+                items: filteredModelsForPrimary.map(model => ({
+                  value: model.id,
+                  label: model.name
                 }))
               })}
               value={[formData.model || '']}
               onValueChange={(e) => updateField('model', e.value[0] || '')}
+              inputValue={primaryModelSearchValue}
+              onInputValueChange={(e) => setPrimaryModelSearchValue(e.inputValue)}
               openOnClick
             >
               <Combobox.Control position="relative">
@@ -65,14 +80,9 @@ export function ModelFieldGroup({
               </Combobox.Control>
               <Combobox.Positioner>
                 <Combobox.Content>
-                  {createListCollection({
-                    items: configuredModels.map(model => ({
-                      value: model.id + '/' + (model.models?.[0]?.id || ''),
-                      label: model.name + ` (${model.name})`
-                    }))
-                  }).items.map((option) => (
-                    <Combobox.Item key={option.value} item={option.value}>
-                      <Combobox.ItemText>{option.label}</Combobox.ItemText>
+                  {filteredModelsForPrimary.map(model => (
+                    <Combobox.Item key={model.id} item={model.id}>
+                      <Combobox.ItemText>{model.name}</Combobox.ItemText>
                       <Combobox.ItemIndicator />
                     </Combobox.Item>
                   ))}
@@ -92,13 +102,15 @@ export function ModelFieldGroup({
             </HStack>
             <Combobox.Root
               collection={createListCollection({
-                items: configuredModels.map(model => ({
-                  value: model.id + '/' + (model.models?.[0]?.id || ''),
-                  label: model.name + ` (${model.name})`
+                items: filteredModelsForFailover.map(model => ({
+                  value: model.id,
+                  label: model.name
                 }))
               })}
               value={[formData.failover_model || '']}
               onValueChange={(e) => updateField('failover_model', e.value[0] || '')}
+              inputValue={failoverModelSearchValue}
+              onInputValueChange={(e) => setFailoverModelSearchValue(e.inputValue)}
               openOnClick
             >
               <Combobox.Control position="relative">
@@ -112,14 +124,9 @@ export function ModelFieldGroup({
               </Combobox.Control>
               <Combobox.Positioner>
                 <Combobox.Content>
-                  {createListCollection({
-                    items: configuredModels.map(model => ({
-                      value: model.id + '/' + (model.models?.[0]?.id || ''),
-                      label: model.name + ` (${model.name})`
-                    }))
-                  }).items.map((option) => (
-                    <Combobox.Item key={option.value} item={option.value}>
-                      <Combobox.ItemText>{option.label}</Combobox.ItemText>
+                  {filteredModelsForFailover.map(model => (
+                    <Combobox.Item key={model.id} item={model.id}>
+                      <Combobox.ItemText>{model.name}</Combobox.ItemText>
                       <Combobox.ItemIndicator />
                     </Combobox.Item>
                   ))}

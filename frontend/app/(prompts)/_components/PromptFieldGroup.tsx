@@ -30,10 +30,17 @@ export function PromptFieldGroup({
   updateField,
   updateRepoField
 }: PromptFieldGroupProps) {
+  const [repoSearchValue, setRepoSearchValue] = React.useState('');
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
 
   // Check if current repo exists and matches one of the available repos
   const isRepoDisabled = Boolean(formData.repo?.id && configuredRepos.some(repo => repo.id === formData.repo?.id));
+
+  // Filter repositories based on search value
+  const filteredRepos = configuredRepos.filter(repo =>
+    repo.name.toLowerCase().includes(repoSearchValue.toLowerCase()) ||
+    repo.id.toString().toLowerCase().includes(repoSearchValue.toLowerCase())
+  );
 
   return (
     <Box>
@@ -54,7 +61,7 @@ export function PromptFieldGroup({
 
         <Combobox.Root
           collection={createListCollection({
-            items: configuredRepos.map(repo => ({
+            items: filteredRepos.map(repo => ({
               label: repo.name,
               value: repo.id
             }))
@@ -73,6 +80,8 @@ export function PromptFieldGroup({
               updateRepoField(undefined);
             }
           }}
+          inputValue={repoSearchValue}
+          onInputValueChange={(e) => setRepoSearchValue(e.inputValue)}
           openOnClick
           disabled={isRepoDisabled}
         >
@@ -87,7 +96,7 @@ export function PromptFieldGroup({
           </Combobox.Control>
           <Combobox.Positioner>
             <Combobox.Content>
-              {configuredRepos.map(repo => (
+              {filteredRepos.map(repo => (
                 <Combobox.Item key={repo.id} item={repo.id.toString()}>
                   <Combobox.ItemText>{repo.name}</Combobox.ItemText>
                   <Combobox.ItemIndicator />
