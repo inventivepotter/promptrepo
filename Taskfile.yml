@@ -4,14 +4,6 @@ tasks:
   up:
     desc: "Build and run development containers in detached mode"
     cmds:
-      - mkdir -p database
-      - |
-        if [ ! -f database/data.db ]; then
-          touch database/data.db
-          echo "Created database/data.db"
-        else
-          echo "database/data.db already exists"
-        fi
       - docker-compose -f docker-compose.dev.yml up --build -d
       - echo "Development containers started"
       - docker-compose -f docker-compose.dev.yml logs -f
@@ -30,6 +22,16 @@ tasks:
     desc: "Stop development containers and remove volumes"
     cmds:
       - docker-compose -f docker-compose.dev.yml down -v
+
+  down-hard:
+    desc: "Stop containers, remove volumes, and clean database/repos folders"
+    cmds:
+      - task: down-volumes
+      - rm -rf backend/database
+      - rm -rf backend/repos
+      - rm -rf database
+      - rm -rf repos
+      - echo "Hard cleanup completed - removed database and repos folders"
 
   rebuild:
     desc: "Rebuild and restart development containers"

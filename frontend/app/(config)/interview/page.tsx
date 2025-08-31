@@ -5,9 +5,11 @@ import { Flex, Box, Text, Button } from "@chakra-ui/react"
 import { Container } from '@chakra-ui/react'
 import { useConfigState } from "../_state/configState"
 import { LoadingOverlay } from "@/components/LoadingOverlay"
+import { UnauthorizedScreen } from "@/components/UnauthorizedScreen"
 import HostingStep from '../_components/HostingStep'
 import AuthStep from '../_components/AuthStep'
 import LLMStep from '../_components/LLMStep'
+import AdminConfigStep from '../_components/AdminConfigStep'
 import Configurations from '../_components/DownloadConfigurations'
 import { postConfig } from "../_lib/postConfig"
 
@@ -27,6 +29,7 @@ export default function InterviewPage() {
     { title: 'Hosting Configuration', description: 'Choose how you want to deploy' },
     { title: 'Authentication Setup', description: 'Configure GitHub OAuth' },
     { title: 'LLM Configuration', description: 'Setup AI providers' },
+    { title: 'Admin Configuration', description: 'Setup administrator emails' },
     { title: 'Configuration', description: 'Download your .env file' }
   ]
 
@@ -51,7 +54,14 @@ export default function InterviewPage() {
       const providerKey = config.provider.toUpperCase()
       envContent += `${providerKey}_API_KEY=${config.apiKey}\n`
       envContent += `${providerKey}_MODEL=${config.model}\n`
+      if (config.apiBaseUrl) {
+        envContent += `${providerKey}_API_BASE_URL=${config.apiBaseUrl}\n`
+      }
     })
+    if (configState.config.adminEmails.length > 0) {
+      envContent += '\n# Admin Configuration\n'
+      envContent += `ADMIN_EMAILS=${configState.config.adminEmails.join(',')}\n`
+    }
     return envContent
   }
 
@@ -112,20 +122,42 @@ export default function InterviewPage() {
                 currentStep: { ...prev.currentStep, apiKey: key }
               }))
             }
+            apiBaseUrl={currentStep.apiBaseUrl}
+            setApiBaseUrl={url =>
+              setConfigState(prev => ({
+                ...prev,
+                currentStep: { ...prev.currentStep, apiBaseUrl: url }
+              }))
+            }
             llmConfigs={configState.config.llmConfigs}
             addLLMConfig={addLLMConfig}
             removeLLMConfig={removeLLMConfig}
             downloadEnvFile={downloadEnvFile}
-            availableModels={configState.availableModels}
+            availableProviders={configState.providers.available}
+            isLoadingProviders={configState.providers.isLoading}
           />
         )
       case 4:
+        return (
+          <AdminConfigStep
+            adminEmails={configState.config.adminEmails}
+            setAdminEmails={(emails) => updateConfigField("adminEmails", emails)}
+          />
+        )
+      case 5:
         return (
           <Configurations downloadEnvFile={downloadEnvFile} />
         )
       default:
         return null
     }
+  }
+
+  // Show unauthorized screen if loading or any error exists
+  if (configState.isLoading || configState.error) {
+    return (
+      <UnauthorizedScreen />
+    );
   }
 
   return (
@@ -226,7 +258,8 @@ export default function InterviewPage() {
               (currentStep.step === 1 && !configState.config.hostingType) ||
               (currentStep.step === 2 && configState.config.hostingType === 'multi-user' &&
                 (!configState.config.githubClientId || !configState.config.githubClientSecret)) ||
-              (currentStep.step === 3 && configState.config.llmConfigs.length === 0)
+              (currentStep.step === 3 && configState.config.llmConfigs.length === 0) ||
+              (currentStep.step === 4 && configState.config.adminEmails.length === 0)
             }
           >
             Next →

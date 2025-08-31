@@ -14,7 +14,7 @@ class HttpClient {
 
   constructor(config: HttpClientConfig = {}) {
     // Use the Next.js API proxy instead of calling backend directly
-    this.baseUrl = config.baseUrl || process.env.NEXT_PUBLIC_FRONTEND_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+    this.baseUrl = config.baseUrl || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
     
     // Add port if specified
     if (config.port && !this.baseUrl.includes(':')) {

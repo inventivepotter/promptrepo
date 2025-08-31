@@ -99,7 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       <Stack gap={1} p={2} pt={3}>
         {/* Setup */}
         <Box as="span" width="100%">
-          <Link href="/setup" style={{ textDecoration: 'none' }}>
+          <Link href="/config" style={{ textDecoration: 'none' }}>
             <Button
               variant="ghost"
               justifyContent={isCollapsed ? "center" : "flex-start"}
@@ -117,7 +117,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
               <LuSettings size={16} color={mutedTextColor} />
               {!isCollapsed && (
                 <Text ml={3} fontSize="14px" color={textColor} fontWeight="500">
-                  Setup
+                  Configuration
                 </Text>
               )}
             </Button>

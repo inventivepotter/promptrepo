@@ -13,12 +13,12 @@ import {
 import { LuSave } from 'react-icons/lu';
 import { useColorModeValue } from '@/components/ui/color-mode';
 
-interface SetupHeaderProps {
+interface ConfigHeaderProps {
   onSave: () => void;
   isLoading?: boolean;
 }
 
-export function SetupHeader({ onSave, isLoading = false }: SetupHeaderProps) {
+export function ConfigHeader({ onSave, isLoading = false }: ConfigHeaderProps) {
   const headerBg = useColorModeValue('gray.50', 'gray.900');
 
   return (

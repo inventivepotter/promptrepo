@@ -1,6 +1,6 @@
 """
-LLM-related API endpoints for PromptRepo.
-Provides information about available LLM providers and models.
+Configured LLM providers endpoint.
+Returns standardized provider information based on AppConfig.
 """
 from fastapi import APIRouter
 from typing import Dict, List
@@ -13,10 +13,10 @@ from utils.constants import PROVIDER_NAMES_MAP
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-@router.get("/providers/available", response_model=ProvidersResponse)
-async def get_available_providers() -> ProvidersResponse:
+@router.get("/providers/configured", response_model=ProvidersResponse)
+async def get_configured_providers() -> ProvidersResponse:
     """
-    Get available LLM providers and their models.
+    Get configured LLM providers and their models.
     Returns standardized provider information based on AppConfig.
     """
     try:
@@ -44,9 +44,9 @@ async def get_available_providers() -> ProvidersResponse:
             for provider_id, models in provider_models.items()
         ]
         
-        logger.info(f"Returning {len(providers)} available providers")
+        logger.info(f"Returning {len(providers)} configured providers")
         return ProvidersResponse(providers=providers)
         
     except Exception as e:
-        logger.error(f"Error getting available providers: {e}")
+        logger.error(f"Error getting configured providers: {e}")
         return ProvidersResponse(providers=[])

@@ -7,6 +7,7 @@ class LlmConfig(BaseModel):
     provider: str
     model: str
     apiKey: str
+    apiBaseUrl: str | None = None
 
 
 class AppConfig(BaseModel):
@@ -15,6 +16,7 @@ class AppConfig(BaseModel):
     githubClientId: str
     githubClientSecret: str
     llmConfigs: List[LlmConfig]
+    adminEmails: List[str]
 
 
 # Schemas for LLM Providers endpoint

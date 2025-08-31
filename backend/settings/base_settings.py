@@ -15,7 +15,7 @@ class Settings(BaseSettings):
 
     # Database Configuration
     database_url: str = Field(
-        default="sqlite:///./database.db",
+        default="sqlite:///./database/promptrepo.db",
         description="Database URL"
     )
     database_echo: bool = Field(default=True, description="Echo SQL queries")
@@ -34,22 +34,26 @@ class Settings(BaseSettings):
     github_client_id: str = Field(default="", description="GitHub OAuth client ID", alias="GITHUB_CLIENT_ID")
     github_client_secret: str = Field(default="", description="GitHub OAuth client secret", alias="GITHUB_CLIENT_SECRET")
     llm_configs_json: str = Field(default="[]", description="LLM configurations as JSON string", alias="LLM_CONFIGS")
+    admin_emails: str = Field(default="[]", description="Admin user emails as JSON string", alias="ADMIN_EMAILS")
 
     @property
     def app_config(self) -> AppConfig:
         """Get the structured app configuration"""
         llm_configs = json.loads(self.llm_configs_json) if self.llm_configs_json else []
+        admin_emails = json.loads(self.admin_emails) if self.admin_emails else []
         return AppConfig(
             hostingType=self.hosting_type,
             githubClientId=self.github_client_id,
             githubClientSecret=self.github_client_secret,
-            llmConfigs=llm_configs
+            llmConfigs=llm_configs,
+            adminEmails=admin_emails
         )
 
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",
-        "case_sensitive": False
+        "case_sensitive": False,
+        "extra": "ignore"
     }
 
 

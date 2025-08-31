@@ -9,10 +9,13 @@ services:
       - "5678:5678"  # Debug port
     environment:
       - PYTHONPATH=/app
+    env_file:
+      - .env
     volumes:
       - ./backend:/app
       - /app/.venv
-      - ./database/data.db:/app/database.db
+      - ./database:/database
+      - ./repos:/repos
     command: ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
     networks:
       - promptrepo-network
@@ -26,7 +29,7 @@ services:
       - "3000:3000"
       - "9229:9229"  # Node.js debug port
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8080
+      - BACKEND_URL=http://backend:8080
       - PORT=3000
     volumes:
       - ./frontend:/app

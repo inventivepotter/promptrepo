@@ -9,7 +9,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
   return (
     <html suppressHydrationWarning>
       <body>
-        <Provider>
+        <Provider defaultTheme="light">
           <AuthProvider>
             <Stack direction="row" gap={0} align="stretch" minHeight="100vh">
               <Sidebar />

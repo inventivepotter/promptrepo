@@ -3,7 +3,7 @@ All pending tasks in order of priority
 - [x] Front End Backend seperation
 - [x] Docker compose
 - [ ] Write Agent.md
-- [ ] Route HomePage
+- [x] Route HomePage
     - [ ] Introduce a new API for `configsExists`
     - [ ] Use `configsExists` to route HomePage to `/interview`
     - [ ] `/interview` should only be visible `configsExists` `false` (either from state or from apiCall)
