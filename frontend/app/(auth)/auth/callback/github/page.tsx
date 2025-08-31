@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Box, Center, Spinner, Text, VStack } from '@chakra-ui/react';
 import { handleAuthCallback } from '../../../_lib/handleAuthCallback';
@@ -9,9 +9,15 @@ import { errorNotification } from '@/lib/notifications';
 export default function GitHubCallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const hasProcessed = useRef(false);
 
   useEffect(() => {
+    // Prevent duplicate processing (fixes React StrictMode double execution)
+    if (hasProcessed.current) return;
+
     const processCallback = async () => {
+      hasProcessed.current = true;
+      
       try {
         const code = searchParams.get('code');
         const state = searchParams.get('state');

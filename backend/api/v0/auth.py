@@ -3,11 +3,10 @@ Authentication routes for PromptRepo API.
 Handles GitHub OAuth flow and session management.
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Header
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, Annotated
-from sqlmodel import Session
+from sqlmodel import Session, select, func
 import uuid
-import secrets
 from datetime import datetime, timedelta
 from datetime import UTC
 import logging
@@ -17,6 +16,7 @@ from services import create_github_service
 from services.github_service import GitHubService
 from services.session_service import SessionService
 from models.database import get_session
+from models.user_sessions import User_Sessions
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -234,7 +234,7 @@ async def verify_session(token: str = Depends(get_bearer_token), db: Session = D
             primary_email = await github_service.get_primary_email(user_session.oauth_token)
 
             return User(
-                id=str(github_user.id),
+                id=uuid.UUID(int=github_user.id) if github_user.id else None,
                 username=github_user.login,
                 name=github_user.name or github_user.login,
                 email=primary_email or "",
@@ -244,7 +244,7 @@ async def verify_session(token: str = Depends(get_bearer_token), db: Session = D
         logger.warning(f"Could not validate GitHub token for session {token}: {e}")
         # Return basic user info from database if GitHub validation fails
         return User(
-            id="unknown",
+            id=None,
             username=user_session.username,
             name=user_session.username,
             email="",
@@ -329,11 +329,8 @@ async def auth_health_check(db: Session = Depends(get_session)):
     # Clean up expired sessions
     expired_count = SessionService.cleanup_expired_sessions(db)
 
-    # Get session count
-    from sqlmodel import select, func
-    from models.user_sessions import User_Sessions
 
-    statement = select(func.count(User_Sessions.id))
+    statement = select(func.count(User_Sessions.session_id))
     active_sessions_count = db.exec(statement).one()
 
     return {

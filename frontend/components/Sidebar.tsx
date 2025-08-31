@@ -23,7 +23,7 @@ import {
   LuUser,
 } from 'react-icons/lu'
 import { useColorMode, useColorModeValue } from './ui/color-mode'
-import { useAuth } from '@/app/(auth)/_state/authState'
+import { useAuth } from '@/app/(auth)/_components/AuthProvider'
 import { Branding } from './Branding'
 
 interface SidebarProps {
@@ -152,41 +152,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
         </Box>
       </Stack>
 
-      {/* User Profile Section - Only show when authenticated */}
-      {isAuthenticated && user && (
-        <Box p={2} mt="auto" mb={2}>
-          <Separator borderColor={borderColor} mb={3} />
-          
-          {/* User Profile */}
-          <Box
-            p={isCollapsed ? 2 : 3}
-            bg={userProfileBg}
-            borderRadius="8px"
-            border="1px solid"
-            borderColor={borderColor}
-          >
-            {isCollapsed ? (
-              <HStack justify="center">
-                <Box
-                  width="32px"
-                  height="32px"
-                  borderRadius="full"
-                  bg={mutedTextColor}
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  backgroundImage={user.avatar_url ? `url(${user.avatar_url})` : undefined}
-                  backgroundSize="cover"
-                  backgroundPosition="center"
-                >
-                  {!user.avatar_url && (
-                    <LuUser size={16} color="white" />
-                  )}
-                </Box>
-              </HStack>
-            ) : (
-              <VStack gap={2} align="stretch">
-                <HStack gap={3} align="center">
+      {/* Bottom section */}
+      <Box position="absolute" bottom={0} left={0} right={0} p={2}>
+        <Stack gap={1}>
+          {/* User Profile Section - Only show when authenticated */}
+          {isAuthenticated && user && (
+            <Box
+              p={isCollapsed ? 2 : 3}
+              bg={userProfileBg}
+              borderRadius="8px"
+              border="1px solid"
+              borderColor={borderColor}
+              mb={2}
+            >
+              {isCollapsed ? (
+                <HStack justify="center">
                   <Box
                     width="32px"
                     height="32px"
@@ -203,45 +183,61 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                       <LuUser size={16} color="white" />
                     )}
                   </Box>
-                  <VStack gap={0} align="flex-start" flex={1} minW={0}>
-                    <Text
-                      fontSize="13px"
-                      fontWeight="600"
-                      color={textColor}
-                      width="100%"
-                      overflow="hidden"
-                      textOverflow="ellipsis"
-                      whiteSpace="nowrap"
-                    >
-                      {user.name || user.login}
-                    </Text>
-                    <Text
-                      fontSize="12px"
-                      color={mutedTextColor}
-                      width="100%"
-                      overflow="hidden"
-                      textOverflow="ellipsis"
-                      whiteSpace="nowrap"
-                    >
-                      @{user.login}
-                    </Text>
-                  </VStack>
                 </HStack>
-              </VStack>
-            )}
-          </Box>
-        </Box>
-      )}
+              ) : (
+                <VStack gap={2} align="stretch">
+                  <HStack gap={3} align="center">
+                    <Box
+                      width="32px"
+                      height="32px"
+                      borderRadius="full"
+                      bg={mutedTextColor}
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                      backgroundImage={user.avatar_url ? `url(${user.avatar_url})` : undefined}
+                      backgroundSize="cover"
+                      backgroundPosition="center"
+                    >
+                      {!user.avatar_url && (
+                        <LuUser size={16} color="white" />
+                      )}
+                    </Box>
+                    <VStack gap={0} align="flex-start" flex={1} minW={0}>
+                      <Text
+                        fontSize="13px"
+                        fontWeight="600"
+                        color={textColor}
+                        width="100%"
+                        overflow="hidden"
+                        textOverflow="ellipsis"
+                        whiteSpace="nowrap"
+                      >
+                        {user.name || user.username}
+                      </Text>
+                      <Text
+                        fontSize="12px"
+                        color={mutedTextColor}
+                        width="100%"
+                        overflow="hidden"
+                        textOverflow="ellipsis"
+                        whiteSpace="nowrap"
+                      >
+                        @{user.username}
+                      </Text>
+                    </VStack>
+                  </HStack>
+                </VStack>
+              )}
+            </Box>
+          )}
 
-      {/* Bottom section */}
-      <Box position="absolute" bottom={0} left={0} right={0} p={2}>
-        <Stack gap={1}>
-          {!isAuthenticated && <Separator borderColor={borderColor} />}
-          
+          <Separator borderColor={borderColor} />
+
           {/* GitHub Login or Logout Button */}
           {isAuthenticated ? (
             <Button
-              variant="outline"
+              variant="ghost"
               justifyContent={isCollapsed ? "center" : "flex-start"}
               size="sm"
               width="100%"
@@ -254,7 +250,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
               fontWeight="500"
               transition="all 0.15s ease"
               onClick={handleAuth}
-              colorScheme="red"
             >
               <LuLogOut size={16} color={mutedTextColor} />
               {!isCollapsed && (

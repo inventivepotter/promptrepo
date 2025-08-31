@@ -130,8 +130,8 @@ class SessionService:
             if session_data:
                 user_session.data = session_data
 
-            # Update modified timestamp (should happen automatically)
-            user_session.modified_at = datetime.now(UTC)
+            # Update accessed timestamp (should happen automatically)
+            user_session.accessed_at = datetime.now(UTC)
 
             db.add(user_session)
             db.commit()
@@ -248,7 +248,13 @@ class SessionService:
             ttl = timedelta(minutes=ttl_minutes)
             expiry_time = datetime.now(UTC) - ttl
 
-            return user_session.modified_at > expiry_time
+            # Ensure both datetimes have timezone info for comparison
+            accessed_at = user_session.accessed_at
+            if accessed_at.tzinfo is None:
+                # If accessed_at is naive, assume it's UTC
+                accessed_at = accessed_at.replace(tzinfo=UTC)
+
+            return accessed_at > expiry_time
 
         except Exception as e:
             logger.error(f"Failed to validate session {session_id}: {e}")

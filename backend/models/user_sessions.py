@@ -50,6 +50,9 @@ class User_Sessions(SQLModel, table=True):
     username: str = Field(foreign_key="users.username", index=True, description="GitHub username")
     session_id: str = Field(unique=True, index=True, description="Session identifier sent to frontend")
     oauth_token: str = Field(description="GitHub OAuth access token")
+    
+    # Relationship back to User
+    user: Optional["User"] = Relationship(back_populates="sessions")
     # Timestamps for tracking
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC),
                                  sa_column=Column(DateTime,
@@ -87,9 +90,9 @@ class User_Sessions(SQLModel, table=True):
             ttl: timedelta after which sessions are considered expired
         """
         expiration_time = datetime.now(UTC) - ttl
-        statement = select(cls).where(cls.modified_at < expiration_time)
+        statement = select(cls).where(cls.accessed_at < expiration_time)
         expired_sessions = db.exec(statement).all()
         for session in expired_sessions:
             db.delete(session)
         db.commit()
-        return len(expired_sessions)  # Return how many were deleted
+        return len(expired_sessions)

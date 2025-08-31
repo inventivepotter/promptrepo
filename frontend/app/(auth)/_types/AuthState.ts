@@ -1,12 +1,12 @@
 export interface User {
   id: string;
-  login: string;
+  username: string;
   name: string;
   email: string;
   avatar_url: string;
-  html_url: string;
-  created_at: string;
-  updated_at: string;
+  github_id: string | null;
+  html_url: string | null;
+  sessions: unknown;
 }
 
 export interface AuthState {
