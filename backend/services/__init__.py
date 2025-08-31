@@ -20,7 +20,7 @@ def create_github_service() -> GitHubService:
     Raises:
         ValueError: If GitHub credentials are not configured
     """
-    if not settings.github_client_id or not settings.github_client_secret:
+    if not settings.auth_settings.github_client_id or not settings.auth_settings.github_client_secret:
         raise ValueError(
             "GitHub OAuth credentials not configured. "
             "Please set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET environment variables."
@@ -29,8 +29,8 @@ def create_github_service() -> GitHubService:
     # Default redirect URI to frontend callback
         # Adjust for production environment
     return GitHubService(
-        client_id=settings.github_client_id,
-        client_secret=settings.github_client_secret,
+        client_id=settings.auth_settings.github_client_id,
+        client_secret=settings.auth_settings.github_client_secret,
     )
 
 # You can add more service factories here as needed

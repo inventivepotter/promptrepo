@@ -19,12 +19,25 @@ export default function AuthStep({
   setGithubClientSecret,
   disabled = false
 }: AuthStepProps) {
-  if (hostingType === 'self') {
+  if (hostingType === 'individual') {
     return (
       <VStack gap={4}>
         <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.emphasized">
           <Text fontWeight="normal" fontSize="sm" color="blue.fg">
-            For self-use hosting, no additional authentication setup is required.
+            For individual use, no additional authentication setup is required.
+          </Text>
+        </Box>
+        <Text>You can proceed to the next step.</Text>
+      </VStack>
+    )
+  }
+
+  if (hostingType === 'multi-tenant') {
+    return (
+      <VStack gap={4}>
+        <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.emphasized">
+          <Text fontWeight="normal" fontSize="sm" color="blue.fg">
+            For multi-tenant hosting, GitHub OAuth is handled per tenant. No global configuration is needed here.
           </Text>
         </Box>
         <Text>You can proceed to the next step.</Text>
@@ -36,7 +49,7 @@ export default function AuthStep({
       <VStack gap={6} align="stretch">
         <Text fontSize="lg" fontWeight="bold">GitHub OAuth Configuration</Text>
         <Text opacity={0.7} fontSize="sm">
-          To enable multi-user access, you will need to create a GitHub OAuth App and provide the credentials.
+          To enable organization access, you will need to create a GitHub OAuth App and provide the credentials.
         </Text>
         <VStack gap={4} align="stretch">
           <Box>

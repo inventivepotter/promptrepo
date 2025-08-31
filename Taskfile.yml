@@ -24,14 +24,11 @@ tasks:
       - docker-compose -f docker-compose.dev.yml down -v
 
   down-hard:
-    desc: "Stop containers, remove volumes, and clean database/repos folders"
+    desc: "Stop containers, remove volumes, and clean persistence folder"
     cmds:
       - task: down-volumes
-      - rm -rf backend/database
-      - rm -rf backend/repos
-      - rm -rf database
-      - rm -rf repos
-      - echo "Hard cleanup completed - removed database and repos folders"
+      - rm -rf persistence
+      - echo "Hard cleanup completed - removed persistence folder"
 
   rebuild:
     desc: "Rebuild and restart development containers"

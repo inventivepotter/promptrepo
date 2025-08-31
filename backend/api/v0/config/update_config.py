@@ -6,7 +6,7 @@ from typing import Optional
 from sqlmodel import Session
 
 from schemas.config import AppConfig
-from .utils import update_env_vars_from_config, get_current_config, is_config_empty, get_user_email
+from .utils import update_env_vars_from_config, get_current_config, is_config_empty, validate_hosting_authorization
 from .auth import get_bearer_token
 from models.database import get_session
 from settings.base_settings import settings
@@ -27,34 +27,28 @@ async def update_config(
     try:
         current_config = get_current_config()
         
-        # If config is not empty, check if user is admin
+        # Validate hosting type - reject saves for non-individual hosting types
+        hosting_type = getattr(config, 'hostingType', '') or ''
+        
+        if hosting_type != "individual":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Configuration saves are only allowed for individual hosting. Please update your ENV restart the service for updating configs."
+            )
+        
+        # If config is not empty, check authorization based on hosting type
         if not is_config_empty(current_config):
-            if not token:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Authentication required"
-                )
+            # Use hosting-aware authorization validation
+            await validate_hosting_authorization(current_config, token, db)
             
-            # Get user's email using the utility function
-            user_email = await get_user_email(token, db)
+            # Validate hosting-type specific configurations
+            _validate_hosting_specific_config(config)
             
-            if not user_email:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Unable to retrieve user email"
-                )
+            # Validate uniqueness of LLM configurations (only if they exist)
+            if hasattr(config, 'llmConfigs') and config.llmConfigs:
+                _validate_llm_configs_uniqueness(config.llmConfigs)
             
-            # Check if user email is in admin list
-            if user_email not in settings.app_config.adminEmails:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Admin privileges required to update configuration"
-                )
-            
-            # Validate uniqueness of LLM configurations
-            _validate_llm_configs_uniqueness(config.llmConfigs)
-            
-            # Update environment variables from the config
+            # For individual hosting types, update .env file instead of os.environ
             update_env_vars_from_config(config)
         
         # Reload settings to reflect the changes
@@ -75,21 +69,66 @@ async def update_config(
         )
 
 
+def _validate_hosting_specific_config(config: AppConfig):
+    """
+    Validates configuration based on hosting type requirements
+    """
+    hosting_type = getattr(config, 'hostingType', '') or ''
+    
+    if hosting_type == "individual":
+        # Individual hosting requires LLM configs
+        llm_configs = getattr(config, 'llmConfigs', []) or []
+        if not llm_configs:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Individual hosting requires at least one LLM configuration."
+            )
+    elif hosting_type == "organization":
+        # Organization hosting requires GitHub OAuth and LLM configs
+        github_client_id = getattr(config, 'githubClientId', '') or ''
+        github_client_secret = getattr(config, 'githubClientSecret', '') or ''
+        llm_configs = getattr(config, 'llmConfigs', []) or []
+        
+        if not github_client_id or not github_client_secret:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Organization hosting requires GitHub OAuth credentials."
+            )
+        
+        if not llm_configs:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Organization hosting requires at least one LLM configuration."
+            )
+    elif hosting_type == "multi-tenant":
+        # Multi-tenant hosting doesn't require LLM configs globally
+        pass
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid hosting type. Must be 'individual', 'organization', or 'multi-tenant'."
+        )
+
+
 def _validate_llm_configs_uniqueness(llm_configs):
     """
     Validates that LLM configurations are unique based on the combination of
     provider, model, apiKey, and apiBaseUrl.
     """
+    if not llm_configs:
+        return
+        
     seen_configs = set()
     
     for config in llm_configs:
+        # Safely handle potential None values
+        provider = getattr(config, 'provider', '') or ''
+        model = getattr(config, 'model', '') or ''
+        api_key = getattr(config, 'apiKey', '') or ''
+        api_base_url = getattr(config, 'apiBaseUrl', '') or ''
+        
         # Create a tuple to represent the unique combination
-        config_key = (
-            config.provider,
-            config.model,
-            config.apiKey,
-            config.apiBaseUrl or ""  # Handle None as empty string for consistency
-        )
+        config_key = (provider, model, api_key, api_base_url)
         
         if config_key in seen_configs:
             raise HTTPException(

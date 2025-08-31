@@ -6,7 +6,7 @@ from typing import Optional
 from sqlmodel import Session
 
 from schemas.config import AppConfig
-from .utils import get_current_config, is_config_empty, get_user_email
+from .utils import get_current_config, is_config_empty, validate_hosting_authorization
 from .auth import get_bearer_token
 from models.database import get_session
 from settings.base_settings import settings
@@ -20,34 +20,17 @@ async def get_config(
 ):
     """
     Get current application configuration
-    Requires admin privileges if configs are already available
+    Requires admin privileges for org/multi-tenant hosting when config is not empty
     """
     try:
         config = get_current_config()
+        hosting_type = getattr(config, 'hostingType', '') or ''
         
-        # If config is not empty, check if user is admin
-        if not is_config_empty(config):
-            if not token:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Authentication required"
-                )
-            
-            # Get user's email using the utility function
-            user_email = await get_user_email(token, db)
-            
-            if not user_email:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Unable to retrieve user email"
-                )
-            
-            # Check if user email is in admin list
-            if user_email not in settings.app_config.adminEmails:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Admin privileges required to access configuration"
-                )
+        # Only validate authorization for non-individual hosting types
+        # when config is not empty
+        if hosting_type != "individual" and not is_config_empty(config):
+                # Use hosting-aware authorization validation
+                await validate_hosting_authorization(config, token, db)
         
         return config
     except HTTPException:

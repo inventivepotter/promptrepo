@@ -22,5 +22,6 @@ export interface ConfigState {
     error: string | null;
   };
   isLoading: boolean;
+  isSaving: boolean;
   error: ConfigError | null;
 }

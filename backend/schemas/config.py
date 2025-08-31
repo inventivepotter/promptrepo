@@ -12,7 +12,7 @@ class LlmConfig(BaseModel):
 
 class AppConfig(BaseModel):
     """Main application configuration"""
-    hostingType: Literal["multi-user", "single-user"]
+    hostingType: Literal["individual", "organization", "multi-tenant"]
     githubClientId: str
     githubClientSecret: str
     llmConfigs: List[LlmConfig]

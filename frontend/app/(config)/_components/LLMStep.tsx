@@ -28,7 +28,6 @@ interface LLMStepProps {
   llmConfigs: LLMConfig[]
   addLLMConfig: () => void
   removeLLMConfig: (index: number) => void
-  downloadEnvFile: () => void
   disabled?: boolean
   availableProviders: LLMProvider[]
   isLoadingProviders: boolean

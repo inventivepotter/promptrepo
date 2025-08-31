@@ -1,6 +1,6 @@
 
 export interface Configuration {
-  hostingType: "self" | "multi-user" | "";
+  hostingType: "individual" | "organization" | "multi-tenant" | "";
   githubClientId: string;
   githubClientSecret: string;
   llmConfigs: Array<LLMConfig>;

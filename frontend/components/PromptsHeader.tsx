@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -9,15 +9,14 @@ import {
   Text,
   Button,
 } from '@chakra-ui/react';
-import { LuPlus, LuFolderGit } from 'react-icons/lu';
+import { LuPlus } from 'react-icons/lu';
 import { useColorModeValue } from '@/components/ui/color-mode';
 
 interface PromptsHeaderProps {
   onCreateNew: () => void;
-  onAddRepoClick: () => void;
 }
 
-export function PromptsHeader({ onCreateNew, onAddRepoClick }: PromptsHeaderProps) {
+export function PromptsHeader({ onCreateNew }: PromptsHeaderProps) {
   const headerBg = useColorModeValue('gray.50', 'gray.900');
 
   return (
@@ -40,27 +39,15 @@ export function PromptsHeader({ onCreateNew, onAddRepoClick }: PromptsHeaderProp
               Manage and organize your AI prompts
             </Text>
           </VStack>
-          <HStack gap={3}>
-            <Button
-              onClick={onAddRepoClick}
-              variant="outline"
-              colorPalette="gray"
-            >
-              <HStack gap={2}>
-                <LuFolderGit size={16} />
-                <Text>Add Prompt Repo</Text>
-              </HStack>
-            </Button>
-            <Button
-              onClick={onCreateNew}
-              colorPalette="blue"
-            >
-              <HStack gap={2}>
-                <LuPlus size={16} />
-                <Text>New Prompt</Text>
-              </HStack>
-            </Button>
-          </HStack>
+          <Button
+            onClick={onCreateNew}
+            colorPalette="blue"
+          >
+            <HStack gap={2}>
+              <LuPlus size={16} />
+              <Text>New Prompt</Text>
+            </HStack>
+          </Button>
         </HStack>
       </Container>
     </Box>

@@ -10,13 +10,10 @@ from models.database import get_session
 from services.session_service import SessionService
 
 
-async def get_bearer_token(authorization: Annotated[str | None, Header()] = None) -> str:
-    """Extract Bearer token from Authorization header."""
+async def get_bearer_token(authorization: Annotated[str | None, Header()] = None) -> str | None:
+    """Extract Bearer token from Authorization header, returns None if not present."""
     if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
+        return None
 
     if not authorization.startswith("Bearer "):
         raise HTTPException(
