@@ -329,8 +329,7 @@ async def auth_health_check(db: Session = Depends(get_session)):
     # Clean up expired sessions
     expired_count = SessionService.cleanup_expired_sessions(db)
 
-
-    statement = select(func.count(User_Sessions.session_id))
+    statement = select(func.count())
     active_sessions_count = db.exec(statement).one()
 
     return {

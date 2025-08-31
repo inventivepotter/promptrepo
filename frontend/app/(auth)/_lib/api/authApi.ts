@@ -1,5 +1,6 @@
 import httpClient from '@/lib/httpClient';
-import type { LoginResponse, User } from '../../_types/AuthState';
+import type { LoginResponse } from '../../_types/AuthState';
+import type { User } from "../../../../types/User";
 import type { ApiResult } from '@/types/ApiResponse';
 
 export const authApi = {

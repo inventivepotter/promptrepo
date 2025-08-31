@@ -1,4 +1,4 @@
-import type { User } from '../_types/AuthState';
+import type { User } from "../../../types/User";
 import { authApi } from './api/authApi';
 import { errorNotification } from '@/lib/notifications';
 import { storageState } from '../_state/storageState';

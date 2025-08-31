@@ -1,18 +1,9 @@
+import type { User } from "../../../types/User";
+
 interface StorageData {
   sessionToken: string;
   expiresAt: string;
   createdAt: string;
-}
-
-interface UserStorageData {
-  id: string;
-  login: string;
-  name: string;
-  email: string;
-  avatar_url: string;
-  html_url: string;
-  created_at: string;
-  updated_at: string;
 }
 
 const getInitialSession = (): StorageData | null => {
@@ -33,7 +24,7 @@ const getInitialSession = (): StorageData | null => {
   }
 };
 
-const getInitialUser = (): UserStorageData | null => {
+const getInitialUser = (): User | null => {
   if (typeof window === 'undefined') return null;
   try {
     const data = sessionStorage.getItem('user_data');
@@ -130,7 +121,7 @@ export const storageState = {
   },
 
   // User Data Management
-  setUserData: (userData: UserStorageData): void => {
+  setUserData: (userData: User): void => {
     try {
       if (typeof window === 'undefined') return;
       sessionStorage.setItem(storageState.USER_KEY, JSON.stringify(userData));
@@ -139,7 +130,7 @@ export const storageState = {
     }
   },
 
-  getUserData: (): UserStorageData | null => {
+  getUserData: (): User | null => {
     try {
       if (typeof window === 'undefined') return null;
       
