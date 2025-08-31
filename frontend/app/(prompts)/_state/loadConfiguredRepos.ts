@@ -1,4 +1,4 @@
-import { getConfiguredRepos } from "../_lib/getConfiguredRepos";
+import { getConfiguredRepos } from "@/lib/repos/getConfiguredRepos";
 import { LOCAL_STORAGE_KEYS } from "../../../utils/localStorageConstants";
 import { PromptsState } from "../_types/PromptState";
 import { Repo } from "@/types/Repo";

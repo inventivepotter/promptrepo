@@ -31,6 +31,7 @@ interface LLMStepProps {
   disabled?: boolean
   availableProviders: LLMProvider[]
   isLoadingProviders: boolean
+  hostingType?: string
 }
 
 export default function LLMStep({
@@ -48,6 +49,7 @@ export default function LLMStep({
   disabled = false,
   availableProviders,
   isLoadingProviders,
+  hostingType = 'individual'
 }: LLMStepProps) {
   const [availableModels, setAvailableModels] = useState<LLMProviderModel[]>([]);
   const [isFetchingModels, setIsFetchingModels] = useState(false);
@@ -128,6 +130,13 @@ export default function LLMStep({
         <Text fontSize="sm" opacity={0.7} mb={2}>
           Setup your AI provider and API key first, then select from available models.
         </Text>
+        {hostingType !== 'individual' && (
+          <Box p={3} bg="blue.50" _dark={{ bg: "blue.900", borderColor: "blue.700" }} borderRadius="md" border="1px solid" borderColor="blue.200">
+            <Text fontSize="sm" color="blue.600" _dark={{ color: "blue.300" }}>
+              💡 <strong>Note:</strong> LLM configurations are editable here but will be displayed as environment variables for you to copy to your deployment configuration. Only repository settings are saved to the system.
+            </Text>
+          </Box>
+        )}
         {/* Add new LLM configuration */}
         <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.muted">
           <VStack gap={4}>

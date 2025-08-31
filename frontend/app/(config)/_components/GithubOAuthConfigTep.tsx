@@ -9,6 +9,7 @@ interface AuthStepProps {
   setGithubClientId: (id: string) => void
   setGithubClientSecret: (secret: string) => void
   disabled?: boolean
+  showEnvNote?: boolean
 }
 
 export default function AuthStep({
@@ -17,7 +18,8 @@ export default function AuthStep({
   githubClientSecret,
   setGithubClientId,
   setGithubClientSecret,
-  disabled = false
+  disabled = false,
+  showEnvNote = false
 }: AuthStepProps) {
   if (hostingType === 'individual') {
     return (
@@ -51,6 +53,13 @@ export default function AuthStep({
         <Text opacity={0.7} fontSize="sm">
           To enable organization access, you will need to create a GitHub OAuth App and provide the credentials.
         </Text>
+        {showEnvNote && (
+          <Box p={3} bg="blue.50" _dark={{ bg: "blue.900", borderColor: "blue.700" }} borderRadius="md" border="1px solid" borderColor="blue.200">
+            <Text fontSize="sm" color="blue.600" _dark={{ color: "blue.300" }}>
+              💡 <strong>Note:</strong> GitHub OAuth settings are editable here but will be displayed as environment variables for you to copy to your deployment configuration. Only repository settings are saved to the system.
+            </Text>
+          </Box>
+        )}
         <VStack gap={4} align="stretch">
           <Box>
             <Text mb={2} fontWeight="medium">GitHub Client ID</Text>

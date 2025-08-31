@@ -6,12 +6,14 @@ interface AdminConfigStepProps {
   adminEmails: string[]
   setAdminEmails: (emails: string[]) => void
   disabled?: boolean
+  showEnvNote?: boolean
 }
 
 export default function AdminConfigStep({
   adminEmails,
   setAdminEmails,
-  disabled = false
+  disabled = false,
+  showEnvNote = false
 }: AdminConfigStepProps) {
   return (
     <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.emphasized">
@@ -20,6 +22,13 @@ export default function AdminConfigStep({
         <Text fontSize="sm" opacity={0.7}>
           Configure administrator email addresses for system management and notifications.
         </Text>
+        {showEnvNote && (
+          <Box p={3} bg="blue.50" _dark={{ bg: "blue.900", borderColor: "blue.700" }} borderRadius="md" border="1px solid" borderColor="blue.200">
+            <Text fontSize="sm" color="blue.600" _dark={{ color: "blue.300" }}>
+              💡 <strong>Note:</strong> Admin email settings are editable here but will be displayed as environment variables for you to copy to your deployment configuration. Only repository settings are saved to the system.
+            </Text>
+          </Box>
+        )}
         <VStack gap={4} align="stretch">
           <Box>
             <Text mb={2} fontWeight="medium">Admin Email Addresses</Text>

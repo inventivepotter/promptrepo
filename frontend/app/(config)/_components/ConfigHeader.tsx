@@ -16,9 +16,10 @@ import { useColorModeValue } from '@/components/ui/color-mode';
 interface ConfigHeaderProps {
   onSave: () => void;
   isLoading?: boolean;
+  hostingType?: string;
 }
 
-export function ConfigHeader({ onSave, isLoading = false }: ConfigHeaderProps) {
+export function ConfigHeader({ onSave, isLoading = false, hostingType = '' }: ConfigHeaderProps) {
   const headerBg = useColorModeValue('gray.50', 'gray.900');
 
   return (
@@ -39,7 +40,10 @@ export function ConfigHeader({ onSave, isLoading = false }: ConfigHeaderProps) {
                 Setup Configuration
               </Text>
               <Text fontSize="sm" opacity={0.7}>
-                Configure your application settings
+                {hostingType === 'individual'
+                  ? 'Configure your application settings'
+                  : 'Configure your repositories'
+                }
               </Text>
             </VStack>
           </HStack>
@@ -56,7 +60,14 @@ export function ConfigHeader({ onSave, isLoading = false }: ConfigHeaderProps) {
               ) : (
                 <LuSave size={16} />
               )}
-              <Text>{isLoading ? 'Saving...' : 'Save Configuration'}</Text>
+              <Text>
+                {isLoading
+                  ? 'Saving...'
+                  : hostingType === 'individual'
+                    ? 'Save Configuration'
+                    : 'Save Repositories'
+                }
+              </Text>
             </HStack>
           </Button>
         </HStack>

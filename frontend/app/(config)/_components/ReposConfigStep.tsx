@@ -2,8 +2,8 @@
 
 import React from "react"
 import { FaChevronDown } from 'react-icons/fa'
-import { VStack, Box, Text, Code, Button, Combobox, createListCollection, HStack, Input } from '@chakra-ui/react'
-import { getAvailableRepos } from "../../(prompts)/_lib/getAvailableRepos"
+import { VStack, Box, Text, Button, Combobox, createListCollection, HStack, Input } from '@chakra-ui/react'
+import { getAvailableRepos } from "@/lib/repos/getAvailableRepos"
 import { Repo } from "@/types/Repo"
 import { useAuth } from "../../(auth)/_components/AuthProvider"
 

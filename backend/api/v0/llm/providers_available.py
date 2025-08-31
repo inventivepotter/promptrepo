@@ -33,7 +33,8 @@ async def get_available_providers() -> BasicProvidersResponse:
         providers = []
         for provider in ProviderName:
             provider_info = PROVIDER_NAMES_MAP.get(provider)
-            display_name = provider_info.get("name", provider) if provider_info else provider
+            provider_default_name = provider.replace("_", " ").title()
+            display_name = provider_info.get("name", provider_default_name) if provider_info else provider_default_name
             providers.append(BasicProviderInfo(id=provider, name=display_name, custom_api_base=provider_info.get("custom_api_base", False) if provider_info else False))
         return BasicProvidersResponse(providers=providers)
         

@@ -1,43 +1,10 @@
 """
 Shared utilities for config endpoints.
 """
-import os
 import json
-from typing import Optional
 from pathlib import Path
-from sqlmodel import Session
-from fastapi import HTTPException, status
 from schemas.config import AppConfig
 from settings.base_settings import settings
-from .auth import get_current_user
-from services import create_github_service
-from services.session_service import SessionService
-
-
-async def get_user_email(session_token: str, db: Session) -> Optional[str]:
-    """
-    Get user's email from their session token by fetching from GitHub API
-    
-    Args:
-        session_token: User's session token
-        db: Database session
-        
-    Returns:
-        User's email address or None if not found
-    """
-    try:
-        # Get user session
-        user_session = SessionService.get_session_by_id(db, session_token)
-        if not user_session:
-            return None
-            
-        # Get email from GitHub API using OAuth token
-        github_service = create_github_service()
-        async with github_service:
-            return await github_service.get_primary_email(user_session.oauth_token)
-            
-    except Exception:
-        return None
 
 
 def update_env_vars_from_config(config: AppConfig) -> None:
@@ -137,56 +104,3 @@ def is_config_empty(config: AppConfig) -> bool:
         # Default/unknown hosting type
         return True
 
-
-async def validate_hosting_authorization(
-    config: AppConfig,
-    token: Optional[str],
-    db: Session
-) -> None:
-    """
-    Validates authorization based on hosting type:
-    - individual: no authorization required
-    - organization/multi-tenant: requires valid token and email validation
-    """
-    hosting_type = getattr(config, 'hostingType', '') or ''
-    current_config = get_current_config()
-    current_hosting_type = getattr(current_config, 'hostingType', '') or ''
-    
-    # If current hosting type is individual, no authorization required
-    if current_hosting_type == "individual":
-        return
-    
-    # For organization and multi-tenant hosting types, require authorization
-    if current_hosting_type in ["organization", "multi-tenant"]:
-        if not token:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
-        
-        # Get user's email using the utility function
-        user_email = await get_user_email(token, db)
-        
-        if not user_email:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Unable to retrieve user email"
-            )
-        
-        # Check if user email is in admin list
-        if user_email not in settings.app_config.adminEmails:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Admin privileges required to update configuration"
-            )
-
-
-def get_current_user_if_config_not_empty():
-    """
-    Conditional dependency that only requires authentication if config is not empty
-    """
-    config = get_current_config()
-    if is_config_empty(config):
-        return None
-    else:
-        return get_current_user()

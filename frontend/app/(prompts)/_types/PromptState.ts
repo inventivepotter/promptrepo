@@ -13,11 +13,6 @@ export interface PromptsState {
   configuredRepos: Array<Repo>;
   configuredModels: Array<LLMProvider>;
   repoFilter: string;
-  currentRepoStep: {
-    isLoggedIn: boolean;
-    selectedRepo: string;
-    selectedBranch: string;
-  };
 }
 
 export type PromptJson = Omit<Prompt, 'created_at' | 'updated_at'> & {

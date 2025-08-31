@@ -1,9 +1,0 @@
-{
-  "repos": [
-    { "id": "1", "name": "frontend", "all_branches": ["main", "develop", "feature", "bugfix"] },
-    { "id": "2", "name": "backend", "all_branches": ["main", "develop", "feature", "bugfix"] },
-    { "id": "3", "name": "database", "all_branches": ["main", "develop", "feature", "bugfix"] },
-    { "id": "4", "name": "api-server", "all_branches": ["main", "develop", "feature", "bugfix"] },
-    { "id": "5", "name": "web-app", "all_branches": ["main", "develop", "feature", "bugfix"] }
-  ]
-}

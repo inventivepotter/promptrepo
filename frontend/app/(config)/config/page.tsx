@@ -1,16 +1,19 @@
 "use client"
 
-import { Box, Container, VStack } from '@chakra-ui/react'
+import { Box, Container, VStack, Text, Link, HStack } from '@chakra-ui/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import HostingStep from '../_components/HostingStep'
-import AuthStep from '../_components/AuthStep'
-import LLMStep from '../_components/LLMStep'
+import NextLink from 'next/link'
+import { LuExternalLink } from 'react-icons/lu'
+import HostingStep from '../_components/HostingConfigStep'
+import AuthStep from '../_components/GithubOAuthConfigTep'
+import LLMStep from '../_components/LLMConfigStep'
 import AdminConfigStep from '../_components/AdminConfigStep'
 import ReposConfigStep from '../_components/ReposConfigStep'
 import { useConfigState } from '../_state/configState'
 import { ConfigHeader } from '../_components/ConfigHeader'
 import { postConfig } from '../_lib/postConfig'
+import { postRepos } from '../_lib/postRepos'
 import { LoadingOverlay } from '@/components/LoadingOverlay'
 import { UnauthorizedScreen } from '@/components/UnauthorizedScreen'
 import { useAuth } from '@/app/(auth)/_components/AuthProvider'
@@ -33,6 +36,9 @@ export default function ConfigPage() {
     setIsLoading,
     setIsSaving,
   } = useConfigState();
+
+  // For non-individual hosting, manage saving state locally
+  const [localIsSaving, setLocalIsSaving] = useState(false);
 
   // Load hosting type on mount
   useEffect(() => {
@@ -63,18 +69,29 @@ export default function ConfigPage() {
     if (!isAuthenticated) {
       infoNotification(
         'Logged Out',
-        'You have been logged out. Please log in to access the configuration page.'
+        'You are logged out. Please log in to access the configuration page.'
       )
       router.push('/')
     }
   }, [isAuthenticated, authLoading, hostingType, hostingTypeLoaded, router])
 
   const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      await postConfig(configState.config);
-    } finally {
-      setIsSaving(false);
+    if (hostingType === 'individual') {
+      setIsSaving(true);
+      try {
+        await postConfig(configState.config);
+      } finally {
+        setIsSaving(false);
+      }
+    } else {
+      // For org/multi-tenant, save repositories using different endpoint
+      setLocalIsSaving(true);
+      try {
+        // For now, we'll save an empty array since repos state is managed in ReposConfigStep
+        await postRepos([]);
+      } finally {
+        setLocalIsSaving(false);
+      }
     }
   };
 
@@ -96,8 +113,8 @@ export default function ConfigPage() {
     );
   }
 
-  // Show loading screen while initial data is being fetched
-  if (configState.isLoading) {
+  // Show loading screen while initial data is being fetched (only for individual hosting)
+  if (hostingType === 'individual' && configState.isLoading) {
     return (
       <Box
         minH="100vh"
@@ -114,15 +131,16 @@ export default function ConfigPage() {
     );
   }
 
-  // Show unauthorized screen if there's an error (but not for individual hosting)
-  if (configState.error && !shouldSkipAuth(hostingType)) {
+  // Show unauthorized screen if there's an error (only for individual hosting)
+  if (hostingType === 'individual' && configState.error && !shouldSkipAuth(hostingType)) {
     return (
       <UnauthorizedScreen />
     );
   }
 
   // Show loading screen while saving configurations
-  if (configState.isSaving) {
+  const isSaving = hostingType === 'individual' ? configState.isSaving : localIsSaving;
+  if (isSaving) {
     return (
       <Box
         minH="100vh"
@@ -142,70 +160,120 @@ export default function ConfigPage() {
   return (
     <Box width="100%">
       <VStack gap={8} align="stretch">
-        <ConfigHeader onSave={handleSave} isLoading={configState.isSaving} />
+        <ConfigHeader
+          onSave={handleSave}
+          isLoading={hostingType === 'individual' ? configState.isSaving : localIsSaving}
+          hostingType={hostingType === 'individual' ? configState.config.hostingType : hostingType}
+        />
         <Container maxW="7xl" py={6}>
-          <Box mb={6}>
-            <HostingStep
-              hostingType={configState.config.hostingType}
-              setHostingType={(type) => updateConfigField("hostingType", type)}
-              disabled={configState.isSaving}
-            />
-          </Box>
           {/* Conditional rendering based on hosting type */}
-          {/* GitHub OAuth Configuration - hidden for individual and multi-tenant */}
-          {configState.config.hostingType !== 'individual' && configState.config.hostingType !== 'multi-tenant' && (
-            <Box mb={6}>
-              <AuthStep
-                hostingType={configState.config.hostingType}
-                githubClientId={configState.config.githubClientId || ''}
-                githubClientSecret={configState.config.githubClientSecret || ''}
-                setGithubClientId={(id) => updateConfigField("githubClientId", id)}
-                setGithubClientSecret={(secret) => updateConfigField("githubClientSecret", secret)}
-                disabled={configState.isSaving}
-              />
-            </Box>
+          {configState.config.hostingType === 'individual' ? (
+            <>
+              {/* Individual hosting: Show hosting step and all configuration sections */}
+              <Box mb={6}>
+                <HostingStep
+                  hostingType={configState.config.hostingType}
+                  setHostingType={(type) => updateConfigField("hostingType", type)}
+                  disabled={configState.isSaving}
+                />
+              </Box>
+              
+              {/* GitHub OAuth Configuration */}
+              <Box mb={6}>
+                <AuthStep
+                  hostingType={configState.config.hostingType}
+                  githubClientId={configState.config.githubClientId || ''}
+                  githubClientSecret={configState.config.githubClientSecret || ''}
+                  setGithubClientId={(id) => updateConfigField("githubClientId", id)}
+                  setGithubClientSecret={(secret) => updateConfigField("githubClientSecret", secret)}
+                  disabled={configState.isSaving}
+                  showEnvNote={true}
+                />
+              </Box>
+              
+              {/* LLM Provider Configuration */}
+              <Box mb={6}>
+                <LLMStep
+                  selectedProvider={configState.currentStep.selectedProvider || ''}
+                  setSelectedProvider={(provider: string) => updateCurrentStepField('selectedProvider', provider)}
+                  selectedModel={configState.currentStep.selectedModel || ''}
+                  setSelectedModel={(model: string) => updateCurrentStepField('selectedModel', model)}
+                  apiKey={configState.currentStep.apiKey || ''}
+                  setApiKey={(key: string) => updateCurrentStepField('apiKey', key)}
+                  apiBaseUrl={configState.currentStep.apiBaseUrl || ''}
+                  setApiBaseUrl={(url: string) => updateCurrentStepField('apiBaseUrl', url)}
+                  llmConfigs={configState.config.llmConfigs || []}
+                  addLLMConfig={addLLMConfigAction}
+                  removeLLMConfig={removeLLMConfigAction}
+                  disabled={configState.isSaving}
+                  availableProviders={configState.providers.available || []}
+                  isLoadingProviders={configState.providers.isLoading}
+                  hostingType={configState.config.hostingType}
+                />
+              </Box>
+              
+              {/* Repository Configuration */}
+              <Box mb={6}>
+                <ReposConfigStep
+                  hostingType={configState.config.hostingType}
+                  disabled={configState.isSaving}
+                />
+              </Box>
+              
+              {/* Admin Configuration */}
+              <Box mb={6}>
+                <AdminConfigStep
+                  adminEmails={configState.config.adminEmails || []}
+                  setAdminEmails={(emails) => updateConfigField("adminEmails", emails)}
+                  disabled={configState.isSaving}
+                />
+              </Box>
+            </>
+          ) : (
+            <>
+              {/* Non-individual hosting: Show only repository configuration */}
+              <Box mb={6}>
+                <ReposConfigStep
+                  hostingType={hostingType}
+                  disabled={localIsSaving}
+                />
+              </Box>
+            </>
           )}
           
-          {/* LLM Provider Configuration - hidden for multi-tenant */}
-          {configState.config.hostingType !== 'multi-tenant' && (
-            <Box mb={6}>
-              <LLMStep
-                selectedProvider={configState.currentStep.selectedProvider || ''}
-                setSelectedProvider={(provider: string) => updateCurrentStepField('selectedProvider', provider)}
-                selectedModel={configState.currentStep.selectedModel || ''}
-                setSelectedModel={(model: string) => updateCurrentStepField('selectedModel', model)}
-                apiKey={configState.currentStep.apiKey || ''}
-                setApiKey={(key: string) => updateCurrentStepField('apiKey', key)}
-                apiBaseUrl={configState.currentStep.apiBaseUrl || ''}
-                setApiBaseUrl={(url: string) => updateCurrentStepField('apiBaseUrl', url)}
-                llmConfigs={configState.config.llmConfigs || []}
-                addLLMConfig={addLLMConfigAction}
-                removeLLMConfig={removeLLMConfigAction}
-                disabled={configState.isSaving}
-                availableProviders={configState.providers.available || []}
-                isLoadingProviders={configState.providers.isLoading}
-              />
-            </Box>
-          )}
-          
-          {/* Repository Configuration - show for all hosting types */}
-          <Box mb={6}>
-            <ReposConfigStep
-              hostingType={configState.config.hostingType}
-              disabled={configState.isSaving}
-            />
+          {/* Utility Config Link Note */}
+          <Box
+            mt={6}
+            p={4}
+            borderWidth="1px"
+            borderRadius="md"
+            borderColor="border.emphasized"
+            bg="transparent"
+          >
+            <HStack gap={2} align="flex-start">
+              <Text fontSize="sm" color="muted.foreground" opacity={0.7}>
+                <strong>Note:</strong> Configurations must be set as ENV (if in k8s then as Kubernetes Secrets) at the time service start, this
+              </Text>
+              <Link
+                as={NextLink}
+                href="/config/utility"
+                fontSize="sm"
+                color="muted.foreground"
+                opacity={0.8}
+                _hover={{ opacity: 1, textDecoration: 'underline' }}
+                display="flex"
+                alignItems="center"
+                gap={1}
+                flexShrink={0}
+              >
+                <Text>utils page</Text>
+                <LuExternalLink size={12} />
+              </Link>
+              <Text fontSize="sm" color="muted.foreground" opacity={0.7}>
+                can help you come up with ENV.
+              </Text>
+            </HStack>
           </Box>
-          
-          {/* Admin Configuration - hidden for individual */}
-          {configState.config.hostingType !== 'individual' && (
-            <Box mb={6}>
-              <AdminConfigStep
-                adminEmails={configState.config.adminEmails || []}
-                setAdminEmails={(emails) => updateConfigField("adminEmails", emails)}
-                disabled={configState.isSaving}
-              />
-            </Box>
-          )}
         </Container>
       </VStack>
     </Box>

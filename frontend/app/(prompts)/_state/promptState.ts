@@ -6,7 +6,6 @@ import { loadConfiguredModels } from './loadConfiguredModels';
 import { loadPrompts, persistPromptsToBrowserStorage } from './loadPrompts';
 import { useManagePrompts } from './managePrompt';
 import { useManagePromptsList } from './managePromptsList';
-import { useManageRepoConfiguration } from './manageRepoConfiguration';
 import { useAuth } from '../../(auth)/_components/AuthProvider';
 
 export function usePromptsState() {
@@ -54,7 +53,6 @@ export function usePromptsState() {
 
   const promptManagement = useManagePrompts(updatePromptsState, defaultPrompt);
   const promptsListManagement = useManagePromptsList(promptsState, updatePromptsState);
-  const repoConfigurationManagement = useManageRepoConfiguration(updatePromptsState);
 
   return {
     promptsState,
@@ -64,7 +62,6 @@ export function usePromptsState() {
     currentPrompt: promptsState.currentPrompt,
     ...promptManagement,
     ...promptsListManagement.functions,
-    ...repoConfigurationManagement,
   };
 }
 
@@ -92,9 +89,4 @@ export const defaultPromptsState: PromptsState = {
   configuredRepos: [],
   configuredModels: [],
   repoFilter: "",
-  currentRepoStep: {
-    isLoggedIn: false,
-    selectedRepo: "",
-    selectedBranch: "",
-  },
 };

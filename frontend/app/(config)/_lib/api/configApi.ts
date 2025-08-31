@@ -2,6 +2,7 @@ import httpClient from '@/lib/httpClient';
 import { getAuthHeaders } from '@/utils/authHeaders';
 import type { Configuration } from '@/types/Configuration';
 import type { ApiResult } from '@/types/ApiResponse';
+import type { Repo } from '@/types/Repo';
 
 export interface HostingTypeResponse {
   hosting_type: string;
