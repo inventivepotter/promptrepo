@@ -1,4 +1,4 @@
-import { LLMProvider, LLMProviderModel } from "../../../types/LLMProvider";
+import { LLMProvider } from "../../../types/LLMProvider";
 import { modelsApi } from './api/modelsApi';
 import { errorNotification } from '@/lib/notifications';
 

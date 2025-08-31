@@ -25,8 +25,23 @@ async def get_configured_providers() -> ProvidersResponse:
         
         # Group models by provider
         for llm_config in app_config.llmConfigs:
+            # Ensure provider is a string
             provider_id = llm_config.provider
-            model_info = ModelInfo(id=llm_config.model, name=llm_config.model)
+            if isinstance(provider_id, dict):
+                logger.warning(f"Skipping invalid provider configuration: provider is a dict")
+                continue
+            elif not isinstance(provider_id, str):
+                provider_id = str(provider_id)
+            
+            # Ensure model is a string
+            model_name = llm_config.model
+            if isinstance(model_name, dict):
+                logger.warning(f"Skipping invalid model configuration for provider {provider_id}: model is a dict")
+                continue
+            elif not isinstance(model_name, str):
+                model_name = str(model_name)
+            
+            model_info = ModelInfo(id=model_name, name=model_name)
             
             if provider_id not in provider_models:
                 provider_models[provider_id] = []
@@ -38,7 +53,7 @@ async def get_configured_providers() -> ProvidersResponse:
         providers = [
             ProviderInfo(
                 id=provider_id,
-                name=PROVIDER_NAMES_MAP.get(provider_id) or provider_id.replace("_", " ").title(),
+                name=PROVIDER_NAMES_MAP.get(provider_id, {}).get("name", provider_id.replace("_", " ").title()),
                 models=models
             )
             for provider_id, models in provider_models.items()

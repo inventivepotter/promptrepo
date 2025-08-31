@@ -2,6 +2,11 @@ import httpClient from '@/lib/httpClient';
 import { getAuthHeaders } from '@/utils/authHeaders';
 import type { Configuration } from '@/types/Configuration';
 import type { ApiResult } from '@/types/ApiResponse';
+import type { Repo } from '@/types/Repo';
+
+export interface HostingTypeResponse {
+  hosting_type: string;
+}
 
 export const configApi = {
   // Get configuration
@@ -18,11 +23,9 @@ export const configApi = {
     });
   },
 
-  // Export configuration
-  exportConfig: async (): Promise<ApiResult<{ config: Configuration; timestamp: string }>> => {
-    return await httpClient.get<{ config: Configuration; timestamp: string }>('/v0/config/export', {
-      headers: getAuthHeaders()
-    });
+  // Get hosting type without authentication
+  getHostingType: async (): Promise<ApiResult<HostingTypeResponse>> => {
+    return await httpClient.get<HostingTypeResponse>('/v0/config/hosting-type');
   },
 
 };

@@ -17,12 +17,10 @@ import { usePromptsState } from "../_state/promptState";
 import { PromptSearch } from '../_components/PromptSearch';
 import { PromptCard } from '../_components/PromptCard';
 import { Pagination } from '../_components/Pagination';
-import { RepoModal } from '../_components/RepoModal';
 import { PromptsHeader } from '@/components/PromptsHeader';
 
 export default function PromptsPage() {
   const router = useRouter();
-  const [isRepoModalOpen, setIsRepoModalOpen] = React.useState(false);
 
   const {
     filteredPrompts,
@@ -36,8 +34,6 @@ export default function PromptsPage() {
     setCurrentPage,
     setSortBy,
     setRepoFilter,
-    updateCurrentRepoStepField,
-    toggleRepoSelection,
   } = usePromptsState();
 
   // Get available repositories from prompts
@@ -72,7 +68,6 @@ export default function PromptsPage() {
     <VStack minH="100vh" align="stretch">
       <PromptsHeader
         onCreateNew={handleCreateNew}
-        onAddRepoClick={() => setIsRepoModalOpen(true)}
       />
       {/* Main content */}
       <Container maxW="7xl" py={6}>
@@ -145,18 +140,6 @@ export default function PromptsPage() {
           )}
         </VStack>
       </Container>
-
-      {/* Repo Configuration Modal */}
-      <RepoModal
-        isOpen={isRepoModalOpen}
-        onClose={() => setIsRepoModalOpen(false)}
-        selectedRepo={promptsState.currentRepoStep.selectedRepo}
-        setSelectedRepo={(repo: string) => updateCurrentRepoStepField('selectedRepo', repo)}
-        selectedBranch={promptsState.currentRepoStep.selectedBranch}
-        setSelectedBranch={(branch: string) => updateCurrentRepoStepField('selectedBranch', branch)}
-        configuredRepos={promptsState.configuredRepos}
-        toggleRepoSelection={toggleRepoSelection}
-      />
     </VStack>
   );
 }

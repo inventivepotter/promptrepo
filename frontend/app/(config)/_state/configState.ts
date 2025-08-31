@@ -3,9 +3,19 @@ import { ConfigState } from '../_types/state';
 import { getConfig } from '../_lib/getConfig';
 import { modelsApi } from '../_lib/api/modelsApi';
 import { errorNotification } from '@/lib/notifications';
+import { safeString, safeArray } from '@/utils/safeValues';
+import { getHostingType } from '@/utils/hostingType';
+
+export const safeHostingType = (value: string | null | undefined): "individual" | "organization" | "multi-tenant" | "" => {
+  const validTypes = ["individual", "organization", "multi-tenant"];
+  if (value && validTypes.includes(value)) {
+    return value as "individual" | "organization" | "multi-tenant";
+  }
+  return "individual";
+};
 
 export const initConfig: ConfigState['config'] = {
-  hostingType: "",
+  hostingType: "individual",
   githubClientId: "",
   githubClientSecret: "",
   llmConfigs: [],
@@ -27,6 +37,7 @@ export const initConfigState: ConfigState = {
     error: null,
   },
   isLoading: true,
+  isSaving: false,
   error: {
     isUnauthorized: true,
     hasNoConfig: false,
@@ -107,11 +118,22 @@ export function useConfigState() {
           globalLoadingRef.current = true;
           
           try {
+            // Get hosting type first to ensure it's available
+            const hostingType = await getHostingType();
             const result = await getConfig();
+            
+            // Safely handle potential null/undefined values in config
+            const safeConfig = {
+              hostingType: safeHostingType(result.config?.hostingType || hostingType),
+              githubClientId: safeString(result.config?.githubClientId),
+              githubClientSecret: safeString(result.config?.githubClientSecret),
+              llmConfigs: safeArray(result.config?.llmConfigs),
+              adminEmails: safeArray(result.config?.adminEmails),
+            };
             
             setConfigState(prev => ({
               ...prev,
-              config: result.config,
+              config: safeConfig,
               currentStep: {
                 step: 1,
                 selectedProvider: "",
@@ -140,6 +162,7 @@ export function useConfigState() {
             }));
           } finally {
             hasRestoredSetupData.current = true;
+            globalLoadingRef.current = false;
           }
         };
         
@@ -235,6 +258,13 @@ export function useConfigState() {
     }));
   }, [updateConfigState]);
 
+  const setIsSaving = useCallback((saving: boolean) => {
+    updateConfigState(prev => ({
+      ...prev,
+      isSaving: saving
+    }));
+  }, [updateConfigState]);
+
   return {
     configState,
     setConfigState: updateConfigState,
@@ -243,6 +273,7 @@ export function useConfigState() {
     addLLMConfig,
     removeLLMConfig,
     setIsLoading,
+    setIsSaving,
     loadProviders,
   };
 }

@@ -1,72 +1,42 @@
 """
 Update configuration endpoint.
 """
-from fastapi import APIRouter, HTTPException, status, Depends
-from typing import Optional
-from sqlmodel import Session
+from fastapi import APIRouter, HTTPException, status
 
 from schemas.config import AppConfig
-from .utils import update_env_vars_from_config, get_current_config, is_config_empty, get_user_email
-from .auth import get_bearer_token
-from models.database import get_session
-from settings.base_settings import settings
+from .utils import update_env_vars_from_config, get_current_config
 
 router = APIRouter()
 
 
 @router.patch("/", response_model=AppConfig)
-async def update_config(
-    config: AppConfig,
-    token: Optional[str] = Depends(get_bearer_token),
-    db: Session = Depends(get_session)
-):
+async def update_config(config: AppConfig):
     """
     Update application configuration (partial update)
-    Requires admin privileges if configs are already available
+    Only allowed for individual hosting type
     """
     try:
-        current_config = get_current_config()
+        # Validate hosting type - only allow saves for individual hosting
+        hosting_type = getattr(config, 'hostingType', '') or ''
         
-        # If config is not empty, check if user is admin
-        if not is_config_empty(current_config):
-            if not token:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Authentication required"
-                )
-            
-            # Get user's email using the utility function
-            user_email = await get_user_email(token, db)
-            
-            if not user_email:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Unable to retrieve user email"
-                )
-            
-            # Check if user email is in admin list
-            if user_email not in settings.app_config.adminEmails:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Admin privileges required to update configuration"
-                )
-            
-            # Validate uniqueness of LLM configurations
-            _validate_llm_configs_uniqueness(config.llmConfigs)
-            
-            # Update environment variables from the config
-            update_env_vars_from_config(config)
+        if hosting_type != "individual":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Configuration saves are only allowed for individual hosting. Please update your ENV and restart the service for updating configs."
+            )
         
-        # Reload settings to reflect the changes
-        # Note: In production, you might want to restart the application
-        # or use a more sophisticated config reload mechanism
+        # Validate individual hosting specific configuration
+        _validate_individual_hosting_config(config)
+        
+        # Update .env file for individual hosting
+        update_env_vars_from_config(config)
         
         # Return the updated config
         updated_config = get_current_config()
         return updated_config
         
     except HTTPException:
-        # Re-raise HTTP exceptions (like 401)
+        # Re-raise HTTP exceptions (like 400)
         raise
     except Exception as e:
         raise HTTPException(
@@ -75,21 +45,49 @@ async def update_config(
         )
 
 
+def _validate_individual_hosting_config(config: AppConfig):
+    """
+    Validates configuration for individual hosting type only
+    """
+    hosting_type = getattr(config, 'hostingType', '') or ''
+    
+    if hosting_type != "individual":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only individual hosting type is supported for config updates."
+        )
+    
+    # Individual hosting requires LLM configs
+    llm_configs = getattr(config, 'llmConfigs', []) or []
+    if not llm_configs:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Individual hosting requires at least one LLM configuration."
+        )
+    
+    # Validate uniqueness of LLM configurations
+    _validate_llm_configs_uniqueness(llm_configs)
+
+
 def _validate_llm_configs_uniqueness(llm_configs):
     """
     Validates that LLM configurations are unique based on the combination of
     provider, model, apiKey, and apiBaseUrl.
     """
+    if not llm_configs:
+        return
+        
     seen_configs = set()
     
     for config in llm_configs:
+        # Safely handle potential None values
+        provider = getattr(config, 'provider', '') or ''
+        model = getattr(config, 'model', '') or ''
+        api_key = getattr(config, 'apiKey', '') or ''
+        api_base_url = getattr(config, 'apiBaseUrl', '') or ''
+        
         # Create a tuple to represent the unique combination
-        config_key = (
-            config.provider,
-            config.model,
-            config.apiKey,
-            config.apiBaseUrl or ""  # Handle None as empty string for consistency
-        )
+        config_key = (provider, model, api_key, api_base_url)
         
         if config_key in seen_configs:
             raise HTTPException(

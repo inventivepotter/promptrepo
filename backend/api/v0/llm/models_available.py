@@ -45,7 +45,6 @@ async def fetch_models_by_provider(provider_id: str, request: FetchModelsRequest
             return ModelsResponse(models=[])
 
         raw_models = list_models(provider_id, request.api_key, api_base=request.api_base if request.api_base else None)
-        logger.info(f"Fetched {raw_models} models from provider {provider_id}")
         models = [
             ModelInfo(id=model.id, name=model.id)
             for model in raw_models

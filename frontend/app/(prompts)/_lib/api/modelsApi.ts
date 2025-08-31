@@ -1,27 +1,21 @@
 import httpClient from '@/lib/httpClient';
-import type { LLMProvider } from '@/types/LLMProvider';
 import type { ApiResult } from '@/types/ApiResponse';
+
+interface ProviderModels {
+  id: string;
+  name: string;
+  models: Array<{ id: string; name: string }>;
+}
+
+interface ProviderModelsApiResponse {
+  providers: ProviderModels[];
+}
 
 export const modelsApi = {
   // Get all configured LLM providers
-  getConfiguredModels: async (): Promise<ApiResult<LLMProvider[]>> => {
-    return await httpClient.get<LLMProvider[]>('/api/v0/llm/providers/configured');
-  },
-
-  // Add a new LLM provider
-  addModel: async (provider: Omit<LLMProvider, 'id'>): Promise<ApiResult<LLMProvider>> => {
-    return await httpClient.post<LLMProvider>('/api/v0/llm/providers/configured', provider);
-  },
-
-  // Update an existing LLM provider
-  updateModel: async (id: string, updates: Partial<LLMProvider>): Promise<ApiResult<LLMProvider>> => {
-    return await httpClient.patch<LLMProvider>(`/api/v0/llm/providers/configured/${id}`, updates);
-  },
-
-  // Remove a LLM provider
-  removeModel: async (id: string): Promise<ApiResult<void>> => {
-    return await httpClient.delete<void>(`/api/v0/llm/providers/configured/${id}`);
-  },
+  getConfiguredModels: async (): Promise<ApiResult<ProviderModelsApiResponse>> => {
+    return await httpClient.get<ProviderModelsApiResponse>('/api/v0/llm/providers/configured');
+  }
 };
 
 export default modelsApi;

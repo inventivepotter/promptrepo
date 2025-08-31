@@ -98,7 +98,6 @@ async def root() -> dict[str, str]:
             "/api/v0/auth/refresh",
             "/api/v0/llm/providers/available",
             "/api/v0/config",
-            "/api/v0/config/export"
         ]
     return {
         "message": "Welcome to PromptRepo API",

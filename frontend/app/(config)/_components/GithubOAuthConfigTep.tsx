@@ -9,6 +9,7 @@ interface AuthStepProps {
   setGithubClientId: (id: string) => void
   setGithubClientSecret: (secret: string) => void
   disabled?: boolean
+  showEnvNote?: boolean
 }
 
 export default function AuthStep({
@@ -17,14 +18,28 @@ export default function AuthStep({
   githubClientSecret,
   setGithubClientId,
   setGithubClientSecret,
-  disabled = false
+  disabled = false,
+  showEnvNote = false
 }: AuthStepProps) {
-  if (hostingType === 'self') {
+  if (hostingType === 'individual') {
     return (
       <VStack gap={4}>
         <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.emphasized">
           <Text fontWeight="normal" fontSize="sm" color="blue.fg">
-            For self-use hosting, no additional authentication setup is required.
+            For individual use, no additional authentication setup is required.
+          </Text>
+        </Box>
+        <Text>You can proceed to the next step.</Text>
+      </VStack>
+    )
+  }
+
+  if (hostingType === 'multi-tenant') {
+    return (
+      <VStack gap={4}>
+        <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.emphasized">
+          <Text fontWeight="normal" fontSize="sm" color="blue.fg">
+            For multi-tenant hosting, GitHub OAuth is handled per tenant. No global configuration is needed here.
           </Text>
         </Box>
         <Text>You can proceed to the next step.</Text>
@@ -36,8 +51,15 @@ export default function AuthStep({
       <VStack gap={6} align="stretch">
         <Text fontSize="lg" fontWeight="bold">GitHub OAuth Configuration</Text>
         <Text opacity={0.7} fontSize="sm">
-          To enable multi-user access, you will need to create a GitHub OAuth App and provide the credentials.
+          To enable organization access, you will need to create a GitHub OAuth App and provide the credentials.
         </Text>
+        {showEnvNote && (
+          <Box p={3} bg="blue.50" _dark={{ bg: "blue.900", borderColor: "blue.700" }} borderRadius="md" border="1px solid" borderColor="blue.200">
+            <Text fontSize="sm" color="blue.600" _dark={{ color: "blue.300" }}>
+              💡 <strong>Note:</strong> GitHub OAuth settings are editable here but will be displayed as environment variables for you to copy to your deployment configuration. Only repository settings are saved to the system.
+            </Text>
+          </Box>
+        )}
         <VStack gap={4} align="stretch">
           <Box>
             <Text mb={2} fontWeight="medium">GitHub Client ID</Text>

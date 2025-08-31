@@ -25,6 +25,7 @@ import {
 import { useColorMode, useColorModeValue } from './ui/color-mode'
 import { useAuth } from '@/app/(auth)/_components/AuthProvider'
 import { Branding } from './Branding'
+import { getHostingType, shouldSkipAuth } from '@/utils/hostingType'
 
 interface SidebarProps {
   className?: string
@@ -32,6 +33,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [hostingType, setHostingType] = useState<string>('')
 
   // Load saved sidebar state from localStorage on component mount
   useEffect(() => {
@@ -47,6 +49,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   }, [isCollapsed])
   const { colorMode, toggleColorMode } = useColorMode()
   const { isAuthenticated, user, login, logout } = useAuth()
+
+  // Load hosting type on mount
+  useEffect(() => {
+    const loadHostingType = async () => {
+      try {
+        const type = await getHostingType()
+        setHostingType(type)
+      } catch (error) {
+        console.warn('Failed to load hosting type in sidebar:', error)
+        setHostingType('individual')
+      }
+    }
+    
+    loadHostingType()
+  }, [])
 
   // Theme-aware semantic colors
   const bgColor = useColorModeValue('white', 'gray.900')
@@ -234,8 +251,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
 
           <Separator borderColor={borderColor} />
 
-          {/* GitHub Login or Logout Button */}
-          {isAuthenticated ? (
+          {/* GitHub Login or Logout Button - Hidden for individual hosting */}
+          {!shouldSkipAuth(hostingType) && isAuthenticated ? (
             <Button
               variant="ghost"
               justifyContent={isCollapsed ? "center" : "flex-start"}
@@ -258,7 +275,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                 </Text>
               )}
             </Button>
-          ) : (
+          ) : !shouldSkipAuth(hostingType) ? (
             <Button
               variant="ghost"
               justifyContent={isCollapsed ? "center" : "flex-start"}
@@ -281,7 +298,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                 </Text>
               )}
             </Button>
-          )}
+          ) : null}
 
           {/* Theme Toggle */}
           <Button

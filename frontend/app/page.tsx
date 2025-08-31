@@ -2,13 +2,29 @@
 
 import { Button, HStack, VStack, Text, Box, Spinner, Image, Container, Flex } from "@chakra-ui/react";
 import { useAuth } from "./(auth)/_components/AuthProvider";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PromptQuotes } from "@/components/PromptQuotes";
 import { Branding } from "@/components/Branding";
+import { getHostingType, shouldSkipAuth } from "@/utils/hostingType";
 
 const AuthButton = () => {
   const { isAuthenticated, isLoading, user, login, logout } = useAuth();
+  const [hostingType, setHostingType] = useState<string>('');
+
+  useEffect(() => {
+    const loadHostingType = async () => {
+      try {
+        const type = await getHostingType();
+        setHostingType(type);
+      } catch (error) {
+        console.warn('Failed to load hosting type:', error);
+        setHostingType('individual');
+      }
+    };
+    
+    loadHostingType();
+  }, []);
 
   if (isLoading) {
     return (
@@ -32,13 +48,18 @@ const AuthButton = () => {
         </Box>
         <VStack gap={0} alignItems="flex-start">
           <Text fontSize="sm" fontWeight="medium">{user.name}</Text>
-          <Text fontSize="xs" color="gray.500">@{user.login}</Text>
+          <Text fontSize="xs" color="gray.500">@{user.username}</Text>
         </VStack>
         <Button size="sm" colorScheme="red" variant="outline" onClick={() => logout()}>
           Logout
         </Button>
       </HStack>
     );
+  }
+
+  // Don't show GitHub login for individual hosting
+  if (shouldSkipAuth(hostingType)) {
+    return null;
   }
 
   return (

@@ -9,13 +9,13 @@ services:
       - "5678:5678"  # Debug port
     environment:
       - PYTHONPATH=/app
-    env_file:
-      - .env
     volumes:
       - ./backend:/app
       - /app/.venv
-      - ./database:/database
-      - ./repos:/repos
+      - /app/.env
+      - ./persistence:/persistence
+      # gets updated for individual hosting
+      - .env:/app/.env
     command: ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
     networks:
       - promptrepo-network
