@@ -295,6 +295,13 @@ export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], con
             <Chat
               height="700px"
               onMessageSend={handleChatMessage}
+              promptData={{
+                prompt: formData.prompt || '',
+                model: formData.model || '',
+                temperature: formData.temperature || 0.7,
+                max_tokens: formData.max_tokens || 2048,
+                top_p: formData.top_p || 1.0,
+              }}
             />
           </Box>
         </HStack>
