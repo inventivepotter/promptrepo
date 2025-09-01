@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 from api.v0.auth import router as auth_router
 from api.v0.llm import router as llm_router
 from api.v0.config import router as config_router
-from api.v0.chat import router as chat_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -68,9 +67,9 @@ app.include_router(
 )
 
 app.include_router(
-    chat_router,
-    prefix="/api/v0/chat",
-    tags=["chat"]
+    llm_router,
+    prefix="/api/v0/llm/chat",
+    tags=["llm"]
 )
 
 # Health check response model
@@ -105,7 +104,7 @@ async def root() -> dict[str, str]:
             "/api/v0/auth/refresh",
             "/api/v0/llm/providers/available",
             "/api/v0/config",
-            "/api/v0/chat/completions",
+            "/api/v0/llm/chat/completions",
         ]
     return {
         "message": "Welcome to PromptRepo API",

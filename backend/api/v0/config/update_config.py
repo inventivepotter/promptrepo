@@ -4,7 +4,7 @@ Update configuration endpoint.
 from fastapi import APIRouter, HTTPException, status
 
 from schemas.config import AppConfig
-from .utils import update_env_vars_from_config, get_current_config
+from services.config_service import config_service
 
 router = APIRouter()
 
@@ -18,8 +18,8 @@ async def update_config(config: AppConfig):
     try:
         # Validate hosting type - only allow saves for individual hosting
         hosting_type = getattr(config, 'hostingType', '') or ''
-        
-        if hosting_type != "individual":
+        current_hosting_type = config_service.get_hosting_type()
+        if hosting_type != "individual" or current_hosting_type != "individual":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Configuration saves are only allowed for individual hosting. Please update your ENV and restart the service for updating configs."
@@ -29,10 +29,10 @@ async def update_config(config: AppConfig):
         _validate_individual_hosting_config(config)
         
         # Update .env file for individual hosting
-        update_env_vars_from_config(config)
-        
+        config_service.update_env_vars_from_config(config)
+
         # Return the updated config
-        updated_config = get_current_config()
+        updated_config = config_service.get_current_config()
         return updated_config
         
     except HTTPException:

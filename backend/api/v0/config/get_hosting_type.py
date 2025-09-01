@@ -3,7 +3,7 @@ Get hosting type endpoint without authentication.
 """
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
-from settings.base_settings import settings
+from services.config_service import config_service
 
 router = APIRouter()
 
@@ -20,7 +20,7 @@ async def get_hosting_type():
     This endpoint is publicly accessible to determine UI behavior.
     """
     try:
-        hosting_type = settings.hosting_settings.hosting_type
+        hosting_type = config_service.get_hosting_type()
         return HostingTypeResponse(hosting_type=hosting_type)
     except Exception as e:
         raise HTTPException(

@@ -11,7 +11,7 @@ export const chatApi = {
     promptId?: string,
     options?: ChatCompletionOptions
   ): Promise<ApiResult<ChatCompletionResponse>> => {
-    return await httpClient.post<ChatCompletionResponse>('/api/v0/chat/completions', {
+    return await httpClient.post<ChatCompletionResponse>('/api/v0/llm/chat/completions', {
       messages,
       prompt_id: promptId,
       provider: options?.provider,

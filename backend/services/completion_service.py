@@ -18,7 +18,7 @@ from schemas.chat import (
     PromptTokensDetails,
     CompletionTokensDetails
 )
-from .config_service import chat_config_service
+from .config_service import config_service
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +79,7 @@ class ChatCompletionService:
             self._validate_system_message(request.messages)
 
             # Get API key and base URL for this provider/model combination
-            api_key, api_base_url = chat_config_service.get_api_config_for_provider_model(request.provider, request.model)
+            api_key, api_base_url = config_service.get_api_config_for_provider_model(request.provider, request.model)
             
             # Build completion parameters
             completion_params = self.build_completion_params(request, api_key, api_base_url, stream=True)
@@ -204,7 +204,7 @@ class ChatCompletionService:
         self._validate_system_message(request.messages)
 
         # Get API key and base URL for this provider/model combination
-        api_key, api_base_url = chat_config_service.get_api_config_for_provider_model(request.provider, request.model)
+        api_key, api_base_url = config_service.get_api_config_for_provider_model(request.provider, request.model)
         
         # Build completion parameters
         completion_params = self.build_completion_params(request, api_key, api_base_url, stream=False)

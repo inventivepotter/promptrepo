@@ -3,12 +3,11 @@ LLM models endpoints.
 Handles fetching models for specific providers.
 """
 from fastapi import APIRouter
-from openai import base_url
 from pydantic import BaseModel
 from typing import List
-from any_llm import provider, list_models
 import logging
 
+from services import provider_service
 from schemas.config import ModelInfo
 
 logger = logging.getLogger(__name__)
@@ -37,20 +36,11 @@ async def fetch_models_by_provider(provider_id: str, request: FetchModelsRequest
             logger.error(f"Provider ID mismatch: {provider_id} != {request.provider}")
             return ModelsResponse(models=[])
 
-        models = []
-
-        any_llm_provider = provider.ProviderFactory.get_provider_class(provider_id)
-        if not any_llm_provider:
-            logger.error(f"Unsupported provider: {provider_id}")
-            return ModelsResponse(models=[])
-
-        raw_models = list_models(provider_id, request.api_key, api_base=request.api_base if request.api_base else None)
-        models = [
-            ModelInfo(id=model.id, name=model.id)
-            for model in raw_models
-            if model.id and model.object == 'model'
-        ]
-        logger.info(f"Returning {len(models)} models for provider {provider_id}")
+        models = provider_service.fetch_models_by_provider(
+            provider_id,
+            request.api_key,
+            request.api_base
+        )
         return ModelsResponse(models=models)
         
     except Exception as e:

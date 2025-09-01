@@ -4,15 +4,13 @@ Provides factory functions for creating service instances.
 """
 from typing import Optional
 from .github_service import GitHubService
-from settings.base_settings import settings
+from .config_service import config_service
+from .provider_service import provider_service
 
 
 def create_github_service() -> GitHubService:
     """
-    Factory function to create GitHubService instance from settings.
-
-    Args:
-        redirect_uri: Override redirect URI (defaults to frontend callback URL)
+    Factory function to create GitHubService instance from config service.
 
     Returns:
         Configured GitHubService instance
@@ -20,22 +18,14 @@ def create_github_service() -> GitHubService:
     Raises:
         ValueError: If GitHub credentials are not configured
     """
-    if not settings.auth_settings.github_client_id or not settings.auth_settings.github_client_secret:
+    if not config_service.is_github_oauth_configured():
         raise ValueError(
             "GitHub OAuth credentials not configured. "
             "Please set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET environment variables."
         )
 
-    # Default redirect URI to frontend callback
-        # Adjust for production environment
+    client_id, client_secret = config_service.get_github_oauth_config()
     return GitHubService(
-        client_id=settings.auth_settings.github_client_id,
-        client_secret=settings.auth_settings.github_client_secret,
+        client_id=client_id,
+        client_secret=client_secret,
     )
-
-# You can add more service factories here as needed
-# def create_openai_service() -> OpenAIService:
-#     ...
-
-# def create_anthropic_service() -> AnthropicService:
-#     ...
