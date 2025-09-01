@@ -7,8 +7,11 @@ import {
   Box,
   Combobox,
   createListCollection,
+  HStack,
+  Button,
+  Popover,
 } from '@chakra-ui/react';
-import { FaChevronDown } from 'react-icons/fa';
+import { FaChevronDown, FaInfoCircle } from 'react-icons/fa';
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { Tool } from '../_types/ChatState';
 
@@ -25,6 +28,7 @@ export function ChatFooter({
 }: ChatFooterProps) {
   const [toolSearchValue, setToolSearchValue] = React.useState('');
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
+  const linkColor = useColorModeValue('blue.500', 'blue.300');
 
   // Filter tools based on search value
   const filteredTools = availableTools.filter(tool =>
@@ -46,7 +50,7 @@ export function ChatFooter({
       borderColor="gray.200"
     >
       {/* Tools Selection */}
-      <Box>
+      <Box mb={3}>
         <Text fontSize="xs" fontWeight="medium" mb={1} color={mutedTextColor}>
           Available Tools
         </Text>
@@ -98,6 +102,70 @@ export function ChatFooter({
           </Combobox.Positioner>
         </Combobox.Root>
       </Box>
+
+      {/* Disclaimer Popover */}
+      <HStack justify="flex-end">
+        <Popover.Root>
+          <Popover.Trigger asChild>
+            <Button
+              variant="plain"
+              size="xs"
+              color="fg.muted"
+              fontSize="xs"
+              px={2}
+              py={1}
+              height="auto"
+              minHeight="auto"
+            >
+              <Text>Disclaimer!</Text>
+            </Button>
+          </Popover.Trigger>
+          <Popover.Positioner>
+            <Popover.Content maxWidth="400px">
+              <Popover.Arrow>
+                <Popover.ArrowTip />
+              </Popover.Arrow>
+              <Popover.Body>
+                <VStack align="start" gap={3} fontSize="sm">
+                  <Popover.Title fontWeight="medium" color={useColorModeValue('gray.800', 'gray.200')}>
+                    Metrics Accuracy Disclaimer
+                  </Popover.Title>
+                  
+                  <Text color={useColorModeValue('gray.700', 'gray.300')}>
+                    The inference time, number of tokens, and cost displayed are realistic estimates but may not be entirely accurate:
+                  </Text>
+                  
+                  <VStack align="start" gap={2} fontSize="sm">
+                    <HStack align="start" gap={2}>
+                      <FaInfoCircle color={linkColor} size={12} style={{ marginTop: '2px' }} />
+                      <Text color={useColorModeValue('gray.700', 'gray.300')}>
+                        <Text as="span" fontWeight="medium">Cost:</Text> May be significantly lower if cache hits occur, as cached responses have reduced pricing
+                      </Text>
+                    </HStack>
+                    <HStack align="start" gap={2}>
+                      <FaInfoCircle color={linkColor} size={12} style={{ marginTop: '2px' }} />
+                      <Text color={useColorModeValue('gray.700', 'gray.300')}>
+                        <Text as="span" fontWeight="medium">Inference time:</Text> Includes our processing time for API calls, not just model inference
+                      </Text>
+                    </HStack>
+                    <HStack align="start" gap={2}>
+                      <FaInfoCircle color={linkColor} size={12} style={{ marginTop: '2px' }} />
+                      <Text color={useColorModeValue('gray.700', 'gray.300')}>
+                        <Text as="span" fontWeight="medium">Tokens:</Text> Calculated by word count when providers don&apos;t share exact tokenization data
+                      </Text>
+                    </HStack>
+                  </VStack>
+                  
+                  <Text fontSize="xs" color={useColorModeValue('gray.600', 'gray.400')}>
+                    These metrics provide useful estimates for understanding usage patterns and costs.
+                  </Text>
+                </VStack>
+              </Popover.Body>
+              <Popover.CloseTrigger />
+            </Popover.Content>
+          </Popover.Positioner>
+        </Popover.Root>
+      </HStack>
     </Box>
   );
 }
