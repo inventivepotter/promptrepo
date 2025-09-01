@@ -12,6 +12,7 @@ import {
 import { LuBot, LuUser, LuSettings, LuWrench } from 'react-icons/lu';
 import { useColorModeValue } from '../../../components/ui/color-mode';
 import { ChatMessage } from '../_types/ChatState';
+import { MarkdownRenderer } from './MarkdownRenderer';
 
 interface ChatMessagesProps {
   messages: ChatMessage[];
@@ -22,7 +23,6 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
   const scrollAreaRef = React.useRef<HTMLDivElement>(null);
   
   // Colors
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
   const timestampColor = useColorModeValue('gray.500', 'gray.500');
   
@@ -59,6 +59,33 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
     }).format(timestamp);
   };
 
+  const formatInferenceTime = (inferenceTimeMs?: number) => {
+    if (!inferenceTimeMs) return '';
+    
+    if (inferenceTimeMs < 1000) {
+      return `${Math.round(inferenceTimeMs)}ms`;
+    } else {
+      return `${(inferenceTimeMs / 1000).toFixed(1)}s`;
+    }
+  };
+
+  const renderTokenMetrics = (usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number }) => {
+    if (!usage || !usage.total_tokens) return null;
+    
+    return (
+      <Box mt={1} ml={2}>
+        <HStack gap={2} fontSize="xs" color={mutedTextColor}>
+          <Text>
+            <Text as="span" fontWeight="medium">Input:</Text> {usage.prompt_tokens || 0}
+          </Text>
+          <Text>
+            <Text as="span" fontWeight="medium">Output:</Text> {usage.completion_tokens || 0}
+          </Text>
+        </HStack>
+      </Box>
+    );
+  };
+
   const renderMessage = (message: ChatMessage) => {
     switch (message.role) {
       case 'assistant':
@@ -81,14 +108,13 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
                 size="sm"
               >
                 <Card.Body p={3}>
-                  <Text fontSize="sm" whiteSpace="pre-wrap">
-                    {message.content}
-                  </Text>
+                  <MarkdownRenderer content={message.content} />
                 </Card.Body>
               </Card.Root>
               <Text fontSize="xs" color={timestampColor} mt={1} ml={2}>
-                {formatTimestamp(message.timestamp)}
+                {message.inferenceTimeMs ? formatInferenceTime(message.inferenceTimeMs) : formatTimestamp(message.timestamp)}
               </Text>
+              {renderTokenMetrics(message.usage)}
             </Box>
           </HStack>
         );
@@ -207,12 +233,19 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
   };
 
   return (
-    <Box flex={1}>
+    <Box
+      flex={1}
+      display="flex"
+      flexDirection="column"
+      h="full"
+      minH={0}
+    >
       <Box
         ref={scrollAreaRef}
-        h="500px"
+        flex={1}
         p={4}
         overflowY="auto"
+        overflowX="hidden"
         style={{
           scrollBehavior: 'smooth'
         }}

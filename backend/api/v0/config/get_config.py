@@ -4,7 +4,7 @@ Get configuration endpoint.
 from fastapi import APIRouter, HTTPException, status
 
 from schemas.config import AppConfig
-from .utils import get_current_config
+from services.config_service import config_service
 
 router = APIRouter()
 
@@ -15,8 +15,7 @@ async def get_config():
     No authorization required - anyone can read config
     """
     try:
-        config = get_current_config()
-        return config
+        return config_service.get_current_config()
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

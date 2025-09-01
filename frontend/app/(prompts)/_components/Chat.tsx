@@ -6,20 +6,38 @@ import {
   VStack,
 } from '@chakra-ui/react';
 import { useColorModeValue } from '../../../components/ui/color-mode';
-import { ChatHeader } from './ChatHeader';
 import { ChatMessages } from './ChatMessages';
 import { ChatInput } from './ChatInput';
+import { ChatFooter } from './ChatFooter';
+import { ChatSimpleHeader } from './ChatSimpleHeader';
+import { TokenStats } from './TokenStats';
 import { ChatState, Tool } from '../_types/ChatState';
 import { chatCompletion } from '../_lib/chatCompletion';
 import { createUserMessage, createAssistantMessage, toOpenAIMessages } from '../_lib/utils/messageUtils';
+import { usePromptsState } from '../_state/promptState';
+import type { ChatCompletionOptions } from '../_types/ChatApi';
 
 interface ChatProps {
   // Optional props for customization
   height?: string;
   onMessageSend?: (message: string, tools: string[]) => void;
+  // Prompt data for chat completion
+  promptData?: {
+    prompt: string;
+    model: string;
+    temperature: number;
+    max_tokens: number;
+    top_p: number;
+  };
 }
 
-export function Chat({ height = "600px", onMessageSend }: ChatProps) {
+export function Chat({ height = "600px", onMessageSend, promptData }: ChatProps) {
+  // Get current prompt from state to access all completion options (fallback)
+  const { currentPrompt } = usePromptsState();
+  
+  // Use provided promptData or fallback to currentPrompt from state
+  const activePrompt = promptData || currentPrompt;
+  
   // Chat state
   const [chatState, setChatState] = React.useState<ChatState>({
     messages: [],
@@ -85,6 +103,7 @@ export function Chat({ height = "600px", onMessageSend }: ChatProps) {
   };
 
   const handleSendMessage = async (message: string) => {
+    
     // Create user message using utility function
     const userMessage = createUserMessage(message);
 
@@ -104,8 +123,24 @@ export function Chat({ height = "600px", onMessageSend }: ChatProps) {
     // Convert messages to OpenAI format for API call
     const openAIMessages = toOpenAIMessages(updatedMessages);
 
+    // Build completion options from active prompt (prioritize promptData prop)
+    const completionOptions: ChatCompletionOptions | undefined = activePrompt ? {
+      provider: activePrompt.model.includes('/')
+        ? activePrompt.model.split('/')[0]
+        : '',
+      model: activePrompt.model.includes('/')
+        ? activePrompt.model.split('/').slice(1).join('/')
+        : activePrompt.model,
+      temperature: activePrompt.temperature,
+      max_tokens: activePrompt.max_tokens,
+      top_p: activePrompt.top_p,
+    } : undefined;
+
+    // Get system message from active prompt
+    const systemMessage = activePrompt?.prompt;
+
     // Call chat completion middleware (handles all errors and notifications)
-    const aiMessage = await chatCompletion(openAIMessages);
+    const aiMessage = await chatCompletion(openAIMessages, undefined, completionOptions, systemMessage);
     
     if (aiMessage) {
       // Success - add AI response
@@ -117,7 +152,7 @@ export function Chat({ height = "600px", onMessageSend }: ChatProps) {
     } else {
       // Error handled by middleware, just add fallback message and stop loading
       const fallbackMessage = createAssistantMessage(
-        '❌ Unable to get AI response. Please try again.'
+        'Unable to get AI response. Please try again.'
       );
 
       setChatState(prev => ({
@@ -135,6 +170,23 @@ export function Chat({ height = "600px", onMessageSend }: ChatProps) {
     }));
   };
 
+  // Calculate total tokens from all messages
+  const calculateTotalTokens = () => {
+    let totalInput = 0;
+    let totalOutput = 0;
+    
+    chatState.messages.forEach(message => {
+      if (message.usage) {
+        totalInput += message.usage.prompt_tokens || 0;
+        totalOutput += message.usage.completion_tokens || 0;
+      }
+    });
+    
+    return { totalInput, totalOutput };
+  };
+
+  const { totalInput, totalOutput } = calculateTotalTokens();
+
   return (
     <Box
       borderWidth="1px"
@@ -150,13 +202,16 @@ export function Chat({ height = "600px", onMessageSend }: ChatProps) {
         overflow="hidden"
       >
         <VStack gap={0} align="stretch" height="full">
-          {/* Header - tools and reset functionality */}
-          <ChatHeader
-            selectedTools={chatState.selectedTools}
-            availableTools={mockTools}
-            onToolsChange={handleToolsChange}
+          {/* Header - Agent title and reset functionality */}
+          <ChatSimpleHeader
             onReset={handleReset}
             isLoading={chatState.isLoading}
+          />
+
+          {/* Token Stats at the top */}
+          <TokenStats
+            totalInputTokens={totalInput}
+            totalOutputTokens={totalOutput}
           />
 
           {/* Messages */}
@@ -174,6 +229,15 @@ export function Chat({ height = "600px", onMessageSend }: ChatProps) {
             onSubmit={handleSendMessage}
             onStop={handleStopGeneration}
             isLoading={chatState.isLoading}
+            totalInputTokens={totalInput}
+            totalOutputTokens={totalOutput}
+          />
+
+          {/* Footer - tools only */}
+          <ChatFooter
+            selectedTools={chatState.selectedTools}
+            availableTools={mockTools}
+            onToolsChange={handleToolsChange}
           />
         </VStack>
       </Box>

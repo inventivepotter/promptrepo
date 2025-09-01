@@ -4,11 +4,10 @@ Returns predefined providers without requiring API keys.
 """
 from fastapi import APIRouter
 from typing import List
-from fastapi.background import P
 from pydantic import BaseModel
-from any_llm.provider import ProviderName
-from utils.constants import PROVIDER_NAMES_MAP
 import logging
+
+from services.provider_service import provider_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -30,12 +29,11 @@ async def get_available_providers() -> BasicProvidersResponse:
     This endpoint returns predefined providers without requiring API keys.
     """
     try:
-        providers = []
-        for provider in ProviderName:
-            provider_info = PROVIDER_NAMES_MAP.get(provider)
-            provider_default_name = provider.replace("_", " ").title()
-            display_name = provider_info.get("name", provider_default_name) if provider_info else provider_default_name
-            providers.append(BasicProviderInfo(id=provider, name=display_name, custom_api_base=provider_info.get("custom_api_base", False) if provider_info else False))
+        providers_data = provider_service.get_available_providers()
+        providers = [
+            BasicProviderInfo(**provider_data)
+            for provider_data in providers_data
+        ]
         return BasicProvidersResponse(providers=providers)
         
     except Exception as e:

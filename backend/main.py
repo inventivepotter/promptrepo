@@ -66,6 +66,12 @@ app.include_router(
     tags=["config"]
 )
 
+app.include_router(
+    llm_router,
+    prefix="/api/v0/llm/chat",
+    tags=["llm"]
+)
+
 # Health check response model
 class HealthResponse(BaseModel):
     status: str
@@ -98,6 +104,7 @@ async def root() -> dict[str, str]:
             "/api/v0/auth/refresh",
             "/api/v0/llm/providers/available",
             "/api/v0/config",
+            "/api/v0/llm/chat/completions",
         ]
     return {
         "message": "Welcome to PromptRepo API",

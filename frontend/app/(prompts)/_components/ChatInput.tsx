@@ -18,6 +18,8 @@ interface ChatInputProps {
   isLoading?: boolean;
   disabled?: boolean;
   placeholder?: string;
+  totalInputTokens?: number;
+  totalOutputTokens?: number;
 }
 
 export function ChatInput({
@@ -27,7 +29,9 @@ export function ChatInput({
   onStop,
   isLoading = false,
   disabled = false,
-  placeholder = "Type your message here..."
+  placeholder = "Type your message here...",
+  totalInputTokens = 0,
+  totalOutputTokens = 0
 }: ChatInputProps) {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const borderColor = useColorModeValue('gray.200', 'gray.600');
@@ -126,9 +130,17 @@ export function ChatInput({
         )}
       </HStack>
       
-      {/* Helper text */}
+      {/* Helper text and token stats */}
       <Box mt={2} fontSize="xs" color={useColorModeValue('gray.500', 'gray.400')}>
-        Press Enter to send, Shift+Enter for new line
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Box>Press Enter to send, Shift+Enter for new line</Box>
+          {(totalInputTokens > 0 || totalOutputTokens > 0) && (
+            <Box display="flex" gap={4}>
+              <Box>Total Input: {totalInputTokens.toLocaleString()}</Box>
+              <Box>Total Output: {totalOutputTokens.toLocaleString()}</Box>
+            </Box>
+          )}
+        </Box>
       </Box>
     </Box>
   );
