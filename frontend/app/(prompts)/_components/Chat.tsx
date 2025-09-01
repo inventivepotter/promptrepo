@@ -6,9 +6,11 @@ import {
   VStack,
 } from '@chakra-ui/react';
 import { useColorModeValue } from '../../../components/ui/color-mode';
-import { ChatHeader } from './ChatHeader';
 import { ChatMessages } from './ChatMessages';
 import { ChatInput } from './ChatInput';
+import { ChatFooter } from './ChatFooter';
+import { ChatSimpleHeader } from './ChatSimpleHeader';
+import { TokenStats } from './TokenStats';
 import { ChatState, Tool } from '../_types/ChatState';
 import { chatCompletion } from '../_lib/chatCompletion';
 import { createUserMessage, createAssistantMessage, toOpenAIMessages } from '../_lib/utils/messageUtils';
@@ -168,6 +170,23 @@ export function Chat({ height = "600px", onMessageSend, promptData }: ChatProps)
     }));
   };
 
+  // Calculate total tokens from all messages
+  const calculateTotalTokens = () => {
+    let totalInput = 0;
+    let totalOutput = 0;
+    
+    chatState.messages.forEach(message => {
+      if (message.usage) {
+        totalInput += message.usage.prompt_tokens || 0;
+        totalOutput += message.usage.completion_tokens || 0;
+      }
+    });
+    
+    return { totalInput, totalOutput };
+  };
+
+  const { totalInput, totalOutput } = calculateTotalTokens();
+
   return (
     <Box
       borderWidth="1px"
@@ -183,13 +202,16 @@ export function Chat({ height = "600px", onMessageSend, promptData }: ChatProps)
         overflow="hidden"
       >
         <VStack gap={0} align="stretch" height="full">
-          {/* Header - tools and reset functionality */}
-          <ChatHeader
-            selectedTools={chatState.selectedTools}
-            availableTools={mockTools}
-            onToolsChange={handleToolsChange}
+          {/* Header - Agent title and reset functionality */}
+          <ChatSimpleHeader
             onReset={handleReset}
             isLoading={chatState.isLoading}
+          />
+
+          {/* Token Stats at the top */}
+          <TokenStats
+            totalInputTokens={totalInput}
+            totalOutputTokens={totalOutput}
           />
 
           {/* Messages */}
@@ -207,6 +229,15 @@ export function Chat({ height = "600px", onMessageSend, promptData }: ChatProps)
             onSubmit={handleSendMessage}
             onStop={handleStopGeneration}
             isLoading={chatState.isLoading}
+            totalInputTokens={totalInput}
+            totalOutputTokens={totalOutput}
+          />
+
+          {/* Footer - tools only */}
+          <ChatFooter
+            selectedTools={chatState.selectedTools}
+            availableTools={mockTools}
+            onToolsChange={handleToolsChange}
           />
         </VStack>
       </Box>

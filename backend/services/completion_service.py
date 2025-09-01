@@ -196,10 +196,10 @@ class ChatCompletionService:
             return None
     
     async def execute_non_streaming_completion(
-        self, 
+        self,
         request: ChatCompletionRequest
-    ) -> tuple[str, str | None, UsageStats | None]:
-        """Execute non-streaming completion and return content, finish_reason, and usage stats."""
+    ) -> tuple[str, str | None, UsageStats | None, float]:
+        """Execute non-streaming completion and return content, finish_reason, usage stats, and inference time."""
         # Validate system message is present
         self._validate_system_message(request.messages)
 
@@ -213,8 +213,15 @@ class ChatCompletionService:
         self.logger.info(f"Calling any-llm completion with params: {completion_params}")
         self.logger.info(f"Provider: '{request.provider}', Model: '{request.model}', Model Identifier: '{completion_params['model']}'")
 
+        # Track inference timing
+        start_time = time.time()
+        
         # Call any-llm completion (non-streaming)
         completion_result = await acompletion(**completion_params)
+        
+        # Calculate inference time in milliseconds
+        inference_time_ms = (time.time() - start_time) * 1000
+        
         response = cast(ChatCompletion, completion_result)  # Safe because stream=False
         
         # Debug logging to understand response structure
@@ -249,7 +256,7 @@ class ChatCompletionService:
         # Process usage statistics
         usage_stats = self.process_usage_stats(response.usage)
         
-        return content, finish_reason, usage_stats
+        return content, finish_reason, usage_stats, inference_time_ms
 
     def _validate_system_message(self, messages: list[ChatMessage]) -> None:
         """Validate that the first message is a system message."""

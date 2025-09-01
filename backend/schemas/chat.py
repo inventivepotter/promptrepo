@@ -61,6 +61,7 @@ class ChatCompletionResponse(BaseModel):
     model: str
     choices: List[ChatCompletionChoice]
     usage: Optional[UsageStats] = None
+    inference_time_ms: Optional[float] = None  # Inference time in milliseconds
 
 
 class ChatCompletionStreamChoice(BaseModel):

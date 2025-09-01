@@ -22,10 +22,15 @@ export function toOpenAIMessages(messages: ChatMessage[]): OpenAIMessage[] {
 /**
  * Convert OpenAI message to internal ChatMessage format
  */
-export function fromOpenAIMessage(openAIMessage: OpenAIMessage, id?: string): ChatMessage {
+export function fromOpenAIMessage(
+  openAIMessage: OpenAIMessage,
+  id?: string,
+  usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number }
+): ChatMessage {
   return {
     id: id || `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     timestamp: new Date(),
+    usage,
     ...openAIMessage
   };
 }

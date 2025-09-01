@@ -81,7 +81,12 @@ export async function chatCompletion(
     const assistantMessage = result.data.choices[0].message;
     
     // Convert response back to internal ChatMessage format
-    const chatMessage = fromOpenAIMessage(assistantMessage, `assistant-${Date.now()}`);
+    const chatMessage = fromOpenAIMessage(assistantMessage, `assistant-${Date.now()}`, result.data.usage);
+    
+    // Add inference time from API response
+    if (result.data.inference_time_ms) {
+      chatMessage.inferenceTimeMs = result.data.inference_time_ms;
+    }
     
     return chatMessage;
   } catch (error: unknown) {

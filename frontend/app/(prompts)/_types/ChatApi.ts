@@ -43,6 +43,7 @@ export interface ChatCompletionResponse {
     completion_tokens?: number;
     total_tokens?: number;
   };
+  inference_time_ms?: number;
 }
 
 export interface ChatCompletionStreamChoice {

@@ -58,7 +58,7 @@ async def chat_completions(
         
         # Handle non-streaming response
         try:
-            content, finish_reason, usage_stats = await chat_completion_service.execute_non_streaming_completion(request)
+            content, finish_reason, usage_stats, inference_time_ms = await chat_completion_service.execute_non_streaming_completion(request)
         except Exception as e:
             logger.error(f"Error in acompletion call or response processing: {e}")
             logger.error(f"Exception type: {type(e)}")
@@ -86,7 +86,8 @@ async def chat_completions(
                     finish_reason=finish_reason
                 )
             ],
-            usage=usage_stats
+            usage=usage_stats,
+            inference_time_ms=inference_time_ms
         )
         
         logger.info(f"Chat completion successful for {username}")
