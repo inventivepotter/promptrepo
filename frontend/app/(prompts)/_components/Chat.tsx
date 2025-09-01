@@ -13,6 +13,7 @@ import { ChatInput } from './ChatInput';
 import { ChatFooter } from './ChatFooter';
 import { ChatSimpleHeader } from './ChatSimpleHeader';
 import { TokenStats } from './TokenStats';
+import { TemplateVariables } from './TemplateVariables';
 import { ChatState, Tool } from '../_types/ChatState';
 import { chatCompletion } from '../_lib/chatCompletion';
 import { createUserMessage, createAssistantMessage, toOpenAIMessages } from '../_lib/utils/messageUtils';
@@ -296,37 +297,11 @@ export function Chat({ height = "700px", onMessageSend, promptData }: ChatProps)
       </Box>
 
       {/* Template Variables Section - Outside height constraint to expand downward */}
-      {extractedVariables.length > 0 && (
-        <Box
-          p={4}
-          borderTopWidth="1px"
-          borderColor={borderColor}
-          bg={bgColor}
-        >
-          <VStack gap={3} align="stretch">
-            <Text fontSize="sm" fontWeight="medium" color={mutedTextColor}>
-              Template Variables - Fill these out before sending your message:
-            </Text>
-            
-            {extractedVariables.map(variable => (
-              <Box key={variable}>
-                <Text mb={1} fontSize="xs" fontWeight="medium" color={mutedTextColor}>
-                  {variable}
-                </Text>
-                <Textarea
-                  value={templateVariables[variable] || ''}
-                  onChange={(e) => updateTemplateVariable(variable, e.target.value)}
-                  placeholder={`Enter value for ${variable}...`}
-                  rows={2}
-                  fontSize="sm"
-                  resize="vertical"
-                  borderColor={borderColor}
-                />
-              </Box>
-            ))}
-          </VStack>
-        </Box>
-      )}
+      <TemplateVariables
+        promptTemplate={promptTemplate}
+        templateVariables={templateVariables}
+        onUpdateVariable={updateTemplateVariable}
+      />
 
       {/* Footer - tools only - Outside height constraint so it gets pushed down */}
       <ChatFooter

@@ -3,7 +3,7 @@
     "id": "prompt_1",
     "name": "Code Review Assistant",
     "description": "Helps review code for best practices, bugs, and improvements",
-    "prompt": "You are an experienced code reviewer. Analyze the following code and provide feedback on:\n\n1. Code quality and best practices\n2. Potential bugs or security issues\n3. Performance optimizations\n4. Code readability and maintainability\n5. Suggestions for improvement\n\nCode to review:\n\n{code}",
+    "prompt": "You are an experienced code reviewer. Analyze the following code and provide feedback on:\n\n1. Code quality and best practices\n2. Potential bugs or security issues\n3. Performance optimizations\n4. Code readability and maintainability\n5. Suggestions for improvement\n\nCode to review:\n\n{{code}}",
     "model": "lmstudio/gemma-3-270m-it-mlx",
     "failover_model": "anthropic/claude-3.5-sonnet",
     "temperature": 0.3,
