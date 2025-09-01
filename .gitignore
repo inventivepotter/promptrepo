@@ -136,10 +136,8 @@ promptrepo.db
 
 backend/.env
 frontend/.env
-repos/*
-!repos/.gitkeep
-database
 .env
 .env.*
 !.env.example
 .temp
+persistence/
