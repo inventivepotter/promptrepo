@@ -1,19 +1,19 @@
 ### Pending
 All pending tasks in order of priority
+- [x] Migrate to `Next.js` from `reflex`
+- [x] AuthState & Routes
+- [x] Should Prompt Editor have saved button?
+- [x] State updates only after backend success and spinner
 - [x] Front End Backend seperation
 - [x] Docker compose
 - [ ] Write Agent.md
+- [x] Design Home Page
 - [x] Route HomePage
-    - [ ] Introduce a new API for `configsExists`
-    - [ ] Use `configsExists` to route HomePage to `/interview`
-    - [ ] `/interview` should only be visible `configsExists` `false` (either from state or from apiCall)
-    - [ ] if `configsExist` `true` the route to `/prompts`
-- [ ] Admin Authorization
-    - [ ] Update `Configuration` to hold github usernames for admins
-    - [ ] Enable Authorization in `(auth)`
-    - [ ] Show `/setup` page only for admins
-- [ ] Delete All Local Storage on Logout
+- [x] Fix Hosting Types
+- [x] Admin Authorization
+- [x] Delete All Local Storage on Logout
 - [ ] Commit & Push for each prompt and all
+- [ ] Playground
 - [ ] Documentation
     - [ ] About PromptRepo
         - [ ] What is PromptRepo
@@ -33,9 +33,3 @@ All pending tasks in order of priority
 - [ ] Open in git - prompt
 - [ ] HELM Chart
 - [ ] Breadcrumbs
-
-### Completed
-- [x] Migrate to `Next.js` from `reflex`
-- [x] AuthState & Routes
-- [x] Should Prompt Editor have saved button?
-- [x] State updates only after backend success and spinner

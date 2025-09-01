@@ -8,7 +8,7 @@ import {
   Button,
   Spinner,
 } from '@chakra-ui/react';
-import { LuArrowLeft } from 'react-icons/lu';
+import { LuArrowLeft, LuGitBranch } from 'react-icons/lu';
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { Prompt } from '@/types/Prompt';
 
@@ -18,9 +18,12 @@ interface PromptEditorHeaderProps {
   onSave: () => void;
   canSave: boolean;
   isSaving?: boolean;
+  onCommitPush?: () => void;
+  isCommitPushing?: boolean;
+  canCommitPush?: boolean;
 }
 
-export function PromptEditorHeader({ displayPrompt, onBack, onSave, canSave, isSaving = false }: PromptEditorHeaderProps) {
+export function PromptEditorHeader({ displayPrompt, onBack, onSave, canSave, isSaving = false, onCommitPush, isCommitPushing = false, canCommitPush = false }: PromptEditorHeaderProps) {
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
 
   return (
@@ -45,17 +48,33 @@ export function PromptEditorHeader({ displayPrompt, onBack, onSave, canSave, isS
           </Text>
         </VStack>
       </HStack>
-      <Button
-        colorScheme="blue"
-        onClick={onSave}
-        disabled={!canSave || isSaving}
-        loading={isSaving}
-      >
-        <HStack gap={2}>
-          {isSaving && <Spinner size="sm" />}
-          <Text>{isSaving ? 'Saving...' : 'Save Prompt'}</Text>
-        </HStack>
-      </Button>
+      <HStack gap={3}>
+        {onCommitPush && (
+          <Button
+            colorPalette="green"
+            variant="outline"
+            onClick={onCommitPush}
+            disabled={!canCommitPush || isSaving || isCommitPushing}
+            loading={isCommitPushing}
+          >
+            <HStack gap={2}>
+              <LuGitBranch size={16} />
+              <Text>{isCommitPushing ? 'Committing...' : 'Commit & Push'}</Text>
+            </HStack>
+          </Button>
+        )}
+        <Button
+          colorScheme="blue"
+          onClick={onSave}
+          disabled={!canSave || isSaving}
+          loading={isSaving}
+        >
+          <HStack gap={2}>
+            {isSaving && <Spinner size="sm" />}
+            <Text>{isSaving ? 'Saving...' : 'Save Prompt'}</Text>
+          </HStack>
+        </Button>
+      </HStack>
     </HStack>
   );
 }

@@ -1,23 +1,25 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Box,
   Container,
-  VStack,
   HStack,
+  VStack,
   Text,
   Button,
 } from '@chakra-ui/react';
-import { LuPlus } from 'react-icons/lu';
+import { LuPlus, LuGitBranch } from 'react-icons/lu';
 import { useColorModeValue } from '@/components/ui/color-mode';
 
 interface PromptsHeaderProps {
   onCreateNew: () => void;
+  onCommitPush?: () => void;
 }
 
-export function PromptsHeader({ onCreateNew }: PromptsHeaderProps) {
+export function PromptsHeader({ onCreateNew, onCommitPush }: PromptsHeaderProps) {
   const headerBg = useColorModeValue('gray.50', 'gray.900');
+  const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
 
   return (
     <Box
@@ -35,19 +37,33 @@ export function PromptsHeader({ onCreateNew }: PromptsHeaderProps) {
             <Text fontSize="2xl" fontWeight="bold">
               Prompts
             </Text>
-            <Text fontSize="sm" opacity={0.7}>
-              Manage and organize your AI prompts
+            <Text fontSize="sm" color={mutedTextColor}>
+              Create and manage your AI prompts with version control
             </Text>
           </VStack>
-          <Button
-            onClick={onCreateNew}
-            colorPalette="blue"
-          >
-            <HStack gap={2}>
-              <LuPlus size={16} />
-              <Text>New Prompt</Text>
-            </HStack>
-          </Button>
+          
+          <HStack gap={3}>
+            <Button
+              onClick={onCreateNew}
+              colorPalette="blue"
+            >
+              <HStack gap={2}>
+                <LuPlus size={16} />
+                <Text>New Prompt</Text>
+              </HStack>
+            </Button>
+            
+            <Button
+              onClick={onCommitPush}
+              colorPalette="green"
+              variant="outline"
+            >
+              <HStack gap={2}>
+                <LuGitBranch size={16} />
+                <Text>Commit & Push</Text>
+              </HStack>
+            </Button>
+          </HStack>
         </HStack>
       </Container>
     </Box>

@@ -18,6 +18,7 @@ import { PromptSearch } from '../_components/PromptSearch';
 import { PromptCard } from '../_components/PromptCard';
 import { Pagination } from '../_components/Pagination';
 import { PromptsHeader } from '@/components/PromptsHeader';
+import { commitPushOperations } from '../_lib/commitPush';
 
 export default function PromptsPage() {
   const router = useRouter();
@@ -64,10 +65,15 @@ export default function PromptsPage() {
     }
   };
 
+  const handleCommitPushAll = async () => {
+    await commitPushOperations.commitPushAll();
+  };
+
   return (
     <VStack minH="100vh" align="stretch">
       <PromptsHeader
         onCreateNew={handleCreateNew}
+        onCommitPush={handleCommitPushAll}
       />
       {/* Main content */}
       <Container maxW="7xl" py={6}>

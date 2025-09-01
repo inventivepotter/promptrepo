@@ -44,9 +44,6 @@ export function PromptFieldGroup({
 
   return (
     <Box>
-      <Text fontSize="lg" fontWeight="semibold" mb={4}>
-        Basic Information
-      </Text>
       <VStack gap={4} align="stretch">
         <Box>
           <Text mb={2} fontWeight="semibold" color={!isRepoDisabled ? "red.500" : undefined} opacity={0.7}>
@@ -57,9 +54,7 @@ export function PromptFieldGroup({
               Please select a repository before editing other fields
             </Text>
           )}
-        </Box>
-
-        <Combobox.Root
+          <Combobox.Root
           collection={createListCollection({
             items: filteredRepos.map(repo => ({
               label: repo.name,
@@ -104,7 +99,8 @@ export function PromptFieldGroup({
               ))}
             </Combobox.Content>
           </Combobox.Positioner>
-        </Combobox.Root>
+          </Combobox.Root>
+        </Box>
 
         <Box opacity={!formData.repo ? 0.5 : 1}>
           <Text mb={2} fontWeight={formData.repo ? "medium" : "normal"} color={!formData.repo ? "gray.400" : undefined}>Name</Text>
