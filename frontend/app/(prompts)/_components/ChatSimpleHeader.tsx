@@ -8,19 +8,28 @@ import {
   Button,
   Box,
 } from '@chakra-ui/react';
-import { LuRefreshCw, LuBot } from 'react-icons/lu';
+import { LuRefreshCw, LuBot, LuDollarSign } from 'react-icons/lu';
 import { useColorModeValue } from '@/components/ui/color-mode';
+import { ChatMessage } from '../_types/ChatState';
+import { formatCost } from '../_lib/utils/pricingUtils';
 
 interface ChatSimpleHeaderProps {
   onReset: () => void;
   isLoading?: boolean;
+  messages?: ChatMessage[];
 }
 
-export function ChatSimpleHeader({ 
-  onReset, 
-  isLoading = false 
+export function ChatSimpleHeader({
+  onReset,
+  isLoading = false,
+  messages = []
 }: ChatSimpleHeaderProps) {
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
+
+  // Calculate total cost from all messages
+  const totalCost = messages.reduce((sum, message) => {
+    return sum + (message.cost || 0);
+  }, 0);
 
   return (
     <Box
@@ -36,6 +45,14 @@ export function ChatSimpleHeader({
               <Text fontSize="lg" fontWeight="semibold">
                 Agent
               </Text>
+              {totalCost > 0 && (
+                <HStack gap={1} fontSize="xs" color="green.600" _dark={{ color: "green.400" }}>
+                  <LuDollarSign size={12} />
+                  <Text fontFamily="mono" fontWeight="medium">
+                    {formatCost(totalCost)}
+                  </Text>
+                </HStack>
+              )}
             </HStack>
             <Text fontSize="xs" color={mutedTextColor}>
               Your playground to test prompts with AI agents

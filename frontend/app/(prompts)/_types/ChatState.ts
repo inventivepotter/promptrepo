@@ -21,8 +21,11 @@ export interface ChatMessage extends OpenAIMessage {
     prompt_tokens?: number;
     completion_tokens?: number;
     total_tokens?: number;
+    reasoning_tokens?: number;
   };
   inferenceTimeMs?: number; // Time taken for inference in milliseconds
+  model?: string; // Model used for this message (for cost calculation)
+  cost?: number; // Calculated cost for this message
 }
 
 

@@ -26,7 +26,7 @@ class HttpClient {
       ...config.defaultHeaders
     };
     
-    this.timeout = config.timeout || 60000; // 60 seconds default
+    this.timeout = config.timeout || 180000; // 180 seconds (3 minutes) default
   }
 
   private async makeRequest<T>(

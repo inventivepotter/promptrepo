@@ -1,4 +1,6 @@
 import { ChatMessage, OpenAIMessage } from '../../_types/ChatState';
+import { pricingService } from './pricingUtils';
+import { TokenUsage } from '../../_types/PricingTypes';
 
 /**
  * Convert internal ChatMessage to OpenAI format for API calls
@@ -25,14 +27,32 @@ export function toOpenAIMessages(messages: ChatMessage[]): OpenAIMessage[] {
 export function fromOpenAIMessage(
   openAIMessage: OpenAIMessage,
   id?: string,
-  usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number }
+  usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number; reasoning_tokens?: number },
+  model?: string
 ): ChatMessage {
-  return {
+  const message: ChatMessage = {
     id: id || `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     timestamp: new Date(),
     usage,
+    model,
     ...openAIMessage
   };
+
+  // Calculate cost if usage and model are provided
+  if (usage && model && openAIMessage.role === 'assistant') {
+    const tokenUsage: TokenUsage = {
+      inputTokens: usage.prompt_tokens || 0,
+      outputTokens: usage.completion_tokens || 0,
+      reasoningTokens: usage.reasoning_tokens
+    };
+    
+    const costCalculation = pricingService.calculateCost(model, tokenUsage);
+    if (costCalculation) {
+      message.cost = costCalculation.totalCost;
+    }
+  }
+
+  return message;
 }
 
 /**
@@ -83,4 +103,36 @@ export function createToolMessage(content: string, tool_call_id: string): ChatMe
     tool_call_id,
     timestamp: new Date(),
   };
+}
+
+/**
+ * Extract token usage from ChatMessage for pricing calculations
+ */
+export function getTokenUsageFromMessage(message: ChatMessage): TokenUsage | null {
+  if (!message.usage) return null;
+  
+  return {
+    inputTokens: message.usage.prompt_tokens || 0,
+    outputTokens: message.usage.completion_tokens || 0,
+    reasoningTokens: message.usage.reasoning_tokens
+  };
+}
+
+/**
+ * Calculate cost for a message if model and usage are available
+ */
+export async function calculateMessageCost(message: ChatMessage): Promise<number | null> {
+  if (!message.model || !message.usage) return null;
+  
+  const tokenUsage = getTokenUsageFromMessage(message);
+  if (!tokenUsage) return null;
+  
+  try {
+    await pricingService.getPricingData();
+    const costCalculation = pricingService.calculateCost(message.model, tokenUsage);
+    return costCalculation?.totalCost || null;
+  } catch (error) {
+    console.warn('Failed to calculate message cost:', error);
+    return null;
+  }
 }

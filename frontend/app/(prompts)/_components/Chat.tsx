@@ -4,6 +4,8 @@ import React from 'react';
 import {
   Box,
   VStack,
+  Text,
+  Textarea,
 } from '@chakra-ui/react';
 import { useColorModeValue } from '../../../components/ui/color-mode';
 import { ChatMessages } from './ChatMessages';
@@ -11,11 +13,13 @@ import { ChatInput } from './ChatInput';
 import { ChatFooter } from './ChatFooter';
 import { ChatSimpleHeader } from './ChatSimpleHeader';
 import { TokenStats } from './TokenStats';
+import { TemplateVariables } from './TemplateVariables';
 import { ChatState, Tool } from '../_types/ChatState';
 import { chatCompletion } from '../_lib/chatCompletion';
 import { createUserMessage, createAssistantMessage, toOpenAIMessages } from '../_lib/utils/messageUtils';
 import { usePromptsState } from '../_state/promptState';
 import type { ChatCompletionOptions } from '../_types/ChatApi';
+import { extractVariables, resolveTemplate, hasVariables } from '../_lib/utils/templateUtils';
 
 interface ChatProps {
   // Optional props for customization
@@ -31,7 +35,7 @@ interface ChatProps {
   };
 }
 
-export function Chat({ height = "600px", onMessageSend, promptData }: ChatProps) {
+export function Chat({ height = "700px", onMessageSend, promptData }: ChatProps) {
   // Get current prompt from state to access all completion options (fallback)
   const { currentPrompt } = usePromptsState();
   
@@ -53,6 +57,7 @@ export function Chat({ height = "600px", onMessageSend, promptData }: ChatProps)
   });
 
   const [inputValue, setInputValue] = React.useState('');
+  const [templateVariables, setTemplateVariables] = React.useState<Record<string, string>>({});
 
   // Mock tools data - in real implementation this would come from API
   const mockTools: Tool[] = [
@@ -85,6 +90,34 @@ export function Chat({ height = "600px", onMessageSend, promptData }: ChatProps)
 
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const bgColor = useColorModeValue('white', 'gray.800');
+  const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
+
+  // Extract variables from the active prompt template
+  const promptTemplate = activePrompt?.prompt || '';
+  const extractedVariables = React.useMemo(() => extractVariables(promptTemplate), [promptTemplate]);
+
+  // Initialize template variables when extracted variables change
+  React.useEffect(() => {
+    const newVariables: Record<string, string> = {};
+    extractedVariables.forEach(variable => {
+      newVariables[variable] = templateVariables[variable] || '';
+    });
+    setTemplateVariables(newVariables);
+  }, [extractedVariables]);
+
+  // Update a template variable value
+  const updateTemplateVariable = (variableName: string, value: string) => {
+    setTemplateVariables(prev => ({
+      ...prev,
+      [variableName]: value
+    }));
+  };
+
+  // Get resolved template with current variable values
+  const resolvedPrompt = React.useMemo(() => {
+    if (!hasVariables(promptTemplate)) return promptTemplate;
+    return resolveTemplate(promptTemplate, templateVariables);
+  }, [promptTemplate, templateVariables]);
 
   const handleToolsChange = (tools: string[]) => {
     setChatState(prev => ({
@@ -103,6 +136,21 @@ export function Chat({ height = "600px", onMessageSend, promptData }: ChatProps)
   };
 
   const handleSendMessage = async (message: string) => {
+    // Check if this is the first message and template variables exist
+    const isFirstMessage = chatState.messages.length === 0;
+    const hasTemplateVariables = extractedVariables.length > 0;
+    
+    // Validate template variables for first message
+    if (isFirstMessage && hasTemplateVariables) {
+      const emptyVariables = extractedVariables.filter(variable =>
+        !templateVariables[variable] || templateVariables[variable].trim() === ''
+      );
+      
+      if (emptyVariables.length > 0) {
+        // Don't proceed - template variables are required for the first message
+        return;
+      }
+    }
     
     // Create user message using utility function
     const userMessage = createUserMessage(message);
@@ -136,8 +184,8 @@ export function Chat({ height = "600px", onMessageSend, promptData }: ChatProps)
       top_p: activePrompt.top_p,
     } : undefined;
 
-    // Get system message from active prompt
-    const systemMessage = activePrompt?.prompt;
+    // Get system message from active prompt (use resolved template if variables exist)
+    const systemMessage = hasVariables(promptTemplate) ? resolvedPrompt : activePrompt?.prompt;
 
     // Call chat completion middleware (handles all errors and notifications)
     const aiMessage = await chatCompletion(openAIMessages, undefined, completionOptions, systemMessage);
@@ -187,6 +235,14 @@ export function Chat({ height = "600px", onMessageSend, promptData }: ChatProps)
 
   const { totalInput, totalOutput } = calculateTotalTokens();
 
+  // Check if template variables are missing for first message validation
+  const isFirstMessage = chatState.messages.length === 0;
+  const hasTemplateVariables = extractedVariables.length > 0;
+  const missingTemplateVariables = hasTemplateVariables ? extractedVariables.filter(variable =>
+    !templateVariables[variable] || templateVariables[variable].trim() === ''
+  ) : [];
+  const isDisabledDueToTemplateVariables = isFirstMessage && hasTemplateVariables && missingTemplateVariables.length > 0;
+
   return (
     <Box
       borderWidth="1px"
@@ -194,7 +250,7 @@ export function Chat({ height = "600px", onMessageSend, promptData }: ChatProps)
       borderRadius="md"
       bg={bgColor}
       overflow="hidden"
-    > 
+    >
       <Box
         height={height}
         display="flex"
@@ -215,7 +271,7 @@ export function Chat({ height = "600px", onMessageSend, promptData }: ChatProps)
           />
 
           {/* Messages */}
-          <Box flex={1} overflow="hidden">
+          <Box flex={1} overflow="hidden" minHeight="300px">
             <ChatMessages
               messages={chatState.messages}
               isLoading={chatState.isLoading}
@@ -229,18 +285,30 @@ export function Chat({ height = "600px", onMessageSend, promptData }: ChatProps)
             onSubmit={handleSendMessage}
             onStop={handleStopGeneration}
             isLoading={chatState.isLoading}
+            disabled={isDisabledDueToTemplateVariables}
+            placeholder={isDisabledDueToTemplateVariables
+              ? `Complete template variables to send a message`
+              : "Type your message here..."
+            }
             totalInputTokens={totalInput}
             totalOutputTokens={totalOutput}
           />
-
-          {/* Footer - tools only */}
-          <ChatFooter
-            selectedTools={chatState.selectedTools}
-            availableTools={mockTools}
-            onToolsChange={handleToolsChange}
-          />
         </VStack>
       </Box>
+
+      {/* Template Variables Section - Outside height constraint to expand downward */}
+      <TemplateVariables
+        promptTemplate={promptTemplate}
+        templateVariables={templateVariables}
+        onUpdateVariable={updateTemplateVariable}
+      />
+
+      {/* Footer - tools only - Outside height constraint so it gets pushed down */}
+      <ChatFooter
+        selectedTools={chatState.selectedTools}
+        availableTools={mockTools}
+        onToolsChange={handleToolsChange}
+      />
     </Box>
   );
 }

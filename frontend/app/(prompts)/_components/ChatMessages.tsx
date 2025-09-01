@@ -13,6 +13,7 @@ import { LuBot, LuUser, LuSettings, LuWrench } from 'react-icons/lu';
 import { useColorModeValue } from '../../../components/ui/color-mode';
 import { ChatMessage } from '../_types/ChatState';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import { formatCost } from '../_lib/utils/pricingUtils';
 
 interface ChatMessagesProps {
   messages: ChatMessage[];
@@ -69,7 +70,8 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
     }
   };
 
-  const renderTokenMetrics = (usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number }) => {
+  const renderTokenMetrics = (message: ChatMessage) => {
+    const usage = message.usage;
     if (!usage || !usage.total_tokens) return null;
     
     return (
@@ -81,6 +83,21 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
           <Text>
             <Text as="span" fontWeight="medium">Output:</Text> {usage.completion_tokens || 0}
           </Text>
+          {usage.reasoning_tokens && (
+            <Text>
+              <Text as="span" fontWeight="medium">Reasoning:</Text> {usage.reasoning_tokens}
+            </Text>
+          )}
+          {message.cost && (
+            <Text>
+              <Text as="span" fontWeight="medium">Cost:</Text> {formatCost(message.cost)}
+            </Text>
+          )}
+          {message.model && (
+            <Text>
+              <Text as="span" fontWeight="medium">Model:</Text> {message.model}
+            </Text>
+          )}
         </HStack>
       </Box>
     );
@@ -100,7 +117,7 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
             >
               <LuBot size={16} />
             </Box>
-            <Box maxW="70%" flex={1}>
+            <Box maxW="85%" flex={1}>
               <Card.Root
                 bg={aiMessageBg}
                 borderColor={aiMessageBorder}
@@ -114,7 +131,7 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
               <Text fontSize="xs" color={timestampColor} mt={1} ml={2}>
                 {message.inferenceTimeMs ? formatInferenceTime(message.inferenceTimeMs) : formatTimestamp(message.timestamp)}
               </Text>
-              {renderTokenMetrics(message.usage)}
+              {renderTokenMetrics(message)}
             </Box>
           </HStack>
         );
@@ -269,7 +286,7 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
                 >
                   <LuBot size={16} />
                 </Box>
-                <Box maxW="70%">
+                <Box maxW="85%">
                   <Card.Root
                     bg={aiMessageBg}
                     borderColor={aiMessageBorder}
