@@ -9,8 +9,10 @@ import {
   Textarea,
   Combobox,
   createListCollection,
+  Collapsible,
+  HStack,
 } from '@chakra-ui/react';
-import { FaChevronDown } from 'react-icons/fa';
+import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { Repo } from '@/types/Repo';
 import { Prompt } from '@/types/Prompt';
@@ -31,6 +33,7 @@ export function PromptFieldGroup({
   updateRepoField
 }: PromptFieldGroupProps) {
   const [repoSearchValue, setRepoSearchValue] = React.useState('');
+  const [isOpen, setIsOpen] = React.useState(true);
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
 
   // Check if current repo exists and matches one of the available repos
@@ -43,11 +46,26 @@ export function PromptFieldGroup({
   );
 
   return (
-    <Box>
-      <Text fontSize="lg" fontWeight="semibold" mb={4}>
-        Basic Information
-      </Text>
-      <VStack gap={4} align="stretch">
+    <Collapsible.Root open={isOpen} onOpenChange={(e) => setIsOpen(e.open)}>
+      <Collapsible.Trigger asChild>
+        <Box
+          cursor="pointer"
+          p={2}
+          borderRadius="md"
+          _hover={{ bg: useColorModeValue('gray.50', 'gray.700') }}
+        >
+          <HStack justify="space-between" align="center">
+            <Text fontSize="lg" fontWeight="semibold">
+              Craft Your Prompt
+            </Text>
+            {isOpen ? <FaChevronUp size={14} /> : <FaChevronDown size={14} />}
+          </HStack>
+        </Box>
+      </Collapsible.Trigger>
+      
+      <Collapsible.Content>
+        <Box pt={4}>
+          <VStack gap={4} align="stretch">
         <Box>
           <Text mb={2} fontWeight="semibold" color={!isRepoDisabled ? "red.500" : undefined} opacity={0.7}>
             Repository
@@ -130,7 +148,9 @@ export function PromptFieldGroup({
             resize="vertical"
           />
         </Box>
-      </VStack>
-    </Box>
+          </VStack>
+        </Box>
+      </Collapsible.Content>
+    </Collapsible.Root>
   );
 }
