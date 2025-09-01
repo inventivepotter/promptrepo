@@ -18,10 +18,9 @@ from schemas.chat import (
     ErrorResponse
 )
 
-# Import utility functions
+# Import service classes
 from utils.auth_utils import verify_session
-from .validation_utils import validate_provider_and_model
-from .completion_utils import stream_chat_completion, execute_non_streaming_completion
+from services.completion_service import chat_completion_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -41,14 +40,14 @@ async def chat_completions(
         completion_id = f"chatcmpl-{uuid.uuid4().hex[:29]}"
         
         # Validate required fields
-        validate_provider_and_model(request.provider, request.model)
-        
+        chat_completion_service.validate_provider_and_model(request.provider, request.model)
+
         logger.info(f"Chat completion request from {username} using {request.provider}/{request.model}")
         
         # Handle streaming response
         if request.stream:
             return StreamingResponse(
-                stream_chat_completion(request, f"{request.provider}/{request.model}", completion_id),
+                chat_completion_service.stream_completion(request, f"{request.provider}/{request.model}", completion_id),
                 media_type="text/plain",
                 headers={
                     "Cache-Control": "no-cache",
@@ -59,7 +58,7 @@ async def chat_completions(
         
         # Handle non-streaming response
         try:
-            content, finish_reason, usage_stats = await execute_non_streaming_completion(request)
+            content, finish_reason, usage_stats = await chat_completion_service.execute_non_streaming_completion(request)
         except Exception as e:
             logger.error(f"Error in acompletion call or response processing: {e}")
             logger.error(f"Exception type: {type(e)}")
