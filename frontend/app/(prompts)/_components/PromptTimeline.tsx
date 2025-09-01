@@ -3,59 +3,94 @@
 import React from 'react';
 import {
   Box,
-  VStack,
   HStack,
   Text,
 } from '@chakra-ui/react';
 import { useColorModeValue } from '../../../components/ui/color-mode';
+import { CommitInfo } from '@/types/Prompt';
 
 interface PromptCommit {
   id: string;
   message: string;
   author: string;
   timestamp: string;
-  changes: {
-    added: number;
-    deleted: number;
-  };
   hash: string;
   isLatest?: boolean;
 }
 
 interface PromptTimelineProps {
-  commits: PromptCommit[];
+  commits: (CommitInfo & { id?: string; isLatest?: boolean })[];
 }
 
-function TimelineNodeCompact({ commit, isLatest }: { commit: PromptCommit; isLatest: boolean }) {
-
+function TimelineNodeCompact({ commit, isLatest }: { commit: CommitInfo & { id?: string; isLatest?: boolean }; isLatest: boolean }) {
+  const textColor = useColorModeValue('gray.700', 'gray.300');
+  const metaColor = useColorModeValue('gray.500', 'gray.400');
+  
   return (
-    <Box position="relative" mb={8} display="flex" flexDirection="column" alignItems="center">
-      {/* Dot Node - centered */}
-      <Box position="relative" zIndex={2}>
-        {isLatest ? (
+    <Box position="relative" mb={8}>
+      {/* Container with dot and content side by side */}
+      <HStack gap={4} align="flex-start">
+        {/* Dot Node */}
+        <Box
+          width={isLatest ? "15px" : "14px"}
+          height={isLatest ? "15px" : "14px"}
+          borderRadius="full"
+          bg="blue.500"
+          border="2px solid"
+          borderColor="gray.200"
+          animation={isLatest ? "pulse 1s infinite" : undefined}
+          flexShrink={0}
+          mt="2px"
+          ml="-6px"
+          mb={isLatest ? "95vh" : "12vh"}
+        />
+        
+        {/* Commit Details - positioned to the right of dot */}
+        {!isLatest && (
           <Box
-            width="15px"
-            height="15px"
-            marginBottom="90vh"
-            borderRadius="full"
-            bg="blue.500"
-            border="2px solid"
-            borderColor="gray.200"
-            animation="pulse 1s infinite"
-          />
-        ) : (
-          <Box
-            width="14px"
-            height="14px"
-            borderRadius="full"
-            bg="blue.500"
-            border="2px solid"
-            borderColor="gray.200"
-          />
-        )}
-      </Box>
+            mt="-2px"
+            minW={100}
+          >
+            {/* Commit Message */}
+            <Text 
+              fontFamily="mono"
+              fontSize="xs"
+              color="bg.emphasis"
+              fontWeight="semibold"
+            >
+              {commit.hash.substring(0, 7)}
+            </Text>
+            <Text
+              fontSize="xs"
+              color={textColor}
+            >
+              {commit.message}
+            </Text>
 
-      {/* Commit Details - positioned below the dot (no text labels) */}
+            {/* Time elapsed since commit */}
+            <Text fontSize="xs" color={metaColor} mt={1}>
+              {(() => {
+                const now = new Date();
+                const commitDate = new Date(commit.date);
+                const diffMs = now.getTime() - commitDate.getTime();
+                const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                
+                if (diffDays > 0) {
+                  return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+                } else if (diffHours > 0) {
+                  return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+                } else if (diffMinutes > 0) {
+                  return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
+                } else {
+                  return 'Just now';
+                }
+              })()}
+            </Text>
+          </Box>
+        )}
+      </HStack>
     </Box>
   );
 }
@@ -71,7 +106,7 @@ export function PromptTimeline({ commits }: PromptTimelineProps) {
         left="50%"
         top="12%"
         width="2px"
-        height="100%"
+        height="85%"
         bg={lineColor}
         zIndex={1}
         transform="translateX(-50%)"
@@ -80,7 +115,7 @@ export function PromptTimeline({ commits }: PromptTimelineProps) {
         <Box position="relative" mt="-15px">
           {commits.map((commit, index) => (
             <TimelineNodeCompact
-              key={commit.id}
+              key={commit.id || commit.hash || index}
               commit={commit}
               isLatest={commit.isLatest || index === 0}
             />

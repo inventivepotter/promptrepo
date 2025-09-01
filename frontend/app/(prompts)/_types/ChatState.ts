@@ -1,28 +1,24 @@
-export interface BaseMessage {
-  id: string;
+// OpenAI standard message format
+export interface OpenAIMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool';
   content: string;
+  tool_call_id?: string;
+  tool_calls?: Array<{
+    id: string;
+    type: 'function';
+    function: {
+      name: string;
+      arguments: string;
+    };
+  }>;
+}
+
+// Internal chat message format (extends OpenAI with UI-specific fields)
+export interface ChatMessage extends OpenAIMessage {
+  id: string;
   timestamp: Date;
 }
 
-export interface AIMessage extends BaseMessage {
-  type: 'ai';
-}
-
-export interface SystemMessage extends BaseMessage {
-  type: 'system';
-}
-
-export interface UserMessage extends BaseMessage {
-  type: 'user';
-}
-
-export interface ToolMessage extends BaseMessage {
-  type: 'tool';
-  toolName: string;
-  toolResult?: string | object;
-}
-
-export type ChatMessage = AIMessage | SystemMessage | UserMessage | ToolMessage;
 
 export interface ChatState {
   messages: ChatMessage[];

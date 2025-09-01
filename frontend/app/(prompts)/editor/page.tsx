@@ -7,6 +7,7 @@ import { Prompt } from '@/types/Prompt';
 import { usePromptsState } from "../_state/promptState";
 import { PromptEditor } from '../_components/PromptEditor';
 import { updatePrompt as updatePromptBackend } from '../_lib/updatePrompt';
+import { getPrompt } from '../_lib/getPrompt';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 
 function EditorPageContent() {
@@ -22,21 +23,25 @@ function EditorPageContent() {
     currentPrompt,
   } = usePromptsState();
 
-  // Find and set the current prompt based on the ID from URL
+  // Fetch and set the current prompt with commit history based on the ID from URL
   useEffect(() => {
-    if (promptId && promptsState.prompts.length > 0) {
-      const prompt = promptsState.prompts.find(p => p.id === promptId);
-      if (prompt) {
-        setCurrentPrompt(prompt);
-      } else {
-        // Prompt not found, redirect to prompts list
-        router.push('/prompts');
-      }
-    } else if (!promptId) {
+    if (promptId) {
+      const fetchPrompt = async () => {
+        const prompt = await getPrompt(promptId);
+        if (prompt) {
+          setCurrentPrompt(prompt);
+        } else {
+          // Prompt not found, redirect to prompts list
+          router.push('/prompts');
+        }
+      };
+      
+      fetchPrompt();
+    } else {
       // No ID provided, redirect to prompts list
       router.push('/prompts');
     }
-  }, [promptId, promptsState.prompts, setCurrentPrompt, router]);
+  }, [promptId, setCurrentPrompt, router]);
 
   const handleSave = async (updates: Partial<Prompt>) => {
     if (currentPrompt) {

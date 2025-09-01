@@ -9,10 +9,8 @@ import {
   Textarea,
   Combobox,
   createListCollection,
-  Collapsible,
-  HStack,
 } from '@chakra-ui/react';
-import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { FaChevronDown } from 'react-icons/fa';
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { Repo } from '@/types/Repo';
 import { Prompt } from '@/types/Prompt';
@@ -33,7 +31,6 @@ export function PromptFieldGroup({
   updateRepoField
 }: PromptFieldGroupProps) {
   const [repoSearchValue, setRepoSearchValue] = React.useState('');
-  const [isOpen, setIsOpen] = React.useState(true);
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
 
   // Check if current repo exists and matches one of the available repos
@@ -46,26 +43,8 @@ export function PromptFieldGroup({
   );
 
   return (
-    <Collapsible.Root open={isOpen} onOpenChange={(e) => setIsOpen(e.open)}>
-      <Collapsible.Trigger asChild>
-        <Box
-          cursor="pointer"
-          p={2}
-          borderRadius="md"
-          _hover={{ bg: useColorModeValue('gray.50', 'gray.700') }}
-        >
-          <HStack justify="space-between" align="center">
-            <Text fontSize="lg" fontWeight="semibold">
-              Craft Your Prompt
-            </Text>
-            {isOpen ? <FaChevronUp size={14} /> : <FaChevronDown size={14} />}
-          </HStack>
-        </Box>
-      </Collapsible.Trigger>
-      
-      <Collapsible.Content>
-        <Box pt={4}>
-          <VStack gap={4} align="stretch">
+    <Box>
+      <VStack gap={4} align="stretch">
         <Box>
           <Text mb={2} fontWeight="semibold" color={!isRepoDisabled ? "red.500" : undefined} opacity={0.7}>
             Repository
@@ -75,9 +54,7 @@ export function PromptFieldGroup({
               Please select a repository before editing other fields
             </Text>
           )}
-        </Box>
-
-        <Combobox.Root
+          <Combobox.Root
           collection={createListCollection({
             items: filteredRepos.map(repo => ({
               label: repo.name,
@@ -122,7 +99,8 @@ export function PromptFieldGroup({
               ))}
             </Combobox.Content>
           </Combobox.Positioner>
-        </Combobox.Root>
+          </Combobox.Root>
+        </Box>
 
         <Box opacity={!formData.repo ? 0.5 : 1}>
           <Text mb={2} fontWeight={formData.repo ? "medium" : "normal"} color={!formData.repo ? "gray.400" : undefined}>Name</Text>
@@ -148,9 +126,7 @@ export function PromptFieldGroup({
             resize="vertical"
           />
         </Box>
-          </VStack>
-        </Box>
-      </Collapsible.Content>
-    </Collapsible.Root>
+      </VStack>
+    </Box>
   );
 }

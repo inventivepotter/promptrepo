@@ -1,5 +1,11 @@
 import { Repo } from "./Repo";
 
+export interface CommitInfo {
+  hash: string;
+  message: string;
+  author: string;
+  date: string;
+}
 
 export interface Prompt {
   id: string;
@@ -16,4 +22,5 @@ export interface Prompt {
   repo?: Repo;
   created_at: Date;
   updated_at: Date;
+  recent_commits?: CommitInfo[];
 }

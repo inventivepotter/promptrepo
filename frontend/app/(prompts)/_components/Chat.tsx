@@ -4,17 +4,14 @@ import React from 'react';
 import {
   Box,
   VStack,
-  Collapsible,
-  HStack,
-  Text,
 } from '@chakra-ui/react';
-import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
-import { GiMagicLamp } from 'react-icons/gi';
 import { useColorModeValue } from '../../../components/ui/color-mode';
 import { ChatHeader } from './ChatHeader';
 import { ChatMessages } from './ChatMessages';
 import { ChatInput } from './ChatInput';
-import { ChatMessage, ChatState, Tool } from '../_types/ChatState';
+import { ChatState, Tool } from '../_types/ChatState';
+import { chatCompletion } from '../_lib/chatCompletion';
+import { createUserMessage, createAssistantMessage, toOpenAIMessages } from '../_lib/utils/messageUtils';
 
 interface ChatProps {
   // Optional props for customization
@@ -23,8 +20,6 @@ interface ChatProps {
 }
 
 export function Chat({ height = "600px", onMessageSend }: ChatProps) {
-  const [isOpen, setIsOpen] = React.useState(true);
-  
   // Chat state
   const [chatState, setChatState] = React.useState<ChatState>({
     messages: [],
@@ -89,18 +84,15 @@ export function Chat({ height = "600px", onMessageSend }: ChatProps) {
     setInputValue('');
   };
 
-  const handleSendMessage = (message: string) => {
-    const userMessage: ChatMessage = {
-      id: `user-${Date.now()}`,
-      type: 'user',
-      content: message,
-      timestamp: new Date(),
-    };
+  const handleSendMessage = async (message: string) => {
+    // Create user message using utility function
+    const userMessage = createUserMessage(message);
 
-    // Add user message
+    // Add user message and set loading state
+    const updatedMessages = [...chatState.messages, userMessage];
     setChatState(prev => ({
       ...prev,
-      messages: [...prev.messages, userMessage],
+      messages: updatedMessages,
       isLoading: true
     }));
 
@@ -109,21 +101,31 @@ export function Chat({ height = "600px", onMessageSend }: ChatProps) {
       onMessageSend(message, chatState.selectedTools);
     }
 
-    // Simulate AI response (in real implementation this would be an API call)
-    setTimeout(() => {
-      const aiMessage: ChatMessage = {
-        id: `ai-${Date.now()}`,
-        type: 'ai',
-        content: `🧪 **Testing your prompt...**\n\nReceived: "${message}"\n\nTools enabled: ${chatState.selectedTools.length > 0 ? chatState.selectedTools.join(', ') : 'none'}\n\n✨ This is where your AI agent would respond using the prompt configuration from the left panel. Connect your backend to see real responses!`,
-        timestamp: new Date(),
-      };
+    // Convert messages to OpenAI format for API call
+    const openAIMessages = toOpenAIMessages(updatedMessages);
 
+    // Call chat completion middleware (handles all errors and notifications)
+    const aiMessage = await chatCompletion(openAIMessages);
+    
+    if (aiMessage) {
+      // Success - add AI response
       setChatState(prev => ({
         ...prev,
         messages: [...prev.messages, aiMessage],
         isLoading: false
       }));
-    }, 1000);
+    } else {
+      // Error handled by middleware, just add fallback message and stop loading
+      const fallbackMessage = createAssistantMessage(
+        '❌ Unable to get AI response. Please try again.'
+      );
+
+      setChatState(prev => ({
+        ...prev,
+        messages: [...prev.messages, fallbackMessage],
+        isLoading: false
+      }));
+    }
   };
 
   const handleStopGeneration = () => {
@@ -140,62 +142,41 @@ export function Chat({ height = "600px", onMessageSend }: ChatProps) {
       borderRadius="md"
       bg={bgColor}
       overflow="hidden"
-    >
-      <Collapsible.Root open={isOpen} onOpenChange={(e) => setIsOpen(e.open)}>
-        <Collapsible.Trigger asChild>
-          <Box
-            cursor="pointer"
-            p={3}
-          >
-            <HStack justify="space-between" align="center">
-              <HStack>
-                <GiMagicLamp size={18} />
-                <Text fontSize="lg" fontWeight="semibold">
-                  Ask Genie!
-                </Text>
-              </HStack>
-              {isOpen ? <FaChevronUp size={14} /> : <FaChevronDown size={14} />}
-            </HStack>
-          </Box>
-        </Collapsible.Trigger>
-        <Collapsible.Content>
-          <Box
-            height={height}
-            display="flex"
-            flexDirection="column"
-            overflow="hidden"
-            mt={0}
-          >
-            <VStack gap={0} align="stretch" height="full">
-              {/* Header - now without title since it's in the collapsible trigger */}
-              <ChatHeader
-                selectedTools={chatState.selectedTools}
-                availableTools={mockTools}
-                onToolsChange={handleToolsChange}
-                onReset={handleReset}
-                isLoading={chatState.isLoading}
-              />
+    > 
+      <Box
+        height={height}
+        display="flex"
+        flexDirection="column"
+        overflow="hidden"
+      >
+        <VStack gap={0} align="stretch" height="full">
+          {/* Header - tools and reset functionality */}
+          <ChatHeader
+            selectedTools={chatState.selectedTools}
+            availableTools={mockTools}
+            onToolsChange={handleToolsChange}
+            onReset={handleReset}
+            isLoading={chatState.isLoading}
+          />
 
-              {/* Messages */}
-              <Box flex={1} overflow="hidden">
-                <ChatMessages
-                  messages={chatState.messages}
-                  isLoading={chatState.isLoading}
-                />
-              </Box>
-
-              {/* Input */}
-              <ChatInput
-                value={inputValue}
-                onChange={setInputValue}
-                onSubmit={handleSendMessage}
-                onStop={handleStopGeneration}
-                isLoading={chatState.isLoading}
-              />
-            </VStack>
+          {/* Messages */}
+          <Box flex={1} overflow="hidden">
+            <ChatMessages
+              messages={chatState.messages}
+              isLoading={chatState.isLoading}
+            />
           </Box>
-        </Collapsible.Content>
-      </Collapsible.Root>
+
+          {/* Input */}
+          <ChatInput
+            value={inputValue}
+            onChange={setInputValue}
+            onSubmit={handleSendMessage}
+            onStop={handleStopGeneration}
+            isLoading={chatState.isLoading}
+          />
+        </VStack>
+      </Box>
     </Box>
   );
 }

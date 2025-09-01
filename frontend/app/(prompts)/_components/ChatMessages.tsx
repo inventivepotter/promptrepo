@@ -60,8 +60,8 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
   };
 
   const renderMessage = (message: ChatMessage) => {
-    switch (message.type) {
-      case 'ai':
+    switch (message.role) {
+      case 'assistant':
         return (
           <HStack key={message.id} align="start" justify="flex-start" w="full" mb={4}>
             <Box
@@ -180,7 +180,7 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
                 <HStack gap={2} mb={2}>
                   <LuWrench size={14} />
                   <Badge size="sm" variant="subtle" colorPalette="yellow">
-                    {message.toolName}
+                    Tool Call
                   </Badge>
                   <Text fontSize="xs" color={timestampColor} ml="auto">
                     {formatTimestamp(message.timestamp)}
@@ -189,13 +189,10 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
                 <Text fontSize="sm" color={mutedTextColor} whiteSpace="pre-wrap">
                   {message.content}
                 </Text>
-                {message.toolResult && (
+                {message.tool_calls && (
                   <Box mt={2} p={2} bg={toolResultBg} borderRadius="md">
                     <Text fontSize="xs" color={mutedTextColor}>
-                      Result: {typeof message.toolResult === 'string'
-                        ? message.toolResult
-                        : JSON.stringify(message.toolResult, null, 2)
-                      }
+                      Tool Calls: {JSON.stringify(message.tool_calls, null, 2)}
                     </Text>
                   </Box>
                 )}

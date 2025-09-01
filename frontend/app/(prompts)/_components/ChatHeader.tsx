@@ -10,10 +10,9 @@ import {
   Combobox,
   createListCollection,
 } from '@chakra-ui/react';
-import { LuRefreshCw } from 'react-icons/lu';
-import { GiMagicLamp } from 'react-icons/gi'
+import { LuRefreshCw, LuBot } from 'react-icons/lu';
 import { FaChevronDown } from 'react-icons/fa';
-import { useColorModeValue } from '../../../components/ui/color-mode';
+import { useColorModeValue } from '@/components/ui/color-mode';
 import { Tool } from '../_types/ChatState';
 
 interface ChatHeaderProps {
@@ -32,8 +31,6 @@ export function ChatHeader({
   isLoading = false 
 }: ChatHeaderProps) {
   const [toolSearchValue, setToolSearchValue] = React.useState('');
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
-  const bgColor = useColorModeValue('gray.50', 'gray.900');
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
 
   // Filter tools based on search value
@@ -57,9 +54,17 @@ export function ChatHeader({
       <VStack gap={3} align="stretch">
         {/* Header with just description and reset button */}
         <HStack justify="space-between" align="center">
-          <Text fontSize="xs" color={mutedTextColor}>
-            Your playground to test prompts with AI agents
-          </Text>
+          <VStack align="start">
+            <HStack>
+              <LuBot size={18} />
+              <Text fontSize="lg" fontWeight="semibold">
+                Agent
+              </Text>
+            </HStack>
+            <Text fontSize="xs" color={mutedTextColor}>
+              Your playground to test prompts with AI agents
+            </Text>
+          </VStack>
           <Button
             size="sm"
             variant="ghost"

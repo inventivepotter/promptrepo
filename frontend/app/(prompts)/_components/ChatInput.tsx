@@ -5,7 +5,6 @@ import {
   Box,
   HStack,
   Textarea,
-  Button,
   IconButton,
 } from '@chakra-ui/react';
 import { LuSend, LuSquare } from 'react-icons/lu';
@@ -72,7 +71,7 @@ export function ChatInput({
       borderColor={borderColor}
       bg={bgColor}
     >
-      <HStack gap={2} align="end">
+      <HStack gap={2} align="center">
         <Box flex={1}>
           <Textarea
             ref={textareaRef}
@@ -104,6 +103,9 @@ export function ChatInput({
             onClick={handleStop}
             aria-label="Stop generation"
             variant="solid"
+            h="40px"
+            minW="40px"
+            mt="-5px"
           >
             <LuSquare size={16} />
           </IconButton>
@@ -115,6 +117,9 @@ export function ChatInput({
             disabled={!canSend}
             aria-label="Send message"
             variant="solid"
+            h="40px"
+            mt="-5px"
+            minW="40px"
           >
             <LuSend size={16} />
           </IconButton>

@@ -17,45 +17,9 @@ import { EnableThinkingFieldGroup } from './EnableThinkingFieldGroup';
 import { Chat } from './Chat';
 import { PromptTimeline } from './PromptTimeline';
 import { LLMProvider } from '@/types/LLMProvider';
+import { commitPushOperations } from '../_lib/commitPush';
+import { useAuth } from '../../(auth)/_components/AuthProvider';
 
-const mockCommits = [
-  {
-    id: '1',
-    message: 'hosting-resolved',
-    author: 'John Doe',
-    timestamp: '2024-01-15T14:30:00Z',
-    changes: { added: 5, deleted: 2 },
-    hash: 'e963d5d',
-    isLatest: false
-  },
-  {
-    id: '2',
-    message: 'combo box fix',
-    author: 'John Doe',
-    timestamp: '2024-01-15T15:45:00Z',
-    changes: { added: 3, deleted: 1 },
-    hash: 'f3af2bd',
-    isLatest: false
-  },
-  {
-    id: '3',
-    message: 'lots-of-changes',
-    author: 'John Doe',
-    timestamp: '2024-01-15T16:20:00Z',
-    changes: { added: 12, deleted: 8 },
-    hash: 'e658aec',
-    isLatest: false
-  },
-  {
-    id: '4',
-    message: 'cleanup',
-    author: 'John Doe',
-    timestamp: '2024-01-15T17:00:00Z',
-    changes: { added: 2, deleted: 10 },
-    hash: '0b3a016',
-    isLatest: false
-  }
-];
 
 interface PromptEditorProps {
   prompt: Prompt | null;
@@ -79,44 +43,58 @@ export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], con
     thinking_enabled: false,
     thinking_budget: 20000,
   });
-  
+  const [originalData, setOriginalData] = React.useState<Partial<Prompt>>({});
+  const [hasUnsavedChanges, setHasUnsavedChanges] = React.useState(false);
+  const [changesSaved, setChangesSaved] = React.useState(false);
   const [showRepoError, setShowRepoError] = React.useState(false);
+  const [isCommitPushing, setIsCommitPushing] = React.useState(false);
 
+  
   
 
   // Initialize and update form data when prompt changes
   React.useEffect(() => {
-    if (prompt) {
-      setFormData({
-        name: prompt.name,
-        description: prompt.description,
-        prompt: prompt.prompt,
-        model: prompt.model,
-        failover_model: prompt.failover_model,
-        temperature: prompt.temperature,
-        top_p: prompt.top_p,
-        max_tokens: prompt.max_tokens,
-        thinking_enabled: prompt.thinking_enabled,
-        thinking_budget: prompt.thinking_budget,
-        repo: prompt.repo,
-      });
-    } else {
+    const initialData = prompt ? {
+      name: prompt.name,
+      description: prompt.description,
+      prompt: prompt.prompt,
+      model: prompt.model,
+      failover_model: prompt.failover_model,
+      temperature: prompt.temperature,
+      top_p: prompt.top_p,
+      max_tokens: prompt.max_tokens,
+      thinking_enabled: prompt.thinking_enabled,
+      thinking_budget: prompt.thinking_budget,
+      repo: prompt.repo,
+    } : {
       // Initialize with default values for new prompts
-      setFormData({
-        name: '',
-        description: '',
-        prompt: '',
-        model: '',
-        failover_model: '',
-        temperature: 0.7,
-        top_p: 1.0,
-        max_tokens: 2048,
-        thinking_enabled: false,
-        thinking_budget: 20000,
-        repo: undefined,
-      });
-    }
+      name: '',
+      description: '',
+      prompt: '',
+      model: '',
+      failover_model: '',
+      temperature: 0.7,
+      top_p: 1.0,
+      max_tokens: 2048,
+      thinking_enabled: false,
+      thinking_budget: 20000,
+      repo: undefined,
+    };
+
+    setFormData(initialData);
+    setOriginalData(initialData);
+    setHasUnsavedChanges(false);
+    setChangesSaved(false);
   }, [prompt]);
+
+  // Check if form data has changed from original
+  React.useEffect(() => {
+    const hasChanges = JSON.stringify(formData) !== JSON.stringify(originalData);
+    setHasUnsavedChanges(hasChanges);
+    if (hasChanges) {
+      setChangesSaved(false);
+    }
+  }, [formData, originalData]);
 
   const updateField = (field: keyof Prompt, value: string | number | boolean) => {
     // Check if repository is selected before allowing other field edits
@@ -172,6 +150,9 @@ export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], con
       return;
     }
     onSave(formData);
+    setChangesSaved(true);
+    setOriginalData(formData);
+    setHasUnsavedChanges(false);
   };
 
   const handleChatMessage = (message: string, tools: string[]) => {
@@ -180,8 +161,51 @@ export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], con
     console.log('Chat message:', { message, tools, promptConfig: formData });
   };
 
+  const handleCommitPush = async () => {
+    if (!prompt?.id) {
+      console.error('No prompt ID available for commit & push');
+      return;
+    }
+    
+    setIsCommitPushing(true);
+    try {
+      await commitPushOperations.commitPushPrompt(prompt.id);
+    } finally {
+      setIsCommitPushing(false);
+    }
+  };
+
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const bgColor = useColorModeValue('gray.50', 'gray.900');
+
+  const { user } = useAuth();
+
+  // Get commits from prompt data with 0th commit for latest changes
+  const commits = React.useMemo(() => {
+    const draftCommit = {
+      id: '0',
+      message: '',
+      author: user?.name || user?.username || 'Unknown User',
+      date: new Date().toISOString(),
+      hash: 'draft',
+      isLatest: true
+    };
+
+    if (prompt?.recent_commits && prompt.recent_commits.length > 0) {
+      // Add the draft commit at position 0, then the API commits
+      return [
+        draftCommit,
+        ...prompt.recent_commits.map((commit, index) => ({
+          ...commit,
+          id: commit.hash,
+          isLatest: false
+        }))
+      ];
+    }
+    
+    // Return just the draft commit if no API commits available
+    return [draftCommit];
+  }, [prompt?.recent_commits, user?.name, user?.username]);
 
   return (
     <Box>
@@ -200,8 +224,11 @@ export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], con
           displayPrompt={displayPrompt}
           onBack={onBack}
           onSave={handleSave}
-          canSave={!!formData.repo}
+          canSave={!!formData.repo && hasUnsavedChanges}
           isSaving={isSaving}
+          onCommitPush={handleCommitPush}
+          isCommitPushing={isCommitPushing}
+          canCommitPush={!!formData.repo && !hasUnsavedChanges}
         />
       </Box>
 
@@ -210,12 +237,11 @@ export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], con
         <HStack gap={6} align="start" minH="600px">
           {/* Left Section - Form */}
           <Box
-            flex={1}
             p={6}
             borderWidth="1px"
             borderRadius="md"
             borderColor="border.muted"
-            maxW="59%"
+            width="64%"
           >
             <VStack gap={6} align="stretch">
               {/* Basic Info */}
@@ -259,11 +285,13 @@ export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], con
             height="200vh"
             pt={4}
           >
-            <PromptTimeline commits={mockCommits} />
+            <PromptTimeline commits={commits} />
           </Box>
 
           {/* Right Section - Chat (remaining space) */}
-          <Box flex={1}>
+          <Box
+            width="35%"
+          >
             <Chat
               height="700px"
               onMessageSend={handleChatMessage}
