@@ -13,7 +13,6 @@ import { LuBot, LuUser, LuSettings, LuWrench } from 'react-icons/lu';
 import { useColorModeValue } from '../../../components/ui/color-mode';
 import { ChatMessage } from '../_types/ChatState';
 import { MarkdownRenderer } from './MarkdownRenderer';
-import { getTokenUsageFromMessage } from '../_lib/utils/messageUtils';
 import { formatCost } from '../_lib/utils/pricingUtils';
 
 interface ChatMessagesProps {
@@ -118,7 +117,7 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
             >
               <LuBot size={16} />
             </Box>
-            <Box maxW="70%" flex={1}>
+            <Box maxW="85%" flex={1}>
               <Card.Root
                 bg={aiMessageBg}
                 borderColor={aiMessageBorder}
@@ -287,7 +286,7 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
                 >
                   <LuBot size={16} />
                 </Box>
-                <Box maxW="70%">
+                <Box maxW="85%">
                   <Card.Root
                     bg={aiMessageBg}
                     borderColor={aiMessageBorder}

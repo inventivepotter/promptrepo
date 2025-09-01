@@ -195,7 +195,7 @@ export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], con
       // Add the draft commit at position 0, then the API commits
       return [
         draftCommit,
-        ...prompt.recent_commits.map((commit, index) => ({
+        ...prompt.recent_commits.map((commit) => ({
           ...commit,
           id: commit.hash,
           isLatest: false
@@ -241,7 +241,7 @@ export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], con
             borderWidth="1px"
             borderRadius="md"
             borderColor="border.muted"
-            width="64%"
+            width="54%"
           >
             <VStack gap={6} align="stretch">
               {/* Basic Info */}
@@ -290,7 +290,7 @@ export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], con
 
           {/* Right Section - Chat (remaining space) */}
           <Box
-            width="35%"
+            width="45%"
           >
             <Chat
               height="700px"
