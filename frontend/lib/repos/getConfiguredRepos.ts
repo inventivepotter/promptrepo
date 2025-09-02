@@ -3,12 +3,22 @@ import * as configuredReposData from './configuredRepos.json'
 import { reposApi } from './api/reposApi';
 import { errorNotification } from '@/lib/notifications';
 import { ApiResponse } from "@/types/ApiResponse";
+import { getHostingType } from '@/utils/hostingType';
 
 const configuredRepos = configuredReposData as { repos: Repo[] };
 
-export async function getConfiguredRepos(userId?: string): Promise<Repo[]> {
+export async function getConfiguredRepos(): Promise<Repo[]> {
   try {
-    const result: ApiResponse<Repo[]> = await reposApi.getConfiguredRepos(userId);
+    // Check hosting type to determine behavior
+    const hostingType = await getHostingType();
+    
+    // For individual hosting type, repos edit won't be available - return empty
+    if (hostingType === 'individual') {
+      return [];
+    }
+    
+    // For organization hosting type, call backend for GitHub repos
+    const result: ApiResponse<Repo[]> = await reposApi.getConfiguredRepos();
     
     if (!result.success) {
       

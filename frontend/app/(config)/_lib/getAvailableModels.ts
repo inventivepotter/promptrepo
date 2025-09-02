@@ -1,9 +1,19 @@
 import { LLMProviderModel } from "@/types/LLMProvider";
 import { errorNotification } from "@/lib/notifications";
 import modelsApi from "./api/modelsApi";
+import { getHostingType } from '@/utils/hostingType';
 
 export async function getAvailableModels(provider_id: string, api_key: string, api_base: string = ''): Promise<{ models: LLMProviderModel[] }> {
   try {
+    // Check hosting type to determine whether to call backend
+    const hostingType = await getHostingType();
+    
+    // For organization hosting type, return empty models without backend call
+    if (hostingType === 'organization') {
+      return { models: [] };
+    }
+    
+    // For individual and other hosting types, call backend
     const result = await modelsApi.fetchModelsByProvider(provider_id, api_key, api_base);
 
     if (!result.success) {

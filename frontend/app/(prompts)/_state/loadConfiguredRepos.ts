@@ -35,18 +35,20 @@ export const getConfiguredReposFromBrowserStorage = (): PromptsState['configured
 
 export const loadConfiguredRepos = async (userId?: string): Promise<PromptsState['configuredRepos']> => {
   try {
-    const localRepos = getConfiguredReposFromBrowserStorage();
-    if (localRepos && localRepos.length > 0) {
-      return localRepos;
-    }
-
-    const apiRepos = await getConfiguredRepos(userId);
-
+    // First try to get from API (fresh data)
+    const apiRepos = await getConfiguredRepos();
+    
     if (apiRepos.length > 0) {
+      // Persist fresh data to browser storage
       persistConfiguredReposToBrowserStorage(apiRepos);
+      return apiRepos;
     }
-    return apiRepos;
+
+    // If API returns empty, fallback to browser storage
+    const localRepos = getConfiguredReposFromBrowserStorage();
+    return localRepos;
   } catch (error) {
+    // If API fails, use browser storage as fallback
     return getConfiguredReposFromBrowserStorage();
   }
 };

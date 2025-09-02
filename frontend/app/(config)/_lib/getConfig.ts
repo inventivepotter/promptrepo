@@ -15,6 +15,18 @@ export const getConfig = async (): Promise<GetConfigResult> => {
     // First, get the hosting type to determine if auth is required
     const hostingType = await getHostingType();
     
+    // For organization hosting type, skip backend call and return default config
+    if (hostingType === 'organization') {
+      const organizationConfig = {
+        ...initConfig,
+        hostingType: hostingType as "individual" | "organization" | "multi-tenant" | ""
+      };
+      return {
+        config: organizationConfig,
+        error: null
+      };
+    }
+    
     const result = await configApi.getConfig();
 
     if (!result.success) {

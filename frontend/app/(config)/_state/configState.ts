@@ -5,6 +5,9 @@ import { modelsApi } from '../_lib/api/modelsApi';
 import { errorNotification } from '@/lib/notifications';
 import { safeString, safeArray } from '@/utils/safeValues';
 import { getHostingType } from '@/utils/hostingType';
+import { getAvailableRepos } from '@/lib/repos/getAvailableRepos';
+import { getConfiguredRepos } from '@/lib/repos/getConfiguredRepos';
+import { Repo } from '@/types/Repo';
 
 export const safeHostingType = (value: string | null | undefined): "individual" | "organization" | "multi-tenant" | "" => {
   const validTypes = ["individual", "organization", "multi-tenant"];
@@ -36,6 +39,12 @@ export const initConfigState: ConfigState = {
     isLoading: false,
     error: null,
   },
+  repos: {
+    available: [],
+    configured: [],
+    isLoading: false,
+    error: null,
+  },
   isLoading: true,
   isSaving: false,
   error: {
@@ -53,11 +62,30 @@ export function useConfigState() {
   const globalDataLoadedRef = useRef(false);
   const providersLoadingRef = useRef(false);
   const providersLoadedRef = useRef(false);
+  const reposLoadingRef = useRef(false);
+  const reposLoadedRef = useRef(false);
 
   // Load providers globally
   const loadProviders = useCallback(async () => {
     // Skip if already loaded or currently loading
     if (providersLoadedRef.current || providersLoadingRef.current) {
+      return;
+    }
+
+    // Get hosting type first to determine if we should skip backend calls
+    const hostingType = await getHostingType();
+    
+    // For organization hosting type, skip providers backend call
+    if (hostingType === 'organization') {
+      setConfigState(prev => ({
+        ...prev,
+        providers: {
+          available: [],
+          isLoading: false,
+          error: null,
+        }
+      }));
+      providersLoadedRef.current = true;
       return;
     }
 
@@ -108,69 +136,126 @@ export function useConfigState() {
     }
   }, []);
 
+// Load repos globally with better error handling and race condition prevention
+const loadRepos = useCallback(async () => {
+  // Skip if already loaded or currently loading
+  if (reposLoadedRef.current || reposLoadingRef.current) {
+    return;
+  }
+
+  reposLoadingRef.current = true;
+  setConfigState(prev => ({
+    ...prev,
+    repos: {
+      ...prev.repos,
+      isLoading: true,
+      error: null,
+    }
+  }));
+
+  try {
+    // Load both available and configured repos concurrently
+    const [availableRepos, configuredReposData] = await Promise.all([
+      getAvailableRepos(),
+      getConfiguredRepos()
+    ]);
+    
+    // Only update state if we're still the active loading operation
+    if (reposLoadingRef.current) {
+      setConfigState(prev => ({
+        ...prev,
+        repos: {
+          available: availableRepos,
+          configured: configuredReposData,
+          isLoading: false,
+          error: null,
+        }
+      }));
+      reposLoadedRef.current = true;
+    }
+  } catch (error) {
+    // Only update state if we're still the active loading operation
+    if (reposLoadingRef.current) {
+      console.error('Failed to load repos:', error);
+      setConfigState(prev => ({
+        ...prev,
+        repos: {
+          available: [],
+          configured: [],
+          isLoading: false,
+          error: 'Failed to load repositories',
+        }
+      }));
+    }
+  } finally {
+    reposLoadingRef.current = false;
+  }
+}, []);
+
   useEffect(() => {
-        const loadConfig = async () => {
-          // Skip if already loaded globally or currently loading
-          if (globalDataLoadedRef.current || globalLoadingRef.current) {
-            return;
-          }
-  
-          globalLoadingRef.current = true;
-          
-          try {
-            // Get hosting type first to ensure it's available
-            const hostingType = await getHostingType();
-            const result = await getConfig();
-            
-            // Safely handle potential null/undefined values in config
-            const safeConfig = {
-              hostingType: safeHostingType(result.config?.hostingType || hostingType),
-              githubClientId: safeString(result.config?.githubClientId),
-              githubClientSecret: safeString(result.config?.githubClientSecret),
-              llmConfigs: safeArray(result.config?.llmConfigs),
-              adminEmails: safeArray(result.config?.adminEmails),
-            };
-            
-            setConfigState(prev => ({
-              ...prev,
-              config: safeConfig,
-              currentStep: {
-                step: 1,
-                selectedProvider: "",
-                selectedModel: "",
-                apiKey: "",
-                apiBaseUrl: "",
-              },
-              isLoading: false,
-              error: result.error,
-            }));
-            
-            // Mark as globally loaded only if no error
-            if (!result.error) {
-              globalDataLoadedRef.current = true;
-            }
-          } catch (error) {
-            globalLoadingRef.current = false;
-            setConfigState(prev => ({
-              ...prev,
-              error: {
-                isUnauthorized: false,
-                hasNoConfig: false,
-                message: 'Failed to load configuration'
-              },
-              isLoading: false,
-            }));
-          } finally {
-            hasRestoredSetupData.current = true;
-            globalLoadingRef.current = false;
-          }
+    const loadConfig = async () => {
+      // Skip if already loaded globally or currently loading
+      if (globalDataLoadedRef.current || globalLoadingRef.current) {
+        return;
+      }
+
+      globalLoadingRef.current = true;
+      
+      try {
+        // Get hosting type first to ensure it's available
+        const hostingType = await getHostingType();
+        const result = await getConfig();
+        
+        // Safely handle potential null/undefined values in config
+        const safeConfig = {
+          hostingType: safeHostingType(result.config?.hostingType || hostingType),
+          githubClientId: safeString(result.config?.githubClientId),
+          githubClientSecret: safeString(result.config?.githubClientSecret),
+          llmConfigs: safeArray(result.config?.llmConfigs),
+          adminEmails: safeArray(result.config?.adminEmails),
         };
         
-        loadConfig();
-        // Load providers after config
-        loadProviders();
+        setConfigState(prev => ({
+          ...prev,
+          config: safeConfig,
+          currentStep: {
+            step: 1,
+            selectedProvider: "",
+            selectedModel: "",
+            apiKey: "",
+            apiBaseUrl: "",
+          },
+          isLoading: false,
+          error: result.error,
+        }));
+        
+        // Mark as globally loaded only if no error
+        if (!result.error) {
+          globalDataLoadedRef.current = true;
+        }
+      } catch (error) {
+        globalLoadingRef.current = false;
+        setConfigState(prev => ({
+          ...prev,
+          error: {
+            isUnauthorized: false,
+            hasNoConfig: false,
+            message: 'Failed to load configuration'
+          },
+          isLoading: false,
+        }));
+      } finally {
+        hasRestoredSetupData.current = true;
+        globalLoadingRef.current = false;
       }
-    , [loadProviders]);
+    };
+    
+    loadConfig();
+    // Load providers after config
+    loadProviders();
+    // Load repos after config
+    loadRepos();
+  }, [loadProviders, loadRepos]);
 
   const updateConfigState = useCallback((updater: ConfigState | ((prev: ConfigState) => ConfigState)) => {
     setConfigState(prev => {
@@ -265,6 +350,22 @@ export function useConfigState() {
     }));
   }, [updateConfigState]);
 
+  const updateConfiguredRepos = useCallback((repos: Repo[]) => {
+    updateConfigState(prev => ({
+      ...prev,
+      repos: {
+        ...prev.repos,
+        configured: repos
+      }
+    }));
+  }, [updateConfigState]);
+
+  // Reset loading state function for cleanup
+  const resetReposLoading = useCallback(() => {
+    reposLoadingRef.current = false;
+    reposLoadedRef.current = false;
+  }, []);
+
   return {
     configState,
     setConfigState: updateConfigState,
@@ -275,5 +376,8 @@ export function useConfigState() {
     setIsLoading,
     setIsSaving,
     loadProviders,
+    loadRepos,
+    updateConfiguredRepos,
+    resetReposLoading,
   };
 }

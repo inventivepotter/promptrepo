@@ -1,10 +1,13 @@
 """
 Update configuration endpoint.
 """
+import logging
 from fastapi import APIRouter, HTTPException, status
 
 from schemas.config import AppConfig
 from services.config_service import config_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -16,13 +19,25 @@ async def update_config(config: AppConfig):
     Only allowed for individual hosting type
     """
     try:
-        # Validate hosting type - only allow saves for individual hosting
+        # Check hosting types
         hosting_type = getattr(config, 'hostingType', '') or ''
         current_hosting_type = config_service.get_hosting_type()
-        if hosting_type != "individual" or current_hosting_type != "individual":
+        logger.info(f"update_config: Incoming config hosting type = '{hosting_type}'")
+        logger.info(f"update_config: Current system hosting type = '{current_hosting_type}'")
+        
+        # Validate hosting type - only allow saves for individual hosting
+        if current_hosting_type != "individual":
+            logger.warning(f"update_config: Blocking update - system hosting type is not individual: {current_hosting_type}")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Configuration updates are only allowed for individual hosting type. Current hosting type: {current_hosting_type}"
+            )
+        
+        if hosting_type and hosting_type != "individual":
+            logger.warning(f"update_config: Blocking update - incoming config tries to set non-individual hosting: {hosting_type}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Configuration saves are only allowed for individual hosting. Please update your ENV and restart the service for updating configs."
+                detail="Configuration updates can only set hosting type to 'individual'"
             )
         
         # Validate individual hosting specific configuration

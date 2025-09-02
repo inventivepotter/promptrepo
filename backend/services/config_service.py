@@ -1,12 +1,15 @@
 """
 Configuration service for application configurations.
 """
+import logging
 from fastapi import HTTPException
 from settings.base_settings import settings
 from schemas.config import AppConfig, LlmConfig
 from typing import List, Tuple, Optional
 import json
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 class ConfigService:
     """Unified service for accessing application configurations."""
@@ -47,7 +50,9 @@ class ConfigService:
     @staticmethod
     def get_hosting_type() -> str:
         """Get current hosting type."""
-        return settings.app_config.hostingType
+        hosting_type = settings.app_config.hostingType
+        logger.debug(f"config_service.get_hosting_type: Retrieved hosting type = '{hosting_type}'")
+        return hosting_type
     
     @staticmethod
     def is_hosting_type(hosting_type: str) -> bool:

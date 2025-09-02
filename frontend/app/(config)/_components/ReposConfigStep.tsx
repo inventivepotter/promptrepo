@@ -3,27 +3,32 @@
 import React from "react"
 import { FaChevronDown } from 'react-icons/fa'
 import { VStack, Box, Text, Button, Combobox, createListCollection, HStack, Input } from '@chakra-ui/react'
-import { getAvailableRepos } from "@/lib/repos/getAvailableRepos"
 import { Repo } from "@/types/Repo"
-import { useAuth } from "../../(auth)/_components/AuthProvider"
 
 interface ReposConfigStepProps {
   hostingType: string
   disabled?: boolean
+  repos?: Repo[]
+  configuredRepos?: Repo[]
+  isLoadingRepos?: boolean
+  isLoadingConfiguredRepos?: boolean
+  updateConfiguredRepos?: (repos: Repo[]) => void
 }
 
 export default function ReposConfigStep({
   hostingType,
-  disabled = false
+  disabled = false,
+  repos = [],
+  configuredRepos = [],
+  isLoadingRepos = false,
+  isLoadingConfiguredRepos = false,
+  updateConfiguredRepos = () => {}
 }: ReposConfigStepProps) {
-  const { user } = useAuth()
-  const repos = getAvailableRepos()
   
   // Repository selection state
   const [selectedRepo, setSelectedRepo] = React.useState('')
   const [selectedBranch, setSelectedBranch] = React.useState('')
   const [selectedDirectory, setSelectedDirectory] = React.useState('')
-  const [configuredRepos, setConfiguredRepos] = React.useState<Repo[]>([])
   
   // Search states
   const [repoSearchValue, setRepoSearchValue] = React.useState('')
@@ -45,7 +50,8 @@ export default function ReposConfigStep({
     
     if (existingIndex >= 0) {
       // Remove existing
-      setConfiguredRepos(prev => prev.filter((_, index) => index !== existingIndex))
+      const updatedRepos = configuredRepos.filter((_, index) => index !== existingIndex)
+      updateConfiguredRepos(updatedRepos)
     } else {
       // Add new
       const newRepo: Repo = {
@@ -54,7 +60,8 @@ export default function ReposConfigStep({
         base_branch: branch,
         prompts_directory
       }
-      setConfiguredRepos(prev => [...prev, newRepo])
+      const updatedRepos = [...configuredRepos, newRepo]
+      updateConfiguredRepos(updatedRepos)
     }
   }
 
@@ -134,10 +141,11 @@ export default function ReposConfigStep({
                     inputValue={repoSearchValue}
                     onInputValueChange={(e) => setRepoSearchValue(e.inputValue)}
                     openOnClick
+                    disabled={isLoadingRepos || disabled}
                   >
                     <Combobox.Control position="relative">
                       <Combobox.Input
-                        placeholder="Select or search repository"
+                        placeholder={isLoadingRepos ? "Loading repositories..." : "Select or search repository"}
                         paddingRight="2rem"
                       />
                       <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
@@ -146,12 +154,22 @@ export default function ReposConfigStep({
                     </Combobox.Control>
                     <Combobox.Positioner>
                       <Combobox.Content>
-                        {filteredRepos.map(repo => (
-                          <Combobox.Item key={repo.id} item={repo.id}>
-                            <Combobox.ItemText>{repo.name}</Combobox.ItemText>
-                            <Combobox.ItemIndicator />
-                          </Combobox.Item>
-                        ))}
+                        {isLoadingRepos ? (
+                          <Box p={2} textAlign="center" opacity={0.7}>
+                            Loading repositories...
+                          </Box>
+                        ) : filteredRepos.length === 0 ? (
+                          <Box p={2} textAlign="center" opacity={0.7}>
+                            No repositories available
+                          </Box>
+                        ) : (
+                          filteredRepos.map(repo => (
+                            <Combobox.Item key={repo.id} item={repo.id}>
+                              <Combobox.ItemText>{repo.name}</Combobox.ItemText>
+                              <Combobox.ItemIndicator />
+                            </Combobox.Item>
+                          ))
+                        )}
                       </Combobox.Content>
                     </Combobox.Positioner>
                   </Combobox.Root>
@@ -225,34 +243,44 @@ export default function ReposConfigStep({
             </VStack>
           </Box>
           
-          {configuredRepos.length > 0 && (
+          {(isLoadingConfiguredRepos || configuredRepos.length > 0) && (
             <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.muted" width="100%">
               <Text fontWeight="bold" mb={4}>Selected Repositories</Text>
-              <VStack gap={2}>
-                {configuredRepos.map((selected, index) => {
-                  const repo = repos.find(r => r.id === selected.id)
-                  return (
-                    <HStack key={index} justify="space-between" width="100%" p={2} bg="bg.subtle" borderRadius="md">
-                      <Text fontSize="sm" fontWeight="400">
-                        {repo?.name} ({selected.base_branch}){selected.prompts_directory ? ` - ${selected.prompts_directory}` : ''}
-                      </Text>
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          const repo = repos.find(r => r.id === selected.id)
-                          if (repo) {
-                            const name = repo.name
-                            toggleRepoSelection(selected.id, selected.base_branch || '', name)
-                          }
-                        }}
-                        disabled={disabled}
-                      >
-                        Remove
-                      </Button>
-                    </HStack>
-                  )
-                })}
-              </VStack>
+              {isLoadingConfiguredRepos ? (
+                <Box textAlign="center" opacity={0.7}>
+                  Loading configured repositories...
+                </Box>
+              ) : configuredRepos.length === 0 ? (
+                <Box textAlign="center" opacity={0.7}>
+                  No repositories configured
+                </Box>
+              ) : (
+                <VStack gap={2}>
+                  {configuredRepos.map((selected, index) => {
+                    const repo = repos.find(r => r.id === selected.id)
+                    return (
+                      <HStack key={index} justify="space-between" width="100%" p={2} bg="bg.subtle" borderRadius="md">
+                        <Text fontSize="sm" fontWeight="400">
+                          {repo?.name || selected.name} ({selected.base_branch}){selected.prompts_directory ? ` - ${selected.prompts_directory}` : ''}
+                        </Text>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            const repo = repos.find(r => r.id === selected.id)
+                            if (repo) {
+                              const name = repo.name
+                              toggleRepoSelection(selected.id, selected.base_branch || '', name)
+                            }
+                          }}
+                          disabled={disabled || isLoadingConfiguredRepos}
+                        >
+                          Remove
+                        </Button>
+                      </HStack>
+                    )
+                  })}
+                </VStack>
+              )}
             </Box>
           )}
         </VStack>

@@ -1,5 +1,6 @@
 import { Configuration } from "@/types/Configuration";
 import { LLMProvider } from "@/types/LLMProvider";
+import { Repo } from "@/types/Repo";
 
 export interface ConfigError {
   isUnauthorized: boolean;
@@ -18,6 +19,12 @@ export interface ConfigState {
   };
   providers: {
     available: LLMProvider[];
+    isLoading: boolean;
+    error: string | null;
+  };
+  repos: {
+    available: Repo[];
+    configured: Repo[];
     isLoading: boolean;
     error: string | null;
   };

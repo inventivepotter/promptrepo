@@ -35,6 +35,7 @@ export default function ConfigPage() {
     removeLLMConfig: removeLLMConfigAction,
     setIsLoading,
     setIsSaving,
+    updateConfiguredRepos,
   } = useConfigState();
 
   // For non-individual hosting, manage saving state locally
@@ -217,6 +218,11 @@ export default function ConfigPage() {
                 <ReposConfigStep
                   hostingType={configState.config.hostingType}
                   disabled={configState.isSaving}
+                  repos={configState.repos.available}
+                  configuredRepos={configState.repos.configured}
+                  isLoadingRepos={configState.repos.isLoading}
+                  isLoadingConfiguredRepos={configState.repos.isLoading}
+                  updateConfiguredRepos={updateConfiguredRepos}
                 />
               </Box>
               
@@ -236,6 +242,11 @@ export default function ConfigPage() {
                 <ReposConfigStep
                   hostingType={hostingType}
                   disabled={localIsSaving}
+                  repos={configState.repos.available}
+                  configuredRepos={configState.repos.configured}
+                  isLoadingRepos={configState.repos.isLoading}
+                  isLoadingConfiguredRepos={configState.repos.isLoading}
+                  updateConfiguredRepos={updateConfiguredRepos}
                 />
               </Box>
             </>
