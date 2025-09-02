@@ -6,7 +6,7 @@ import { errorNotification } from '@/lib/notifications';
 import { safeString, safeArray } from '@/utils/safeValues';
 import { getHostingType } from '@/utils/hostingType';
 import { getAvailableRepos } from '@/lib/repos/getAvailableRepos';
-import { getConfiguredRepos } from '@/lib/repos/getConfiguredRepos';
+import { loadConfiguredRepos } from '@/lib/repos/loadConfiguredRepos';
 import { Repo } from '@/types/Repo';
 
 export const safeHostingType = (value: string | null | undefined): "individual" | "organization" | "multi-tenant" | "" => {
@@ -157,7 +157,7 @@ const loadRepos = useCallback(async () => {
     // Load both available and configured repos concurrently
     const [availableRepos, configuredReposData] = await Promise.all([
       getAvailableRepos(),
-      getConfiguredRepos()
+      loadConfiguredRepos()
     ]);
     
     // Only update state if we're still the active loading operation

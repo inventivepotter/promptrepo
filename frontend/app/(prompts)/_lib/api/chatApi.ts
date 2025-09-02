@@ -1,5 +1,4 @@
 import httpClient from '@/lib/httpClient';
-import { getAuthHeaders } from '@/utils/authHeaders';
 import type { ApiResult } from '@/types/ApiResponse';
 import type { OpenAIMessage } from '../../_types/ChatState';
 import type { ChatCompletionOptions, ChatCompletionResponse } from '../../_types/ChatApi';
@@ -23,8 +22,6 @@ export const chatApi = {
       presence_penalty: options?.presence_penalty,
       stop: options?.stop,
       stream: options?.stream ?? false
-    }, {
-      headers: getAuthHeaders()
     });
   }
 };

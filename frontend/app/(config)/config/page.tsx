@@ -88,8 +88,7 @@ export default function ConfigPage() {
       // For org/multi-tenant, save repositories using different endpoint
       setLocalIsSaving(true);
       try {
-        // For now, we'll save an empty array since repos state is managed in ReposConfigStep
-        await postRepos([]);
+        await postRepos(configState.repos.configured);
       } finally {
         setLocalIsSaving(false);
       }

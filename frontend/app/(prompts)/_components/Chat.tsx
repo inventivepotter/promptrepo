@@ -4,8 +4,6 @@ import React from 'react';
 import {
   Box,
   VStack,
-  Text,
-  Textarea,
 } from '@chakra-ui/react';
 import { useColorModeValue } from '../../../components/ui/color-mode';
 import { ChatMessages } from './ChatMessages';
@@ -17,7 +15,6 @@ import { TemplateVariables } from './TemplateVariables';
 import { ChatState, Tool } from '../_types/ChatState';
 import { chatCompletion } from '../_lib/chatCompletion';
 import { createUserMessage, createAssistantMessage, toOpenAIMessages } from '../_lib/utils/messageUtils';
-import { usePromptsState } from '../_state/promptState';
 import type { ChatCompletionOptions } from '../_types/ChatApi';
 import { extractVariables, resolveTemplate, hasVariables } from '../_lib/utils/templateUtils';
 
@@ -36,11 +33,8 @@ interface ChatProps {
 }
 
 export function Chat({ height = "700px", onMessageSend, promptData }: ChatProps) {
-  // Get current prompt from state to access all completion options (fallback)
-  const { currentPrompt } = usePromptsState();
-  
-  // Use provided promptData or fallback to currentPrompt from state
-  const activePrompt = promptData || currentPrompt;
+  // Use provided promptData
+  const activePrompt = promptData;
   
   // Chat state
   const [chatState, setChatState] = React.useState<ChatState>({
@@ -90,7 +84,6 @@ export function Chat({ height = "700px", onMessageSend, promptData }: ChatProps)
 
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const bgColor = useColorModeValue('white', 'gray.800');
-  const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
 
   // Extract variables from the active prompt template
   const promptTemplate = activePrompt?.prompt || '';

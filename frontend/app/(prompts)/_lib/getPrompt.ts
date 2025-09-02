@@ -3,38 +3,13 @@ import { PromptJson } from '../_types/PromptState';
 import { promptsApi } from './api/promptsApi';
 import { errorNotification } from '@/lib/notifications';
 import prompts from './prompts.json';
+import promptCommits from './promptCommits.json';
 
 /**
  * Generate mock commit history for a prompt
  */
 function generateMockCommitHistory(): CommitInfo[] {
-  const mockCommits: CommitInfo[] = [
-    {
-      hash: "a1b2c3d",
-      message: "Update prompt parameters and improve clarity",
-      author: "John Doe",
-      date: "2024-03-14T10:30:00Z"
-    },
-    {
-      hash: "e4f5g6h",
-      message: "Fix typo in prompt description",
-      author: "Jane Smith",
-      date: "2024-03-12T15:45:00Z"
-    },
-    {
-      hash: "i7j8k9l",
-      message: "Add thinking_enabled parameter",
-      author: "Bob Wilson",
-      date: "2024-03-10T09:15:00Z"
-    },
-    {
-      hash: "m0n1o2p",
-      message: "Initial prompt creation",
-      author: "Alice Johnson",
-      date: "2024-03-08T14:20:00Z"
-    }
-  ];
-  
+  const mockCommits: CommitInfo[] = promptCommits as CommitInfo[];
   return mockCommits;
 }
 
@@ -70,6 +45,10 @@ export async function getPrompt(id: string): Promise<Prompt | null> {
         result.error || 'Failed to Load Prompt',
         result.message || 'Unable to load prompt from server. Using local data.'
       );
+      // Handle authentication errors differently
+      if (result.statusCode === 401) {
+        return null;
+      }
       return getMockPromptById(id);
     }
 

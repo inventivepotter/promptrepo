@@ -1,7 +1,7 @@
 import { PromptsState } from '../_types/PromptState';
 import { Prompt } from '@/types/Prompt';
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { loadConfiguredRepos } from './loadConfiguredRepos';
+import { loadConfiguredRepos } from '../../../lib/repos/loadConfiguredRepos';
 import { loadConfiguredModels } from './loadConfiguredModels';
 import { loadPrompts, persistPromptsToBrowserStorage } from './loadPrompts';
 import { useManagePrompts } from './managePrompt';
@@ -19,8 +19,7 @@ export function usePromptsState() {
       const initializeData = async () => {
         try {
           // Load configured repos and models from localStorage with API fallback
-          // Pass userId if user is authenticated
-          const configuredRepos = await loadConfiguredRepos(user?.id);
+          const configuredRepos = await loadConfiguredRepos();
           const configuredModels = await loadConfiguredModels();
           const prompts = await loadPrompts();
 

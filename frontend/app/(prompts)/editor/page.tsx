@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Box } from '@chakra-ui/react';
 import { Prompt } from '@/types/Prompt';
@@ -15,6 +15,7 @@ function EditorPageContent() {
   const searchParams = useSearchParams();
   const promptId = searchParams.get('id');
   const [isSaving, setIsSaving] = useState(false);
+  const fetchingRef = useRef<string | null>(null);
 
   const {
     promptsState,
@@ -25,19 +26,32 @@ function EditorPageContent() {
 
   // Fetch and set the current prompt with commit history based on the ID from URL
   useEffect(() => {
-    if (promptId) {
+    // Prevent duplicate requests for the same prompt ID
+    if (promptId && fetchingRef.current !== promptId) {
+      fetchingRef.current = promptId;
+      
       const fetchPrompt = async () => {
-        const prompt = await getPrompt(promptId);
-        if (prompt) {
-          setCurrentPrompt(prompt);
-        } else {
-          // Prompt not found, redirect to prompts list
-          router.push('/prompts');
+        try {
+          const prompt = await getPrompt(promptId);
+          // Only update state if we're still fetching this prompt ID
+          if (fetchingRef.current === promptId) {
+            if (prompt) {
+              setCurrentPrompt(prompt);
+            } else {
+              // Prompt not found, redirect to prompts list
+              router.push('/prompts');
+            }
+          }
+        } finally {
+          // Clear the fetching reference only if it's still for this prompt ID
+          if (fetchingRef.current === promptId) {
+            fetchingRef.current = null;
+          }
         }
       };
       
       fetchPrompt();
-    } else {
+    } else if (!promptId) {
       // No ID provided, redirect to prompts list
       router.push('/prompts');
     }

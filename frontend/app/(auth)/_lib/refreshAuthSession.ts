@@ -21,7 +21,7 @@ export async function refreshAuthSession(): Promise<RefreshResult> {
       return { success: true, user: cachedUser };
     }
 
-    const result = await authApi.refreshSession(sessionToken);
+    const result = await authApi.refreshSession();
 
     if (!result.success) {
       errorNotification(
@@ -38,7 +38,7 @@ export async function refreshAuthSession(): Promise<RefreshResult> {
     storageState.setSession(result.data.sessionToken, result.data.expiresAt);
 
     // Verify the new session to get updated user data
-    const verifyResult = await authApi.verifySession(result.data.sessionToken);
+    const verifyResult = await authApi.verifySession();
 
     if (!verifyResult.success) {
       storageState.clearSession();

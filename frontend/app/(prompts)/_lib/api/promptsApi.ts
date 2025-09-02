@@ -1,21 +1,16 @@
 import httpClient from '@/lib/httpClient';
-import { getAuthHeaders } from '@/utils/authHeaders';
 import type { Prompt } from '@/types/Prompt';
-import type { ApiResult, ApiResponse } from '@/types/ApiResponse';
+import type { ApiResult } from '@/types/ApiResponse';
 
 export const promptsApi = {
   // Get all prompts
-  getPrompts: async (): Promise<ApiResponse<Prompt[]>> => {
-    return await httpClient.get<Prompt[]>('/api/v0/prompts', {
-      headers: getAuthHeaders()
-    });
+  getPrompts: async (): Promise<ApiResult<Prompt[]>> => {
+    return await httpClient.get<Prompt[]>('/api/v0/prompts');
   },
 
   // Get individual prompt with commit history
-  getPrompt: async (id: string): Promise<ApiResponse<Prompt>> => {
-    return await httpClient.get<Prompt>(`/api/v0/prompts/${id}`, {
-      headers: getAuthHeaders()
-    });
+  getPrompt: async (id: string): Promise<ApiResult<Prompt>> => {
+    return await httpClient.get<Prompt>(`/api/v0/prompts/${id}`);
   },
 
   // Update a prompt
@@ -26,10 +21,7 @@ export const promptsApi = {
 
     return await httpClient.patch<Prompt>(
       `/api/v0/prompts/${updates.id}`,
-      updates,
-      {
-        headers: getAuthHeaders()
-      }
+      updates
     );
   },
 
@@ -37,26 +29,19 @@ export const promptsApi = {
   createPrompt: async (prompt: Omit<Prompt, 'id' | 'created_at' | 'updated_at'>): Promise<ApiResult<Prompt>> => {
     return await httpClient.post<Prompt>(
       '/api/v0/prompts',
-      prompt,
-      {
-        headers: getAuthHeaders()
-      }
+      prompt
     );
   },
 
   // Delete a prompt
   deletePrompt: async (id: string): Promise<ApiResult<void>> => {
-    return await httpClient.delete<void>(`/api/v0/prompts/${id}`, {
-      headers: getAuthHeaders()
-    });
+    return await httpClient.delete<void>(`/api/v0/prompts/${id}`);
   },
 
   // Commit and push specific prompt
   commitPushPrompt: async (promptId: string): Promise<ApiResult<void>> => {
     return await httpClient.post<void>('/api/v0/prompts/commit-push', {
       prompt_id: promptId
-    }, {
-      headers: getAuthHeaders()
     });
   },
 
@@ -64,8 +49,6 @@ export const promptsApi = {
   commitPushAll: async (): Promise<ApiResult<void>> => {
     return await httpClient.post<void>('/api/v0/prompts/commit-push', {
       all: true
-    }, {
-      headers: getAuthHeaders()
     });
   }
 };

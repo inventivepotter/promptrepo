@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: promptrepo-backend-dev
     ports:
-      - "8080:8080"
+      - "8000:8080"  # Intentionally mapped different port to make sure backend is not available to public
       - "5678:5678"  # Debug port
     environment:
       - PYTHONPATH=/app
@@ -28,9 +28,8 @@ services:
     ports:
       - "3000:3000"
       - "9229:9229"  # Node.js debug port
-    environment:
-      - BACKEND_URL=http://backend:8080
-      - PORT=3000
+    env_file:
+      - .env
     volumes:
       - ./frontend:/app
       - /app/node_modules

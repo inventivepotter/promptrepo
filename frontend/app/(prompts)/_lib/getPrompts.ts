@@ -24,6 +24,10 @@ export async function getPrompts(): Promise<Prompt[]> {
         result.message || 'Unable to load prompts from server. Using local data.'
       );
       
+      // Handle authentication errors differently
+      if (result.statusCode === 401) {
+        return [];
+      }
       return getMockPrompts();
     }
 

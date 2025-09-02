@@ -1,5 +1,5 @@
 import { getConfiguredModels } from "../_lib/getConfiguredModels";
-import { LOCAL_STORAGE_KEYS } from "../../../utils/localStorageConstants";
+import { LOCAL_STORAGE_KEYS } from "@/utils/localStorageConstants";
 import { PromptsState } from "../_types/PromptState";
 import { LLMProvider } from "@/types/LLMProvider";
 
@@ -18,17 +18,25 @@ export const getConfiguredModelsFromBrowserStorage = (): PromptsState['configure
         const parsed = JSON.parse(saved);
         // Ensure the result is an array of LLMProvider objects
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Check if each item is of type LLMProvider
-          const isValidLLMProviderArray = parsed.every((item: LLMProvider): item is LLMProvider =>
+          // Check if each item is a valid LLMProvider (either nested or flattened structure)
+          const isValidLLMProviderArray = parsed.every((item: unknown) =>
             item && typeof item === 'object' &&
             'id' in item && typeof item.id === 'string' &&
             'name' in item && typeof item.name === 'string' &&
-            'models' in item && Array.isArray(item.models) &&
-            item.models.every(model => typeof model.id === 'string' && typeof model.name === 'string')
+            (
+              // Check for nested structure (original API format)
+              ('models' in item && Array.isArray(item.models) &&
+               item.models.every((model: unknown) =>
+                 model && typeof model === 'object' &&
+                 'id' in model && typeof (model as { id: unknown }).id === 'string' &&
+                 'name' in model && typeof (model as { name: unknown }).name === 'string')) ||
+              // Check for flattened structure (processed format with custom_api_base)
+              ('custom_api_base' in item && typeof item.custom_api_base === 'boolean')
+            )
           );
           
           if (isValidLLMProviderArray) {
-            return parsed;
+            return parsed as LLMProvider[];
           }
         }
       } catch (parseError) {

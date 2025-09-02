@@ -10,6 +10,9 @@ from contextlib import asynccontextmanager
 # Import database setup
 from models.database import create_db_and_tables
 
+# Import middleware
+from middleware import AuthMiddleware
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -46,6 +49,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add authentication middleware
+app.add_middleware(AuthMiddleware)
 
 # Include API routers with versioning
 app.include_router(

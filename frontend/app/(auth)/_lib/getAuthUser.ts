@@ -10,7 +10,7 @@ export async function getAuthUser(): Promise<User | null> {
       return null;
     }
 
-    const result = await authApi.verifySession(currentSessionToken);
+    const result = await authApi.verifySession();
 
     if (!result.success) {
       errorNotification(

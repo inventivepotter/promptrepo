@@ -1,4 +1,5 @@
 import { ApiResponse, ApiResult, HttpMethod, RequestConfig } from '@/types/ApiResponse';
+import { getAuthHeaders } from '../utils/authHeaders';
 
 interface HttpClientConfig {
   baseUrl?: string;
@@ -13,8 +14,8 @@ class HttpClient {
   private timeout: number;
 
   constructor(config: HttpClientConfig = {}) {
-    // Use the Next.js API proxy instead of calling backend directly
-    this.baseUrl = config.baseUrl || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+    // Use direct backend calls instead of proxy for non-public endpoints
+    this.baseUrl = config.baseUrl || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
     
     // Add port if specified
     if (config.port && !this.baseUrl.includes(':')) {
@@ -29,6 +30,27 @@ class HttpClient {
     this.timeout = config.timeout || 180000; // 180 seconds (3 minutes) default
   }
 
+  // Middleware to automatically inject auth token for backend calls only
+  private injectAuthTokenForBackendCalls(
+    url: string,
+    headers: Record<string, string>
+  ): Record<string, string> {
+    // Only inject auth for backend API calls (not proxy calls or external requests)
+    const isBackendCall = url.includes(this.baseUrl) && url.includes('/api/');
+    
+    if (!isBackendCall) {
+      return headers;
+    }
+
+    // Get auth headers from utility
+    const authHeaders = getAuthHeaders();
+    
+    return {
+      ...headers,
+      ...authHeaders
+    };
+  }
+
   private async makeRequest<T>(
     endpoint: string,
     method: HttpMethod,
@@ -36,18 +58,23 @@ class HttpClient {
     config?: RequestConfig
   ): Promise<ApiResult<T>> {
     try {
-      // Route through the Next.js API proxy
-      const proxyEndpoint = endpoint.startsWith('/api/') ? endpoint : `/api${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
-      const url = `${this.baseUrl}${proxyEndpoint}`;
+      // Ensure endpoint has /api prefix for backend calls
+      const normalizedEndpoint = endpoint.startsWith('/api/') ? endpoint : `/api${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+      const url = `${this.baseUrl}${normalizedEndpoint}`;
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
+      // Merge headers and inject auth token for backend calls only
+      const mergedHeaders = {
+        ...this.defaultHeaders,
+        ...config?.headers
+      };
+      
+      const headersWithAuth = this.injectAuthTokenForBackendCalls(url, mergedHeaders);
+
       const requestConfig: RequestInit = {
         method,
-        headers: {
-          ...this.defaultHeaders,
-          ...config?.headers
-        },
+        headers: headersWithAuth,
         signal: config?.signal || controller.signal,
       };
 

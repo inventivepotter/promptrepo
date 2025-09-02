@@ -1,7 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Get backend URL from environment or default
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://backend:8080';
+
+// Define public endpoints that should be proxied (from auth_middleware.py)
+const PUBLIC_ENDPOINTS = new Set([
+  // Auth endpoints
+  '/api/v0/auth/login/github',
+  '/api/v0/auth/callback/github',
+  '/api/v0/auth/verify',
+  '/api/v0/auth/logout',
+  '/api/v0/auth/refresh',
+  // Public provider info (available providers without requiring auth)
+  '/api/v0/llm/providers/available',
+  // Public config endpoints
+  '/api/v0/config/hosting-type',
+  // Frontend required endpoints
+  '/api/v0/repos/available',
+  '/api/v0/repos/configured',
+  '/api/v0/llm/providers/configured',
+  '/api/v0/prompts',
+  '/api/v0/llm/chat/completions',
+  '/api/v0/prompts/commit-push'
+]);
+
+// Define public endpoint prefixes that should be matched with startsWith
+const PUBLIC_ENDPOINT_PREFIXES = [
+  // TODO: Make sure to only allow prompts/:id here not other endpoints
+  '/api/v0/prompts/'
+];
+
+function isPublicEndpoint(path: string): boolean {
+  // Direct match
+  if (PUBLIC_ENDPOINTS.has(path)) {
+    return true;
+  }
+  
+  // Check for prefix matches
+  for (const prefix of PUBLIC_ENDPOINT_PREFIXES) {
+    if (path.startsWith(prefix)) {
+      return true;
+    }
+  }
+    
+  return false;
+}
 
 async function proxyRequest(
   request: NextRequest,
@@ -10,6 +53,19 @@ async function proxyRequest(
   try {
     const { proxy } = await params;
     const path = proxy.join('/');
+    const fullPath = `/api/${path}`;
+    
+    // Check if this is a public endpoint that should be proxied
+    if (!isPublicEndpoint(fullPath)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Endpoint not available through proxy',
+          message: 'This endpoint should be accessed directly from the backend service'
+        },
+        { status: 404 }
+      );
+    }
     
     // Construct the target URL - preserve the /api prefix for backend
     const targetUrl = `${BACKEND_URL}/api/${path}`;

@@ -19,7 +19,6 @@ from schemas.chat import (
 )
 
 # Import service classes
-from utils.auth_utils import verify_session
 from services.completion_service import chat_completion_service
 
 logger = logging.getLogger(__name__)
@@ -28,8 +27,7 @@ router = APIRouter()
 
 @router.post("/completions", response_model=ChatCompletionResponse)
 async def chat_completions(
-    request: ChatCompletionRequest,
-    username: str = Depends(verify_session)
+    request: ChatCompletionRequest
 ):
     """
     Create a chat completion using any-llm.
@@ -42,7 +40,7 @@ async def chat_completions(
         # Validate required fields
         chat_completion_service.validate_provider_and_model(request.provider, request.model)
 
-        logger.info(f"Chat completion request from {username} using {request.provider}/{request.model}")
+        logger.info(f"Chat completion request using {request.provider}/{request.model}")
         
         # Handle streaming response
         if request.stream:
@@ -61,7 +59,7 @@ async def chat_completions(
             content, finish_reason, usage_stats, inference_time_ms = await chat_completion_service.execute_non_streaming_completion(request)
         except Exception as e:
             logger.error(f"Error in acompletion call or response processing: {e}")
-            logger.error(f"Exception type: {type(e)}")
+            logger.error(f"Exception: {e}")
             raise HTTPException(
                 status_code=500,
                 detail=f"Completion failed: {str(e)}"
@@ -90,7 +88,7 @@ async def chat_completions(
             inference_time_ms=inference_time_ms
         )
         
-        logger.info(f"Chat completion successful for {username}")
+        logger.info(f"Chat completion successful")
         return completion_response
         
     except HTTPException:

@@ -5,7 +5,7 @@ import { errorNotification } from '@/lib/notifications';
 import { ApiResponse } from "@/types/ApiResponse";
 import { getHostingType } from '@/utils/hostingType';
 
-const configuredRepos = configuredReposData as { repos: Repo[] };
+const mockConfiguredRepos = configuredReposData as { repos: Repo[] };
 
 export async function getConfiguredRepos(): Promise<Repo[]> {
   try {
@@ -21,13 +21,12 @@ export async function getConfiguredRepos(): Promise<Repo[]> {
     const result: ApiResponse<Repo[]> = await reposApi.getConfiguredRepos();
     
     if (!result.success) {
-      
       errorNotification(
         result.error || 'Repository Sync Failed',
         result.message || 'Unable to load configured repositories from server. Using local data.'
       );
-      // return Promise.reject({error: result.error, message: result.message});
-      return configuredRepos.repos;
+      // TODO: Remove
+      return mockConfiguredRepos.repos;
     }
 
     if (!result.data || result.data.length === 0) {
@@ -37,7 +36,8 @@ export async function getConfiguredRepos(): Promise<Repo[]> {
         'The server returned no configured repositories. Using local data.'
       );
 
-      return configuredRepos.repos;
+      // TODO: Remove
+      return mockConfiguredRepos.repos;
     }
 
     
@@ -49,6 +49,7 @@ export async function getConfiguredRepos(): Promise<Repo[]> {
       'Unable to connect to repository service. Using local data.'
     );
     
-    return configuredRepos.repos;
+    // TODO: Remove
+    return mockConfiguredRepos.repos;
   }
 }

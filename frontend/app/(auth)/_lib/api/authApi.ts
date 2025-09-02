@@ -14,25 +14,19 @@ export const authApi = {
     return await httpClient.get<LoginResponse>(`/api/v0/auth/callback/github?code=${code}&state=${state}`);
   },
 
-  // Verify current session and get user info
-  verifySession: async (sessionToken: string): Promise<ApiResult<User>> => {
-    return await httpClient.get<User>('/api/v0/auth/verify', {
-      headers: { 'Authorization': `Bearer ${sessionToken}` }
-    });
+  // Verify current session and get user info (use explicit token for verification)
+  verifySession: async (): Promise<ApiResult<User>> => {
+    return await httpClient.get<User>('/api/v0/auth/verify');
   },
 
-  // Logout and invalidate session
-  logout: async (sessionToken: string): Promise<ApiResult<void>> => {
-    return await httpClient.post<void>('/api/v0/auth/logout', {}, {
-      headers: { 'Authorization': `Bearer ${sessionToken}` }
-    });
+  // Logout and invalidate session (auto-auth will handle token)
+  logout: async (): Promise<ApiResult<void>> => {
+    return await httpClient.post<void>('/api/v0/auth/logout');
   },
 
-  // Refresh session token
-  refreshSession: async (sessionToken: string): Promise<ApiResult<{ sessionToken: string; expiresAt: string }>> => {
-    return await httpClient.post<{ sessionToken: string; expiresAt: string }>('/v0/auth/refresh', {}, {
-      headers: { 'Authorization': `Bearer ${sessionToken}` }
-    });
+  // Refresh session token (auto-auth will handle token)
+  refreshSession: async (): Promise<ApiResult<{ sessionToken: string; expiresAt: string }>> => {
+    return await httpClient.post<{ sessionToken: string; expiresAt: string }>('/api/v0/auth/refresh');
   }
 };
 
