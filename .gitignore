@@ -133,7 +133,7 @@ dmypy.json
 uv.lock
 .idea/
 promptrepo.db
-
+*.db
 backend/.env
 frontend/.env
 .env
@@ -141,3 +141,6 @@ frontend/.env
 !.env.example
 .temp
 persistence/
+package-lock.json
+.DS_Store
+.vscode/
