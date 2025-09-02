@@ -2,7 +2,7 @@
 
 import { Box, Container, VStack, HStack, Text, Button } from '@chakra-ui/react'
 import { useEffect } from 'react'
-import AuthStep from '../../_components/GithubOAuthConfigTep'
+import AuthStep from '../../_components/GithubOAuthConfigStep'
 import LLMStep from '../../_components/LLMConfigStep'
 import { EnvVariablesDisplay } from '../../_components/EnvVariablesDisplay'
 import { UtilityHeader } from '../../_components/UtilityHeader'

@@ -24,7 +24,7 @@ class ModelsResponse(BaseModel):
     """Response for models endpoint"""
     models: List[ModelInfo]
 
-@router.post("/providers/{provider_id}/models", response_model=ModelsResponse)
+@router.post("/providers/models/{provider_id}", response_model=ModelsResponse)
 async def fetch_models_by_provider(provider_id: str, request: FetchModelsRequest) -> ModelsResponse:
     """
     Fetch available models for a specific provider using API key.

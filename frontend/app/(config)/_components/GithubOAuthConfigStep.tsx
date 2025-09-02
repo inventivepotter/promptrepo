@@ -23,14 +23,7 @@ export default function AuthStep({
 }: AuthStepProps) {
   if (hostingType === 'individual') {
     return (
-      <VStack gap={4}>
-        <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.emphasized">
-          <Text fontWeight="normal" fontSize="sm" color="blue.fg">
-            For individual use, no additional authentication setup is required.
-          </Text>
-        </Box>
-        <Text>You can proceed to the next step.</Text>
-      </VStack>
+      <></>
     )
   }
 

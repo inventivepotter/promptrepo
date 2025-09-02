@@ -14,6 +14,7 @@ const PUBLIC_ENDPOINTS = new Set([
   // Public provider info (available providers without requiring auth)
   '/api/v0/llm/providers/available',
   // Public config endpoints
+  '/api/v0/config',
   '/api/v0/config/hosting-type',
   // Frontend required endpoints
   '/api/v0/repos/available',
@@ -27,7 +28,8 @@ const PUBLIC_ENDPOINTS = new Set([
 // Define public endpoint prefixes that should be matched with startsWith
 const PUBLIC_ENDPOINT_PREFIXES = [
   // TODO: Make sure to only allow prompts/:id here not other endpoints
-  '/api/v0/prompts/'
+  '/api/v0/prompts/',
+  '/api/v0/llm/providers/models/'
 ];
 
 function isPublicEndpoint(path: string): boolean {

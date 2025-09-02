@@ -10,7 +10,7 @@ export const modelsApi = {
 
   // Fetch models for a specific provider using API key
   fetchModelsByProvider: async (provider: string, apiKey: string, apiBase: string = ''): Promise<ApiResult<{ models: LLMProviderModel[] }>> => {
-    return await httpClient.post<{ models: LLMProviderModel[] }>(`/v0/llm/providers/${provider}/models`, {
+    return await httpClient.post<{ models: LLMProviderModel[] }>(`/v0/llm/providers/models/${provider}`, {
       provider,
       api_key: apiKey,
       api_base: apiBase

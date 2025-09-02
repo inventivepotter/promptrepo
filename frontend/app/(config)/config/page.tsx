@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import NextLink from 'next/link'
 import { LuExternalLink } from 'react-icons/lu'
 import HostingStep from '../_components/HostingConfigStep'
-import AuthStep from '../_components/GithubOAuthConfigTep'
+import AuthStep from '../_components/GithubOAuthConfigStep'
 import LLMStep from '../_components/LLMConfigStep'
 import ReposConfigStep from '../_components/ReposConfigStep'
 import { useConfigState } from '../_state/configState'
@@ -173,7 +173,7 @@ export default function ConfigPage() {
                 <HostingStep
                   hostingType={configState.config.hostingType}
                   setHostingType={(type) => updateConfigField("hostingType", type)}
-                  disabled={configState.isSaving}
+                  disabled={configState.isSaving || hostingType === 'individual'}
                 />
               </Box>
               
@@ -210,20 +210,6 @@ export default function ConfigPage() {
                   hostingType={configState.config.hostingType}
                 />
               </Box>
-              
-              {/* Repository Configuration */}
-              <Box mb={6}>
-                <ReposConfigStep
-                  hostingType={configState.config.hostingType}
-                  disabled={configState.isSaving}
-                  repos={configState.repos.available}
-                  configuredRepos={configState.repos.configured}
-                  isLoadingRepos={configState.repos.isLoading}
-                  isLoadingConfiguredRepos={configState.repos.isLoading}
-                  updateConfiguredRepos={updateConfiguredRepos}
-                />
-              </Box>
-              
             </>
           ) : (
             <>
@@ -243,38 +229,43 @@ export default function ConfigPage() {
           )}
           
           {/* Utility Config Link Note */}
-          <Box
-            mt={6}
-            p={4}
-            borderWidth="1px"
-            borderRadius="md"
-            borderColor="border.emphasized"
-            bg="transparent"
-          >
-            <HStack gap={2} align="flex-start">
-              <Text fontSize="sm" color="muted.foreground" opacity={0.7}>
-                <strong>Note:</strong> Configurations must be set as ENV (if in k8s then as Kubernetes Secrets) at the time service start, this
-              </Text>
-              <Link
-                as={NextLink}
-                href="/config/utility"
-                fontSize="sm"
-                color="muted.foreground"
-                opacity={0.8}
-                _hover={{ opacity: 1, textDecoration: 'underline' }}
-                display="flex"
-                alignItems="center"
-                gap={1}
-                flexShrink={0}
-              >
-                <Text>utils page</Text>
-                <LuExternalLink size={12} />
-              </Link>
-              <Text fontSize="sm" color="muted.foreground" opacity={0.7}>
-                can help you come up with ENV.
-              </Text>
-            </HStack>
-          </Box>
+          {/* Conditional rendering based on hosting type */}
+          {configState.config.hostingType !== 'individual' ? (
+            <>
+            <Box
+              mt={6}
+              p={4}
+              borderWidth="1px"
+              borderRadius="md"
+              borderColor="border.emphasized"
+              bg="transparent"
+            >
+              <HStack gap={2} align="flex-start">
+                <Text fontSize="sm" color="muted.foreground" opacity={0.7}>
+                  <strong>Note:</strong> Configurations must be set as ENV (if in k8s then as Kubernetes Secrets) at the time service start, this
+                </Text>
+                <Link
+                  as={NextLink}
+                  href="/config/utility"
+                  fontSize="sm"
+                  color="muted.foreground"
+                  opacity={0.8}
+                  _hover={{ opacity: 1, textDecoration: 'underline' }}
+                  display="flex"
+                  alignItems="center"
+                  gap={1}
+                  flexShrink={0}
+                >
+                  <Text>utils page</Text>
+                  <LuExternalLink size={12} />
+                </Link>
+                <Text fontSize="sm" color="muted.foreground" opacity={0.7}>
+                  can help you come up with ENV.
+                </Text>
+              </HStack>
+            </Box>
+            </>
+          ) : <></>};
         </Container>
       </VStack>
     </Box>
