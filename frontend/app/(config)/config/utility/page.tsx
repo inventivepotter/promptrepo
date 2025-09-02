@@ -83,7 +83,6 @@ export default function UtilityPage() {
                     githubClientId={utilState.githubClientId}
                     githubClientSecret={utilState.githubClientSecret}
                     llmConfigs={utilState.llmConfigs}
-                    adminEmails={[]}
                   />
                 </Box>
               </VStack>

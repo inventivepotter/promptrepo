@@ -72,17 +72,6 @@ class ConfigService:
         client_id, client_secret = ConfigService.get_github_oauth_config()
         return bool(client_id and client_secret)
     
-    # Admin Configuration
-    @staticmethod
-    def get_admin_emails() -> List[str]:
-        """Get list of admin email addresses."""
-        return settings.app_config.adminEmails
-    
-    @staticmethod
-    def is_admin_email(email: str) -> bool:
-        """Check if email is in admin list."""
-        return email in ConfigService.get_admin_emails()
-    
     # App Configuration Validation
     @staticmethod
     def validate_app_config(config: Optional[AppConfig] = None) -> bool:
@@ -185,13 +174,6 @@ class ConfigService:
             else:
                 existing_env["LLM_CONFIGS"] = "[]"
         
-        # Handle admin emails - not for individual hosting
-        if hosting_type != "individual":
-            admin_emails = getattr(config, 'adminEmails', []) or []
-            admin_emails_json = json.dumps(admin_emails)
-            existing_env["ADMIN_EMAILS"] = admin_emails_json
-        else:
-            existing_env["ADMIN_EMAILS"] = "[]"
         
         # Write updated .env file
         with open(env_file_path, 'w') as f:

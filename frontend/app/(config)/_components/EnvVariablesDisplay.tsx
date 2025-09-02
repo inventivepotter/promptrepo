@@ -22,15 +22,13 @@ interface EnvVariablesDisplayProps {
     apiKey: string
     apiBaseUrl?: string
   }>
-  adminEmails: string[]
 }
 
 export function EnvVariablesDisplay({
   hostingType,
   githubClientId,
   githubClientSecret,
-  llmConfigs,
-  adminEmails
+  llmConfigs
 }: EnvVariablesDisplayProps) {
   
   // Generate environment variables string
@@ -71,12 +69,6 @@ export function EnvVariablesDisplay({
       envVars.push('')
     }
     
-    // Admin emails (only for non-individual hosting)
-    if (hostingType !== 'individual' && adminEmails.length > 0) {
-      envVars.push('## Admin Emails for Config Updates')
-      envVars.push(`ADMIN_EMAILS='${JSON.stringify(adminEmails)}'`)
-      envVars.push('')
-    }
     
     return envVars.join('\n')
   }

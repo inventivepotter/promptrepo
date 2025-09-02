@@ -6,7 +6,6 @@ from schemas.config import AppConfig, LlmConfig
 from .hosting import HostingSettings
 from .auth import AuthSettings
 from .llm import LLMSettings
-from .admin import AdminSettings
 from dotenv import load_dotenv
 
 class Settings(BaseSettings):
@@ -42,7 +41,6 @@ class Settings(BaseSettings):
         self._hosting_settings = HostingSettings()
         self._auth_settings = AuthSettings()
         self._llm_settings = LLMSettings()
-        self._admin_settings = AdminSettings()
 
     def reload_settings(self):
         """Reload all settings from environment variables and .env file"""
@@ -53,7 +51,6 @@ class Settings(BaseSettings):
         self._hosting_settings = HostingSettings()
         self._auth_settings = AuthSettings()
         self._llm_settings = LLMSettings()
-        self._admin_settings = AdminSettings()
 
     @property
     def hosting_settings(self) -> HostingSettings:
@@ -70,10 +67,6 @@ class Settings(BaseSettings):
         """Get LLM configuration"""
         return self._llm_settings
 
-    @property
-    def admin_settings(self) -> AdminSettings:
-        """Get admin configuration"""
-        return self._admin_settings
 
     @property
     def app_config(self) -> AppConfig:
@@ -84,7 +77,6 @@ class Settings(BaseSettings):
         github_client_id = ""
         github_client_secret = ""
         llm_configs = []
-        admin_emails = []
         
         if hosting_type == "organization":
             # Organization needs all configurations
@@ -93,21 +85,19 @@ class Settings(BaseSettings):
             # Convert dict configs to LlmConfig objects
             raw_configs = self.llm_settings.llm_configs or []
             llm_configs = [LlmConfig(**config) for config in raw_configs] if raw_configs else []
-            admin_emails = self.admin_settings.admin_emails_list or []
         elif hosting_type == "individual":
-            # Individual only needs LLM configs, no auth or admin
+            # Individual only needs LLM configs, no auth
             raw_configs = self.llm_settings.llm_configs or []
             llm_configs = [LlmConfig(**config) for config in raw_configs] if raw_configs else []
         elif hosting_type == "multi-tenant":
-            # Multi-tenant has no global LLM configs, but has admin configs
-            admin_emails = self.admin_settings.admin_emails_list or []
+            # Multi-tenant has no global LLM configs
+            pass
         
         return AppConfig(
             hostingType=hosting_type,
             githubClientId=github_client_id,
             githubClientSecret=github_client_secret,
             llmConfigs=llm_configs,
-            adminEmails=admin_emails
         )
 
     model_config = {

@@ -10,7 +10,6 @@ All pending tasks in order of priority
 - [x] Design Home Page
 - [x] Route HomePage
 - [x] Fix Hosting Types
-- [x] Admin Authorization
 - [x] Delete All Local Storage on Logout
 - [ ] Commit & Push for each prompt and all
 - [ ] Playground

@@ -22,7 +22,6 @@ export const initConfig: ConfigState['config'] = {
   githubClientId: "",
   githubClientSecret: "",
   llmConfigs: [],
-  adminEmails: [],
 };
 
 export const initConfigState: ConfigState = {
@@ -212,7 +211,6 @@ const loadRepos = useCallback(async () => {
           githubClientId: safeString(result.config?.githubClientId),
           githubClientSecret: safeString(result.config?.githubClientSecret),
           llmConfigs: safeArray(result.config?.llmConfigs),
-          adminEmails: safeArray(result.config?.adminEmails),
         };
         
         setConfigState(prev => ({

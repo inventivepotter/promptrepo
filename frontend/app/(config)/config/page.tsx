@@ -8,7 +8,6 @@ import { LuExternalLink } from 'react-icons/lu'
 import HostingStep from '../_components/HostingConfigStep'
 import AuthStep from '../_components/GithubOAuthConfigTep'
 import LLMStep from '../_components/LLMConfigStep'
-import AdminConfigStep from '../_components/AdminConfigStep'
 import ReposConfigStep from '../_components/ReposConfigStep'
 import { useConfigState } from '../_state/configState'
 import { ConfigHeader } from '../_components/ConfigHeader'
@@ -225,14 +224,6 @@ export default function ConfigPage() {
                 />
               </Box>
               
-              {/* Admin Configuration */}
-              <Box mb={6}>
-                <AdminConfigStep
-                  adminEmails={configState.config.adminEmails || []}
-                  setAdminEmails={(emails) => updateConfigField("adminEmails", emails)}
-                  disabled={configState.isSaving}
-                />
-              </Box>
             </>
           ) : (
             <>

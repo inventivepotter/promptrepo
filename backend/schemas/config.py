@@ -16,7 +16,6 @@ class AppConfig(BaseModel):
     githubClientId: str
     githubClientSecret: str
     llmConfigs: List[LlmConfig]
-    adminEmails: List[str]
 
 
 # Schemas for LLM Providers endpoint
