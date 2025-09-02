@@ -266,7 +266,18 @@ export function Chat({ height = "700px", onMessageSend, promptData }: ChatProps)
           {/* Messages */}
           <Box flex={1} overflow="hidden" minHeight="300px">
             <ChatMessages
-              messages={chatState.messages}
+              messages={[
+                // Add system prompt as first message if there are any messages
+                ...(chatState.messages.length > 0 && (hasVariables(promptTemplate) ? resolvedPrompt : activePrompt?.prompt)
+                  ? [{
+                      id: 'system-prompt',
+                      role: 'system' as const,
+                      content: hasVariables(promptTemplate) ? resolvedPrompt : activePrompt?.prompt || '',
+                      timestamp: new Date()
+                    }]
+                  : []),
+                ...chatState.messages
+              ]}
               isLoading={chatState.isLoading}
             />
           </Box>
