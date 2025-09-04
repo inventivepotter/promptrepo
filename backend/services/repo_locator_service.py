@@ -76,3 +76,25 @@ class GitHubRepoLocator(IRepoLocator):
             else:
                 raise ValueError(f"GitHub API error: {response.status_code} - {response.text}")
         return repos
+
+
+def create_repo_locator(source_type, **kwargs) -> IRepoLocator:
+    """
+    Factory function to create appropriate repository locator based on source type.
+
+    Args:
+        source_type: Type of repository source (LOCAL or GITHUB)
+        **kwargs: Additional parameters needed for specific locators
+                 For GitHub: username, oauth_token
+
+    Returns:
+        IRepoLocator: Appropriate repository locator instance
+    """
+    if source_type == 'Individual':
+        return LocalRepoLocator().get_repositories()
+    elif source_type == 'Organization':
+        if 'username' not in kwargs or 'oauth_token' not in kwargs:
+            raise ValueError("GitHub locator requires 'username' and 'oauth_token' parameters")
+        return GitHubRepoLocator(kwargs['username'], kwargs['oauth_token']).get_repositories()
+    else:
+        raise ValueError(f"Unsupported repository source type: {source_type}")
