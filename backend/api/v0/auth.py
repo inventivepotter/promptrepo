@@ -15,6 +15,7 @@ import logging
 from services import create_github_service
 from services.github_service import GitHubService
 from services.session_service import SessionService
+from services.user_service import UserService
 from models.database import get_session
 from models.user_sessions import User_Sessions
 
@@ -165,10 +166,8 @@ async def github_oauth_callback(
                 avatar_url=github_user.avatar_url,
                 github_id=github_user.id,
                 html_url=github_user.html_url,
-
-
             )
-
+            user_db = UserService.create_user(db=db, user=user)
             # Create session in database
             user_session = SessionService.create_session(
                 db=db,
@@ -182,7 +181,7 @@ async def github_oauth_callback(
             logger.info(f"Successfully authenticated user: {github_user.login}")
 
             return LoginResponse(
-                user=user,
+                user=user_db,
                 sessionToken=user_session.session_id,  # Return session_id as sessionToken
                 expiresAt=expires_at.isoformat() + "Z"
             )

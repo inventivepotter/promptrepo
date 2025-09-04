@@ -259,3 +259,30 @@ class SessionService:
         except Exception as e:
             logger.error(f"Failed to validate session {session_id}: {e}")
             return False
+
+    @staticmethod
+    def get_oauth_token_and_username(db: Session, session_id: str) -> Optional[dict]:
+        """
+        Get OAuth token and username by session_id.
+
+        Args:
+            db: Database session
+            session_id: Session identifier
+
+        Returns:
+            Dict with 'oauth_token' and 'username' keys if found, None otherwise
+        """
+        try:
+            statement = select(User_Sessions).where(User_Sessions.session_id == session_id)
+            user_session = db.exec(statement).first()
+
+            if user_session:
+                return {
+                    'oauth_token': user_session.oauth_token,
+                    'username': user_session.username
+                }
+            return None
+
+        except Exception as e:
+            logger.error(f"Failed to get oauth token and username for session {session_id}: {e}")
+            return None
