@@ -6,6 +6,7 @@ from schemas.config import AppConfig, LlmConfig
 from .hosting import HostingSettings
 from .auth import AuthSettings
 from .llm import LLMSettings
+from .repo import RepoSettings
 from dotenv import load_dotenv
 
 class Settings(BaseSettings):
@@ -82,6 +83,7 @@ class Settings(BaseSettings):
             # Organization needs all configurations
             github_client_id = self.auth_settings.github_client_id or ""
             github_client_secret = self.auth_settings.github_client_secret or ""
+            repo_path = RepoSettings().multi_user_repo_path
             # Convert dict configs to LlmConfig objects
             raw_configs = self.llm_settings.llm_configs or []
             llm_configs = [LlmConfig(**config) for config in raw_configs] if raw_configs else []
@@ -89,6 +91,7 @@ class Settings(BaseSettings):
             # Individual only needs LLM configs, no auth
             raw_configs = self.llm_settings.llm_configs or []
             llm_configs = [LlmConfig(**config) for config in raw_configs] if raw_configs else []
+            repo_path = RepoSettings().local_repo_path
         elif hosting_type == "multi-tenant":
             # Multi-tenant has no global LLM configs
             pass
@@ -98,6 +101,7 @@ class Settings(BaseSettings):
             githubClientId=github_client_id,
             githubClientSecret=github_client_secret,
             llmConfigs=llm_configs,
+            repoPath=repo_path,
         )
 
     model_config = {
