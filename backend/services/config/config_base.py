@@ -26,16 +26,6 @@ class ConfigBase(ABC):
         pass
     
     @abstractmethod
-    def validate(self) -> bool:
-        """
-        Validate if the configuration is complete for this hosting type.
-        
-        Returns:
-            bool: True if configuration is valid, False otherwise
-        """
-        pass
-    
-    @abstractmethod
     def set_hosting_type(self) -> HostingConfig:
         """
         Set hosting type in environment variables.
@@ -59,20 +49,33 @@ class ConfigBase(ABC):
         pass
 
     @abstractmethod
-    def set_llm_config(self, llm_config_json: Dict[str, str]) -> LLMConfig | None:
+    def set_llm_config(self, llm_config: List[LLMConfig]) -> List[LLMConfig] | None:
         """
         Set LLM configuration in environment variables.
         
         Args:
-            llm_config_json: LLM configuration as a JSON dictionary
+            llm_config: LLM configuration as a list of LLMConfig objects
 
         Returns:
             LLMConfig: Updated LLM configuration
         """
         pass
+
+    @abstractmethod
+    def set_repo_config(self, repo_config: List[RepoConfig]) -> RepoConfig | None:
+        """
+        Set repository configuration in environment variables.
+
+        Args:
+            repo_config: Repository configuration as a list of RepoConfig objects
+
+        Returns:
+            RepoConfig: Updated repository configuration
+        """
+        pass
     
     @abstractmethod
-    def get_hosting_config(self) -> HostingConfig | None:
+    def get_hosting_config(self) -> HostingConfig:
         """
         Get hosting type.
         
@@ -92,54 +95,30 @@ class ConfigBase(ABC):
         pass
     
     @abstractmethod
-    def get_llm_config(self) -> LLMConfig | None:
+    def get_llm_config(self) -> List[LLMConfig] | None:
         """
         Get LLM configuration.
         
         Returns:
-            LLMConfig: LLM configuration
+            List[LLMConfig]: LLM configuration
         """
         pass
-    
-    @abstractmethod
-    def is_oauth_required(self) -> bool:
-        """
-        Check if OAuth configuration is required for this hosting type.
-        
-        Returns:
-            bool: True if OAuth is required, False otherwise
-        """
-        pass
-    
-    @abstractmethod
-    def is_llm_required(self) -> bool:
-        """
-        Check if LLM configuration is required for this hosting type.
-        
-        Returns:
-            bool: True if LLM configs are required, False otherwise
-        """
-        pass
-    
-    # def reload_settings(self) -> None:
-    #     """
-    #     Reload all settings from environment variables and .env file.
-    #     """
-    #     # Reload environment variables from .env file
-    #     load_dotenv(override=True)
-        
-    #     # Reinitialize all sub-settings to pick up new values
-    #     self._hosting_config = HostingConfig()
-    #     self._auth_config = OAuthConfig()
-    #     self._llm_config = LLMConfig()
-    #     self._repo_config = RepoConfig()
 
     @abstractmethod
+    def get_repo_config(self) -> List[RepoConfig] | None:
+        """
+        Get repository configuration.
+
+        Returns:
+            List[RepoConfig]: Repository configuration
+        """
+        pass
+
     def get_config(self) -> AppConfig:
-        """
-        Get the current configuration object based on the hosting type.
-
-        Returns:
-            AppConfig: The current configuration
-        """
-        pass
+        """Get the current configuration object based on the hosting type."""
+        return AppConfig(
+            hostingConfig=self.get_hosting_config(),
+            oauthConfig=self.get_oauth_config(),
+            llmConfigs=self.get_llm_config(),
+            repoConfig=self.get_repo_config()
+        ) 

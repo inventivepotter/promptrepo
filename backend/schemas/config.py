@@ -56,22 +56,23 @@ class LLMConfig(BaseModel):
 
 class RepoConfig(BaseModel):
     """Repository management settings"""
-
-    # Core Repository Paths
-    local_repo_path: str = Field(
+    repo_url: str = Field(
         default="",
-        description="Path for individual local repositories"
+        description="Repository URL"
     )
-
-    multi_user_repo_path: str = Field(
+    base_branch: str = Field(
         default="",
-        description="Path for multi-user repository workspaces"
+        description="Repository branch"
+    )
+    current_branch: str = Field(
+        default="",
+        description="Repository branch"
     )
 
 
 class AppConfig(BaseModel):
     """Main application configuration"""
     hostingConfig: HostingConfig
-    oauthConfig: OAuthConfig
-    llmConfigs: List[LLMConfig]
-    repoConfig: RepoConfig
+    oauthConfig: OAuthConfig | None = None
+    llmConfigs: List[LLMConfig] | None = None
+    repoConfig: List[RepoConfig] | None = None

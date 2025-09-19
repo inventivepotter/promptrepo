@@ -33,6 +33,17 @@ class Settings(BaseSettings):
         default=60, 
         description="Session expiry in minutes"
     )
+
+    # Core Repository Paths
+    local_repo_path: str = Field(
+        default="",
+        description="Path for individual local repositories"
+    )
+
+    multi_user_repo_path: str = Field(
+        default="",
+        description="Path for multi-user repository workspaces"
+    )
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
