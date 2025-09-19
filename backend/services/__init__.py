@@ -4,7 +4,7 @@ Provides factory functions for creating service instances.
 """
 from typing import Optional
 from .github_service import GitHubService
-from .config_service import config_service
+from .config import config_service
 from .provider_service import provider_service
 
 

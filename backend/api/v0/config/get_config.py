@@ -5,7 +5,7 @@ import logging
 from fastapi import APIRouter, HTTPException, status
 
 from schemas.config import AppConfig
-from services.config_service import config_service
+from services.config import config_service
 
 logger = logging.getLogger(__name__)
 

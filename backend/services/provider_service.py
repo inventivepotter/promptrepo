@@ -7,7 +7,7 @@ import logging
 from any_llm import provider, list_models
 from any_llm.provider import ProviderName
 
-from services.config_service import config_service
+from services.config import config_service
 from schemas.config import ProvidersResponse, ProviderInfo, ModelInfo
 from utils.constants import PROVIDER_NAMES_MAP
 

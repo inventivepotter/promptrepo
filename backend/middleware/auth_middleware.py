@@ -12,7 +12,7 @@ from typing import Set
 from utils.auth_utils import get_bearer_token, verify_session
 from models.database import get_session
 from services.session_service import SessionService
-from services.config_service import config_service
+from services.config import config_service
 
 logger = logging.getLogger(__name__)
 

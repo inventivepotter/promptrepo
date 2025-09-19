@@ -3,7 +3,7 @@ Get hosting type endpoint without authentication.
 """
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
-from services.config_service import config_service
+from services.config import config_service
 
 router = APIRouter()
 
