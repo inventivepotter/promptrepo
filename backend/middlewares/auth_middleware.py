@@ -12,7 +12,7 @@ from typing import Set
 from utils.auth_utils import get_bearer_token, verify_session
 from models.database import get_session
 from services.session_service import SessionService
-from services.config import config_service
+from services.config.factory import ConfigStrategyFactory
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +34,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
             # Auth endpoints
             "/api/v0/auth/login/github",
             "/api/v0/auth/callback/github",
+            "/api/v0/auth/login",
+            "/api/v0/auth/callback",
             "/api/v0/auth/verify",
-            "/api/v0/auth/logout", 
+            "/api/v0/auth/logout",
             "/api/v0/auth/refresh",
             # Public provider info (available providers without requiring auth)
             "/api/v0/llm/providers/available",
@@ -57,7 +59,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         # Skip auth if hosting type is individual
         try:
-            hosting_type = config_service.get_hosting_type()
+            config_strategy = ConfigStrategyFactory.get_strategy()
+            hosting_config = config_strategy.get_hosting_config()
+            hosting_type = hosting_config.type.value
             if hosting_type == "individual":
                 logger.debug(f"Skipping auth for individual hosting type")
                 return await call_next(request)

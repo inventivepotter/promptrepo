@@ -16,6 +16,8 @@ from middlewares.rest import (
 from models.database import get_session
 from services.session_service import SessionService
 from .verify import get_bearer_token
+from api.deps import get_oauth_service
+from services.oauth.oauth_service import OAuthService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -64,7 +66,8 @@ class RefreshResponse(BaseModel):
 async def refresh_session(
     request: Request,
     token: str = Depends(get_bearer_token),
-    db: Session = Depends(get_session)
+    db: Session = Depends(get_session),
+    oauth_service: OAuthService = Depends(get_oauth_service)
 ) -> StandardResponse[RefreshResponse]:
     """
     Refresh session token to extend expiry.
@@ -92,8 +95,26 @@ async def refresh_session(
             message="Invalid session token"
         )
 
-    # Create new session for the same user
+    # Validate the OAuth token before creating a new session
     try:
+        # Default to GitHub provider for backward compatibility
+        provider = "github"
+        is_valid = await oauth_service.validate_token(provider, user_session.oauth_token)
+        
+        if not is_valid:
+            logger.warning(
+                "Invalid OAuth token for refresh",
+                extra={
+                    "request_id": request_id,
+                    "session_token": token[:10] + "...",
+                    "provider": provider
+                }
+            )
+            raise AuthenticationException(
+                message="Invalid OAuth token"
+            )
+            
+        # Create new session for the same user
         new_session = SessionService.create_session(
             db=db,
             username=user_session.username,
@@ -110,7 +131,8 @@ async def refresh_session(
             "Session refreshed successfully",
             extra={
                 "request_id": request_id,
-                "username": user_session.username
+                "username": user_session.username,
+                "provider": provider
             }
         )
 
@@ -123,6 +145,8 @@ async def refresh_session(
             meta={"request_id": request_id}
         )
 
+    except AuthenticationException:
+        raise
     except Exception as e:
         logger.error(
             f"Failed to refresh session: {e}",

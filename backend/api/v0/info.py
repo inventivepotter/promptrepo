@@ -4,7 +4,7 @@ API information endpoints.
 from fastapi import APIRouter, status
 from pydantic import BaseModel
 
-from middlewares.rest import.responses import StandardResponse, success_response
+from middlewares.rest.responses import StandardResponse, success_response
 
 router = APIRouter()
 

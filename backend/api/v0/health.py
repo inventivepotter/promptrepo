@@ -5,7 +5,7 @@ from fastapi import APIRouter, status
 from pydantic import BaseModel
 import os
 
-from middlewares.rest import.responses import StandardResponse, success_response
+from middlewares.rest.responses import StandardResponse, success_response
 
 router = APIRouter()
 

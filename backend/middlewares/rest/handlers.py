@@ -2,7 +2,9 @@
 Global exception handlers for FastAPI application.
 """
 import logging
+import json
 from typing import Union
+from datetime import datetime
 
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
@@ -62,7 +64,7 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
     
     return JSONResponse(
         status_code=exc.status_code,
-        content=response.model_dump(exclude_none=True)
+        content=response.model_dump(exclude_none=True, mode='json')
     )
 
 
@@ -107,7 +109,7 @@ async def http_exception_handler(
     
     return JSONResponse(
         status_code=exc.status_code,
-        content=response.model_dump(exclude_none=True)
+        content=response.model_dump(exclude_none=True, mode='json')
     )
 
 
@@ -150,7 +152,7 @@ async def validation_exception_handler(
     
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content=response.model_dump(exclude_none=True)
+        content=response.model_dump(exclude_none=True, mode='json')
     )
 
 
@@ -190,7 +192,7 @@ async def pydantic_exception_handler(
     
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content=response.model_dump(exclude_none=True)
+        content=response.model_dump(exclude_none=True, mode='json')
     )
 
 
@@ -226,5 +228,5 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
     
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content=response.model_dump(exclude_none=True)
+        content=response.model_dump(exclude_none=True, mode='json')
     )

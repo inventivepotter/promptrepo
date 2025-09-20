@@ -6,6 +6,8 @@ Following Dependency Injection pattern
 from typing import Generator
 from sqlmodel import Session
 from database.core import get_session
+from services import create_oauth_service
+from services.oauth.oauth_service import OAuthService
 
 def get_db() -> Generator[Session, None, None]:
     """
@@ -18,3 +20,16 @@ def get_db() -> Generator[Session, None, None]:
             ...
     """
     return get_session()
+
+
+def get_oauth_service() -> OAuthService:
+    """
+    OAuth service dependency.
+    Returns a configured OAuth service instance.
+    
+    Usage in FastAPI endpoints:
+        @app.get("/auth/login")
+        def login(oauth_service: OAuthService = Depends(get_oauth_service)):
+            ...
+    """
+    return create_oauth_service()

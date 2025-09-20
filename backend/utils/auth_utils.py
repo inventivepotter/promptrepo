@@ -1,5 +1,5 @@
 """
-Global authentication utilities for the backend.
+Global authentication utilities for the 
 """
 from fastapi import HTTPException, Depends, Header
 from sqlmodel import Session

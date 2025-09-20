@@ -19,7 +19,6 @@ class User(SQLModel, table=True):
     """
     __tablename__ = "users"  # type: ignore
     
-    
     # Primary key
     id: str = Field(
         default_factory=lambda: str(uuid.uuid4()),
@@ -59,9 +58,9 @@ class User(SQLModel, table=True):
     )
     
     # Relationships
-    sessions: List["models.user_sessions.UserSessions"] = Relationship(back_populates="user")
-    repos: List["models.user_repos.UserRepos"] = Relationship(back_populates="user")
-    llm_configs: List["models.user_llm_configs.UserLLMConfigs"] = Relationship(back_populates="user")
+    sessions: List["UserSessions"] = Relationship(back_populates="user")
+    repos: List["UserRepos"] = Relationship(back_populates="user")
+    llm_configs: List["UserLLMConfigs"] = Relationship(back_populates="user")
 
     # Timestamps
     created_at: datetime = Field(

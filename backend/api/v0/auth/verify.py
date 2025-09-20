@@ -2,7 +2,6 @@
 Session verification endpoint with standardized responses.
 """
 import logging
-import uuid
 from typing import Annotated
 from fastapi import APIRouter, Request, Depends, status, Header
 from sqlmodel import Session
@@ -14,9 +13,12 @@ from middlewares.rest import (
     AppException
 )
 from models.database import get_session
-from models.user_sessions import User
-from services import create_github_service
+from models.user import User
 from services.session_service import SessionService
+from services.user_service import UserService
+from api.deps import get_oauth_service
+from services.oauth.oauth_service import OAuthService
+from services.oauth.models import UserInfo, UserEmail
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -65,7 +67,8 @@ async def get_bearer_token(authorization: Annotated[str | None, Header()] = None
 async def verify_session(
     request: Request,
     token: str = Depends(get_bearer_token),
-    db: Session = Depends(get_session)
+    db: Session = Depends(get_session),
+    oauth_service: OAuthService = Depends(get_oauth_service)
 ) -> StandardResponse[User]:
     """
     Verify current session and return user information.
@@ -77,6 +80,9 @@ async def verify_session(
         AuthenticationException: When session is invalid or expired
     """
     request_id = getattr(request.state, "request_id", None)
+    
+    # Default to GitHub provider for backward compatibility
+    provider = "github"
     
     # Check if session exists and is valid
     if not SessionService.is_session_valid(db, token):
@@ -104,66 +110,91 @@ async def verify_session(
             message="Session not found"
         )
 
-    # Try to validate GitHub token and get fresh user info
+    # Try to validate OAuth token and get fresh user info
     try:
-        github_service = create_github_service()
-        async with github_service:
-            if not await github_service.validate_token(user_session.oauth_token):
-                # GitHub token is invalid, delete session
-                SessionService.delete_session(db, token)
-                logger.warning(
-                    "GitHub token has been revoked",
-                    extra={
-                        "request_id": request_id,
-                        "username": user_session.username
-                    }
-                )
-                raise AuthenticationException(
-                    message="GitHub token has been revoked"
-                )
-
-            # Get fresh user info from GitHub
-            github_user = await github_service.get_user_info(user_session.oauth_token)
-            primary_email = await github_service.get_primary_email(user_session.oauth_token)
-
-            # Get or create/update user in database
-            from services.user_service import UserService
-            user_db = User(
-                username=github_user.login,
-                name=github_user.name or github_user.login,
-                email=primary_email or "",
-                avatar_url=github_user.avatar_url,
-                github_id=github_user.id,
-                html_url=github_user.html_url,
-            )
-            user_db = UserService.create_user(db=db, user=user_db)
-            
-            logger.info(
-                "Session verified successfully",
+        # Validate OAuth token
+        if not await oauth_service.validate_token(provider, user_session.oauth_token):
+            # OAuth token is invalid, delete session
+            SessionService.delete_session(db, token)
+            logger.warning(
+                "OAuth token has been revoked",
                 extra={
                     "request_id": request_id,
-                    "username": github_user.login
+                    "username": user_session.username,
+                    "provider": provider
                 }
             )
-            
-            return success_response(
-                data=user_db,
-                message="Session verified successfully",
-                meta={"request_id": request_id}
+            raise AuthenticationException(
+                message="OAuth token has been revoked"
             )
+
+        # Get fresh user info from OAuth provider
+        oauth_user_info = await oauth_service.get_user_info(provider, user_session.oauth_token)
+        
+        # Get user's primary email
+        primary_email = None
+        try:
+            emails = await oauth_service.get_user_emails(provider, user_session.oauth_token)
+            # Find primary email
+            primary_email = next(
+                (email.email for email in emails if email.primary and email.verified),
+                None
+            )
+            # If no primary verified email, use the first verified one
+            if not primary_email:
+                primary_email = next(
+                    (email.email for email in emails if email.verified),
+                    None
+                )
+        except Exception as e:
+            logger.warning(
+                f"Failed to get user emails from OAuth provider: {e}",
+                extra={
+                    "request_id": request_id,
+                    "username": user_session.username,
+                    "provider": provider
+                }
+            )
+
+        # Get or create/update user in database
+        user_db = User(
+            username=oauth_user_info.username,
+            name=oauth_user_info.name or oauth_user_info.username,
+            email=primary_email or oauth_user_info.email or "",
+            avatar_url=oauth_user_info.avatar_url,
+            github_id=int(oauth_user_info.id) if provider == "github" and oauth_user_info.id else None,
+            html_url=oauth_user_info.profile_url,
+        )
+        user_db = UserService.create_user(db=db, user=user_db)
+        
+        logger.info(
+            "Session verified successfully",
+            extra={
+                "request_id": request_id,
+                "username": oauth_user_info.username,
+                "provider": provider
+            }
+        )
+        
+        return success_response(
+            data=user_db,
+            message="Session verified successfully",
+            meta={"request_id": request_id}
+        )
     except AuthenticationException:
         raise
     except Exception as e:
         logger.warning(
-            f"Could not validate GitHub token for session: {e}",
+            f"Could not validate OAuth token for session: {e}",
             extra={
                 "request_id": request_id,
-                "session_token": token[:10] + "..."
+                "session_token": token[:10] + "...",
+                "provider": provider
             }
         )
         
-        # Try to get user from database if GitHub validation fails
-        from models.user_sessions import User as UserModel
+        # Try to get user from database if OAuth validation fails
+        from models.user import User as UserModel
         user = db.query(UserModel).filter_by(username=user_session.username).first()
         
         if user:

@@ -12,7 +12,8 @@ from middlewares.rest import (
 )
 from models.database import get_session
 from services.session_service import SessionService
-from .login_github import oauth_states, cleanup_expired_states
+from api.deps import get_oauth_service
+from services.oauth.oauth_service import OAuthService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -31,9 +32,10 @@ async def auth_health_check(
 ) -> StandardResponse[dict]:
     """Health check specifically for auth routes."""
     request_id = getattr(request.state, "request_id", None)
+    oauth_service = get_oauth_service()
     
     try:
-        cleanup_expired_states()
+        oauth_service.cleanup_expired_states()
 
         # Clean up expired sessions
         expired_count = SessionService.cleanup_expired_sessions(db)
@@ -46,7 +48,7 @@ async def auth_health_check(
             "service": "authentication",
             "active_sessions": active_sessions_count,
             "expired_sessions_cleaned": expired_count,
-            "pending_oauth_states": len(oauth_states),
+            "pending_oauth_states": 0,  # OAuth states are now managed internally by the OAuth service
             "endpoints": [
                 "GET /login/github",
                 "GET /callback/github",

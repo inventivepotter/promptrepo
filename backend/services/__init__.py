@@ -11,6 +11,7 @@ from .repo_locator_service import RepoLocatorService
 from .repo_service import RepoService
 from .session_service import SessionService
 from .user_service import UserService
+from .oauth.oauth_service import OAuthService
 
 
 def create_github_service() -> GitHubService:
@@ -42,3 +43,20 @@ def create_github_service() -> GitHubService:
         )
     else:
         raise ValueError("GitHub OAuth configuration is not set.")
+
+
+def create_oauth_service() -> OAuthService:
+    """
+    Create an OAuth service instance using configuration from environment or config service.
+    
+    Returns:
+        OAuthService: Configured OAuth service instance
+        
+    Raises:
+        ValueError: If OAuth configuration is not available
+    """
+    # Get configuration strategy
+    config = ConfigStrategyFactory.get_strategy()
+    
+    # Create OAuth service with auto-registration of providers
+    return OAuthService(config_service=config, auto_register=True)

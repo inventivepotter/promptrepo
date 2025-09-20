@@ -3,7 +3,7 @@ Standardized response models following OpenAPI specifications and REST best prac
 """
 from typing import TypeVar, Generic, Optional, List, Any, Dict, Union
 from pydantic import BaseModel, Field, ConfigDict
-from datetime import datetime
+from datetime import datetime, UTC
 from enum import Enum
 
 
@@ -20,7 +20,7 @@ class ResponseStatus(str, Enum):
 class ResponseMeta(BaseModel):
     """Metadata included with all responses."""
     timestamp: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(UTC),
         description="UTC timestamp of the response"
     )
     request_id: Optional[str] = Field(
@@ -280,6 +280,10 @@ def success_response(
     """
     Create a success response.
     """
+    # Serialize Pydantic models to ensure proper JSON serialization
+    if data is not None and hasattr(data, 'model_dump'):
+        data = data.model_dump(mode='json')
+    
     return create_response(
         data=data,
         message=message,

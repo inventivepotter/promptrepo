@@ -1,5 +1,5 @@
 """
-Middleware package for PromptRepo backend.
+Middleware package for PromptRepo 
 """
 from .auth_middleware import AuthMiddleware
 

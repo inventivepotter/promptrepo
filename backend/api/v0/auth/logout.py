@@ -12,9 +12,10 @@ from middlewares.rest import (
     AppException
 )
 from models.database import get_session
-from services import create_github_service
 from services.session_service import SessionService
 from .verify import get_bearer_token
+from api.deps import get_oauth_service
+from services.oauth.oauth_service import OAuthService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -35,7 +36,8 @@ class StatusResponse(BaseModel):
 async def logout(
     request: Request,
     token: str = Depends(get_bearer_token),
-    db: Session = Depends(get_session)
+    db: Session = Depends(get_session),
+    oauth_service: OAuthService = Depends(get_oauth_service)
 ) -> StandardResponse[StatusResponse]:
     """
     Logout user and invalidate session.
@@ -46,18 +48,19 @@ async def logout(
     request_id = getattr(request.state, "request_id", None)
     user_session = SessionService.get_session_by_id(db, token)
 
-    # Optionally revoke the GitHub token
+    # Optionally revoke the OAuth token
     if user_session:
+        # Default to GitHub provider for backward compatibility
+        provider = "github"
         try:
-            github_service = create_github_service()
-            async with github_service:
-                await github_service.revoke_token(user_session.oauth_token)
+            await oauth_service.revoke_token(provider, user_session.oauth_token)
         except Exception as e:
             logger.warning(
-                f"Could not revoke GitHub token: {e}",
+                f"Could not revoke OAuth token: {e}",
                 extra={
                     "request_id": request_id,
-                    "username": user_session.username if user_session else None
+                    "username": user_session.username if user_session else None,
+                    "provider": provider
                 }
             )
             # Continue with logout even if revocation fails
