@@ -23,7 +23,7 @@ class TestUserSessionModel:
         
         # Create session
         session = UserSessions(
-            user_id=user_id,
+            username="session_test_user",  # Use the username from the created user
             session_id=UserSessions.generate_session_key(),
             oauth_token="test_token_123"
         )

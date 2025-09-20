@@ -5,11 +5,6 @@ This extends the root conftest with model-specific fixtures.
 import pytest
 from sqlmodel import Session
 
-# Import all models to ensure they are registered in the metadata
-from backend.models.user import User
-from backend.models.user_sessions import UserSessions
-from backend.models.user_repos import UserRepos
-from backend.models.user_llm_configs import UserLLMConfigs
-
-# This will inherit the db_session fixture from the root conftest
-# No need to redefine it here unless we need model-specific behavior
+# Models are imported and registered in the root conftest.py's db_engine fixture.
+# Importing them here again can cause 'table already defined' errors during pytest's
+# collection phase. The db_session fixture from the root conftest is inherited.
