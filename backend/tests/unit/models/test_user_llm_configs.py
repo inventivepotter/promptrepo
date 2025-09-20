@@ -23,8 +23,6 @@ def test_create_user_llm_config(db_session: Session):
         provider="openai",
         model_name="gpt-4",
         api_key="sk-test",
-        max_tokens=2048,
-        temperature=0.5,
     )
     db_session.add(config)
     db_session.commit()
@@ -35,8 +33,6 @@ def test_create_user_llm_config(db_session: Session):
     assert config.provider == "openai"
     assert config.model_name == "gpt-4"
     assert config.api_key == "sk-test"
-    assert config.max_tokens == 2048
-    assert config.temperature == 0.5
     assert isinstance(config.created_at, datetime)
     assert isinstance(config.updated_at, datetime)
 
@@ -119,5 +115,3 @@ def test_user_llm_config_defaults(db_session: Session):
 
     assert config.api_key is None
     assert config.base_url is None
-    assert config.max_tokens == 4096
-    assert config.temperature == 0.7

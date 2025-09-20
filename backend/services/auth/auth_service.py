@@ -9,9 +9,9 @@ import logging
 from datetime import datetime, timedelta, UTC
 from sqlmodel import Session
 
-from services.oauth.oauth_service import OAuthService
-from services.auth.session_service import SessionService
-from services.user_service import UserService
+from services.oauth import OAuthService
+from .session_service import SessionService
+from services.user import UserService
 from models.user import User
 from .models import (
     LoginRequest,
@@ -170,7 +170,7 @@ class AuthService:
             
             # Create or update user in database
             user_db = User(**user_data)
-            user_db = UserService.create_user(db=db, user=user_db)
+            user_db = UserService.save_user(db=db, user_data=user_db)
             
             # Create session in database
             user_session = SessionService.create_session(
@@ -389,7 +389,7 @@ class AuthService:
                     github_id=int(oauth_user_info.id) if provider == "github" and oauth_user_info.id else None,
                     html_url=oauth_user_info.profile_url,
                 )
-                user_db = UserService.create_user(db=db, user=user_db)
+                user_db = UserService.save_user(db=db, user_data=user_db)
                 
                 logger.info(
                     "Session verified successfully",

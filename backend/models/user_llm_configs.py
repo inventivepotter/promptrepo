@@ -27,8 +27,6 @@ class UserLLMConfigs(SQLModel, table=True):
     model_name: str = Field(index=True, description="Specific model name (e.g., 'gpt-4', 'claude-3-opus')")
     api_key: Optional[str] = Field(default=None, sa_column=Column(Text), description="API key for the provider")
     base_url: Optional[str] = Field(default=None, description="Custom base URL for the LLM API")
-    max_tokens: Optional[int] = Field(default=4096, description="Maximum number of tokens for a completion")
-    temperature: Optional[float] = Field(default=0.7, ge=0.0, le=2.0, description="Sampling temperature")
 
     # Timestamps for tracking
     created_at: datetime = Field(

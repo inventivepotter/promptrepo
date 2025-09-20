@@ -172,7 +172,7 @@ class TestAuthServiceCallback:
         mock_session = Mock()
         mock_session.session_id = "test_session_id"
 
-        with patch('services.auth.auth_service.UserService.create_user', return_value=mock_user), \
+        with patch('services.auth.auth_service.UserService.save_user', return_value=mock_user), \
              patch('services.auth.auth_service.SessionService.create_session', return_value=mock_session):
 
             # Act
@@ -359,7 +359,7 @@ class TestAuthServiceVerify:
 
         with patch('services.auth.auth_service.SessionService.is_session_valid', return_value=True), \
              patch('services.auth.auth_service.SessionService.get_session_by_id', return_value=mock_session), \
-             patch('services.auth.auth_service.UserService.create_user', return_value=mock_user):
+             patch('services.auth.auth_service.UserService.save_user', return_value=mock_user):
 
             # Act
             result = await auth_service.verify_session(request, mock_db)

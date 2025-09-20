@@ -7,7 +7,7 @@ from .llm import ProviderService, ChatCompletionService
 from .config import ConfigService, IConfig
 from .repo import RepoLocatorService, RepoService
 from .auth import AuthService, SessionService
-from .user_service import UserService
+from .user import UserService
 from .oauth import OAuthService
 
 __all__ = [

@@ -1,4 +1,3 @@
-# backend/services/user_repos_service.py
 """
 Service for managing user repositories in the database.
 Handles CRUD operations for the user_repos table.
