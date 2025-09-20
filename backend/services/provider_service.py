@@ -4,11 +4,10 @@ Handles provider information, configured providers, and model fetching.
 """
 from typing import Dict, List, Any
 import logging
-from any_llm import provider, list_models
-from any_llm.provider import ProviderName
+from any_llm import provider, list_models, ProviderName
 
-from services.config import config_service
-from schemas.config import ProvidersResponse, ProviderInfo, ModelInfo
+from services.config import ConfigStrategyFactory
+from schemas.providers import ProviderInfo, ModelInfo, ProvidersResponse
 from utils.constants import PROVIDER_NAMES_MAP
 
 logger = logging.getLogger(__name__)
@@ -24,7 +23,8 @@ class ProviderService:
         Returns standardized provider information based on AppConfig.
         """
         try:
-            llm_configs = config_service.get_all_llm_configs()
+            config = ConfigStrategyFactory.get_strategy()
+            llm_configs = config.get_llm_config() or []
             provider_models: Dict[str, List[ModelInfo]] = {}
 
             # Group models by provider

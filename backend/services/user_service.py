@@ -2,7 +2,8 @@
 Session management service for User_Sessions database operations.
 """
 from sqlmodel import Session, select
-from models.user_sessions import User_Sessions, User
+from models.user import User
+from models.user_sessions import UserSessions
 from datetime import datetime, timedelta, UTC
 from typing import Optional
 import logging

@@ -6,7 +6,7 @@ Implements a registry pattern for extensibility.
 import os
 from typing import Type, Dict, List
 from schemas.config import AppConfig
-from .config_base import ConfigBase
+from .config_interface import IConfig
 from schemas.config import HostingType
 from .individual_strategy import IndividualConfig
 from .organization_strategy import OrganizationConfig
@@ -20,14 +20,14 @@ class ConfigStrategyFactory:
     """
     
     # Registry of available strategies
-    _strategies: Dict[HostingType, Type[ConfigBase]] = {
+    _strategies: Dict[HostingType, Type[IConfig]] = {
         HostingType.INDIVIDUAL: IndividualConfig,
         HostingType.ORGANIZATION: OrganizationConfig,
         HostingType.MULTI_TENANT: MultiTenantConfig
     }
     
     @classmethod
-    def get_strategy(cls) -> ConfigBase:
+    def get_strategy(cls) -> IConfig:
         """
         Create appropriate configuration strategy for the hosting type.
             
@@ -48,18 +48,6 @@ class ConfigStrategyFactory:
             raise ValueError(f"Unsupported hosting type: {hosting_type}")
         
         return strategy_class()
-    
-    @classmethod
-    def register_strategy(cls, hosting_type: HostingType, strategy_class: Type[ConfigBase]) -> None:
-        """
-        Register a new strategy for a hosting type.
-        Enables runtime extension of supported hosting types.
-        
-        Args:
-            hosting_type: The hosting type identifier
-            strategy_class: The strategy class to register
-        """
-        cls._strategies[hosting_type] = strategy_class
     
     @classmethod
     def get_supported_types(cls) -> List[str]:

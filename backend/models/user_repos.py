@@ -2,9 +2,12 @@
 from sqlmodel import SQLModel, Field, Column, func, Relationship
 from sqlalchemy import DateTime, Enum as SQLEnum
 from datetime import datetime, UTC
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from enum import Enum
 import uuid
+
+if TYPE_CHECKING:
+    from models.user import User
 
 
 class RepoStatus(str, Enum):
@@ -21,8 +24,7 @@ class UserRepos(SQLModel, table=True):
     Table to store user repository information and clone status.
     Links users to their repositories with clone URL and status tracking.
     """
-    __tablename__ = "user_repos"
-    __table_args__ = {'extend_existing': True}
+    __tablename__ = "user_repos"  # type: ignore[assignment]
 
     # Primary key as UUID
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
@@ -60,9 +62,8 @@ class UserRepos(SQLModel, table=True):
         description="When this record was last updated"
     )
 
-    # Relationship back to User (if you want to access user from repo)
-    # Uncomment the following lines if you want bidirectional relationship
-    # user: Optional["User"] = Relationship(back_populates="repos")
+    # Relationship back to User
+    user: Optional["User"] = Relationship(back_populates="repos")
 
     def __repr__(self) -> str:
         return f"<UserRepos(id={self.id}, user_id={self.user_id}, repo_name={self.repo_name}, status={self.status})>"
@@ -95,3 +96,9 @@ class UserRepos(SQLModel, table=True):
         """Mark repository clone as failed"""
         self.status = RepoStatus.FAILED
         self.clone_error_message = error_message
+        self.updated_at = datetime.now(UTC)
+    
+    def mark_as_outdated(self) -> None:
+        """Mark repository as outdated (needs re-cloning)"""
+        self.status = RepoStatus.OUTDATED
+        self.updated_at = datetime.now(UTC)

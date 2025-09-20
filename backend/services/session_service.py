@@ -2,7 +2,7 @@
 Session management service for User_Sessions database operations.
 """
 from sqlmodel import Session, select
-from models.user_sessions import User_Sessions
+from models.user_sessions import UserSessions
 from datetime import datetime, timedelta, UTC
 from typing import Optional
 import logging
@@ -19,7 +19,7 @@ class SessionService:
             username: str,
             oauth_token: str,
             session_data: Optional[str] = None
-    ) -> User_Sessions:
+    ) -> UserSessions:
         """
         Create a new user session in database.
 
@@ -34,10 +34,10 @@ class SessionService:
         """
         try:
             # Generate unique session ID
-            session_id = User_Sessions.generate_session_key()
+            session_id = UserSessions.generate_session_key()
 
             # Create new session record
-            user_session = User_Sessions(
+            user_session = UserSessions(
                 username=username,
                 session_id=session_id,
                 oauth_token=oauth_token,
@@ -58,7 +58,7 @@ class SessionService:
             raise
 
     @staticmethod
-    def get_session_by_id(db: Session, session_id: str) -> Optional[User_Sessions]:
+    def get_session_by_id(db: Session, session_id: str) -> Optional[UserSessions]:
         """
         Get user session by session_id.
 
@@ -70,7 +70,7 @@ class SessionService:
             User_Sessions object if found, None otherwise
         """
         try:
-            statement = select(User_Sessions).where(User_Sessions.session_id == session_id)
+            statement = select(UserSessions).where(UserSessions.session_id == session_id)
             return db.exec(statement).first()
 
         except Exception as e:
@@ -78,7 +78,7 @@ class SessionService:
             return None
 
     @staticmethod
-    def get_sessions_by_username(db: Session, username: str) -> list[User_Sessions]:
+    def get_sessions_by_username(db: Session, username: str) -> list[UserSessions]:
         """
         Get all active sessions for a user.
 
@@ -90,7 +90,7 @@ class SessionService:
             List of User_Sessions objects
         """
         try:
-            statement = select(User_Sessions).where(User_Sessions.username == username)
+            statement = select(UserSessions).where(UserSessions.username == username)
             return list(db.exec(statement).all())
 
         except Exception as e:
@@ -117,7 +117,7 @@ class SessionService:
             True if updated successfully, False otherwise
         """
         try:
-            statement = select(User_Sessions).where(User_Sessions.session_id == session_id)
+            statement = select(UserSessions).where(UserSessions.session_id == session_id)
             user_session = db.exec(statement).first()
 
             if not user_session:
@@ -157,7 +157,7 @@ class SessionService:
             True if deleted successfully, False otherwise
         """
         try:
-            statement = select(User_Sessions).where(User_Sessions.session_id == session_id)
+            statement = select(UserSessions).where(UserSessions.session_id == session_id)
             user_session = db.exec(statement).first()
 
             if not user_session:
@@ -188,7 +188,7 @@ class SessionService:
             Number of sessions deleted
         """
         try:
-            statement = select(User_Sessions).where(User_Sessions.username == username)
+            statement = select(UserSessions).where(UserSessions.username == username)
             sessions = db.exec(statement).all()
 
             count = 0
@@ -219,7 +219,7 @@ class SessionService:
         """
         try:
             ttl = timedelta(minutes=ttl_minutes)
-            return User_Sessions.delete_expired(db, ttl)
+            return UserSessions.delete_expired(db, ttl)
 
         except Exception as e:
             logger.error(f"Failed to cleanup expired sessions: {e}")
@@ -273,7 +273,7 @@ class SessionService:
             Dict with 'oauth_token' and 'username' keys if found, None otherwise
         """
         try:
-            statement = select(User_Sessions).where(User_Sessions.session_id == session_id)
+            statement = select(UserSessions).where(UserSessions.session_id == session_id)
             user_session = db.exec(statement).first()
 
             if user_session:

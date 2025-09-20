@@ -27,7 +27,7 @@ class RepoInfo(BaseModel):
 
 class IRepoLocator(ABC):
     @abstractmethod
-    async def get_repositories(self) -> Dict[str]:
+    async def get_repositories(self) -> Dict[str, str]:
         """Get list of available repositories"""
         pass
 
@@ -40,7 +40,7 @@ class LocalRepoLocator(IRepoLocator):
             self.base_path.mkdir(parents=True, exist_ok=True)
 
 
-    async def get_repositories(self) -> Dict[str]:
+    async def get_repositories(self) -> Dict[str, str]:
         repos = {}
         for item in self.base_path.iterdir():
             if item.is_dir() and (item / ".git").exists():
@@ -62,7 +62,7 @@ class GitHubRepoLocator(IRepoLocator):
             "Accept": "application/vnd.github.v3+json"
         }
 
-    async def get_repositories(self) -> Dict[str]:
+    async def get_repositories(self) -> Dict[str, str]:
         repos = {}
         url = f"https://api.github.com/users/repos"
         async with httpx.AsyncClient() as client:
@@ -91,10 +91,27 @@ def create_repo_locator(source_type, **kwargs) -> IRepoLocator:
         IRepoLocator: Appropriate repository locator instance
     """
     if source_type == 'Individual':
-        return LocalRepoLocator().get_repositories()
+        return LocalRepoLocator()
     elif source_type == 'Organization':
         if 'username' not in kwargs or 'oauth_token' not in kwargs:
             raise ValueError("GitHub locator requires 'username' and 'oauth_token' parameters")
-        return GitHubRepoLocator(kwargs['username'], kwargs['oauth_token']).get_repositories()
+        return GitHubRepoLocator(kwargs['username'], kwargs['oauth_token'])
     else:
         raise ValueError(f"Unsupported repository source type: {source_type}")
+
+
+class RepoLocatorService:
+    """
+    Service class for locating repositories using different strategies.
+    """
+    def __init__(self, source_type: str, **kwargs):
+        self.locator = create_repo_locator(source_type, **kwargs)
+    
+    async def get_repositories(self) -> Dict[str, str]:
+        """
+        Get repositories using the configured locator strategy.
+        
+        Returns:
+            Dict[str, str]: Dictionary mapping repository names to their paths/URLs
+        """
+        return await self.locator.get_repositories()

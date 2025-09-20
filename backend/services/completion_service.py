@@ -18,7 +18,7 @@ from schemas.chat import (
     PromptTokensDetails,
     CompletionTokensDetails
 )
-from .config_service import config_service
+from services import ConfigStrategyFactory, IConfig
 
 logger = logging.getLogger(__name__)
 
@@ -78,9 +78,8 @@ class ChatCompletionService:
             # Validate system message is present
             self._validate_system_message(request.messages)
 
-            # Get API key and base URL for this provider/model combination
-            api_key, api_base_url = config_service.get_api_config_for_provider_model(request.provider, request.model)
-            
+            api_key, api_base_url = self._get_api_details(request.provider, request.model)
+
             # Build completion parameters
             completion_params = self.build_completion_params(request, api_key, api_base_url, stream=True)
             
@@ -107,6 +106,27 @@ class ChatCompletionService:
                 }
             }
             yield f"data: {json.dumps(error_response)}\n\n"
+
+    def _get_api_details(self, provider: str, model: str) -> tuple[str, str | None]:
+        llm_configs = ConfigStrategyFactory.get_strategy().get_llm_config() or []
+            
+            # Filter llm_configs to find matching provider and model
+        matching_config = None
+        for config in llm_configs:
+            if config.provider == provider and config.model == model:
+                matching_config = config
+                break
+            
+        if not matching_config:
+            raise HTTPException(
+                    status_code=400,
+                    detail=f"No configuration found for provider '{provider}' and model '{model}'"
+                )
+            
+            # Get API key and base URL from the matching configuration
+        api_key = matching_config.apiKey
+        api_base_url = matching_config.apiBaseUrl if matching_config.apiBaseUrl else None
+        return api_key,api_base_url
     
     async def _process_streaming_chunk(
         self, 
@@ -203,8 +223,7 @@ class ChatCompletionService:
         # Validate system message is present
         self._validate_system_message(request.messages)
 
-        # Get API key and base URL for this provider/model combination
-        api_key, api_base_url = config_service.get_api_config_for_provider_model(request.provider, request.model)
+        api_key, api_base_url = self._get_api_details(request.provider, request.model)
         
         # Build completion parameters
         completion_params = self.build_completion_params(request, api_key, api_base_url, stream=False)

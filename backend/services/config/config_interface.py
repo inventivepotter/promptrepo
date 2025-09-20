@@ -10,20 +10,11 @@ from dotenv import load_dotenv
 from schemas.config import HostingConfig, OAuthConfig, LLMConfig, RepoConfig
 
 
-class ConfigBase(ABC):
+class IConfig(ABC):
     """
     Abstract base class for all configuration strategies.
     Defines the interface that all hosting type configurations must implement.
     """
-    
-    def __init__(self):
-        """
-        Initialize strategy with the application configuration.
-        
-        Args:
-            config: The application configuration object
-        """
-        pass
     
     @abstractmethod
     def set_hosting_type(self) -> HostingConfig:

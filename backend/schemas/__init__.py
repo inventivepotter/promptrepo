@@ -1,4 +1,5 @@
-from .config import AppConfig, LlmConfig
+from .config import AppConfig, LLMConfig, HostingConfig, HostingType, OAuthConfig, RepoConfig
+from .providers import ProviderInfo, ModelInfo
 from .chat import (
     ChatMessage,
     ChatCompletionRequest,
@@ -11,12 +12,18 @@ from .chat import (
 
 __all__ = [
     "AppConfig",
-    "LlmConfig",
+    "LLMConfig",
     "ChatMessage",
     "ChatCompletionRequest",
     "ChatCompletionResponse",
     "ChatCompletionChoice",
     "ChatCompletionStreamResponse",
     "ChatCompletionStreamChoice",
-    "ErrorResponse"
+    "ErrorResponse",
+    "HostingConfig",
+    "HostingType",
+    "OAuthConfig",
+    "RepoConfig",
+    "ProviderInfo",
+    "ModelInfo"
 ]

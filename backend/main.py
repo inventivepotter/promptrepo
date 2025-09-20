@@ -1,17 +1,20 @@
 """
 FastAPI backend application for PromptRepo.
 """
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from fastapi import FastAPI, status
 import logging
 from contextlib import asynccontextmanager
+import os
 
-# Import database setup
-from models.database import create_db_and_tables
+# Import database setup from the new architecture
+from database.core import create_db_and_tables
 
 # Import middleware
-from middleware import AuthMiddleware
+from middlewares import AuthMiddleware
+
+# Import core setup and components from middlewares
+from middlewares.rest.setup import setup_fastapi_app
+from middlewares.rest.responses import StandardResponse, success_response
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -21,6 +24,8 @@ logger = logging.getLogger(__name__)
 from api.v0.auth import router as auth_router
 from api.v0.llm import router as llm_router
 from api.v0.config import router as config_router
+from api.v0.health import router as health_router
+from api.v0.info import router as info_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -32,25 +37,18 @@ async def lifespan(app: FastAPI):
     logger.info("PromptRepo API shutting down")
 
 # Create FastAPI app with lifespan
-app = FastAPI(
+app = FastAPI(lifespan=lifespan)
+
+# Apply all best practices configuration using setup_fastapi_app
+app = setup_fastapi_app(
+    app,
     title="PromptRepo API",
     description="Backend API for PromptRepo application with GitHub OAuth",
     version="0.1.0",
-    lifespan=lifespan
+    environment=os.getenv("ENVIRONMENT", "development")
 )
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",  # Frontend URL
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Add authentication middleware
+# Add authentication middleware (after setup)
 app.add_middleware(AuthMiddleware)
 
 # Include API routers with versioning
@@ -78,46 +76,20 @@ app.include_router(
     tags=["llm"]
 )
 
-# Health check response model
-class HealthResponse(BaseModel):
-    status: str
-    message: str
-    version: str
+app.include_router(
+    info_router,
+    prefix="/api/v0",
+    tags=["info"]
+)
 
 
-@app.get("/health", response_model=HealthResponse)
-async def health_check() -> HealthResponse:
+@app.get("/", status_code=status.HTTP_307_TEMPORARY_REDIRECT, include_in_schema=False)
+async def root_redirect():
     """
-    Health check endpoint to verify the API is running.
+    Redirects the root path to the API info endpoint.
     """
-    return HealthResponse(
-        status="healthy",
-        message="PromptRepo API is running successfully",
-        version="0.1.0"
-    )
-
-
-@app.get("/")
-async def root() -> dict[str, str]:
-    """
-    Root endpoint with basic API information.
-    """
-    routes = [
-            "/api/v0/auth/login/github",
-            "/api/v0/auth/callback/github",
-            "/api/v0/auth/verify",
-            "/api/v0/auth/logout",
-            "/api/v0/auth/refresh",
-            "/api/v0/llm/providers/available",
-            "/api/v0/config",
-            "/api/v0/llm/chat/completions",
-        ]
-    return {
-        "message": "Welcome to PromptRepo API",
-        "version": "0.1.0",
-        "docs": "/docs",
-        "available_routes": " ".join(routes)
-    }
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/api/v0/info", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 
 
 if __name__ == "__main__":

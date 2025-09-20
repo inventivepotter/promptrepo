@@ -3,44 +3,16 @@ from sqlmodel import SQLModel, Field, Column, func, Relationship
 from sqlmodel import Session as DBSession, select
 from sqlalchemy import DateTime
 from datetime import datetime, timedelta, UTC
-from typing import Optional, List
+from typing import Optional, TYPE_CHECKING
 import uuid
-from settings import base_settings
+
+if TYPE_CHECKING:
+    from models.user import User
 
 
-class User(SQLModel, table=True):
-    __tablename__ = "users"
-    __table_args__ = {'extend_existing': True}  # Add this line
-
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    username: str = Field(index=True, description="GitHub username")
-    name: Optional[str] = Field(index=True, description="GitHub display name")
-    email: Optional[str] = Field(index=True, description="GitHub email")
-    avatar_url: Optional[str] = Field(description="GitHub avatar URL")
-    github_id: Optional[int] = Field(index=True, description="GitHub user ID")
-    html_url: Optional[str] = Field(description="GitHub profile URL")
-    sessions: List["User_Sessions"] = Relationship(back_populates="user")
-
-
-    #Timestamps for tracking
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC),
-                                 sa_column=Column(DateTime,
-                                     default=func.now(),  # Database default
-                                     nullable=False
-                                 )
-                                 )
-    modified_at: datetime = Field(default_factory=lambda: datetime.now(UTC),
-                                  sa_column=Column(DateTime,
-                                      default=func.now(),  # Initial value on insert
-                                      onupdate=func.now(),  # Auto-update on row update
-                                      nullable=False)
-                                  )
-
-
-
-class User_Sessions(SQLModel, table=True):
-    __tablename__ = "user_sessions"
-    __table_args__ = {'extend_existing': True}  # Add this line
+class UserSessions(SQLModel, table=True):
+    __tablename__ = "user_sessions" # type: ignore
+    
 
 
     # Primary key as UUID
@@ -96,3 +68,16 @@ class User_Sessions(SQLModel, table=True):
             db.delete(session)
         db.commit()
         return len(expired_sessions)
+
+    def is_expired(self, ttl_seconds: int) -> bool:
+        """
+        Check if the session is expired based on the time-to-live (TTL).
+
+        Args:
+            ttl_seconds: Time-to-live in seconds.
+
+        Returns:
+            True if the session is expired, False otherwise.
+        """
+        expiration_time = datetime.now(UTC) - timedelta(seconds=ttl_seconds)
+        return self.accessed_at < expiration_time

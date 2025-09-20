@@ -4,7 +4,7 @@ Service for managing user repositories in the database.
 Handles CRUD operations for the user_repos table.
 """
 from sqlmodel import Session, select
-from models.user_repos import UserRepos, RepoStatus
+from models import UserRepos, RepoStatus
 from datetime import datetime, UTC
 from typing import Optional, List
 import logging

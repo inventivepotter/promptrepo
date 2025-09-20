@@ -75,4 +75,4 @@ class AppConfig(BaseModel):
     hostingConfig: HostingConfig
     oauthConfig: OAuthConfig | None = None
     llmConfigs: List[LLMConfig] | None = None
-    repoConfig: List[RepoConfig] | None = None
+    repoConfigs: List[RepoConfig] | None = None

@@ -5,13 +5,13 @@ Requirements: llmConfigs only
 
 import json
 import os
-from typing import List, Dict, Any
+from typing import List
 
-from schemas.config import AppConfig, HostingConfig, HostingType, LLMConfig, OAuthConfig, RepoConfig
-from .config_base import ConfigBase
+from schemas.config import HostingConfig, HostingType, LLMConfig, RepoConfig
+from .config_interface import IConfig
 
 
-class IndividualConfig(ConfigBase):
+class IndividualConfig(IConfig):
     """
     Configuration strategy for individual hosting type.
     Requirements: llmConfigs only
@@ -49,9 +49,15 @@ class IndividualConfig(ConfigBase):
         # Individual hosting does not manage repo configs
         return None
 
-    def get_hosting_type(self) -> str:
-        """Get hosting type."""
-        return os.environ.get("HOSTING_TYPE", "individual")
+    def get_hosting_config(self) -> HostingConfig:
+        """Get hosting configuration."""
+        hosting_config = HostingConfig()
+        hosting_type_str = os.environ.get("HOSTING_TYPE", "individual")
+        try:
+            hosting_config.type = HostingType(hosting_type_str)
+        except ValueError:
+            hosting_config.type = HostingType.INDIVIDUAL
+        return hosting_config
     
     def get_oauth_config(self) -> None:
         """Get OAuth configuration."""

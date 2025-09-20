@@ -1,43 +1,123 @@
 """
-Get configuration endpoint.
+Get configuration endpoint with standardized responses.
 """
 import logging
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Request, status
 
-from schemas.config import AppConfig
-from services.config import config_service
+from schemas import AppConfig, HostingType
+from services import ConfigStrategyFactory
+from middlewares.rest import (
+    StandardResponse,
+    success_response,
+    AuthorizationException,
+    AppException
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-@router.get("/", response_model=AppConfig)
-async def get_config():
+@router.get(
+    "/",
+    response_model=StandardResponse[AppConfig],
+    status_code=status.HTTP_200_OK,
+    responses={
+        403: {
+            "description": "Configuration access not allowed for non-individual hosting",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "status": "error",
+                        "type": "/errors/access-denied",
+                        "title": "Access denied",
+                        "detail": "Configuration access is only allowed for individual hosting type"
+                    }
+                }
+            }
+        },
+        500: {
+            "description": "Internal server error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "status": "error",
+                        "type": "/errors/internal-server-error",
+                        "title": "Internal Server Error",
+                        "detail": "Failed to retrieve configuration"
+                    }
+                }
+            }
+        }
+    },
+    summary="Get configuration",
+    description="Retrieve current application configuration (only for individual hosting type)",
+)
+async def get_config(request: Request) -> StandardResponse[AppConfig]:
     """
-    Get current application configuration
-    Only allowed for individual hosting type
+    Get current application configuration.
+    Only allowed for individual hosting type.
+    
+    Returns:
+        StandardResponse[AppConfig]: Standardized response containing the configuration
+    
+    Raises:
+        AuthorizationException: When hosting type is not individual
+        AppException: When configuration retrieval fails
     """
+    request_id = getattr(request.state, "request_id", None)
+    
     try:
-        # Check current hosting type
-        current_hosting_type = config_service.get_hosting_type()
-        logger.info(f"get_config: Current hosting type = {current_hosting_type}")
+        config = ConfigStrategyFactory.get_strategy()
+        current_hosting_type = config.get_hosting_config()
         
-        # Only allow config access for individual hosting
-        if current_hosting_type != "individual":
-            logger.warning(f"get_config: Blocking config access for hosting type: {current_hosting_type}")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Configuration access is only allowed for individual hosting type. Current hosting type: {current_hosting_type}"
+        logger.info(
+            f"Fetching configuration for hosting type: {current_hosting_type}",
+            extra={
+                "request_id": request_id,
+                "hosting_type": current_hosting_type.type
+            }
+        )
+        
+        # Check authorization based on hosting type
+        if current_hosting_type != HostingType.INDIVIDUAL:
+            logger.warning(
+                f"Configuration access denied for hosting type: {current_hosting_type}",
+                extra={
+                    "request_id": request_id,
+                    "hosting_type": current_hosting_type.type
+                }
+            )
+            raise AuthorizationException(
+                message="Configuration access is only allowed for individual hosting type",
+                context={"current_hosting_type": current_hosting_type.type}
             )
         
-        config = config_service.get_current_config()
-        logger.info("get_config: Returning config for individual hosting")
-        return config
-    except HTTPException:
-        # Re-raise HTTP exceptions
+        config_data = config.get_config()
+        
+        logger.info(
+            "Configuration retrieved successfully",
+            extra={
+                "request_id": request_id,
+                "hosting_type": current_hosting_type.type
+            }
+        )
+        
+        return success_response(
+            data=config_data,
+            message="Configuration retrieved successfully",
+            meta={"request_id": request_id}
+        )
+        
+    except (AuthorizationException, AppException):
+        # These will be handled by the global exception handlers
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get config: {str(e)}"
+        logger.error(
+            f"Failed to retrieve configuration: {str(e)}",
+            exc_info=True,
+            extra={"request_id": request_id}
+        )
+        raise AppException(
+            message="Failed to retrieve configuration",
+            detail=str(e)
         )
