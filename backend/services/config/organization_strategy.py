@@ -31,25 +31,28 @@ class OrganizationConfig(IConfig):
         os.environ["HOSTING_TYPE"] = HostingType.ORGANIZATION.value
         return hosting_config
     
-    def set_oauth_config(self, github_client_id: str, github_client_secret: str) -> OAuthConfig:
-        """Set OAuth configuration in environment variables."""
+    def set_oauth_configs(self, oauth_configs: List[OAuthConfig]) -> List[OAuthConfig] | None:
+        """Set OAuth configurations in environment variables."""
         # For organization hosting, OAuth is required and stored in ENV
-        if not github_client_id or not github_client_secret:
-            raise ValueError("GitHub OAuth configuration is required for organization hosting type.")
+        if not oauth_configs:
+            raise ValueError("OAuth configuration is required for organization hosting type.")
         
-        os.environ["GITHUB_CLIENT_ID"] = github_client_id
-        os.environ["GITHUB_CLIENT_SECRET"] = github_client_secret
-        
-        oauth_config = OAuthConfig(
-            github_client_id=github_client_id,
-            github_client_secret=github_client_secret
-        )
-        return oauth_config
+        # Convert OAuthConfig objects to dictionaries for JSON serialization
+        oauth_configs_dict = [
+            {
+                "provider": config.provider,
+                "client_id": config.client_id,
+                "client_secret": config.client_secret
+            }
+            for config in oauth_configs
+        ]
+        os.environ["OAUTH_CONFIGS"] = json.dumps(oauth_configs_dict)
+        return oauth_configs
     
-    def set_llm_config(self, llm_config: List[LLMConfig]) -> List[LLMConfig]:
+    def set_llm_configs(self, llm_configs: List[LLMConfig]) -> List[LLMConfig]:
         """Set LLM configuration in environment variables."""
         # For organization hosting, LLM configs are stored in ENV
-        if not llm_config:
+        if not llm_configs:
             raise ValueError("LLM configuration is required for organization hosting type.")
         
         llm_configs_data = [
@@ -59,23 +62,21 @@ class OrganizationConfig(IConfig):
                 "apiKey": config.apiKey,
                 "apiBaseUrl": config.apiBaseUrl or ""
             }
-            for config in llm_config
+            for config in llm_configs
         ]
         os.environ["LLM_CONFIGS"] = json.dumps(llm_configs_data)
-        return llm_config
+        return llm_configs
     
-    def set_repo_config(self, repo_config: List[RepoConfig]) -> RepoConfig | None:
+    def set_repo_configs(self, repo_configs: List[RepoConfig]) -> List[RepoConfig] | None:
         """
         Set repository configuration.
         For organization hosting, repo configs are managed per-user in database/session.
         This method doesn't store in ENV but would typically store in user session/DB.
         """
         # TODO: Implement user-specific repo storage (database/session)
-        # For now, return the first config or None
+        # For now, return the configs as is
         # In production, this would handle user-specific storage
-        if repo_config and len(repo_config) > 0:
-            return repo_config[0]
-        return None
+        return repo_configs
     
     def get_hosting_config(self) -> HostingConfig:
         """Get hosting configuration."""
@@ -87,20 +88,28 @@ class OrganizationConfig(IConfig):
             hosting_config.type = HostingType.ORGANIZATION
         return hosting_config
     
-    def get_oauth_config(self) -> OAuthConfig | None:
-        """Get OAuth configuration from environment variables."""
-        github_client_id = os.environ.get("GITHUB_CLIENT_ID", "")
-        github_client_secret = os.environ.get("GITHUB_CLIENT_SECRET", "")
+    def get_oauth_configs(self) -> List[OAuthConfig] | None:
+        """Get OAuth configurations from environment variables."""
+        oauth_configs_json = os.environ.get("OAUTH_CONFIGS")
         
-        # For organization hosting, OAuth should be configured
-        if github_client_id and github_client_secret:
-            return OAuthConfig(
-                github_client_id=github_client_id,
-                github_client_secret=github_client_secret
-            )
+        if oauth_configs_json:
+            try:
+                oauth_configs_dict = json.loads(oauth_configs_json)
+                oauth_configs = [
+                    OAuthConfig(
+                        provider=config["provider"],
+                        client_id=config["client_id"],
+                        client_secret=config["client_secret"]
+                    )
+                    for config in oauth_configs_dict
+                ]
+                return oauth_configs
+            except (json.JSONDecodeError, KeyError):
+                pass
+        
         return None
     
-    def get_llm_config(self) -> List[LLMConfig] | None:
+    def get_llm_configs(self) -> List[LLMConfig] | None:
         """Get LLM configuration from environment variables."""
         llm_configs_str = os.environ.get("LLM_CONFIGS", "[]")
         try:
@@ -120,7 +129,7 @@ class OrganizationConfig(IConfig):
             pass
         return None
     
-    def get_repo_config(self) -> List[RepoConfig] | None:
+    def get_repo_configs(self) -> List[RepoConfig] | None:
         """
         Get repository configuration.
         For organization hosting, repo configs are retrieved from user context.

@@ -23,14 +23,19 @@ class OAuthConfig(BaseModel):
     """Authentication-specific configuration settings"""
     
     # OAuth Configuration
-    github_client_id: str = Field(
+    provider: str = Field(
         default="",
-        description="GitHub OAuth client ID"
+        description="OAuth provider name (e.g., 'github', 'google', 'microsoft')"
     )
     
-    github_client_secret: str = Field(
+    client_id: str = Field(
         default="",
-        description="GitHub OAuth client secret"
+        description="OAuth client ID"
+    )
+    
+    client_secret: str = Field(
+        default="",
+        description="OAuth client secret"
     )
 
 
@@ -73,6 +78,6 @@ class RepoConfig(BaseModel):
 class AppConfig(BaseModel):
     """Main application configuration"""
     hostingConfig: HostingConfig
-    oauthConfig: OAuthConfig | None = None
+    oauthConfigs: List[OAuthConfig] | None = None
     llmConfigs: List[LLMConfig] | None = None
     repoConfigs: List[RepoConfig] | None = None

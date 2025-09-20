@@ -7,7 +7,7 @@ import json
 import os
 from typing import List
 
-from schemas.config import HostingConfig, HostingType, LLMConfig, RepoConfig
+from schemas.config import HostingConfig, HostingType, LLMConfig, OAuthConfig, RepoConfig
 from .config_interface import IConfig
 
 
@@ -23,14 +23,14 @@ class IndividualConfig(IConfig):
         os.environ["HOSTING_TYPE"] = HostingType.INDIVIDUAL.value
         return hosting_config
 
-    def set_oauth_config(self, github_client_id: str, github_client_secret: str) -> None:
+    def set_oauth_configs(self, oauth_configs: List[OAuthConfig]) -> List[OAuthConfig] | None:
         # For individual hosting, OAuth will not be configured
         return None
 
-    def set_llm_config(self, llm_config: List[LLMConfig]) -> List[LLMConfig]:
+    def set_llm_configs(self, llm_configs: List[LLMConfig]) -> List[LLMConfig]:
         """Set LLM configuration in environment variables."""
         # Handle LLM configs
-        if llm_config:
+        if llm_configs:
             llm_configs_data = [
                 {
                     "provider": config.provider,
@@ -38,14 +38,14 @@ class IndividualConfig(IConfig):
                     "apiKey": config.apiKey,
                     "apiBaseUrl": config.apiBaseUrl or ""
                 }
-                for config in llm_config
+                for config in llm_configs
             ]
             os.environ["LLM_CONFIGS"] = json.dumps(llm_configs_data)
         else:
             raise ValueError("LLM configuration is required for individual hosting type.")
-        return llm_config
+        return llm_configs
     
-    def set_repo_config(self, repo_config: List[RepoConfig]) -> None:
+    def set_repo_configs(self, repo_configs: List[RepoConfig]) -> List[RepoConfig] | None:
         # Individual hosting does not manage repo configs
         return None
 
@@ -59,12 +59,12 @@ class IndividualConfig(IConfig):
             hosting_config.type = HostingType.INDIVIDUAL
         return hosting_config
     
-    def get_oauth_config(self) -> None:
-        """Get OAuth configuration."""
+    def get_oauth_configs(self) -> List[OAuthConfig] | None:
+        """Get OAuth configurations."""
         # For individual hosting, OAuth might not be configured
         return None
 
-    def get_llm_config(self) -> List[LLMConfig]:
+    def get_llm_configs(self) -> List[LLMConfig]:
         """Get LLM configuration."""
         llm_configs_str = os.environ.get("LLM_CONFIGS", "[]")
         try:
@@ -82,6 +82,6 @@ class IndividualConfig(IConfig):
         except json.JSONDecodeError:
             raise ValueError("Invalid LLM_CONFIGS format in environment variables")
 
-    def get_repo_config(self) -> List[RepoConfig] | None:
+    def get_repo_configs(self) -> List[RepoConfig] | None:
         # Individual hosting does not manage repo configs
-        return None  
+        return None

@@ -4,9 +4,8 @@ Implements the Strategy Pattern for hosting type configurations.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Optional
+from typing import List
 from schemas.config import AppConfig
-from dotenv import load_dotenv
 from schemas.config import HostingConfig, OAuthConfig, LLMConfig, RepoConfig
 
 
@@ -27,41 +26,41 @@ class IConfig(ABC):
         pass
     
     @abstractmethod
-    def set_oauth_config(self, github_client_id: str, github_client_secret: str) -> OAuthConfig | None:
+    def set_oauth_configs(self, oauth_configs: List[OAuthConfig]) -> List[OAuthConfig] | None:
         """
-        Set OAuth configuration in environment variables.
+        Set OAuth configurations in environment variables.
 
         Args:
-            oauth_config_json: OAuth configuration as a JSON dictionary
+            oauth_configs: List of OAuth configurations
 
         Returns:
-            OAuthConfig: Updated OAuth configuration
+            List[OAuthConfig]: Updated OAuth configurations
         """
         pass
 
     @abstractmethod
-    def set_llm_config(self, llm_config: List[LLMConfig]) -> List[LLMConfig] | None:
+    def set_llm_configs(self, llm_configs: List[LLMConfig]) -> List[LLMConfig] | None:
         """
         Set LLM configuration in environment variables.
         
         Args:
-            llm_config: LLM configuration as a list of LLMConfig objects
+            llm_configs: LLM configuration as a list of LLMConfig objects
 
         Returns:
-            LLMConfig: Updated LLM configuration
+            List[LLMConfig]: Updated LLM configuration
         """
         pass
 
     @abstractmethod
-    def set_repo_config(self, repo_config: List[RepoConfig]) -> RepoConfig | None:
+    def set_repo_configs(self, repo_configs: List[RepoConfig]) -> List[RepoConfig] | None:
         """
         Set repository configuration in environment variables.
 
         Args:
-            repo_config: Repository configuration as a list of RepoConfig objects
+            repo_configs: Repository configuration as a list of RepoConfig objects
 
         Returns:
-            RepoConfig: Updated repository configuration
+            List[RepoConfig]: Updated repository configuration
         """
         pass
     
@@ -76,17 +75,17 @@ class IConfig(ABC):
         pass
     
     @abstractmethod
-    def get_oauth_config(self) -> OAuthConfig | None:
+    def get_oauth_configs(self) -> List[OAuthConfig] | None:
         """
-        Get OAuth configuration.
+        Get OAuth configurations.
         
         Returns:
-            OAuthConfig: OAuth configuration
+            List[OAuthConfig]: List of OAuth configurations
         """
         pass
     
     @abstractmethod
-    def get_llm_config(self) -> List[LLMConfig] | None:
+    def get_llm_configs(self) -> List[LLMConfig] | None:
         """
         Get LLM configuration.
         
@@ -96,7 +95,7 @@ class IConfig(ABC):
         pass
 
     @abstractmethod
-    def get_repo_config(self) -> List[RepoConfig] | None:
+    def get_repo_configs(self) -> List[RepoConfig] | None:
         """
         Get repository configuration.
 
@@ -109,7 +108,7 @@ class IConfig(ABC):
         """Get the current configuration object based on the hosting type."""
         return AppConfig(
             hostingConfig=self.get_hosting_config(),
-            oauthConfig=self.get_oauth_config(),
-            llmConfigs=self.get_llm_config(),
-            repoConfig=self.get_repo_config()
-        ) 
+            oauthConfigs=self.get_oauth_configs(),
+            llmConfigs=self.get_llm_configs(),
+            repoConfigs=self.get_repo_configs()
+        )

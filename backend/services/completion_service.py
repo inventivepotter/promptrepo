@@ -108,7 +108,7 @@ class ChatCompletionService:
             yield f"data: {json.dumps(error_response)}\n\n"
 
     def _get_api_details(self, provider: str, model: str) -> tuple[str, str | None]:
-        llm_configs = ConfigStrategyFactory.get_strategy().get_llm_config() or []
+        llm_configs = ConfigStrategyFactory.get_strategy().get_llm_configs() or []
             
             # Filter llm_configs to find matching provider and model
         matching_config = None

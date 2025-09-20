@@ -147,7 +147,7 @@ async def update_config(
         _validate_individual_hosting_config(configs_param)
         
         # Update configuration
-        config.set_llm_config(getattr(configs_param, 'llmConfigs'))
+        config.set_llm_configs(getattr(configs_param, 'llmConfigs'))
 
         # Get and return the updated configuration
         updated_config = config.get_config()

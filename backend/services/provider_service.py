@@ -24,7 +24,7 @@ class ProviderService:
         """
         try:
             config = ConfigStrategyFactory.get_strategy()
-            llm_configs = config.get_llm_config() or []
+            llm_configs = config.get_llm_configs() or []
             provider_models: Dict[str, List[ModelInfo]] = {}
 
             # Group models by provider

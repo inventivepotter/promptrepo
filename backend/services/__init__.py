@@ -23,14 +23,22 @@ def create_github_service() -> GitHubService:
     Raises:
         ValueError: If GitHub OAuth credentials are not configured
     """
-    # Try to get OAuth config from the config strategy
+    # Try to get OAuth configs from the config strategy
     config = ConfigStrategyFactory.get_strategy()
-    oauth_config = config.get_oauth_config()
+    oauth_configs = config.get_oauth_configs()
     
-    if oauth_config and oauth_config.github_client_id and oauth_config.github_client_secret:
+    # Find GitHub OAuth config if available
+    github_oauth_config = None
+    if oauth_configs:
+        for oauth_config in oauth_configs:
+            if oauth_config.provider == "github":
+                github_oauth_config = oauth_config
+                break
+    
+    if github_oauth_config and github_oauth_config.client_id and github_oauth_config.client_secret:
         return GitHubService(
-            client_id=oauth_config.github_client_id,
-            client_secret=oauth_config.github_client_secret
+            client_id=github_oauth_config.client_id,
+            client_secret=github_oauth_config.client_secret
         )
     else:
         raise ValueError("GitHub OAuth configuration is not set.")

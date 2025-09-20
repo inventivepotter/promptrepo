@@ -11,5 +11,6 @@
 * Keep files atomic that just does one thing
 * Use uv as package manager, use `uv sync`
 * Always add unit tests, run unit tests using  `uv run pytest`
+* Keep controllers/handlers under api/v0/* light, they should just validate and pass on the logic to service.
 
 # Frontend
