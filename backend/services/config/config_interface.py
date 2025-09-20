@@ -5,8 +5,8 @@ Implements the Strategy Pattern for hosting type configurations.
 
 from abc import ABC, abstractmethod
 from typing import List
-from schemas.config import AppConfig
-from schemas.config import HostingConfig, OAuthConfig, LLMConfig, RepoConfig
+from services.config.models import AppConfig
+from services.config.models import HostingConfig, OAuthConfig, LLMConfig, RepoConfig
 
 
 class IConfig(ABC):

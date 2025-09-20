@@ -5,6 +5,7 @@ from fastapi import APIRouter, Request, status
 from fastapi.responses import StreamingResponse
 import uuid
 import time
+import json
 import logging
 
 from middlewares.rest import (
@@ -13,13 +14,13 @@ from middlewares.rest import (
     BadRequestException,
     AppException
 )
-from schemas import (
+from services.llm.models import (
     ChatCompletionRequest,
     ChatCompletionResponse,
     ChatCompletionChoice,
     ChatMessage,
 )
-from services.completion_service import chat_completion_service
+from services.llm.completion_service import chat_completion_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

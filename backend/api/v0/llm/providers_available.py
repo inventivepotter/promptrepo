@@ -12,7 +12,7 @@ from middlewares.rest import (
     success_response,
     AppException
 )
-from services.provider_service import provider_service
+from services.llm.provider_service import provider_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

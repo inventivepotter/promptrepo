@@ -6,8 +6,8 @@ from typing import Dict, List, Any
 import logging
 from any_llm import provider, list_models, ProviderName
 
-from services.config import ConfigStrategyFactory
-from schemas.providers import ProviderInfo, ModelInfo, ProvidersResponse
+from services.config.factory import ConfigStrategyFactory
+from services.llm.models import ProviderInfo, ModelInfo, ProvidersResponse
 from utils.constants import PROVIDER_NAMES_MAP
 
 logger = logging.getLogger(__name__)

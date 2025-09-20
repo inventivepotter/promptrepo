@@ -11,9 +11,8 @@ from middlewares.rest import (
     AppException
 )
 from models.database import get_session
-from services.session_service import SessionService
-from api.deps import get_oauth_service
-from services.oauth.oauth_service import OAuthService
+from api.deps import get_auth_service
+from services.auth.auth_service import AuthService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -28,17 +27,15 @@ router = APIRouter()
 )
 async def auth_health_check(
     request: Request,
-    db: Session = Depends(get_session)
+    db: Session = Depends(get_session),
+    auth_service: AuthService = Depends(get_auth_service)
 ) -> StandardResponse[dict]:
     """Health check specifically for auth routes."""
     request_id = getattr(request.state, "request_id", None)
-    oauth_service = get_oauth_service()
     
     try:
-        oauth_service.cleanup_expired_states()
-
-        # Clean up expired sessions
-        expired_count = SessionService.cleanup_expired_sessions(db)
+        # Clean up expired sessions and OAuth states using auth service
+        expired_count = auth_service.cleanup_expired_sessions(db)
 
         statement = select(func.count())
         active_sessions_count = db.exec(statement).one()

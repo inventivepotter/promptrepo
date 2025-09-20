@@ -12,8 +12,8 @@ from middlewares.rest import (
     success_response,
     AppException
 )
-from services.provider_service import provider_service
-from schemas import ProviderInfo
+from services.llm.provider_service import provider_service
+from services.llm.models import ProviderInfo
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -67,14 +67,9 @@ async def get_configured_providers(request: Request) -> StandardResponse[Provide
         
         providers_data = provider_service.get_configured_providers()
         
-        # Handle the response based on whether it's already a ProvidersResponse or raw data
-        if isinstance(providers_data, ProvidersResponse):
-            response_data = providers_data
-            provider_count = len(providers_data.providers) if providers_data.providers else 0
-        else:
-            # If it returns a list or other format, wrap it appropriately
-            response_data = ProvidersResponse(providers=providers_data)
-            provider_count = len(providers_data) if providers_data else 0
+        # provider_service.get_configured_providers() always returns a ProvidersResponse
+        response_data = providers_data
+        provider_count = len(providers_data.providers) if providers_data.providers else 0
         
         logger.info(
             f"Retrieved {provider_count} configured providers",

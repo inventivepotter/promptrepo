@@ -7,11 +7,13 @@
 * Always cleanup the code by removing unused imports
 
 # Backend
+* Backend is a python app that uses FastAPI
 * Use pydantic models every where possible
 * Keep files atomic that just does one thing
 * Use uv as package manager, use `uv sync`
 * Always add unit tests, run unit tests using  `uv run pytest`. Don't create a lot of tests but create quality tests that cover all scenarios.
 * Keep controllers/handlers under api/v0/* light, they should just validate and pass on the logic to service.
+* Services should only handle business logic but nothing else.
 * Don't start imports from `` always consider backend folder is root for python project and start imports from within backend directory.
 
 # Frontend

@@ -7,7 +7,7 @@ import json
 import os
 from typing import List
 
-from schemas.config import HostingConfig, HostingType, LLMConfig, OAuthConfig, RepoConfig
+from services.config.models import HostingConfig, HostingType, LLMConfig, OAuthConfig, RepoConfig
 from .config_interface import IConfig
 
 

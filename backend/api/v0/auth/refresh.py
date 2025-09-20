@@ -2,7 +2,6 @@
 Session refresh endpoint with standardized responses.
 """
 import logging
-from datetime import datetime, timedelta, UTC
 from fastapi import APIRouter, Request, Depends, status
 from pydantic import BaseModel
 from sqlmodel import Session
@@ -14,23 +13,23 @@ from middlewares.rest import (
     AppException
 )
 from models.database import get_session
-from services.session_service import SessionService
 from .verify import get_bearer_token
-from api.deps import get_oauth_service
-from services.oauth.oauth_service import OAuthService
+from api.deps import get_auth_service
+from services.auth.auth_service import AuthService
+from services.auth.models import RefreshRequest, AuthError, SessionNotFoundError, TokenValidationError
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-class RefreshResponse(BaseModel):
+class RefreshResponseData(BaseModel):
     sessionToken: str
     expiresAt: str
 
 
 @router.post(
     "/refresh",
-    response_model=StandardResponse[RefreshResponse],
+    response_model=StandardResponse[RefreshResponseData],
     status_code=status.HTTP_200_OK,
     responses={
         401: {
@@ -67,13 +66,13 @@ async def refresh_session(
     request: Request,
     token: str = Depends(get_bearer_token),
     db: Session = Depends(get_session),
-    oauth_service: OAuthService = Depends(get_oauth_service)
-) -> StandardResponse[RefreshResponse]:
+    auth_service: AuthService = Depends(get_auth_service)
+) -> StandardResponse[RefreshResponseData]:
     """
     Refresh session token to extend expiry.
     
     Returns:
-        StandardResponse[RefreshResponse]: Standardized response containing new session info
+        StandardResponse[RefreshResponseData]: Standardized response containing new session info
     
     Raises:
         AuthenticationException: When session is invalid
@@ -81,82 +80,34 @@ async def refresh_session(
     """
     request_id = getattr(request.state, "request_id", None)
     
-    # Check if current session exists and is valid
-    user_session = SessionService.get_session_by_id(db, token)
-    if not user_session:
-        logger.warning(
-            "Invalid session token for refresh",
-            extra={
-                "request_id": request_id,
-                "session_token": token[:10] + "..."
-            }
-        )
-        raise AuthenticationException(
-            message="Invalid session token"
-        )
-
-    # Validate the OAuth token before creating a new session
     try:
-        # Default to GitHub provider for backward compatibility
-        provider = "github"
-        is_valid = await oauth_service.validate_token(provider, user_session.oauth_token)
+        # Create refresh request using auth service models
+        refresh_request = RefreshRequest(session_token=token)
+        refresh_response = await auth_service.refresh_session(refresh_request, db)
         
-        if not is_valid:
-            logger.warning(
-                "Invalid OAuth token for refresh",
-                extra={
-                    "request_id": request_id,
-                    "session_token": token[:10] + "...",
-                    "provider": provider
-                }
-            )
-            raise AuthenticationException(
-                message="Invalid OAuth token"
-            )
-            
-        # Create new session for the same user
-        new_session = SessionService.create_session(
-            db=db,
-            username=user_session.username,
-            oauth_token=user_session.oauth_token
-        )
-
-        # Delete old session
-        SessionService.delete_session(db, token)
-
-        # Calculate new expiry
-        new_expires_at = datetime.now(UTC) + timedelta(hours=24)
-
-        logger.info(
-            "Session refreshed successfully",
-            extra={
-                "request_id": request_id,
-                "username": user_session.username,
-                "provider": provider
-            }
-        )
-
         return success_response(
-            data=RefreshResponse(
-                sessionToken=new_session.session_id,
-                expiresAt=new_expires_at.isoformat() + "Z"
+            data=RefreshResponseData(
+                sessionToken=refresh_response.session_token,
+                expiresAt=refresh_response.expires_at
             ),
             message="Session refreshed successfully",
             meta={"request_id": request_id}
         )
-
-    except AuthenticationException:
-        raise
+        
+    except SessionNotFoundError:
+        raise AuthenticationException(message="Invalid session token")
+    except TokenValidationError:
+        raise AuthenticationException(message="Invalid OAuth token")
+    except AuthError as e:
+        logger.error(
+            f"Auth error during refresh: {e}",
+            extra={"request_id": request_id}
+        )
+        raise AppException(message=str(e))
     except Exception as e:
         logger.error(
-            f"Failed to refresh session: {e}",
+            f"Unexpected error during refresh: {e}",
             exc_info=True,
-            extra={
-                "request_id": request_id,
-                "username": user_session.username
-            }
+            extra={"request_id": request_id}
         )
-        raise AppException(
-            message="Failed to refresh session",
-            detail=str(e)
-        )
+        raise AppException(message="Failed to refresh session")

@@ -14,10 +14,10 @@ from middlewares.rest import (
     AppException
 )
 from models.database import get_session
-from services import ConfigStrategyFactory
-from services.session_service import SessionService
+from services.config.factory import ConfigStrategyFactory
+from services.auth.session_service import SessionService
 from services.repo_locator_service import create_repo_locator
-from schemas import HostingType
+from services.config.models import HostingType
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

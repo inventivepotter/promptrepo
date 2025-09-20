@@ -13,8 +13,8 @@ from middlewares.rest import (
     BadRequestException,
     AppException
 )
-from services import provider_service
-from schemas import ModelInfo
+from services.llm.provider_service import ProviderService
+from services.llm.models import ModelInfo
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -113,7 +113,7 @@ async def fetch_models_by_provider(
             }
         )
 
-        models = provider_service.fetch_models_by_provider(
+        models = ProviderService.fetch_models_by_provider(
             provider_id,
             request_body.api_key,
             request_body.api_base

@@ -3,7 +3,8 @@ GitHub OAuth login initiation endpoint with standardized responses.
 """
 import logging
 from fastapi import APIRouter, Request, status, Depends, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+from sqlmodel import Session
 
 from middlewares.rest import (
     StandardResponse,
@@ -11,21 +12,22 @@ from middlewares.rest import (
     AppException,
     BadRequestException
 )
-from api.deps import get_oauth_service
-from services.oauth.oauth_service import OAuthService
-from services.oauth.models import ProviderNotFoundError, ConfigurationError
+from models.database import get_session
+from api.deps import get_auth_service
+from services.auth.auth_service import AuthService
+from services.auth.models import LoginRequest, AuthError, AuthenticationFailedError
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-class AuthUrlResponse(BaseModel):
+class AuthUrlResponseData(BaseModel):
     authUrl: str
 
 
 @router.get(
     "/github/",
-    response_model=StandardResponse[AuthUrlResponse],
+    response_model=StandardResponse[AuthUrlResponseData],
     status_code=status.HTTP_200_OK,
     responses={
         400: {
@@ -87,8 +89,9 @@ class AuthUrlResponse(BaseModel):
 async def initiate_github_login(
     request: Request,
     redirect_uri: str = Query(..., description="Callback URL after authorization"),
-    oauth_service: OAuthService = Depends(get_oauth_service)
-) -> StandardResponse[AuthUrlResponse]:
+    db: Session = Depends(get_session),
+    auth_service: AuthService = Depends(get_auth_service)
+) -> StandardResponse[AuthUrlResponseData]:
     """
     Start GitHub OAuth flow.
     Returns the GitHub OAuth authorization URL.
@@ -96,10 +99,11 @@ async def initiate_github_login(
     Args:
         request: FastAPI request object
         redirect_uri: Callback URL after authorization
-        oauth_service: OAuth service instance
+        db: Database session
+        auth_service: Auth service instance
         
     Returns:
-        StandardResponse[AuthUrlResponse]: Standardized response containing the auth URL
+        StandardResponse[AuthUrlResponseData]: Standardized response containing the auth URL
         
     Raises:
         BadRequestException: When redirect_uri is missing
@@ -107,50 +111,36 @@ async def initiate_github_login(
     """
     request_id = getattr(request.state, "request_id", None)
     
-    # Clean up expired states
-    oauth_service.cleanup_expired_states()
-    
     try:
         # Validate redirect_uri
         if not redirect_uri or redirect_uri.strip() == "":
             raise BadRequestException("Redirect URI parameter is required")
         
-        # Check if GitHub provider is available
-        available_providers = oauth_service.get_available_providers()
-        if "github" not in [p.lower() for p in available_providers]:
-            raise BadRequestException(f"GitHub OAuth provider is not supported. Available providers: {', '.join(available_providers)}")
-        
-        # Generate authorization URL with default scopes
-        auth_url_response = await oauth_service.get_authorization_url(
-            provider="github",
-            redirect_uri=redirect_uri
-        )
-        
-        logger.info(
-            "Generated GitHub OAuth URL",
-            extra={
-                "request_id": request_id,
-                "provider": "github",
-                "state": auth_url_response.state
-            }
-        )
+        # Create login request using auth service models
+        login_request = LoginRequest(provider="github", redirect_uri=redirect_uri)
+        auth_url = await auth_service.initiate_oauth_login(login_request, db)
         
         return success_response(
-            data=AuthUrlResponse(authUrl=auth_url_response.auth_url),
+            data=AuthUrlResponseData(authUrl=auth_url),
             message="GitHub authorization URL generated successfully",
             meta={"request_id": request_id, "provider": "github"}
         )
         
-    except (BadRequestException, ProviderNotFoundError, ConfigurationError):
-        # Re-raise custom exceptions
-        raise
-    except ValueError as e:
+    except AuthenticationFailedError as e:
         logger.error(
-            f"OAuth service validation error: {e}",
-            exc_info=True,
+            f"Authentication failed: {e}",
             extra={"request_id": request_id, "provider": "github"}
         )
         raise BadRequestException(str(e))
+    except AuthError as e:
+        logger.error(
+            f"Auth error during login initiation: {e}",
+            extra={"request_id": request_id, "provider": "github"}
+        )
+        raise AppException(message=str(e))
+    except (BadRequestException, AppException):
+        # Re-raise custom exceptions
+        raise
     except Exception as e:
         logger.error(
             f"Unexpected error generating GitHub auth URL: {e}",

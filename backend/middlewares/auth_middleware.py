@@ -9,9 +9,8 @@ from starlette.types import ASGIApp
 import logging
 from typing import Set
 
-from utils.auth_utils import get_bearer_token, verify_session
 from models.database import get_session
-from services.session_service import SessionService
+from services.auth.session_service import SessionService
 from services.config.factory import ConfigStrategyFactory
 
 logger = logging.getLogger(__name__)

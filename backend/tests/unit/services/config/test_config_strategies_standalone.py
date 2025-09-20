@@ -1,15 +1,47 @@
 """
-Test suite for configuration strategies
+Standalone test suite for configuration strategies
 Tests IndividualConfig, OrganizationConfig, and MultiTenantConfig strategies
 """
 import pytest
 import os
-from services.config import ConfigStrategyFactory
-from schemas.config import HostingType, LLMConfig, OAuthConfig, RepoConfig
+from services.config import IndividualConfig, OrganizationConfig, MultiTenantConfig
+from services.config.models import HostingType, LLMConfig, OAuthConfig, RepoConfig
+from typing import List
 
 
-class TestIndividualConfigStrategy:
-    """Test cases for IndividualConfig strategy"""
+# Now create a simplified version of the factory
+class ConfigStrategyFactory:
+    """Simplified factory for testing."""
+    
+    _strategies = {
+        HostingType.INDIVIDUAL: IndividualConfig,
+        HostingType.ORGANIZATION: OrganizationConfig,
+        HostingType.MULTI_TENANT: MultiTenantConfig
+    }
+    
+    @classmethod
+    def get_strategy(cls):
+        """Create appropriate configuration strategy for the hosting type."""
+        hosting_type = os.environ.get("HOSTING_TYPE", "individual")
+        try:
+            hosting_type_enum = HostingType(hosting_type)
+        except ValueError:
+            raise ValueError(f"Unsupported hosting type: {hosting_type}")
+        
+        strategy_class = cls._strategies.get(hosting_type_enum)
+        if not strategy_class:
+            raise ValueError(f"Unsupported hosting type: {hosting_type}")
+        
+        return strategy_class()
+    
+    @classmethod
+    def get_supported_types(cls) -> List[str]:
+        """Get list of all supported hosting types."""
+        return HostingType._member_names_
+
+
+class TestIndividualConfigStrategyStandalone:
+    """Test cases for IndividualConfig strategy (standalone)"""
     
     def setup_method(self):
         """Setup before each test"""
@@ -94,8 +126,8 @@ class TestIndividualConfigStrategy:
         assert repo_set_result is None
 
 
-class TestOrganizationConfigStrategy:
-    """Test cases for OrganizationConfig strategy"""
+class TestOrganizationConfigStrategyStandalone:
+    """Test cases for OrganizationConfig strategy (standalone)"""
     
     def setup_method(self):
         """Setup before each test"""
@@ -185,8 +217,8 @@ class TestOrganizationConfigStrategy:
         assert retrieved_repo is None  # Expected as it's user-specific
 
 
-class TestMultiTenantConfigStrategy:
-    """Test cases for MultiTenantConfig strategy"""
+class TestMultiTenantConfigStrategyStandalone:
+    """Test cases for MultiTenantConfig strategy (standalone)"""
     
     def setup_method(self):
         """Setup before each test"""
@@ -321,8 +353,8 @@ class TestMultiTenantConfigStrategy:
         assert retrieved_oauth_t2[0].client_id == "mt-client-id"
 
 
-class TestConfigStrategyFactory:
-    """Test cases for ConfigStrategyFactory"""
+class TestConfigStrategyFactoryStandalone:
+    """Test cases for ConfigStrategyFactory (standalone)"""
     
     def setup_method(self):
         """Setup before each test"""

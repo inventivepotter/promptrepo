@@ -4,8 +4,8 @@ Update configuration endpoint with standardized responses.
 import logging
 from fastapi import APIRouter, Request, status
 
-from schemas import AppConfig, HostingType
-from services import ConfigStrategyFactory
+from services.config.models import AppConfig, HostingType
+from services.config.factory import ConfigStrategyFactory
 from middlewares.rest import (
     StandardResponse,
     success_response,

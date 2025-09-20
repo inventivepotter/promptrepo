@@ -2,14 +2,13 @@
 Chat completion service with class-based architecture.
 """
 import time
-import json
 import logging
 from typing import AsyncGenerator, cast, AsyncIterator
 from any_llm import acompletion
 from any_llm.types.completion import ChatCompletion, ChatCompletionChunk
 from fastapi import HTTPException
-from schemas.chat import ChatMessage
-from schemas.chat import (
+from services.llm.models import ChatMessage
+from services.llm.models import (
     ChatCompletionRequest,
     ChatCompletionStreamResponse,
     ChatCompletionStreamChoice,
@@ -18,7 +17,13 @@ from schemas.chat import (
     PromptTokensDetails,
     CompletionTokensDetails
 )
-from services import ConfigStrategyFactory, IConfig
+from services.config.factory import ConfigStrategyFactory
+from services.config.config_interface import IConfig
+from middlewares.rest.exceptions import (
+    BadRequestException,
+    ServiceUnavailableException,
+    AppException
+)
 
 logger = logging.getLogger(__name__)
 
@@ -74,38 +79,34 @@ class ChatCompletionService:
         completion_id: str
     ) -> AsyncGenerator[str, None]:
         """Generate streaming chat completion responses."""
+        # Validate system message is present
+        self._validate_system_message(request.messages)
+
+        api_key, api_base_url = self._get_api_details(request.provider, request.model)
+
+        # Build completion parameters
+        completion_params = self.build_completion_params(request, api_key, api_base_url, stream=True)
+        
+        # Debug logging
+        self.logger.info(f"Calling any-llm completion with params: {completion_params}")
+        self.logger.info(f"Provider: '{request.provider}', Model: '{request.model}', Model Identifier: '{completion_params['model']}'")
+
         try:
-            # Validate system message is present
-            self._validate_system_message(request.messages)
-
-            api_key, api_base_url = self._get_api_details(request.provider, request.model)
-
-            # Build completion parameters
-            completion_params = self.build_completion_params(request, api_key, api_base_url, stream=True)
-            
-            # Debug logging
-            self.logger.info(f"Calling any-llm completion with params: {completion_params}")
-            self.logger.info(f"Provider: '{request.provider}', Model: '{request.model}', Model Identifier: '{completion_params['model']}'")
-
             # Call any-llm completion with streaming
             stream_response = await acompletion(**completion_params)
             stream_iterator = cast(AsyncIterator[ChatCompletionChunk], stream_response)
             
             async for chunk in stream_iterator:
-                yield await self._process_streaming_chunk(chunk, completion_id, model)
-            
-            # Send the final [DONE] message
-            yield "data: [DONE]\n\n"
-            
+                processed_chunk = await self._process_streaming_chunk(chunk, completion_id, model)
+                if processed_chunk:  # Only yield non-empty chunks
+                    yield processed_chunk
+                    
         except Exception as e:
             self.logger.error(f"Error in streaming completion: {e}")
-            error_response = {
-                "error": {
-                    "message": f"Completion error: {str(e)}",
-                    "type": "completion_error"
-                }
-            }
-            yield f"data: {json.dumps(error_response)}\n\n"
+            raise ServiceUnavailableException(
+                message=f"Completion error: {str(e)}",
+                context={"provider": request.provider, "model": request.model}
+            )
 
     def _get_api_details(self, provider: str, model: str) -> tuple[str, str | None]:
         llm_configs = ConfigStrategyFactory.get_strategy().get_llm_configs() or []
@@ -266,7 +267,6 @@ class ChatCompletionService:
         
         if not content:
             self.logger.error(f"No content extracted from response")
-            from fastapi import HTTPException
             raise HTTPException(
                 status_code=500,
                 detail="Unexpected response format from completion API"
@@ -280,35 +280,30 @@ class ChatCompletionService:
     def _validate_system_message(self, messages: list[ChatMessage]) -> None:
         """Validate that the first message is a system message."""
         if not messages:
-            raise HTTPException(
-                status_code=400,
-                detail="Messages array cannot be empty. A system message is required to define the AI assistant's behavior."
+            raise BadRequestException(
+                message="Messages array cannot be empty. A system message is required to define the AI assistant's behavior."
             )
         
         if messages[0].role != "system":
-            raise HTTPException(
-                status_code=400,
-                detail="First message must be a system message with role 'system'. Please provide a system prompt to define the AI assistant's behavior."
+            raise BadRequestException(
+                message="First message must be a system message with role 'system'. Please provide a system prompt to define the AI assistant's behavior."
             )
             
         if not messages[0].content or not messages[0].content.strip():
-            raise HTTPException(
-                status_code=400,
-                detail="System message content cannot be empty. Please provide a valid system prompt."
+            raise BadRequestException(
+                message="System message content cannot be empty. Please provide a valid system prompt."
             )
 
     def validate_provider_and_model(self, provider: str, model: str) -> None:
         """Validate provider and model fields."""
         if not provider or not provider.strip():
-            raise HTTPException(
-                status_code=400,
-                detail="Provider field is required and cannot be empty"
+            raise BadRequestException(
+                message="Provider field is required and cannot be empty"
             )
         
         if not model or not model.strip():
-            raise HTTPException(
-                status_code=400,
-                detail="Model field is required and cannot be empty"
+            raise BadRequestException(
+                message="Model field is required and cannot be empty"
             )
 
     def _convert_to_any_llm_messages(self, messages: list[ChatMessage]) -> list[dict]:

@@ -5,9 +5,9 @@ Implements a registry pattern for extensibility.
 
 import os
 from typing import Type, Dict, List
-from schemas.config import AppConfig
+from services.config.models import AppConfig
 from .config_interface import IConfig
-from schemas.config import HostingType
+from services.config.models import HostingType
 from .individual_strategy import IndividualConfig
 from .organization_strategy import OrganizationConfig
 from .multi_tenant_strategy import MultiTenantConfig

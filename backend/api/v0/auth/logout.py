@@ -3,32 +3,27 @@ Logout endpoint with standardized responses.
 """
 import logging
 from fastapi import APIRouter, Request, Depends, status
-from pydantic import BaseModel
 from sqlmodel import Session
 
 from middlewares.rest import (
     StandardResponse,
     success_response,
-    AppException
+    AppException,
+    AuthenticationException
 )
 from models.database import get_session
-from services.session_service import SessionService
 from .verify import get_bearer_token
-from api.deps import get_oauth_service
-from services.oauth.oauth_service import OAuthService
+from api.deps import get_auth_service
+from services.auth.auth_service import AuthService
+from services.auth.models import LogoutRequest, AuthError, SessionNotFoundError
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-class StatusResponse(BaseModel):
-    status: str
-    message: str
-
-
 @router.post(
     "/logout",
-    response_model=StandardResponse[StatusResponse],
+    response_model=StandardResponse[dict],
     status_code=status.HTTP_200_OK,
     summary="Logout user",
     description="Logout user and invalidate session"
@@ -37,51 +32,42 @@ async def logout(
     request: Request,
     token: str = Depends(get_bearer_token),
     db: Session = Depends(get_session),
-    oauth_service: OAuthService = Depends(get_oauth_service)
-) -> StandardResponse[StatusResponse]:
+    auth_service: AuthService = Depends(get_auth_service)
+) -> StandardResponse[dict]:
     """
     Logout user and invalidate session.
     
     Returns:
-        StandardResponse[StatusResponse]: Standardized response confirming logout
+        StandardResponse[dict]: Standardized response confirming logout
     """
     request_id = getattr(request.state, "request_id", None)
-    user_session = SessionService.get_session_by_id(db, token)
-
-    # Optionally revoke the OAuth token
-    if user_session:
-        # Default to GitHub provider for backward compatibility
-        provider = "github"
-        try:
-            await oauth_service.revoke_token(provider, user_session.oauth_token)
-        except Exception as e:
-            logger.warning(
-                f"Could not revoke OAuth token: {e}",
-                extra={
-                    "request_id": request_id,
-                    "username": user_session.username if user_session else None,
-                    "provider": provider
-                }
-            )
-            # Continue with logout even if revocation fails
-
-    # Delete session from database
-    success = SessionService.delete_session(db, token)
-
-    if success:
-        logger.info(
-            "User successfully logged out",
-            extra={
-                "request_id": request_id,
-                "username": user_session.username if user_session else None
-            }
+    
+    try:
+        # Create logout request using auth service models
+        logout_request = LogoutRequest(session_token=token)
+        logout_response = await auth_service.logout(logout_request, db)
+        
+        return success_response(
+            data={
+                "status": logout_response.status,
+                "message": logout_response.message
+            },
+            message="User logged out successfully",
+            meta={"request_id": request_id}
         )
-
-    return success_response(
-        data=StatusResponse(
-            status="success",
-            message="Successfully logged out"
-        ),
-        message="User logged out successfully",
-        meta={"request_id": request_id}
-    )
+        
+    except SessionNotFoundError:
+        raise AuthenticationException(message="Session not found")
+    except AuthError as e:
+        logger.error(
+            f"Auth error during logout: {e}",
+            extra={"request_id": request_id}
+        )
+        raise AppException(message=str(e))
+    except Exception as e:
+        logger.error(
+            f"Unexpected error during logout: {e}",
+            exc_info=True,
+            extra={"request_id": request_id}
+        )
+        raise AppException(message="Failed to logout")
