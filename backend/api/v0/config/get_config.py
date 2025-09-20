@@ -5,7 +5,7 @@ import logging
 from fastapi import APIRouter, Request, status
 
 from services.config.models import AppConfig, HostingType
-from services.config.factory import ConfigStrategyFactory
+from services.config import ConfigService
 from middlewares.rest import (
     StandardResponse,
     success_response,
@@ -67,7 +67,7 @@ async def get_config(request: Request) -> StandardResponse[AppConfig]:
     request_id = getattr(request.state, "request_id", None)
     
     try:
-        config = ConfigStrategyFactory.get_strategy()
+        config = ConfigService()
         current_hosting_type = config.get_hosting_config()
         
         logger.info(

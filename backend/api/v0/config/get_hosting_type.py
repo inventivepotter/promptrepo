@@ -4,7 +4,7 @@ Get hosting type endpoint without authentication - with standardized responses.
 import logging
 from fastapi import APIRouter, Request, status
 from pydantic import BaseModel
-from services.config import ConfigStrategyFactory
+from services.config.config_service import ConfigService
 from middlewares.rest import (
     StandardResponse,
     success_response,
@@ -56,7 +56,8 @@ async def get_hosting_type(request: Request) -> StandardResponse[HostingTypeResp
     request_id = getattr(request.state, "request_id", None)
     
     try:
-        hosting_config = ConfigStrategyFactory.get_strategy().get_hosting_config()
+        config_service = ConfigService()
+        hosting_config = config_service.get_hosting_config()
         hosting_type = hosting_config.type.value
         
         logger.info(

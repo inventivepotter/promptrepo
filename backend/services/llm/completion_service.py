@@ -17,8 +17,7 @@ from services.llm.models import (
     PromptTokensDetails,
     CompletionTokensDetails
 )
-from services.config.factory import ConfigStrategyFactory
-from services.config.config_interface import IConfig
+from services.config.config_service import ConfigService
 from middlewares.rest.exceptions import (
     BadRequestException,
     ServiceUnavailableException,
@@ -30,9 +29,6 @@ logger = logging.getLogger(__name__)
 
 class ChatCompletionService:
     """Service class for handling chat completions with any-llm."""
-    
-    def __init__(self):
-        self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
     
     def build_completion_params(
         self, 
@@ -108,10 +104,14 @@ class ChatCompletionService:
                 context={"provider": request.provider, "model": request.model}
             )
 
+    def __init__(self):
+        self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+        self.config_service = ConfigService()
+    
     def _get_api_details(self, provider: str, model: str) -> tuple[str, str | None]:
-        llm_configs = ConfigStrategyFactory.get_strategy().get_llm_configs() or []
+        llm_configs = self.config_service.get_llm_configs() or []
             
-            # Filter llm_configs to find matching provider and model
+        # Filter llm_configs to find matching provider and model
         matching_config = None
         for config in llm_configs:
             if config.provider == provider and config.model == model:
@@ -124,10 +124,10 @@ class ChatCompletionService:
                     detail=f"No configuration found for provider '{provider}' and model '{model}'"
                 )
             
-            # Get API key and base URL from the matching configuration
+        # Get API key and base URL from the matching configuration
         api_key = matching_config.apiKey
         api_base_url = matching_config.apiBaseUrl if matching_config.apiBaseUrl else None
-        return api_key,api_base_url
+        return api_key, api_base_url
     
     async def _process_streaming_chunk(
         self, 

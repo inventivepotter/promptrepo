@@ -5,7 +5,7 @@ import logging
 from fastapi import APIRouter, Request, status
 
 from services.config.models import AppConfig, HostingType
-from services.config.factory import ConfigStrategyFactory
+from services.config.config_service import ConfigService
 from middlewares.rest import (
     StandardResponse,
     success_response,
@@ -101,8 +101,8 @@ async def update_config(
     request_id = getattr(request.state, "request_id", None)
     
     try:
-        config = ConfigStrategyFactory.get_strategy()
-        current_hosting_type = config.get_hosting_config()
+        config_service = ConfigService()
+        current_hosting_type = config_service.get_hosting_config()
 
         # Check hosting types
         hosting_type = getattr(configs_param, 'hostingConfig', {}).get('type', '') or ''
@@ -147,10 +147,10 @@ async def update_config(
         _validate_individual_hosting_config(configs_param)
         
         # Update configuration
-        config.set_llm_configs(getattr(configs_param, 'llmConfigs'))
+        config_service.set_llm_configs(getattr(configs_param, 'llmConfigs'))
 
         # Get and return the updated configuration
-        updated_config = config.get_config()
+        updated_config = config_service.get_config()
         
         logger.info(
             "Configuration updated successfully",

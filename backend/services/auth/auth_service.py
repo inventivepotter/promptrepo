@@ -6,7 +6,6 @@ authentication operations including OAuth login, logout, refresh, and verificati
 """
 
 import logging
-from typing import Optional
 from datetime import datetime, timedelta, UTC
 from sqlmodel import Session
 

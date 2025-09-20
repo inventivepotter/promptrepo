@@ -6,7 +6,7 @@ from typing import Dict, List, Any
 import logging
 from any_llm import provider, list_models, ProviderName
 
-from services.config.factory import ConfigStrategyFactory
+from services.config.config_service import ConfigService
 from services.llm.models import ProviderInfo, ModelInfo, ProvidersResponse
 from utils.constants import PROVIDER_NAMES_MAP
 
@@ -23,8 +23,8 @@ class ProviderService:
         Returns standardized provider information based on AppConfig.
         """
         try:
-            config = ConfigStrategyFactory.get_strategy()
-            llm_configs = config.get_llm_configs() or []
+            config_service = ConfigService()
+            llm_configs = config_service.get_llm_configs() or []
             provider_models: Dict[str, List[ModelInfo]] = {}
 
             # Group models by provider

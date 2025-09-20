@@ -11,7 +11,7 @@ from typing import Set
 
 from models.database import get_session
 from services.auth.session_service import SessionService
-from services.config.factory import ConfigStrategyFactory
+from services.config.config_service import ConfigService
 
 logger = logging.getLogger(__name__)
 
@@ -58,8 +58,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         # Skip auth if hosting type is individual
         try:
-            config_strategy = ConfigStrategyFactory.get_strategy()
-            hosting_config = config_strategy.get_hosting_config()
+            config_service = ConfigService()
+            hosting_config = config_service.get_hosting_config()
             hosting_type = hosting_config.type.value
             if hosting_type == "individual":
                 logger.debug(f"Skipping auth for individual hosting type")

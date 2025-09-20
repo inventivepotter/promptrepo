@@ -1,14 +1,8 @@
 from abc import ABC, abstractmethod
+from typing import Dict, Optional
 from pathlib import Path
-from typing import List, Dict, Optional, Any, Union
 from pydantic import BaseModel, Field, validator
 import httpx
-import git
-import yaml
-import json
-import asyncio
-from enum import Enum
-from datetime import datetime
 from settings.base_settings import Settings
 
 class RepoInfo(BaseModel):
@@ -23,8 +17,6 @@ class RepoInfo(BaseModel):
     updated_at: Optional[str] = None
 
 
-
-
 class IRepoLocator(ABC):
     @abstractmethod
     async def get_repositories(self) -> Dict[str, str]:
@@ -32,10 +24,9 @@ class IRepoLocator(ABC):
         pass
 
 
-
 class LocalRepoLocator(IRepoLocator):
     def __init__(self):
-        self.base_path = Settings.app_config.repo_path
+        self.base_path = Path(Settings.local_repo_path)
         if not self.base_path.exists():
             self.base_path.mkdir(parents=True, exist_ok=True)
 
@@ -50,7 +41,7 @@ class LocalRepoLocator(IRepoLocator):
 
 class GitHubRepoLocator(IRepoLocator):
     def __init__(self, username:str, oauth_token: str):
-        self.base_path = Settings.app_config.repo_path
+        self.base_path = Path(Settings.multi_user_repo_path)
         self.oauth_token = oauth_token
         self.username = username
         if not self.base_path.exists():

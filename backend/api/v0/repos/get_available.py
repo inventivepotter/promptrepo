@@ -14,9 +14,9 @@ from middlewares.rest import (
     AppException
 )
 from models.database import get_session
-from services.config.factory import ConfigStrategyFactory
+from services.config.config_service import ConfigService
 from services.auth.session_service import SessionService
-from services.repo_locator_service import create_repo_locator
+from services.repo import RepoLocatorService
 from services.config.models import HostingType
 
 logger = logging.getLogger(__name__)
@@ -80,8 +80,8 @@ async def get_available_repositories(
     request_id = getattr(request.state, "request_id", None)
     
     try:
-        config = ConfigStrategyFactory.get_strategy()
-        hosting_config = config.get_hosting_config()
+        config_service = ConfigService()
+        hosting_config = config_service.get_hosting_config()
         hosting_type = hosting_config.type
         
         logger.info(
@@ -95,7 +95,7 @@ async def get_available_repositories(
         repos_list = []
         
         if hosting_type == HostingType.INDIVIDUAL:
-            repo_locator = create_repo_locator(hosting_type.value)
+            repo_locator = RepoLocatorService(hosting_type.value)
             # Get repos from the locator - it returns a Dict[str, str]
             if repo_locator:
                 repos_dict = await repo_locator.get_repositories()
@@ -120,7 +120,7 @@ async def get_available_repositories(
             
             data = SessionService.get_oauth_token_and_username(db, session_id)
             if data:
-                repo_locator = create_repo_locator(
+                repo_locator = RepoLocatorService(
                     hosting_type.value,
                     oauth_token=data['oauth_token'],
                     username=data['username']

@@ -4,40 +4,8 @@ Tests IndividualConfig, OrganizationConfig, and MultiTenantConfig strategies
 """
 import pytest
 import os
-from services.config import IndividualConfig, OrganizationConfig, MultiTenantConfig
+from services.config import ConfigStrategyFactory
 from services.config.models import HostingType, LLMConfig, OAuthConfig, RepoConfig
-from typing import List
-
-
-# Now create a simplified version of the factory
-class ConfigStrategyFactory:
-    """Simplified factory for testing."""
-    
-    _strategies = {
-        HostingType.INDIVIDUAL: IndividualConfig,
-        HostingType.ORGANIZATION: OrganizationConfig,
-        HostingType.MULTI_TENANT: MultiTenantConfig
-    }
-    
-    @classmethod
-    def get_strategy(cls):
-        """Create appropriate configuration strategy for the hosting type."""
-        hosting_type = os.environ.get("HOSTING_TYPE", "individual")
-        try:
-            hosting_type_enum = HostingType(hosting_type)
-        except ValueError:
-            raise ValueError(f"Unsupported hosting type: {hosting_type}")
-        
-        strategy_class = cls._strategies.get(hosting_type_enum)
-        if not strategy_class:
-            raise ValueError(f"Unsupported hosting type: {hosting_type}")
-        
-        return strategy_class()
-    
-    @classmethod
-    def get_supported_types(cls) -> List[str]:
-        """Get list of all supported hosting types."""
-        return HostingType._member_names_
 
 
 class TestIndividualConfigStrategyStandalone:
@@ -60,7 +28,7 @@ class TestIndividualConfigStrategyStandalone:
         # Set hosting type
         os.environ["HOSTING_TYPE"] = "individual"
         
-        # Get strategy from factory
+        # Get strategy from service
         self.strategy = ConfigStrategyFactory.get_strategy()
     
     def teardown_method(self):
@@ -146,7 +114,7 @@ class TestOrganizationConfigStrategyStandalone:
         # Set hosting type
         os.environ["HOSTING_TYPE"] = "organization"
         
-        # Get strategy from factory
+        # Get strategy from service
         self.strategy = ConfigStrategyFactory.get_strategy()
     
     def teardown_method(self):
@@ -238,7 +206,7 @@ class TestMultiTenantConfigStrategyStandalone:
         os.environ["HOSTING_TYPE"] = "multi-tenant"
         os.environ["TENANT_ID"] = "test-tenant-1"
         
-        # Get strategy from factory
+        # Get strategy from service
         self.strategy = ConfigStrategyFactory.get_strategy()
     
     def teardown_method(self):

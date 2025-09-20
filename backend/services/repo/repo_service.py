@@ -1,38 +1,10 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import List, Dict, Optional, Any, Union
-from pydantic import BaseModel, Field, validator
-import httpx
 import git
 import yaml
 import json
-import asyncio
-from enum import Enum
-from datetime import datetime
-
-
-class PromptFile(BaseModel):
-    """Represents a prompt file found in a repository."""
-    path: str
-    name: str
-    content: Optional[str] = None
-    system_prompt: Optional[str] = None
-    user_prompt: Optional[str] = None
-
-
-class UserCredentials(BaseModel):
-    """Represents user credentials for repository operations."""
-    username: str
-    token: str
-
-
-class CommitInfo(BaseModel):
-    """Represents information about a commit."""
-    commit_id: str
-    message: str
-    author: str
-    timestamp: datetime
-
+from .models import PromptFile, CommitInfo, UserCredentials
 
 class IRepoService(ABC):
 
@@ -82,7 +54,7 @@ class RepoService(IRepoService):
                         prompt_file = PromptFile(
                             path=str(yaml_file),
                             name=yaml_file.name,
-                            content=data,
+                            content=json.dumps(data) if data else None,
                             system_prompt=data.get('system_prompt'),
                             user_prompt=data.get('user_prompt')
                         )
@@ -139,7 +111,7 @@ class RepoService(IRepoService):
             repo.git.add(all=True)
             
             # Commit changes
-            commit = repo.index.commit(commit_message, author=git.Actor(username, f"{username}@example.com"))
+            commit = repo.index.commit(str(commit_message), author=git.Actor(username, f"{username}@example.com"))
             
             # Push changes if remote exists
             if 'origin' in repo.remotes:
@@ -148,8 +120,8 @@ class RepoService(IRepoService):
                 
             return CommitInfo(
                 commit_id=commit.hexsha,
-                message=commit.message,
-                author=commit.author.name,
+                message=str(commit.message),
+                author=commit.author.name or "Unknown",
                 timestamp=commit.authored_datetime
             )
         except Exception as e:

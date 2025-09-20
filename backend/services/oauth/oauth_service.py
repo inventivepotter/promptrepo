@@ -7,7 +7,6 @@ OAuth flows across multiple providers using the Strategy pattern.
 
 import logging
 from typing import List, Optional, Dict, Any
-from .oauth_interface import IOAuthProvider
 from .oauth_factory import OAuthProviderFactory, auto_register_providers
 from .state_manager import StateManager
 from .models import (
