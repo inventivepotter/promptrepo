@@ -1,29 +1,31 @@
 import httpClient from '@/lib/httpClient';
-import type { Configuration } from '@/types/Configuration';
 import type { OpenApiResponse } from '@/types/OpenApiResponse';
 import type { components } from '@/types/generated/api';
+
 /**
  * Configuration API client
  * All methods return OpenAPI-formatted responses
  */
 type HostingConfig = components['schemas']['HostingConfig'];
-type AppConfig = components['schemas']['AppConfig'];
-export default class ConfigApi {
+type AppConfigInput = components['schemas']['AppConfig-Input'];
+type AppConfigOutput = components['schemas']['AppConfig-Output'];
+
+class ConfigApi {
   /**
    * Get configuration
    * @returns OpenAPI response with configuration data
    */
-  static async getConfig(): Promise<OpenApiResponse<AppConfig>> {
-    return httpClient.get<AppConfig>('/api/v0/config');
+  static async getConfig(): Promise<OpenApiResponse<AppConfigOutput>> {
+    return httpClient.get<AppConfigOutput>('/api/v0/config/');
   }
 
   /**
    * Update configuration
-   * @param config - Partial configuration to update
+   * @param config - Configuration to update
    * @returns OpenAPI response with updated configuration
    */
-  static async updateConfig(config: Partial<Configuration>): Promise<OpenApiResponse<Partial<AppConfig>>> {
-    return httpClient.patch<Partial<AppConfig>>('/api/v0/config', config);
+  static async updateConfig(config: AppConfigInput): Promise<OpenApiResponse<AppConfigOutput>> {
+    return httpClient.patch<AppConfigOutput>('/api/v0/config/', config);
   }
 
   /**

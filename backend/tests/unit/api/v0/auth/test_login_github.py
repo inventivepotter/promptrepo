@@ -52,7 +52,6 @@ class TestInitiateGitHubLogin:
         login_request = call_args[0]
         assert login_request.provider == "github"
         assert login_request.redirect_uri == redirect_uri
-        assert call_args[1] == mock_db_session
 
     @pytest.mark.asyncio
     async def test_initiate_github_login_missing_redirect_uri(

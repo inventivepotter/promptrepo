@@ -44,9 +44,24 @@ def mock_db():
 
 
 @pytest.fixture
-def auth_service(mock_oauth_service):
+def mock_session_service():
+    """Mock SessionService for testing"""
+    mock = Mock()
+    mock.create_session = Mock()
+    mock.get_session_by_id = Mock()
+    mock.is_session_valid = Mock()
+    mock.delete_session = Mock()
+    return mock
+
+
+@pytest.fixture
+def auth_service(mock_oauth_service, mock_db, mock_session_service):
     """AuthService instance with mocked dependencies"""
-    return AuthService(git_provider_service=mock_oauth_service)
+    return AuthService(
+        db=mock_db,
+        git_provider_service=mock_oauth_service,
+        session_service=mock_session_service
+    )
 
 
 @pytest.fixture
@@ -101,7 +116,7 @@ class TestAuthServiceLogin:
         )
 
         # Act
-        result = await auth_service.initiate_oauth_login(request, mock_db)
+        result = await auth_service.initiate_oauth_login(request)
 
         # Assert
         assert result == "https://github.com/login/oauth/authorize?client_id=test"
@@ -120,7 +135,7 @@ class TestAuthServiceLogin:
 
         # Act & Assert
         with pytest.raises(AuthenticationFailedError) as exc_info:
-            await auth_service.initiate_oauth_login(request, mock_db)
+            await auth_service.initiate_oauth_login(request)
         
         assert "OAuth provider 'unsupported' is not supported" in str(exc_info.value)
 
@@ -135,7 +150,7 @@ class TestAuthServiceLogin:
 
         # Act & Assert
         with pytest.raises(AuthenticationFailedError) as exc_info:
-            await auth_service.initiate_oauth_login(request, mock_db)
+            await auth_service.initiate_oauth_login(request)
         
         assert "Failed to generate authentication URL" in str(exc_info.value)
 
@@ -161,27 +176,27 @@ class TestAuthServiceCallback:
 
         mock_user = User(
             id="1",
+            oauth_provider="github",
             username="testuser",
             name="Test User",
             email="test@example.com",
             avatar_url="https://example.com/avatar.jpg",
-            github_id=12345,
+            oauth_user_id=12345,
             html_url="https://github.com/testuser"
         )
         
         mock_session = Mock()
         mock_session.session_id = "test_session_id"
 
-        with patch('services.auth.auth_service.UserService.save_user', return_value=mock_user), \
-             patch('services.auth.auth_service.SessionService.create_session', return_value=mock_session):
+        with patch('database.daos.user.UserDAO.save_user', return_value=mock_user), \
+             patch.object(auth_service.session_service, 'create_session', return_value=mock_session):
 
             # Act
             result = await auth_service.handle_oauth_callback(
                 provider="github",
                 code="test_code",
                 state="test_state",
-                redirect_uri="http://localhost:3000/callback",
-                db=mock_db
+                redirect_uri="http://localhost:3000/callback"
             )
 
             # Assert
@@ -207,8 +222,7 @@ class TestAuthServiceCallback:
                 provider="github",
                 code="test_code",
                 state="test_state",
-                redirect_uri="http://localhost:3000/callback",
-                db=mock_db
+                redirect_uri="http://localhost:3000/callback"
             )
         
         assert "Authentication failed" in str(exc_info.value)
@@ -225,14 +239,18 @@ class TestAuthServiceLogout:
         mock_session = Mock()
         mock_session.username = "testuser"
         mock_session.oauth_token = "test_oauth_token"
+        mock_user = Mock()
+        mock_user.username = "testuser"
+        mock_user.oauth_provider = "github"
+        mock_session.user = mock_user
 
         mock_oauth_service.revoke_token.return_value = True
 
-        with patch('services.auth.auth_service.SessionService.get_session_by_id', return_value=mock_session), \
-             patch('services.auth.auth_service.SessionService.delete_session', return_value=True):
+        with patch.object(auth_service.session_service, 'get_session_by_id', return_value=mock_session), \
+             patch.object(auth_service.session_service, 'delete_session', return_value=True):
 
             # Act
-            result = await auth_service.logout(request, mock_db)
+            result = await auth_service.logout(request)
 
             # Assert
             assert result.status == "success"
@@ -247,14 +265,18 @@ class TestAuthServiceLogout:
         mock_session = Mock()
         mock_session.username = "testuser"
         mock_session.oauth_token = "test_oauth_token"
+        mock_user = Mock()
+        mock_user.username = "testuser"
+        mock_user.oauth_provider = "github"
+        mock_session.user = mock_user
 
         mock_oauth_service.revoke_token.side_effect = Exception("Revoke failed")
 
-        with patch('services.auth.auth_service.SessionService.get_session_by_id', return_value=mock_session), \
-             patch('services.auth.auth_service.SessionService.delete_session', return_value=True):
+        with patch.object(auth_service.session_service, 'get_session_by_id', return_value=mock_session), \
+             patch.object(auth_service.session_service, 'delete_session', return_value=True):
 
             # Act
-            result = await auth_service.logout(request, mock_db)
+            result = await auth_service.logout(request)
 
             # Assert - Should still succeed even if revoke fails
             assert result.status == "success"
@@ -272,18 +294,23 @@ class TestAuthServiceRefresh:
         mock_session = Mock()
         mock_session.username = "testuser"
         mock_session.oauth_token = "test_oauth_token"
+        mock_session.user_id = "test_user_id"
+        mock_user = Mock()
+        mock_user.username = "testuser"
+        mock_user.oauth_provider = "github"
+        mock_session.user = mock_user
 
         mock_new_session = Mock()
         mock_new_session.session_id = "new_session_token"
 
         mock_oauth_service.validate_token.return_value = True
 
-        with patch('services.auth.auth_service.SessionService.get_session_by_id', return_value=mock_session), \
-             patch('services.auth.auth_service.SessionService.create_session', return_value=mock_new_session), \
-             patch('services.auth.auth_service.SessionService.delete_session', return_value=True):
+        with patch.object(auth_service.session_service, 'get_session_by_id', return_value=mock_session), \
+             patch.object(auth_service.session_service, 'create_session', return_value=mock_new_session), \
+             patch.object(auth_service.session_service, 'delete_session', return_value=True):
 
             # Act
-            result = await auth_service.refresh_session(request, mock_db)
+            result = await auth_service.refresh_session(request)
 
             # Assert
             assert result.session_token == "new_session_token"
@@ -296,11 +323,11 @@ class TestAuthServiceRefresh:
         # Arrange
         request = RefreshRequest(session_token="invalid_session_token")
 
-        with patch('services.auth.auth_service.SessionService.get_session_by_id', return_value=None):
+        with patch.object(auth_service.session_service, 'get_session_by_id', return_value=None):
 
             # Act & Assert
             with pytest.raises(SessionNotFoundError) as exc_info:
-                await auth_service.refresh_session(request, mock_db)
+                await auth_service.refresh_session(request)
             
             assert "Invalid session token" in str(exc_info.value)
 
@@ -312,14 +339,18 @@ class TestAuthServiceRefresh:
         mock_session = Mock()
         mock_session.username = "testuser"
         mock_session.oauth_token = "invalid_oauth_token"
+        mock_user = Mock()
+        mock_user.username = "testuser"
+        mock_user.oauth_provider = "github"
+        mock_session.user = mock_user
 
         mock_oauth_service.validate_token.return_value = False
 
-        with patch('services.auth.auth_service.SessionService.get_session_by_id', return_value=mock_session):
+        with patch.object(auth_service.session_service, 'get_session_by_id', return_value=mock_session):
 
             # Act & Assert
             with pytest.raises(TokenValidationError) as exc_info:
-                await auth_service.refresh_session(request, mock_db)
+                await auth_service.refresh_session(request)
             
             assert "Invalid OAuth token" in str(exc_info.value)
 
@@ -342,14 +373,19 @@ class TestAuthServiceVerify:
         mock_session = Mock()
         mock_session.username = "testuser"
         mock_session.oauth_token = "test_oauth_token"
+        mock_user = Mock()
+        mock_user.username = "testuser"
+        mock_user.oauth_provider = "github"
+        mock_session.user = mock_user
 
         mock_user = User(
             id="1",
+            oauth_provider="github",
             username="testuser",
             name="Test User",
             email="test@example.com",
             avatar_url="https://example.com/avatar.jpg",
-            github_id=12345,
+            oauth_user_id=12345,
             html_url="https://github.com/testuser"
         )
 
@@ -357,12 +393,12 @@ class TestAuthServiceVerify:
         mock_oauth_service.get_user_info.return_value = sample_user_info
         mock_oauth_service.get_user_emails.return_value = sample_user_emails
 
-        with patch('services.auth.auth_service.SessionService.is_session_valid', return_value=True), \
-             patch('services.auth.auth_service.SessionService.get_session_by_id', return_value=mock_session), \
-             patch('services.auth.auth_service.UserService.save_user', return_value=mock_user):
+        with patch.object(auth_service.session_service, 'is_session_valid', return_value=True), \
+             patch.object(auth_service.session_service, 'get_session_by_id', return_value=mock_session), \
+             patch('database.daos.user.UserDAO.save_user', return_value=mock_user):
 
             # Act
-            result = await auth_service.verify_session(request, mock_db)
+            result = await auth_service.verify_session(request)
 
             # Assert
             assert result.is_valid is True
@@ -374,11 +410,11 @@ class TestAuthServiceVerify:
         # Arrange
         request = VerifyRequest(session_token="invalid_session_token")
 
-        with patch('services.auth.auth_service.SessionService.is_session_valid', return_value=False):
+        with patch.object(auth_service.session_service, 'is_session_valid', return_value=False):
 
             # Act & Assert
             with pytest.raises(SessionNotFoundError) as exc_info:
-                await auth_service.verify_session(request, mock_db)
+                await auth_service.verify_session(request)
             
             assert "Invalid or expired session token" in str(exc_info.value)
 
@@ -390,9 +426,14 @@ class TestAuthServiceVerify:
         mock_session = Mock()
         mock_session.username = "testuser"
         mock_session.oauth_token = "invalid_oauth_token"
+        mock_user = Mock()
+        mock_user.username = "testuser"
+        mock_user.oauth_provider = "github"
+        mock_session.user = mock_user
 
         mock_user = User(
             id="1",
+            oauth_provider="github",
             username="testuser",
             name="Test User",
             email="test@example.com"
@@ -401,13 +442,13 @@ class TestAuthServiceVerify:
         mock_oauth_service.validate_token.return_value = False
         mock_db.query.return_value.filter_by.return_value.first.return_value = mock_user
 
-        with patch('services.auth.auth_service.SessionService.is_session_valid', return_value=True), \
-             patch('services.auth.auth_service.SessionService.get_session_by_id', return_value=mock_session), \
-             patch('services.auth.auth_service.SessionService.delete_session'):
+        with patch.object(auth_service.session_service, 'is_session_valid', return_value=True), \
+             patch.object(auth_service.session_service, 'get_session_by_id', return_value=mock_session), \
+             patch.object(auth_service.session_service, 'delete_session'):
 
             # Act & Assert
             with pytest.raises(TokenValidationError) as exc_info:
-                await auth_service.verify_session(request, mock_db)
+                await auth_service.verify_session(request)
             
             assert "OAuth token has been revoked" in str(exc_info.value)
 
@@ -433,7 +474,7 @@ class TestAuthServiceUtility:
         mock_oauth_service.cleanup_expired_states.return_value = 5
 
         # Act
-        result = auth_service.cleanup_expired_sessions(mock_db)
+        result = auth_service.cleanup_expired_sessions()
 
         # Assert
         assert result == 5
@@ -445,7 +486,7 @@ class TestAuthServiceUtility:
         mock_oauth_service.cleanup_expired_states.side_effect = Exception("Cleanup failed")
 
         # Act
-        result = auth_service.cleanup_expired_sessions(mock_db)
+        result = auth_service.cleanup_expired_sessions()
 
         # Assert
         assert result == 0

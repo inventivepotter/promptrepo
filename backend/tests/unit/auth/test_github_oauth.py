@@ -76,11 +76,12 @@ from services.auth.models import LoginResponse
 
 mock_user = User(
     id="1",
+    oauth_provider="github",
     username="testuser",
     name="Test User",
     email="test@example.com",
     avatar_url="https://avatars.githubusercontent.com/u/12345",
-    github_id=12345,
+    oauth_user_id=12345,
     html_url="https://github.com/testuser"
 )
 
@@ -161,7 +162,7 @@ def test_github_callback_endpoint():
     assert user_data["username"] == "testuser"
     assert user_data["name"] == "Test User"
     assert user_data["email"] == "test@example.com"
-    assert user_data["github_id"] == 12345
+    assert user_data["oauth_user_id"] == 12345
     
     # Verify the auth service was called correctly
     mock_auth_service.handle_oauth_callback.assert_called_once()

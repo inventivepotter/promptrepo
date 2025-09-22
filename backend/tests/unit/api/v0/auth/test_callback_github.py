@@ -57,8 +57,7 @@ class TestGitHubOAuthCallback:
             provider="github",
             code=code,
             state=state,
-            redirect_uri=redirect_uri,
-            db=mock_db_session
+            redirect_uri=redirect_uri
         )
 
     @pytest.mark.asyncio

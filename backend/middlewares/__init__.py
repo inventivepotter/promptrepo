@@ -1,6 +1,6 @@
 """
 Middleware package for PromptRepo 
 """
-from .auth_middleware import AuthMiddleware
+from .context_middleware import ContextMiddleware
 
-__all__ = ["AuthMiddleware"]
+__all__ = ["ContextMiddleware"]

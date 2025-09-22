@@ -16,7 +16,8 @@ class TestUserModel:
             username="testuser",
             name="Test User",
             email="test@example.com",
-            github_id=12345,
+            oauth_provider="github",
+            oauth_user_id=12345,
             avatar_url="https://avatar.url",
             html_url="https://github.com/testuser"
         )
@@ -30,12 +31,12 @@ class TestUserModel:
         assert saved_user.username == "testuser"
         assert saved_user.name == "Test User"
         assert saved_user.email == "test@example.com"
-        assert saved_user.github_id == 12345
+        assert saved_user.oauth_user_id == 12345
     
     def test_user_unique_username(self, db_session):
         """Test username uniqueness constraint"""
-        user1 = User(username="unique_user")
-        user2 = User(username="unique_user")
+        user1 = User(username="unique_user", oauth_provider="github", oauth_user_id=123)
+        user2 = User(username="unique_user", oauth_provider="github", oauth_user_id=456)
         
         db_session.add(user1)
         db_session.commit()
@@ -46,7 +47,7 @@ class TestUserModel:
     
     def test_user_timestamps(self, db_session):
         """Test user timestamps are set correctly"""
-        user = User(username="timestamp_user")
+        user = User(username="timestamp_user", oauth_provider="github", oauth_user_id=789)
         
         db_session.add(user)
         db_session.commit()
@@ -63,7 +64,7 @@ class TestUserSessionModel:
     def test_session_creation(self, db_session):
         """Test creating a session"""
         # First create a user
-        user = User(username="session_test_user")
+        user = User(username="session_test_user", oauth_provider="github", oauth_user_id=123)
         db_session.add(user)
         db_session.commit()
         
@@ -119,7 +120,7 @@ class TestUserReposModel:
     def test_repository_creation(self, db_session):
         """Test creating a repository"""
         # First create a user
-        user = User(username="repo_test_user")
+        user = User(username="repo_test_user", oauth_provider="github", oauth_user_id=123)
         db_session.add(user)
         db_session.commit()
         

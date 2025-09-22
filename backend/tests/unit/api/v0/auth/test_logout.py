@@ -30,7 +30,6 @@ class TestLogout:
         result = await logout(
             request=mock_request,
             token=token,
-            db=mock_db_session,
             auth_service=mock_auth_service
         )
         
@@ -50,7 +49,6 @@ class TestLogout:
         call_args = mock_auth_service.logout.call_args[0]
         logout_request = call_args[0]
         assert logout_request.session_token == token
-        assert call_args[1] == mock_db_session
 
     @pytest.mark.asyncio
     async def test_logout_session_not_found(
@@ -69,7 +67,6 @@ class TestLogout:
             await logout(
                 request=mock_request,
                 token=token,
-                db=mock_db_session,
                 auth_service=mock_auth_service
             )
         
@@ -92,7 +89,6 @@ class TestLogout:
             await logout(
                 request=mock_request,
                 token=token,
-                db=mock_db_session,
                 auth_service=mock_auth_service
             )
         
@@ -115,7 +111,6 @@ class TestLogout:
             await logout(
                 request=mock_request,
                 token=token,
-                db=mock_db_session,
                 auth_service=mock_auth_service
             )
         
@@ -138,7 +133,6 @@ class TestLogout:
         result = await logout(
             request=mock_request,
             token=token,
-            db=mock_db_session,
             auth_service=mock_auth_service
         )
         
@@ -166,7 +160,6 @@ class TestLogout:
         result = await logout(
             request=request,
             token=token,
-            db=mock_db_session,
             auth_service=mock_auth_service
         )
         

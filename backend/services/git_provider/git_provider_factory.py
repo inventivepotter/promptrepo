@@ -9,7 +9,7 @@ instantiation of OAuth providers.
 from typing import Dict, Type, List, Optional
 from .git_provider_interface import IOAuthProvider
 from .models import ProviderNotFoundError, ConfigurationError
-from ..config.config_interface import IConfig
+from services.config.config_interface import IConfig
 
 
 class OAuthProviderFactory:

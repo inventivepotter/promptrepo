@@ -9,8 +9,8 @@ import httpx
 import secrets
 from typing import List, Tuple, Optional, Dict, Any
 from urllib.parse import urlencode
-from ..git_provider_interface import IOAuthProvider
-from ..models import (
+from services.git_provider.git_provider_interface import IOAuthProvider
+from services.git_provider.models import (
     OAuthToken, 
     UserInfo, 
     UserEmail, 

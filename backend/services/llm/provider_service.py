@@ -29,7 +29,7 @@ class ProviderService:
             llm_configs = self.config_service.get_llm_configs(user_id=user_id) or []
             provider_models: Dict[str, List[ModelInfo]] = {}
 
-            # Group database.models by provider
+            # Group models by provider
             for llm_config in llm_configs:
                 # Ensure provider is a string
                 provider_id = llm_config.provider
@@ -62,7 +62,7 @@ class ProviderService:
                     name=PROVIDER_NAMES_MAP.get(provider_id, {}).get("name", provider_id.replace("_", " ").title()),
                     models=models
                 )
-                for provider_id, database.models in provider_models.items()
+                for provider_id, models in provider_models.items()
             ]
             
             logger.info(f"Returning {len(providers)} configured providers")
@@ -95,29 +95,35 @@ class ProviderService:
         except Exception as e:
             logger.error(f"Error getting available providers: {e}")
             return []
-    
-    def fetch_models_by_provider(self, provider_id: str, api_key: str, api_base: str = '') -> List[ModelInfo]:
+
+    def fetch_models_by_provider(self, provider_id: str, user_id: str) -> List[ModelInfo]:
         """
-        Fetch available database.models for a specific provider using API key.
+        Fetch available models for a specific provider using API key.
         Connects to the actual provider APIs to get real-time model information.
         """
         try:
-            database.models = []
-
+            models = []
             if provider_id not in LLMProvider.__members__.values():
                 logger.error(f"Unsupported provider: {provider_id}")
-                return []
+                raise ValueError(f"Unsupported provider: {provider_id}")
+            
+            llm_configs = self.config_service.get_llm_configs(user_id=user_id) or []
+            matching_configs = [cfg for cfg in llm_configs if cfg.provider == provider_id]
+            if not matching_configs:
+                logger.warning(f"No configuration found for provider {provider_id} for user {user_id}")
+                raise ValueError(f"No configuration found for provider {provider_id}")
+            llm_config = matching_configs[0]
 
-            raw_models = list_models(provider_id, api_key, api_base=api_base if api_base else None)
-            database.models = [
+            raw_models = list_models(provider_id, llm_config.api_key, api_base=llm_config.api_base_url)
+            models = [
                 ModelInfo(id=model.id, name=model.id)
                 for model in raw_models
                 if model.id and model.object == 'model'
             ]
             
-            logger.info(f"Returning {len(models)} database.models for provider {provider_id}")
+            logger.info(f"Returning {len(models)} models for provider {provider_id}")
             return models
             
         except Exception as e:
-            logger.error(f"Error fetching database.models for provider {provider_id}: {e}")
+            logger.error(f"Error fetching models for provider {provider_id}: {e}")
             return []

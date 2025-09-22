@@ -7,9 +7,9 @@ OAuth flows, Git operations across multiple providers using the Strategy pattern
 
 import logging
 from typing import List, Optional, Dict, Any
-from .git_provider_factory import OAuthProviderFactory, auto_register_providers
-from .state_manager import StateManager
-from .models import (
+from services.git_provider.git_provider_factory import OAuthProviderFactory, auto_register_providers
+from services.git_provider.state_manager import StateManager
+from services.git_provider.models import (
     OAuthToken, 
     UserInfo, 
     UserEmail, 
@@ -21,7 +21,7 @@ from .models import (
     TokenExchangeError,
     ConfigurationError
 )
-from ..config.config_interface import IConfig
+from services.config.config_interface import IConfig
 
 logger = logging.getLogger(__name__)
 

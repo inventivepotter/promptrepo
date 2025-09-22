@@ -4,7 +4,8 @@ Unit tests for the verify session endpoint.
 import pytest
 from unittest.mock import Mock
 
-from api.v0.auth.verify import verify_session, get_bearer_token
+from api.v0.auth.verify import verify_session
+from api.deps import get_bearer_token
 from middlewares.rest import StandardResponse, AppException, AuthenticationException
 from services.auth.models import SessionNotFoundError, TokenValidationError, AuthError
 
@@ -74,7 +75,6 @@ class TestVerifySession:
     async def test_verify_session_success(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service,
         sample_verify_response
     ):
@@ -87,7 +87,6 @@ class TestVerifySession:
         result = await verify_session(
             request=mock_request,
             token=token,
-            db=mock_db_session,
             auth_service=mock_auth_service
         )
         
@@ -110,13 +109,11 @@ class TestVerifySession:
         call_args = mock_auth_service.verify_session.call_args[0]
         verify_request = call_args[0]
         assert verify_request.session_token == token
-        assert call_args[1] == mock_db_session
 
     @pytest.mark.asyncio
     async def test_verify_session_not_found(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service
     ):
         """Test verify when session is not found"""
@@ -129,7 +126,6 @@ class TestVerifySession:
             await verify_session(
                 request=mock_request,
                 token=token,
-                db=mock_db_session,
                 auth_service=mock_auth_service
             )
         
@@ -139,7 +135,6 @@ class TestVerifySession:
     async def test_verify_session_token_validation_error(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service
     ):
         """Test verify when OAuth token validation fails"""
@@ -152,7 +147,6 @@ class TestVerifySession:
             await verify_session(
                 request=mock_request,
                 token=token,
-                db=mock_db_session,
                 auth_service=mock_auth_service
             )
         
@@ -162,7 +156,6 @@ class TestVerifySession:
     async def test_verify_session_auth_error(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service
     ):
         """Test verify when auth error occurs"""
@@ -175,7 +168,6 @@ class TestVerifySession:
             await verify_session(
                 request=mock_request,
                 token=token,
-                db=mock_db_session,
                 auth_service=mock_auth_service
             )
         
@@ -185,7 +177,6 @@ class TestVerifySession:
     async def test_verify_session_unexpected_error(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service
     ):
         """Test verify when unexpected error occurs"""
@@ -198,7 +189,6 @@ class TestVerifySession:
             await verify_session(
                 request=mock_request,
                 token=token,
-                db=mock_db_session,
                 auth_service=mock_auth_service
             )
         
@@ -208,7 +198,6 @@ class TestVerifySession:
     async def test_verify_session_empty_token(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service,
         sample_verify_response
     ):
@@ -221,7 +210,6 @@ class TestVerifySession:
         result = await verify_session(
             request=mock_request,
             token=token,
-            db=mock_db_session,
             auth_service=mock_auth_service
         )
         
@@ -233,7 +221,6 @@ class TestVerifySession:
     @pytest.mark.asyncio
     async def test_verify_session_request_without_request_id(
         self,
-        mock_db_session,
         mock_auth_service,
         sample_verify_response
     ):
@@ -249,7 +236,6 @@ class TestVerifySession:
         result = await verify_session(
             request=request,
             token=token,
-            db=mock_db_session,
             auth_service=mock_auth_service
         )
         
@@ -262,7 +248,6 @@ class TestVerifySession:
     async def test_verify_session_user_data_format(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service,
         sample_verify_response
     ):
@@ -275,7 +260,6 @@ class TestVerifySession:
         result = await verify_session(
             request=mock_request,
             token=token,
-            db=mock_db_session,
             auth_service=mock_auth_service
         )
         
@@ -288,5 +272,5 @@ class TestVerifySession:
         assert 'name' in user
         assert 'email' in user
         assert 'avatar_url' in user
-        assert 'github_id' in user
+        assert 'oauth_user_id' in user
         assert 'html_url' in user

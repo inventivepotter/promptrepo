@@ -5,8 +5,8 @@ Common dependencies used across API endpoints following FastAPI best practices.
 This module provides centralized dependency injection for all services.
 We use function-based dependencies as recommended by FastAPI documentation.
 """
-from typing import Generator, Annotated
-from fastapi import Depends, Header
+from typing import Generator, Annotated, Optional
+from fastapi import Depends, Header, HTTPException, status
 from sqlmodel import Session
 from pathlib import Path
 import logging
@@ -20,6 +20,7 @@ from services.git_provider.git_provider_service import GitProviderService
 from services.auth.auth_service import AuthService
 from services.auth.session_service import SessionService
 from services.config.config_service import ConfigService
+from services.config.models import HostingType
 from services.llm.completion_service import ChatCompletionService
 from services.llm.provider_service import ProviderService
 from services.repo.repo_service import RepoService
@@ -290,3 +291,125 @@ async def get_bearer_token(authorization: Annotated[str | None, Header()] = None
 
 
 BearerTokenDep = Annotated[str, Depends(get_bearer_token)]
+
+
+# ==============================================================================
+# Authentication Dependencies
+# ==============================================================================
+
+# User ID to use when hosting type is INDIVIDUAL
+INDIVIDUAL_USER_ID = "individual-user"
+
+
+async def get_current_user(
+    session_service: SessionServiceDep,
+    config_service: ConfigServiceDep,
+    authorization: Annotated[str | None, Header()] = None
+) -> str:
+    """
+    Get current authenticated user.
+    
+    Validates Bearer token and session, returns user_id or raises HTTPException.
+    Handles INDIVIDUAL hosting type by returning INDIVIDUAL_USER_ID.
+    
+    Returns:
+        str: User ID for authenticated user
+        
+    Raises:
+        HTTPException: 401 if authentication fails
+    """
+    # Check hosting type first
+    try:
+        hosting_type = config_service.get_hosting_config().type
+        if hosting_type == HostingType.INDIVIDUAL:
+            return INDIVIDUAL_USER_ID
+    except Exception as e:
+        logger.warning(f"Failed to get hosting type: {e}")
+    
+    # Extract Bearer token
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required"
+        )
+    
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorization header format. Expected: 'Bearer <token>'"
+        )
+    
+    token = authorization.replace("Bearer ", "")
+    if not token or token.isspace():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token cannot be empty"
+        )
+    
+    # Validate session
+    if not session_service.is_session_valid(token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired session token"
+        )
+    
+    # Get session and user
+    user_session = session_service.get_session_by_id(token)
+    if not user_session:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session not found"
+        )
+    
+    return user_session.user_id
+
+
+async def get_optional_user(
+    session_service: SessionServiceDep,
+    config_service: ConfigServiceDep,
+    authorization: Annotated[str | None, Header()] = None
+) -> Optional[str]:
+    """
+    Get current user if authenticated, return None otherwise.
+    
+    Similar to get_current_user but doesn't raise exceptions for missing auth.
+    Useful for endpoints that work with or without authentication.
+    
+    Returns:
+        Optional[str]: User ID if authenticated, None otherwise
+    """
+    # Check hosting type first
+    try:
+        hosting_type = config_service.get_hosting_config().type
+        if hosting_type == HostingType.INDIVIDUAL:
+            return INDIVIDUAL_USER_ID
+    except Exception as e:
+        logger.warning(f"Failed to get hosting type: {e}")
+    
+    # If no authorization header, return None
+    if not authorization:
+        return None
+    
+    # Validate Bearer token format
+    if not authorization.startswith("Bearer "):
+        return None
+    
+    token = authorization.replace("Bearer ", "")
+    if not token or token.isspace():
+        return None
+    
+    # Validate session
+    if not session_service.is_session_valid(token):
+        return None
+    
+    # Get session and user
+    user_session = session_service.get_session_by_id(token)
+    if not user_session:
+        return None
+    
+    return user_session.user_id
+
+
+# Type aliases for authentication dependencies
+CurrentUserDep = Annotated[str, Depends(get_current_user)]
+OptionalUserDep = Annotated[Optional[str], Depends(get_optional_user)]

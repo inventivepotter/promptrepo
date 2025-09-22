@@ -7,8 +7,7 @@ It generates, stores, validates, and cleans up OAuth states.
 
 import secrets
 from typing import Dict, Optional, Any
-from datetime import datetime, timedelta
-from .models import OAuthState, InvalidStateError
+from services.git_provider.models import OAuthState, InvalidStateError
 
 
 class StateManager:

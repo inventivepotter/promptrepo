@@ -12,7 +12,7 @@ from middlewares.rest import (
     success_response,
     AppException
 )
-from api.deps import ProviderServiceDep
+from api.deps import ProviderServiceDep, CurrentUserDep
 from services.llm.models import ProviderInfo
 
 logger = logging.getLogger(__name__)
@@ -49,6 +49,7 @@ class ProvidersResponse(BaseModel):
 async def get_configured_providers(
     request: Request,
     provider_service: ProviderServiceDep,
+    user_id: CurrentUserDep,
 ) -> StandardResponse[ProvidersResponse]:
     """
     Get configured LLM providers and their models.
@@ -68,7 +69,6 @@ async def get_configured_providers(
             extra={"request_id": request_id}
         )
         
-        user_id = request.state.user_id
         providers_data = provider_service.get_configured_providers(user_id=user_id)
         
         # provider_service.get_configured_providers() always returns a ProvidersResponse

@@ -16,7 +16,6 @@ class TestRefreshSession:
     async def test_refresh_session_success(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service,
         sample_refresh_response
     ):
@@ -29,7 +28,6 @@ class TestRefreshSession:
         result = await refresh_session(
             request=mock_request,
             token=token,
-            db=mock_db_session,
             auth_service=mock_auth_service
         )
         
@@ -52,13 +50,11 @@ class TestRefreshSession:
         call_args = mock_auth_service.refresh_session.call_args[0]
         refresh_request = call_args[0]
         assert refresh_request.session_token == token
-        assert call_args[1] == mock_db_session
 
     @pytest.mark.asyncio
     async def test_refresh_session_not_found(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service
     ):
         """Test refresh when session is not found"""
@@ -71,7 +67,6 @@ class TestRefreshSession:
             await refresh_session(
                 request=mock_request,
                 token=token,
-                db=mock_db_session,
                 auth_service=mock_auth_service
             )
         
@@ -81,7 +76,6 @@ class TestRefreshSession:
     async def test_refresh_session_token_validation_error(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service
     ):
         """Test refresh when OAuth token validation fails"""
@@ -94,7 +88,6 @@ class TestRefreshSession:
             await refresh_session(
                 request=mock_request,
                 token=token,
-                db=mock_db_session,
                 auth_service=mock_auth_service
             )
         
@@ -104,7 +97,6 @@ class TestRefreshSession:
     async def test_refresh_session_auth_error(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service
     ):
         """Test refresh when auth error occurs"""
@@ -117,7 +109,6 @@ class TestRefreshSession:
             await refresh_session(
                 request=mock_request,
                 token=token,
-                db=mock_db_session,
                 auth_service=mock_auth_service
             )
         
@@ -127,7 +118,6 @@ class TestRefreshSession:
     async def test_refresh_session_unexpected_error(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service
     ):
         """Test refresh when unexpected error occurs"""
@@ -140,7 +130,6 @@ class TestRefreshSession:
             await refresh_session(
                 request=mock_request,
                 token=token,
-                db=mock_db_session,
                 auth_service=mock_auth_service
             )
         
@@ -150,7 +139,6 @@ class TestRefreshSession:
     async def test_refresh_session_empty_token(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service,
         sample_refresh_response
     ):
@@ -163,7 +151,6 @@ class TestRefreshSession:
         result = await refresh_session(
             request=mock_request,
             token=token,
-            db=mock_db_session,
             auth_service=mock_auth_service
         )
         
@@ -175,7 +162,6 @@ class TestRefreshSession:
     @pytest.mark.asyncio
     async def test_refresh_session_request_without_request_id(
         self,
-        mock_db_session,
         mock_auth_service,
         sample_refresh_response
     ):
@@ -191,7 +177,6 @@ class TestRefreshSession:
         result = await refresh_session(
             request=request,
             token=token,
-            db=mock_db_session,
             auth_service=mock_auth_service
         )
         
@@ -204,7 +189,6 @@ class TestRefreshSession:
     async def test_refresh_session_response_data_format(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service,
         sample_refresh_response
     ):
@@ -217,7 +201,6 @@ class TestRefreshSession:
         result = await refresh_session(
             request=mock_request,
             token=token,
-            db=mock_db_session,
             auth_service=mock_auth_service
         )
         

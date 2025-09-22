@@ -13,26 +13,18 @@ from middlewares.rest import (
     BadRequestException,
     AppException
 )
-from api.deps import ProviderServiceDep
+from api.deps import ProviderServiceDep, CurrentUserDep
 from services.llm.models import ModelInfo
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-
-
-class FetchModelsRequest(BaseModel):
-    """Request for fetching database.models by provider and API key"""
-    provider: str
-    api_key: str
-    api_base: str = ''
-
 
 class ModelsResponse(BaseModel):
     """Response for database.models endpoint"""
     models: List[ModelInfo]
 
 
-@router.post(
+@router.get(
     "/providers/models/{provider_id}",
     response_model=StandardResponse[ModelsResponse],
     status_code=status.HTTP_200_OK,
@@ -69,8 +61,8 @@ class ModelsResponse(BaseModel):
 )
 async def fetch_models_by_provider(
     provider_id: str,
-    request_body: FetchModelsRequest,
     request: Request,
+    user_id: CurrentUserDep,
     provider_service: ProviderServiceDep
 ) -> StandardResponse[ModelsResponse]:
     """
@@ -88,20 +80,17 @@ async def fetch_models_by_provider(
     
     try:
         # Validate provider
-        if provider_id != request_body.provider:
+        if not provider_id:
             logger.error(
-                f"Provider ID mismatch",
+                f"Provider ID is required",
                 extra={
                     "request_id": request_id,
-                    "url_provider": provider_id,
-                    "body_provider": request_body.provider
                 }
             )
             raise BadRequestException(
-                message="Provider ID mismatch",
+                message="Provider ID is required",
                 context={
-                    "url_provider": provider_id,
-                    "body_provider": request_body.provider
+                    "provider_id": provider_id,
                 }
             )
 
@@ -110,14 +99,12 @@ async def fetch_models_by_provider(
             extra={
                 "request_id": request_id,
                 "provider": provider_id,
-                "has_api_base": bool(request_body.api_base)
             }
         )
 
-        database.models = provider_service.fetch_models_by_provider(
-            provider_id,
-            request_body.api_key,
-            request_body.api_base
+        models = provider_service.fetch_models_by_provider(
+            provider_id=provider_id,
+            user_id=user_id
         )
         
         logger.info(

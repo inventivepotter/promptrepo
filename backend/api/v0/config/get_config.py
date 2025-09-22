@@ -5,7 +5,7 @@ import logging
 from fastapi import APIRouter, Request, status
 
 from services.config.models import AppConfig
-from api.deps import ConfigServiceDep
+from api.deps import ConfigServiceDep, CurrentUserDep
 from middlewares.rest import (
     StandardResponse,
     success_response,
@@ -40,7 +40,8 @@ router = APIRouter()
 )
 async def get_config(
     request: Request,
-    config_service: ConfigServiceDep
+    config_service: ConfigServiceDep,
+    user_id: CurrentUserDep
 ) -> StandardResponse[AppConfig]:
     """
     Get current application configuration.
@@ -52,7 +53,6 @@ async def get_config(
         AppException: When configuration retrieval fails
     """
     request_id = request.state.request_id
-    user_id = request.state.user_id
     
     try:
         logger.info(

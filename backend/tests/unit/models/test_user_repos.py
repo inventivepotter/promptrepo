@@ -6,7 +6,7 @@ from datetime import datetime, UTC
 from uuid import uuid4
 from sqlmodel import SQLModel, Session
 
-from models.user_repos import UserRepos, RepoStatus
+from database.models.user_repos import UserRepos, RepoStatus
 from database.models.user import User
 
 
@@ -17,7 +17,7 @@ class TestUserReposModel:
         """Test creating a repository"""
         # First create a user
         user_id = str(uuid4())
-        user = User(id=user_id, username="repo_test_user")
+        user = User(id=user_id, username="repo_test_user", oauth_provider="github")
         db_session.add(user)
         db_session.commit()
         

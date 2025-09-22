@@ -19,7 +19,8 @@ class TestUserModel:
             username="testuser",
             name="Test User",
             email="test@example.com",
-            github_id=12345,
+            oauth_provider="github",
+            oauth_user_id=12345,
             avatar_url="https://avatar.url",
             html_url="https://github.com/testuser"
         )
@@ -33,12 +34,12 @@ class TestUserModel:
         assert saved_user.username == "testuser"
         assert saved_user.name == "Test User"
         assert saved_user.email == "test@example.com"
-        assert saved_user.github_id == 12345
+        assert saved_user.oauth_user_id == 12345
     
     def test_user_unique_username(self, db_session: Session):
         """Test username uniqueness constraint"""
-        user1 = User(id=str(uuid4()), username="unique_user")
-        user2 = User(id=str(uuid4()), username="unique_user")
+        user1 = User(id=str(uuid4()), username="unique_user", oauth_provider="github", oauth_user_id=123)
+        user2 = User(id=str(uuid4()), username="unique_user", oauth_provider="github", oauth_user_id=456)
         
         db_session.add(user1)
         db_session.commit()
@@ -49,7 +50,7 @@ class TestUserModel:
     
     def test_user_timestamps(self, db_session: Session):
         """Test user timestamps are set correctly"""
-        user = User(id=str(uuid4()), username="timestamp_user")
+        user = User(id=str(uuid4()), username="timestamp_user", oauth_provider="github", oauth_user_id=789)
         
         db_session.add(user)
         db_session.commit()

@@ -10,7 +10,7 @@ import os
 from database.core import create_db_and_tables
 
 # Import middleware
-from middlewares import AuthMiddleware
+from middlewares import ContextMiddleware
 
 # Import core setup and components from middlewares
 from middlewares.rest.setup import setup_fastapi_app
@@ -49,7 +49,7 @@ app = setup_fastapi_app(
 )
 
 # Add authentication middleware (after setup)
-app.add_middleware(AuthMiddleware)
+app.add_middleware(ContextMiddleware)
 
 # Include API routers with versioning
 app.include_router(

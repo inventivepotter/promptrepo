@@ -5,7 +5,7 @@ import logging
 from fastapi import APIRouter, Request, status, Body
 
 from services.config.models import AppConfig
-from api.deps import ConfigServiceDep
+from api.deps import ConfigServiceDep, CurrentUserDep
 from middlewares.rest import (
     StandardResponse,
     success_response,
@@ -68,6 +68,7 @@ router = APIRouter()
 async def update_config(
     request: Request,
     config_service: ConfigServiceDep,
+    user_id: CurrentUserDep,
     request_body: AppConfig = Body(...)
 ) -> StandardResponse[AppConfig]:
     """
@@ -81,17 +82,6 @@ async def update_config(
         AppException: When configuration update fails
     """
     request_id = request.state.request_id
-    user_id = request.state.user_id
-
-    if not user_id:
-        logger.error(
-            "User ID not found in request state for configuration update",
-            extra={"request_id": request_id}
-        )
-        raise AppException(
-            message="User identification is required to update configuration.",
-            detail="User ID not found."
-        )
     
     try:
         logger.info(

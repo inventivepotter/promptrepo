@@ -1,13 +1,20 @@
 import httpClient from '@/lib/httpClient';
-import type { ApiResult } from '@/types/ApiResponse';
-import type { Repo } from '@/types/Repo';
+import type { OpenApiResponse } from '@/types/OpenApiResponse';
+import type { components } from '@/types/generated/api';
+
+// Extract types from generated API schema
+type AppConfigInput = components['schemas']['AppConfig-Input'];
+type AppConfigOutput = components['schemas']['AppConfig-Output'];
+type RepoConfig = components['schemas']['RepoConfig'];
 
 export const reposApi = {
-  // Update repository configuration
-  updateRepos: async (repos: Repo[]): Promise<ApiResult<{ repos: Repo[] }>> => {
-    return await httpClient.post<{ repos: Repo[] }>('/v0/repos/configured', { repos });
+  // Update repository configuration via the main config API
+  updateRepos: async (repos: RepoConfig[]): Promise<OpenApiResponse<AppConfigOutput>> => {
+    const configUpdate: Partial<AppConfigInput> = {
+      repo_configs: repos
+    };
+    return await httpClient.patch<AppConfigOutput>('/api/v0/config/', configUpdate);
   },
-
 };
 
 export default reposApi;

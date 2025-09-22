@@ -11,7 +11,7 @@ from middlewares.rest import (
     success_response,
     AppException
 )
-from api.deps import ConfigServiceDep
+from api.deps import ConfigServiceDep, CurrentUserDep
 from services.config.models import RepoConfig
 
 logger = logging.getLogger(__name__)
@@ -59,7 +59,8 @@ class ConfiguredReposResponse(BaseModel):
 )
 async def get_configured_repositories(
     request: Request,
-    config_service: ConfigServiceDep
+    config_service: ConfigServiceDep,
+    user_id: CurrentUserDep
 ) -> StandardResponse[ConfiguredReposResponse]:
     """
     Get configured repositories for the authenticated user.
@@ -71,16 +72,8 @@ async def get_configured_repositories(
         AppException: When repository retrieval fails
     """
     request_id = request.state.request_id
-    user_id = request.state.user_id
     
     try:
-        # Get user_id from request state (set by auth middleware)
-        if not user_id:
-            raise AppException(
-                message="User authentication required",
-                detail="User ID not found in request state"
-            )
-        
         # Get repository configurations for the user
         configured_repos = config_service.get_repo_configs(user_id) or []
         

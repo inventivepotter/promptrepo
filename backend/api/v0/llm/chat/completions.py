@@ -19,7 +19,7 @@ from services.llm.models import (
     ChatCompletionChoice,
     ChatMessage,
 )
-from api.deps import ChatCompletionServiceDep
+from api.deps import ChatCompletionServiceDep, CurrentUserDep
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -63,7 +63,8 @@ router = APIRouter()
 async def chat_completions(
     request_body: ChatCompletionRequest,
     request: Request,
-    chat_completion_service: ChatCompletionServiceDep
+    chat_completion_service: ChatCompletionServiceDep,
+    user_id: CurrentUserDep
 ):
     """
     Create a chat completion using any-llm.
@@ -133,7 +134,7 @@ async def chat_completions(
         
         # Handle non-streaming response
         try:
-            content, finish_reason, usage_stats, inference_time_ms = await chat_completion_service.execute_non_streaming_completion(request_body, request.state.user_id)
+            content, finish_reason, usage_stats, inference_time_ms = await chat_completion_service.execute_non_streaming_completion(request_body, user_id)
         except Exception as e:
             logger.error(
                 f"Error in completion processing: {e}",

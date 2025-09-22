@@ -12,7 +12,7 @@ def test_create_user_llm_config(db_session: Session):
     Test creating a new UserLLMConfigs instance.
     """
     user_id = str(uuid4())
-    user = User(id=user_id, username="testuser")
+    user = User(id=user_id, username="testuser", oauth_provider="github", oauth_user_id=123)
     db_session.add(user)
     db_session.commit()
 
@@ -42,7 +42,7 @@ def test_user_llm_config_repr(db_session: Session):
     Test the __repr__ method of UserLLMConfigs.
     """
     user_id = str(uuid4())
-    user = User(id=user_id, username="testuser")
+    user = User(id=user_id, username="testuser", oauth_provider="github", oauth_user_id=123)
     db_session.add(user)
     db_session.commit()
 
@@ -66,7 +66,7 @@ def test_user_llm_config_relationship(db_session: Session):
     Test the relationship between User and UserLLMConfigs.
     """
     user_id = str(uuid4())
-    user = User(id=user_id, username="testuser")
+    user = User(id=user_id, username="testuser", oauth_provider="github", oauth_user_id=123)
     db_session.add(user)
     db_session.commit()
 
@@ -100,7 +100,7 @@ def test_user_llm_config_defaults(db_session: Session):
     Test default values for UserLLMConfigs fields.
     """
     user_id = str(uuid4())
-    user = User(id=user_id, username="testuser")
+    user = User(id=user_id, username="testuser", oauth_provider="github", oauth_user_id=123)
     db_session.add(user)
     db_session.commit()
 

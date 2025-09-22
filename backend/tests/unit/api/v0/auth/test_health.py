@@ -53,7 +53,7 @@ class TestAuthHealthCheck:
             assert len(health_data["endpoints"]) == 5
             
             # Verify service calls
-            mock_auth_service.cleanup_expired_sessions.assert_called_once_with(mock_db_session)
+            mock_auth_service.cleanup_expired_sessions.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_auth_health_check_auth_service_error(

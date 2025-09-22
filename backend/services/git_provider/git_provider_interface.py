@@ -7,7 +7,7 @@ ensuring all provider implementations follow a consistent interface.
 
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Optional, Dict
-from .models import OAuthToken, UserInfo, UserEmail
+from services.git_provider.models import OAuthToken, UserInfo, UserEmail
 
 
 class IOAuthProvider(ABC):

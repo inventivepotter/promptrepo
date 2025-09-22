@@ -9,10 +9,9 @@ from typing import List
 from middlewares.rest import (
     StandardResponse,
     success_response,
-    AuthenticationException,
     AppException
 )
-from api.deps import SessionServiceDep, RepoLocatorServiceDep, ConfigServiceDep
+from api.deps import SessionServiceDep, RepoLocatorServiceDep, CurrentUserDep, BearerTokenDep
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -62,6 +61,8 @@ async def get_available_repositories(
     request: Request,
     session_service: SessionServiceDep,
     repo_locator_service: RepoLocatorServiceDep,
+    user_id: CurrentUserDep,
+    session_token: BearerTokenDep,
 ) -> StandardResponse[AvailableRepositoriesResponse]:
     """
     Get available repositories.
@@ -70,7 +71,6 @@ async def get_available_repositories(
         StandardResponse[AvailableRepositoriesResponse]: Standardized response containing repos
         
     Raises:
-        AuthenticationException: When authentication is required but not provided
         AppException: When repository retrieval fails
     """
     request_id = getattr(request.state, "request_id", None)
@@ -79,28 +79,15 @@ async def get_available_repositories(
         logger.info(
             "Fetching available repositories",
             extra={
-                "request_id": request_id
+                "request_id": request_id,
+                "user_id": user_id
             }
         )
         
         repos_list = []
     
-        # Get session from authorization header
-        authorization_header = request.headers.get("Authorization")
-        session_id = authorization_header.replace("Bearer ", "") if authorization_header else None
-        
-        if not session_id or not session_service.is_session_valid(session_id):
-            logger.warning(
-                "Invalid or missing session",
-                extra={
-                    "request_id": request_id
-                }
-            )
-            raise AuthenticationException(
-                message="Authentication required for organization repositories"
-            )
-        
-        data = session_service.get_oauth_token_and_user_info(session_id)
+        # Get OAuth token and user info
+        data = session_service.get_oauth_token_and_user_info(session_token)
         if data:
             repos_dict = await repo_locator_service.get_repositories(
                 oauth_provider=data.oauth_provider,
@@ -109,7 +96,7 @@ async def get_available_repositories(
             )
             repos_list = list(repos_dict.keys())
         else:
-            raise AuthenticationException(
+            raise AppException(
                 message="Session not found"
             )
         
@@ -117,7 +104,8 @@ async def get_available_repositories(
             f"Retrieved {len(repos_list)} repositories",
             extra={
                 "request_id": request_id,
-                "repo_count": len(repos_list)
+                "repo_count": len(repos_list),
+                "user_id": user_id
             }
         )
         
@@ -127,8 +115,6 @@ async def get_available_repositories(
             meta={"request_id": request_id}
         )
         
-    except (AuthenticationException,):
-        raise
     except Exception as e:
         logger.error(
             f"Failed to retrieve repositories: {e}",
