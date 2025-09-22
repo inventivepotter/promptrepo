@@ -2,18 +2,16 @@
 Middleware for request/response processing and standardization.
 """
 import time
-import json
 import logging
-from typing import Callable, Any
+from typing import Callable
 from uuid import uuid4
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import ASGIApp
 
-from .responses import create_response, error_response, ResponseStatus
-from .exceptions import AppException
+from .responses import error_response
+
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +24,8 @@ class ResponseMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # Generate request ID if not present
         request_id = request.headers.get("X-Request-ID", f"req_{uuid4().hex[:12]}")
-        correlation_id = request.headers.get("X-Correlation-ID")
+        # Generate correlation ID if not present
+        correlation_id = request.headers.get("X-Correlation-ID", f"corr_{uuid4().hex[:12]}")
         
         # Store in request state for access in endpoints
         request.state.request_id = request_id

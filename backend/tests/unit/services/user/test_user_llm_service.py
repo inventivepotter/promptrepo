@@ -6,9 +6,9 @@ from uuid import uuid4
 from sqlmodel import Session
 from datetime import datetime, UTC
 
-from services.user.user_llm_service import UserLLMService
-from models.user_llm_configs import UserLLMConfigs
-from models.user import User
+from database.daos.user.user_llm_dao import UserLLMDAO
+from database.models.user_llm_configs import UserLLMConfigs
+from database.models.user import User
 
 
 @pytest.fixture
@@ -35,7 +35,7 @@ def sample_llm_config_data(sample_user: User) -> dict:
 
 def test_add_llm_config(db_session: Session, sample_llm_config_data: dict):
     """Test adding a new LLM configuration."""
-    config = UserLLMService.add_llm_config(db_session, **sample_llm_config_data)
+    config = UserLLMDAO.add_llm_config(db_session, **sample_llm_config_data)
 
     assert config.id is not None
     assert config.user_id == sample_llm_config_data["user_id"]
@@ -49,26 +49,26 @@ def test_add_llm_config(db_session: Session, sample_llm_config_data: dict):
 
 def test_get_llm_config_by_id(db_session: Session, sample_llm_config_data: dict):
     """Test retrieving an LLM configuration by its ID."""
-    created_config = UserLLMService.add_llm_config(db_session, **sample_llm_config_data)
-    retrieved_config = UserLLMService.get_llm_config_by_id(db_session, created_config.id)
+    created_config = UserLLMDAO.add_llm_config(db_session, **sample_llm_config_data)
+    retrieved_config = UserLLMDAO.get_llm_config_by_id(db_session, created_config.id)
 
     assert retrieved_config is not None
     assert retrieved_config.id == created_config.id
     assert retrieved_config.user_id == created_config.user_id
 
     # Test with non-existent ID
-    non_existent_config = UserLLMService.get_llm_config_by_id(db_session, str(uuid4()))
+    non_existent_config = UserLLMDAO.get_llm_config_by_id(db_session, str(uuid4()))
     assert non_existent_config is None
 
 
 def test_get_llm_configs_for_user(db_session: Session, sample_user: User, sample_llm_config_data: dict):
     """Test retrieving all LLM configurations for a user."""
     # Add two configs for the same user
-    UserLLMService.add_llm_config(db_session, **sample_llm_config_data)
+    UserLLMDAO.add_llm_config(db_session, **sample_llm_config_data)
     sample_llm_config_data["model_name"] = "gpt-3.5-turbo"
-    UserLLMService.add_llm_config(db_session, **sample_llm_config_data)
+    UserLLMDAO.add_llm_config(db_session, **sample_llm_config_data)
 
-    configs = UserLLMService.get_llm_configs_for_user(db_session, sample_user.id)
+    configs = UserLLMDAO.get_llm_configs_for_user(db_session, sample_user.id)
     assert len(configs) == 2
     assert all(c.user_id == sample_user.id for c in configs)
 
@@ -76,14 +76,14 @@ def test_get_llm_configs_for_user(db_session: Session, sample_user: User, sample
     new_user = User(id=str(uuid4()), username="newuser", email="newuser@example.com")
     db_session.add(new_user)
     db_session.commit()
-    empty_configs = UserLLMService.get_llm_configs_for_user(db_session, new_user.id)
+    empty_configs = UserLLMDAO.get_llm_configs_for_user(db_session, new_user.id)
     assert len(empty_configs) == 0
 
 
 def test_get_llm_config_by_provider_and_model(db_session: Session, sample_llm_config_data: dict):
     """Test retrieving an LLM configuration by user, provider, and model."""
-    created_config = UserLLMService.add_llm_config(db_session, **sample_llm_config_data)
-    retrieved_config = UserLLMService.get_llm_config_by_provider_and_model(
+    created_config = UserLLMDAO.add_llm_config(db_session, **sample_llm_config_data)
+    retrieved_config = UserLLMDAO.get_llm_config_by_provider_and_model(
         db_session,
         sample_llm_config_data["user_id"],
         sample_llm_config_data["provider"],
@@ -94,7 +94,7 @@ def test_get_llm_config_by_provider_and_model(db_session: Session, sample_llm_co
     assert retrieved_config.id == created_config.id
 
     # Test with non-existent combination
-    non_existent_config = UserLLMService.get_llm_config_by_provider_and_model(
+    non_existent_config = UserLLMDAO.get_llm_config_by_provider_and_model(
         db_session,
         sample_llm_config_data["user_id"],
         "nonexistent_provider",
@@ -105,7 +105,7 @@ def test_get_llm_config_by_provider_and_model(db_session: Session, sample_llm_co
 
 def test_update_llm_config(db_session: Session, sample_llm_config_data: dict):
     """Test updating an LLM configuration."""
-    created_config = UserLLMService.add_llm_config(db_session, **sample_llm_config_data)
+    created_config = UserLLMDAO.add_llm_config(db_session, **sample_llm_config_data)
     original_updated_at = created_config.updated_at
 
     update_data = {
@@ -113,7 +113,7 @@ def test_update_llm_config(db_session: Session, sample_llm_config_data: dict):
         "provider": "anthropic",
         "model_name": "claude-3-opus",
     }
-    updated_config = UserLLMService.update_llm_config(db_session, **update_data)
+    updated_config = UserLLMDAO.update_llm_config(db_session, **update_data)
 
     assert updated_config is not None
     assert updated_config.id == created_config.id
@@ -125,52 +125,52 @@ def test_update_llm_config(db_session: Session, sample_llm_config_data: dict):
     assert updated_config.updated_at > original_updated_at
 
     # Test updating non-existent config
-    non_existent_update = UserLLMService.update_llm_config(db_session, config_id=str(uuid4()), provider="new_provider")
+    non_existent_update = UserLLMDAO.update_llm_config(db_session, config_id=str(uuid4()), provider="new_provider")
     assert non_existent_update is None
 
 
 def test_delete_llm_config(db_session: Session, sample_llm_config_data: dict):
     """Test deleting an LLM configuration."""
-    created_config = UserLLMService.add_llm_config(db_session, **sample_llm_config_data)
+    created_config = UserLLMDAO.add_llm_config(db_session, **sample_llm_config_data)
     config_id = created_config.id
 
     # Successful deletion
-    delete_success = UserLLMService.delete_llm_config(db_session, config_id)
+    delete_success = UserLLMDAO.delete_llm_config(db_session, config_id)
     assert delete_success is True
 
     # Verify it's deleted
-    deleted_config = UserLLMService.get_llm_config_by_id(db_session, config_id)
+    deleted_config = UserLLMDAO.get_llm_config_by_id(db_session, config_id)
     assert deleted_config is None
 
     # Attempt to delete again
-    delete_fail = UserLLMService.delete_llm_config(db_session, config_id)
+    delete_fail = UserLLMDAO.delete_llm_config(db_session, config_id)
     assert delete_fail is False
 
     # Test deleting non-existent config
-    delete_non_existent = UserLLMService.delete_llm_config(db_session, str(uuid4()))
+    delete_non_existent = UserLLMDAO.delete_llm_config(db_session, str(uuid4()))
     assert delete_non_existent is False
 
 
 def test_get_default_llm_config_for_user(db_session: Session, sample_user: User, sample_llm_config_data: dict):
     """Test getting the default LLM configuration for a user."""
     # No configs for user
-    default_config_none = UserLLMService.get_default_llm_config_for_user(db_session, sample_user.id)
+    default_config_none = UserLLMDAO.get_default_llm_config_for_user(db_session, sample_user.id)
     assert default_config_none is None
 
     # Add one config
-    first_config = UserLLMService.add_llm_config(db_session, **sample_llm_config_data)
+    first_config = UserLLMDAO.add_llm_config(db_session, **sample_llm_config_data)
 
     # Should return the first one
-    default_config_one = UserLLMService.get_default_llm_config_for_user(db_session, sample_user.id)
+    default_config_one = UserLLMDAO.get_default_llm_config_for_user(db_session, sample_user.id)
     assert default_config_one is not None
     assert default_config_one.id == first_config.id
 
     # Add another config
     sample_llm_config_data["model_name"] = "gpt-3.5-turbo"
-    UserLLMService.add_llm_config(db_session, **sample_llm_config_data)
+    UserLLMDAO.add_llm_config(db_session, **sample_llm_config_data)
 
     # Should still return the first one added (as per current implementation)
-    default_config_multiple = UserLLMService.get_default_llm_config_for_user(db_session, sample_user.id)
+    default_config_multiple = UserLLMDAO.get_default_llm_config_for_user(db_session, sample_user.id)
     assert default_config_multiple is not None
     assert default_config_multiple.id == first_config.id
 
@@ -178,5 +178,5 @@ def test_get_default_llm_config_for_user(db_session: Session, sample_user: User,
     new_user = User(id=str(uuid4()), username="anotheruser", email="another@example.com")
     db_session.add(new_user)
     db_session.commit()
-    default_config_no_user = UserLLMService.get_default_llm_config_for_user(db_session, new_user.id)
+    default_config_no_user = UserLLMDAO.get_default_llm_config_for_user(db_session, new_user.id)
     assert default_config_no_user is None

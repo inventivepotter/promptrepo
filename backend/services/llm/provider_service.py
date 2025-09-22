@@ -4,7 +4,8 @@ Handles provider information, configured providers, and model fetching.
 """
 from typing import Dict, List, Any
 import logging
-from any_llm import provider, list_models, ProviderName
+from any_llm import LLMProvider
+from any_llm.api import list_models
 
 from services.config.config_service import ConfigService
 from services.llm.models import ProviderInfo, ModelInfo, ProvidersResponse
@@ -16,18 +17,19 @@ logger = logging.getLogger(__name__)
 class ProviderService:
     """Service for handling LLM provider operations."""
     
-    @staticmethod
-    def get_configured_providers() -> ProvidersResponse:
+    def __init__(self, config_service: ConfigService):
+        self.config_service = config_service
+    
+    def get_configured_providers(self, user_id: str) -> ProvidersResponse:
         """
         Get configured LLM providers and their models.
         Returns standardized provider information based on AppConfig.
         """
         try:
-            config_service = ConfigService()
-            llm_configs = config_service.get_llm_configs() or []
+            llm_configs = self.config_service.get_llm_configs(user_id=user_id) or []
             provider_models: Dict[str, List[ModelInfo]] = {}
 
-            # Group models by provider
+            # Group database.models by provider
             for llm_config in llm_configs:
                 # Ensure provider is a string
                 provider_id = llm_config.provider
@@ -60,7 +62,7 @@ class ProviderService:
                     name=PROVIDER_NAMES_MAP.get(provider_id, {}).get("name", provider_id.replace("_", " ").title()),
                     models=models
                 )
-                for provider_id, models in provider_models.items()
+                for provider_id, database.models in provider_models.items()
             ]
             
             logger.info(f"Returning {len(providers)} configured providers")
@@ -70,15 +72,14 @@ class ProviderService:
             logger.error(f"Error getting configured providers: {e}")
             return ProvidersResponse(providers=[])
     
-    @staticmethod
-    def get_available_providers() -> List[Dict[str, Any]]:
+    def get_available_providers(self) -> List[Dict[str, Any]]:
         """
         Get all available LLM providers without models.
         Returns predefined providers without requiring API keys.
         """
         try:
             providers = []
-            for provider_enum in ProviderName:
+            for provider_enum in LLMProvider:
                 provider_info = PROVIDER_NAMES_MAP.get(provider_enum)
                 provider_default_name = provider_enum.replace("_", " ").title()
                 display_name = provider_info.get("name", provider_default_name) if provider_info else provider_default_name
@@ -95,34 +96,28 @@ class ProviderService:
             logger.error(f"Error getting available providers: {e}")
             return []
     
-    @staticmethod
-    def fetch_models_by_provider(provider_id: str, api_key: str, api_base: str = '') -> List[ModelInfo]:
+    def fetch_models_by_provider(self, provider_id: str, api_key: str, api_base: str = '') -> List[ModelInfo]:
         """
-        Fetch available models for a specific provider using API key.
+        Fetch available database.models for a specific provider using API key.
         Connects to the actual provider APIs to get real-time model information.
         """
         try:
-            models = []
+            database.models = []
 
-            any_llm_provider = provider.ProviderFactory.get_provider_class(provider_id)
-            if not any_llm_provider:
+            if provider_id not in LLMProvider.__members__.values():
                 logger.error(f"Unsupported provider: {provider_id}")
                 return []
 
             raw_models = list_models(provider_id, api_key, api_base=api_base if api_base else None)
-            models = [
+            database.models = [
                 ModelInfo(id=model.id, name=model.id)
                 for model in raw_models
                 if model.id and model.object == 'model'
             ]
             
-            logger.info(f"Returning {len(models)} models for provider {provider_id}")
+            logger.info(f"Returning {len(models)} database.models for provider {provider_id}")
             return models
             
         except Exception as e:
-            logger.error(f"Error fetching models for provider {provider_id}: {e}")
+            logger.error(f"Error fetching database.models for provider {provider_id}: {e}")
             return []
-
-
-# Create a singleton instance
-provider_service = ProviderService()

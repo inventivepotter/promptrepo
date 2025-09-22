@@ -3,6 +3,7 @@ Custom exception classes for standardized error handling.
 """
 from typing import Optional, Dict, Any, List
 from fastapi import status
+from middlewares.rest.models import ErrorDetails
 
 
 class AppException(Exception):
@@ -26,13 +27,13 @@ class AppException(Exception):
         self.context = context or {}
         super().__init__(self.message)
     
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert exception to dictionary for response."""
-        return {
-            "code": self.error_code,
-            "message": self.message,
-            "context": self.context
-        }
+    def to_dict(self) -> ErrorDetails:
+        """Convert exception to ErrorDetails model for response."""
+        return ErrorDetails(
+            code=self.error_code,
+            message=self.message,
+            context=self.context
+        )
 
 
 class ValidationException(AppException):

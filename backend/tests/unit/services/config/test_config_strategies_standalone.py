@@ -57,8 +57,8 @@ class TestIndividualConfigStrategyStandalone:
             LLMConfig(
                 provider="openai",
                 model="gpt-4",
-                apiKey="test-key-individual",
-                apiBaseUrl="https://api.openai.com"
+                api_key="test-key-individual",
+                api_base_url="https://api.openai.com"
             )
         ]
         
@@ -69,7 +69,7 @@ class TestIndividualConfigStrategyStandalone:
         assert retrieved_llm is not None
         assert len(retrieved_llm) == 1
         assert retrieved_llm[0].provider == "openai"
-        assert retrieved_llm[0].apiKey == "test-key-individual"
+        assert retrieved_llm[0].api_key == "test-key-individual"
     
     def test_repo_configs_returns_none(self):
         """Test repo configs returns None for individual"""
@@ -154,8 +154,8 @@ class TestOrganizationConfigStrategyStandalone:
             LLMConfig(
                 provider="anthropic",
                 model="claude-3",
-                apiKey="test-key-org",
-                apiBaseUrl="https://api.anthropic.com"
+                api_key="test-key-org",
+                api_base_url="https://api.anthropic.com"
             )
         ]
         
@@ -166,7 +166,7 @@ class TestOrganizationConfigStrategyStandalone:
         assert retrieved_llm is not None
         assert len(retrieved_llm) == 1
         assert retrieved_llm[0].provider == "anthropic"
-        assert retrieved_llm[0].apiKey == "test-key-org"
+        assert retrieved_llm[0].api_key == "test-key-org"
     
     def test_set_and_get_repo_configs(self):
         """Test setting and getting repo configs (in-memory)"""
@@ -246,14 +246,14 @@ class TestMultiTenantConfigStrategyStandalone:
             LLMConfig(
                 provider="azure",
                 model="gpt-4",
-                apiKey="test-key-tenant1",
-                apiBaseUrl="https://tenant1.openai.azure.com"
+                api_key="test-key-tenant1",
+                api_base_url="https://tenant1.openai.azure.com"
             ),
             LLMConfig(
                 provider="openai",
                 model="gpt-3.5-turbo",
-                apiKey="test-key-tenant1-backup",
-                apiBaseUrl="https://api.openai.com"
+                api_key="test-key-tenant1-backup",
+                api_base_url="https://api.openai.com"
             )
         ]
         
@@ -264,7 +264,7 @@ class TestMultiTenantConfigStrategyStandalone:
         assert retrieved_llm is not None
         assert len(retrieved_llm) == 2
         assert retrieved_llm[0].provider == "azure"
-        assert retrieved_llm[0].apiKey == "test-key-tenant1"
+        assert retrieved_llm[0].api_key == "test-key-tenant1"
     
     def test_set_and_get_repo_configs(self):
         """Test setting and getting repo configs from users (in-memory)"""
@@ -296,7 +296,7 @@ class TestMultiTenantConfigStrategyStandalone:
 
         # First set configs for tenant 1
         llm_configs = [
-            LLMConfig(provider="azure", model="gpt-4", apiKey="test-key-tenant1")
+            LLMConfig(provider="azure", model="gpt-4", api_key="test-key-tenant1")
         ]
         repo_configs = [
             RepoConfig(repo_url="https://github.com/tenant1/repo1", base_branch="main", current_branch="main")

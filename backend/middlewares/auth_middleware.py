@@ -2,18 +2,22 @@
 Authentication middleware for FastAPI.
 Validates bearer tokens for all requests except whitelisted public endpoints.
 """
-from fastapi import Request, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import Request
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 import logging
-from typing import Set
+from typing import Set, Optional
 
-from models.database import get_session
-from services.auth.session_service import SessionService
+from api.deps import get_session_service, get_db
 from services.config.config_service import ConfigService
+from services.config.models import HostingType
+from middlewares.rest.exceptions import AuthenticationException
 
 logger = logging.getLogger(__name__)
+
+# User ID to use when hosting type is INDIVIDUAL
+INDIVIDUAL_USER_ID = "individual-user"
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
@@ -23,6 +27,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
     def __init__(self, app: ASGIApp):
         super().__init__(app)
+
+        hosting_type = ConfigService().get_hosting_config().type
+        logger.info(f"\n\n\n\nHosting type: {hosting_type}")
         # Define public endpoints that don't require authentication
         self.public_endpoints: Set[str] = {
             "/",
@@ -56,83 +63,49 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if request.method == "OPTIONS":
             return await call_next(request)
 
-        # Skip auth if hosting type is individual
+        # Check hosting type and skip auth if individual
         try:
-            config_service = ConfigService()
-            hosting_config = config_service.get_hosting_config()
-            hosting_type = hosting_config.type.value
-            if hosting_type == "individual":
-                logger.debug(f"Skipping auth for individual hosting type")
+            hosting_type = ConfigService().get_hosting_config().type
+            logger.info(f"\n\n\n\nHosting type: {hosting_type}")
+            if hosting_type == HostingType.INDIVIDUAL:
+                logger.debug(f"Skipping auth for individual hosting type, setting user_id to '{INDIVIDUAL_USER_ID}'")
+                request.state.user_id = INDIVIDUAL_USER_ID
                 return await call_next(request)
         except Exception as e:
             logger.warning(f"Failed to get hosting type, continuing with auth check: {e}")
+            hosting_type = None
 
-        # First, let the request proceed to check if the route exists
-        # This is done by temporarily proceeding without auth to see if we get a 404
+        # Extract and validate Bearer token
+        token = self._extract_bearer_token(request)
+        if not token:
+            raise AuthenticationException("Authorization header required")
+
         try:
-            # Check if we have authorization header
-            auth_header = request.headers.get("Authorization")
+            # Manually get DB session for use in middleware
+            db = next(get_db())
+            # Get SessionService instance from dependency
+            session_service = get_session_service(db)
             
-            # If no auth header, proceed to let FastAPI handle the request
-            # This allows 404 responses for non-existent endpoints
-            if not auth_header:
-                response = await call_next(request)
-                # If the response is 404, return it as-is (route doesn't exist)
-                if response.status_code == 404:
-                    return response
-                # Otherwise, return 401 for missing auth on existing routes
-                return self._unauthorized_response("Authorization header required")
+            if not session_service.is_session_valid(token):
+                raise AuthenticationException("Invalid or expired session token")
+            
+            user_session = session_service.get_session_by_id(token)
+            if not user_session:
+                raise AuthenticationException("Session not found")
 
-            if not auth_header.startswith("Bearer "):
-                response = await call_next(request)
-                # If the response is 404, return it as-is (route doesn't exist)
-                if response.status_code == 404:
-                    return response
-                # Otherwise, return 401 for invalid auth format on existing routes
-                return self._unauthorized_response("Invalid authorization header format")
+            # Add user info to request state for use in endpoints
+            request.state.user_id = user_session.user_id
+            request.state.session_token = token
 
-            token = auth_header.replace("Bearer ", "")
-
-            # Verify session using the existing auth utility
-            db_gen = get_session()
-            db = next(db_gen)
-            try:
-                if not SessionService.is_session_valid(db, token):
-                    response = await call_next(request)
-                    # If the response is 404, return it as-is (route doesn't exist)
-                    if response.status_code == 404:
-                        return response
-                    # Otherwise, return 401 for invalid session on existing routes
-                    return self._unauthorized_response("Invalid or expired session token")
-                
-                user_session = SessionService.get_session_by_id(db, token)
-                if not user_session:
-                    response = await call_next(request)
-                    # If the response is 404, return it as-is (route doesn't exist)
-                    if response.status_code == 404:
-                        return response
-                    # Otherwise, return 401 for session not found on existing routes
-                    return self._unauthorized_response("Session not found")
-
-                # Add user info to request state for use in endpoints
-                request.state.username = user_session.username
-                request.state.session_token = token
-            finally:
-                db.close()
-
-            logger.debug(f"Authentication successful for user: {user_session.username}")
+            logger.debug(f"Authentication successful for user: {user_session.user.username}")
             return await call_next(request)
 
+        except AuthenticationException:
+            # Re-raise authentication exceptions as-is
+            raise
         except Exception as e:
-            logger.error(f"Authentication error: {e}")
-            # On error, still check if route exists before returning auth error
-            try:
-                response = await call_next(request)
-                if response.status_code == 404:
-                    return response
-            except:
-                pass
-            return self._unauthorized_response("Authentication failed")
+            logger.error(f"Session validation error: {e}")
+            raise AuthenticationException("Authentication failed")
 
     def _is_public_endpoint(self, path: str) -> bool:
         """Check if the endpoint is in the public endpoints list."""
@@ -146,9 +119,26 @@ class AuthMiddleware(BaseHTTPMiddleware):
             
         return False
 
-    def _unauthorized_response(self, detail: str) -> JSONResponse:
-        """Return a standardized unauthorized response."""
-        return JSONResponse(
-            status_code=401,
-            content={"detail": detail}
-        )
+    def _extract_bearer_token(self, request: Request) -> Optional[str]:
+        """
+        Safely extract Bearer token from Authorization header.
+        Returns None if no valid Bearer token found.
+        """
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            return None
+        
+        # Split the header to validate format
+        parts = auth_header.split()
+        if len(parts) != 2:
+            return None
+            
+        scheme, token = parts
+        if scheme.lower() != "bearer":
+            return None
+            
+        # Additional validation: ensure token is not empty
+        if not token or token.isspace():
+            return None
+            
+        return token

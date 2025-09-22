@@ -2,9 +2,7 @@
 Session verification endpoint with standardized responses.
 """
 import logging
-from typing import Annotated
-from fastapi import APIRouter, Request, Depends, status, Header
-from sqlmodel import Session
+from fastapi import APIRouter, Request, Depends, status
 
 from middlewares.rest import (
     StandardResponse,
@@ -12,32 +10,14 @@ from middlewares.rest import (
     AuthenticationException,
     AppException
 )
-from models.database import get_session
-from models.user import User
-from api.deps import get_auth_service
-from services.auth.auth_service import AuthService
+from database.models.user import User
+from api.deps import AuthServiceDep, BearerTokenDep
 from services.auth.models import VerifyRequest, AuthError, SessionNotFoundError, TokenValidationError
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-# Dependency to extract Bearer token
-async def get_bearer_token(authorization: Annotated[str | None, Header()] = None) -> str:
-    """Extract Bearer token from Authorization header."""
-    if not authorization:
-        raise AuthenticationException(
-            message="Authorization header required",
-            context={"header": "Authorization"}
-        )
-
-    if not authorization.startswith("Bearer "):
-        raise AuthenticationException(
-            message="Invalid authorization header format",
-            context={"expected_format": "Bearer <token>"}
-        )
-
-    return authorization.replace("Bearer ", "")
 
 
 @router.get(
@@ -64,9 +44,8 @@ async def get_bearer_token(authorization: Annotated[str | None, Header()] = None
 )
 async def verify_session(
     request: Request,
-    token: str = Depends(get_bearer_token),
-    db: Session = Depends(get_session),
-    auth_service: AuthService = Depends(get_auth_service)
+    token: BearerTokenDep,
+    auth_service: AuthServiceDep
 ) -> StandardResponse[User]:
     """
     Verify current session and return user information.
@@ -82,7 +61,7 @@ async def verify_session(
     try:
         # Create verify request using auth service models
         verify_request = VerifyRequest(session_token=token)
-        verify_response = await auth_service.verify_session(verify_request, db)
+        verify_response = await auth_service.verify_session(verify_request)
         
         return success_response(
             data=verify_response.user,

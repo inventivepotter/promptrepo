@@ -2,9 +2,8 @@
 GitHub OAuth login initiation endpoint with standardized responses.
 """
 import logging
-from fastapi import APIRouter, Request, status, Depends, Query
+from fastapi import APIRouter, Request, status, Query
 from pydantic import BaseModel
-from sqlmodel import Session
 
 from middlewares.rest import (
     StandardResponse,
@@ -12,9 +11,7 @@ from middlewares.rest import (
     AppException,
     BadRequestException
 )
-from models.database import get_session
-from api.deps import get_auth_service
-from services.auth.auth_service import AuthService
+from api.deps import AuthServiceDep, DBSession
 from services.auth.models import LoginRequest, AuthError, AuthenticationFailedError
 
 logger = logging.getLogger(__name__)
@@ -88,9 +85,9 @@ class AuthUrlResponseData(BaseModel):
 )
 async def initiate_github_login(
     request: Request,
-    redirect_uri: str = Query(..., description="Callback URL after authorization"),
-    db: Session = Depends(get_session),
-    auth_service: AuthService = Depends(get_auth_service)
+    db: DBSession,
+    auth_service: AuthServiceDep,
+    redirect_uri: str = Query(..., description="Callback URL after authorization")
 ) -> StandardResponse[AuthUrlResponseData]:
     """
     Start GitHub OAuth flow.
@@ -99,7 +96,6 @@ async def initiate_github_login(
     Args:
         request: FastAPI request object
         redirect_uri: Callback URL after authorization
-        db: Database session
         auth_service: Auth service instance
         
     Returns:
@@ -118,7 +114,7 @@ async def initiate_github_login(
         
         # Create login request using auth service models
         login_request = LoginRequest(provider="github", redirect_uri=redirect_uri)
-        auth_url = await auth_service.initiate_oauth_login(login_request, db)
+        auth_url = await auth_service.initiate_oauth_login(login_request)
         
         return success_response(
             data=AuthUrlResponseData(authUrl=auth_url),

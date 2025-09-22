@@ -6,8 +6,8 @@ from datetime import datetime, UTC, timedelta
 from uuid import uuid4
 from sqlmodel import SQLModel, Session
 
-from models.user_sessions import UserSessions
-from models.user import User
+from database.models.user_sessions import UserSessions
+from database.models.user import User
 
 
 class TestUserSessionModel:

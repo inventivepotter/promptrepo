@@ -2,10 +2,9 @@
 Get available repositories endpoint with standardized responses.
 """
 import logging
-from fastapi import APIRouter, Request, Depends, status
+from fastapi import APIRouter, Request, status
 from pydantic import BaseModel
-from sqlmodel import Session
-from typing import List, Optional
+from typing import List
 
 from middlewares.rest import (
     StandardResponse,
@@ -13,11 +12,7 @@ from middlewares.rest import (
     AuthenticationException,
     AppException
 )
-from models.database import get_session
-from services.config.config_service import ConfigService
-from services.auth.session_service import SessionService
-from services.repo import RepoLocatorService
-from services.config.models import HostingType
+from api.deps import SessionServiceDep, RepoLocatorServiceDep, ConfigServiceDep
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -61,14 +56,15 @@ class AvailableRepositoriesResponse(BaseModel):
         }
     },
     summary="Get available repositories",
-    description="Get list of available repositories based on hosting type"
+    description="Get list of available repositories"
 )
 async def get_available_repositories(
     request: Request,
-    db: Session = Depends(get_session)
+    session_service: SessionServiceDep,
+    repo_locator_service: RepoLocatorServiceDep,
 ) -> StandardResponse[AvailableRepositoriesResponse]:
     """
-    Get available repositories based on hosting type.
+    Get available repositories.
     
     Returns:
         StandardResponse[AvailableRepositoriesResponse]: Standardized response containing repos
@@ -80,64 +76,47 @@ async def get_available_repositories(
     request_id = getattr(request.state, "request_id", None)
     
     try:
-        config_service = ConfigService()
-        hosting_config = config_service.get_hosting_config()
-        hosting_type = hosting_config.type
-        
         logger.info(
-            f"Fetching available repositories for hosting type: {hosting_type}",
+            "Fetching available repositories",
             extra={
-                "request_id": request_id,
-                "hosting_type": hosting_type.value
+                "request_id": request_id
             }
         )
         
         repos_list = []
+    
+        # Get session from authorization header
+        authorization_header = request.headers.get("Authorization")
+        session_id = authorization_header.replace("Bearer ", "") if authorization_header else None
         
-        if hosting_type == HostingType.INDIVIDUAL:
-            repo_locator = RepoLocatorService(hosting_type.value)
-            # Get repos from the locator - it returns a Dict[str, str]
-            if repo_locator:
-                repos_dict = await repo_locator.get_repositories()
-                repos_list = list(repos_dict.keys())
-                
-        elif hosting_type == HostingType.ORGANIZATION:
-            # Get session from authorization header
-            authorization_header = request.headers.get("Authorization")
-            session_id = authorization_header.replace("Bearer ", "") if authorization_header else None
-            
-            if not session_id or not SessionService.is_session_valid(db, session_id):
-                logger.warning(
-                    "Invalid or missing session for organization hosting",
-                    extra={
-                        "request_id": request_id,
-                        "hosting_type": hosting_type.value
-                    }
-                )
-                raise AuthenticationException(
-                    message="Authentication required for organization repositories"
-                )
-            
-            data = SessionService.get_oauth_token_and_username(db, session_id)
-            if data:
-                repo_locator = RepoLocatorService(
-                    hosting_type.value,
-                    oauth_token=data['oauth_token'],
-                    username=data['username']
-                )
-                if repo_locator:
-                    repos_dict = await repo_locator.get_repositories()
-                    repos_list = list(repos_dict.keys())
-            else:
-                raise AuthenticationException(
-                    message="Session not found"
-                )
+        if not session_id or not session_service.is_session_valid(session_id):
+            logger.warning(
+                "Invalid or missing session",
+                extra={
+                    "request_id": request_id
+                }
+            )
+            raise AuthenticationException(
+                message="Authentication required for organization repositories"
+            )
+        
+        data = session_service.get_oauth_token_and_user_info(session_id)
+        if data:
+            repos_dict = await repo_locator_service.get_repositories(
+                oauth_provider=data.oauth_provider,
+                username=data.username,
+                oauth_token=data.oauth_token
+            )
+            repos_list = list(repos_dict.keys())
+        else:
+            raise AuthenticationException(
+                message="Session not found"
+            )
         
         logger.info(
             f"Retrieved {len(repos_list)} repositories",
             extra={
                 "request_id": request_id,
-                "hosting_type": hosting_type.value,
                 "repo_count": len(repos_list)
             }
         )

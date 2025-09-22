@@ -2,9 +2,8 @@
 Get configured repositories endpoint with standardized responses.
 """
 import logging
-from fastapi import APIRouter, Request, Depends, status
-from pydantic import BaseModel
-from sqlmodel import Session
+from fastapi import APIRouter, Request, status
+from pydantic import BaseModel, Field
 from typing import List
 
 from middlewares.rest import (
@@ -12,15 +11,15 @@ from middlewares.rest import (
     success_response,
     AppException
 )
-from models.database import get_session
+from api.deps import ConfigServiceDep
+from services.config.models import RepoConfig
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-
 class ConfiguredReposResponse(BaseModel):
     """Response for configured repositories endpoint"""
-    repos: List[dict]
+    repos: List[RepoConfig] = Field(..., description="List of configured repositories")
 
 
 @router.get(
@@ -60,7 +59,7 @@ class ConfiguredReposResponse(BaseModel):
 )
 async def get_configured_repositories(
     request: Request,
-    db: Session = Depends(get_session)
+    config_service: ConfigServiceDep
 ) -> StandardResponse[ConfiguredReposResponse]:
     """
     Get configured repositories for the authenticated user.
@@ -71,24 +70,29 @@ async def get_configured_repositories(
     Raises:
         AppException: When repository retrieval fails
     """
-    request_id = getattr(request.state, "request_id", None)
+    request_id = request.state.request_id
+    user_id = request.state.user_id
     
     try:
-        # TODO: Implement configured repositories logic
-        # This would typically involve:
-        # 1. Getting the authenticated user from session
-        # 2. Fetching their configured repos from database
-        # 3. Returning the list
+        # Get user_id from request state (set by auth middleware)
+        if not user_id:
+            raise AppException(
+                message="User authentication required",
+                detail="User ID not found in request state"
+            )
+        
+        # Get repository configurations for the user
+        configured_repos = config_service.get_repo_configs(user_id) or []
         
         logger.info(
-            "Configured repositories endpoint called (not yet implemented)",
-            extra={"request_id": request_id}
+            f"Retrieved {len(configured_repos)} configured repositories for user {user_id}",
+            extra={"request_id": request_id, "user_id": user_id}
         )
         
         return success_response(
-            data=ConfiguredReposResponse(repos=[]),
-            message="No configured repositories found",
-            meta={"request_id": request_id}
+            data=ConfiguredReposResponse(repos=configured_repos),
+            message=f"Found {len(configured_repos)} configured repositories",
+            meta={"request_id": request_id, "count": len(configured_repos)}
         )
         
     except Exception as e:

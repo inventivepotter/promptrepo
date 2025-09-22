@@ -9,10 +9,10 @@ import logging
 from datetime import datetime, timedelta, UTC
 from sqlmodel import Session
 
-from services.oauth import OAuthService
+from services.git_provider import GitProviderService
 from .session_service import SessionService
-from services.user import UserService
-from models.user import User
+from database.daos.user import UserDAO
+from database.models.user import User
 from .models import (
     LoginRequest,
     LoginResponse,
@@ -39,26 +39,28 @@ class AuthService:
     session management, and user verification operations.
     """
     
-    def __init__(self, oauth_service: OAuthService):
+    def __init__(self, db: Session, git_provider_service: GitProviderService, session_service: SessionService):
         """
         Initialize the authentication service.
         
         Args:
-            oauth_service: OAuth service instance for OAuth operations
+            db: Database session
+            git_provider_service: OAuth service instance for OAuth operations
+            session_service: Session service instance for session management
         """
-        self.oauth_service = oauth_service
+        self.db = db
+        self.git_provider_service = git_provider_service
+        self.session_service = session_service
     
     async def initiate_oauth_login(
         self,
         request: LoginRequest,
-        db: Session
     ) -> str:
         """
         Initiate OAuth login flow.
         
         Args:
             request: Login request containing provider and redirect URI
-            db: Database session
             
         Returns:
             Authorization URL for OAuth flow
@@ -68,7 +70,7 @@ class AuthService:
         """
         try:
             # Validate provider availability
-            available_providers = self.oauth_service.get_available_providers()
+            available_providers = self.git_provider_service.get_available_providers()
             if request.provider not in [p.lower() for p in available_providers]:
                 raise AuthenticationFailedError(
                     f"OAuth provider '{request.provider}' is not supported. Available providers: {', '.join(available_providers)}",
@@ -76,10 +78,10 @@ class AuthService:
                 )
             
             # Clean up expired states
-            self.oauth_service.cleanup_expired_states()
+            self.git_provider_service.cleanup_expired_states()
             
             # Generate authorization URL
-            auth_url_response = await self.oauth_service.get_authorization_url(
+            auth_url_response = await self.git_provider_service.get_authorization_url(
                 provider=request.provider,
                 redirect_uri=request.redirect_uri
             )
@@ -104,7 +106,6 @@ class AuthService:
         code: str,
         state: str,
         redirect_uri: str,
-        db: Session
     ) -> LoginResponse:
         """
         Handle OAuth callback and create user session.
@@ -114,7 +115,6 @@ class AuthService:
             code: Authorization code from callback
             state: State parameter for CSRF verification
             redirect_uri: Redirect URI used in initial request
-            db: Database session
             
         Returns:
             Login response with user and session information
@@ -124,7 +124,7 @@ class AuthService:
         """
         try:
             # Exchange code for token
-            token_response = await self.oauth_service.exchange_code_for_token(
+            token_response = await self.git_provider_service.exchange_code_for_token(
                 provider=provider,
                 code=code,
                 redirect_uri=redirect_uri,
@@ -132,7 +132,7 @@ class AuthService:
             )
             
             # Get user information
-            user_info = await self.oauth_service.get_user_info(
+            user_info = await self.git_provider_service.get_user_info(
                 provider=provider,
                 access_token=token_response.access_token
             )
@@ -140,7 +140,7 @@ class AuthService:
             # Get user's primary email
             primary_email = None
             try:
-                emails = await self.oauth_service.get_user_emails(
+                emails = await self.git_provider_service.get_user_emails(
                     provider=provider,
                     access_token=token_response.access_token
                 )
@@ -169,13 +169,13 @@ class AuthService:
             }
             
             # Create or update user in database
-            user_db = User(**user_data)
-            user_db = UserService.save_user(db=db, user_data=user_db)
+            user_service = UserDAO(self.db)
+            user = User(**user_data)
+            user_db = user_service.save_user(user_data=user)
             
             # Create session in database
-            user_session = SessionService.create_session(
-                db=db,
-                username=user_info.username,
+            user_session = self.session_service.create_session(
+                user_id=user_db.id,
                 oauth_token=token_response.access_token
             )
             
@@ -203,14 +203,12 @@ class AuthService:
     async def logout(
         self,
         request: LogoutRequest,
-        db: Session
     ) -> LogoutResponse:
         """
         Logout user and invalidate session.
         
         Args:
             request: Logout request containing session token
-            db: Database session
             
         Returns:
             Logout response confirming operation
@@ -219,32 +217,32 @@ class AuthService:
             SessionNotFoundError: If session is not found
         """
         try:
-            user_session = SessionService.get_session_by_id(db, request.session_token)
+            user_session = self.session_service.get_session_by_id(request.session_token)
             
             # Optionally revoke the OAuth token
             if user_session:
-                # Default to GitHub provider for backward compatibility
-                provider = "github"
+                # Infer provider from user data if available, otherwise default to github
+                provider = user_session.user.oauth_provider if user_session and user_session.user and user_session.user.oauth_provider else "github"
                 try:
-                    await self.oauth_service.revoke_token(provider, user_session.oauth_token)
+                    await self.git_provider_service.revoke_token(provider, user_session.oauth_token)
                 except Exception as e:
                     logger.warning(
                         f"Could not revoke OAuth token: {e}",
                         extra={
-                            "username": user_session.username if user_session else None,
+                            "username": user_session.user.username if user_session else None,
                             "provider": provider
                         }
                     )
                     # Continue with logout even if revocation fails
             
             # Delete session from database
-            success = SessionService.delete_session(db, request.session_token)
+            success = self.session_service.delete_session(request.session_token)
             
             if success:
                 logger.info(
                     "User successfully logged out",
                     extra={
-                        "username": user_session.username if user_session else None
+                        "username": user_session.user.username if user_session else None
                     }
                 )
             
@@ -260,14 +258,12 @@ class AuthService:
     async def refresh_session(
         self,
         request: RefreshRequest,
-        db: Session
     ) -> RefreshResponse:
         """
         Refresh session token to extend expiry.
         
         Args:
             request: Refresh request containing current session token
-            db: Database session
             
         Returns:
             Refresh response with new session information
@@ -278,26 +274,26 @@ class AuthService:
         """
         try:
             # Check if current session exists and is valid
-            user_session = SessionService.get_session_by_id(db, request.session_token)
+            user_session = self.session_service.get_session_by_id(request.session_token)
             if not user_session:
                 raise SessionNotFoundError("Invalid session token")
             
+            # Infer provider from user data if available, otherwise default to github
+            provider = user_session.user.oauth_provider if user_session and user_session.user and user_session.user.oauth_provider else "github"
             # Validate the OAuth token before creating a new session
-            provider = "github"  # Default to GitHub provider for backward compatibility
-            is_valid = await self.oauth_service.validate_token(provider, user_session.oauth_token)
+            is_valid = await self.git_provider_service.validate_token(provider, user_session.oauth_token)
             
             if not is_valid:
                 raise TokenValidationError("Invalid OAuth token")
             
             # Create new session for the same user
-            new_session = SessionService.create_session(
-                db=db,
-                username=user_session.username,
+            new_session = self.session_service.create_session(
+                user_id=user_session.user_id,
                 oauth_token=user_session.oauth_token
             )
             
             # Delete old session
-            SessionService.delete_session(db, request.session_token)
+            self.session_service.delete_session(request.session_token)
             
             # Calculate new expiry
             new_expires_at = datetime.now(UTC) + timedelta(hours=24)
@@ -305,7 +301,7 @@ class AuthService:
             logger.info(
                 "Session refreshed successfully",
                 extra={
-                    "username": user_session.username,
+                    "username": user_session.user.username,
                     "provider": provider
                 }
             )
@@ -324,14 +320,12 @@ class AuthService:
     async def verify_session(
         self,
         request: VerifyRequest,
-        db: Session
     ) -> VerifyResponse:
         """
         Verify session and return user information.
         
         Args:
             request: Verify request containing session token
-            db: Database session
             
         Returns:
             Verify response with user information
@@ -342,30 +336,30 @@ class AuthService:
         """
         try:
             # Check if session exists and is valid
-            if not SessionService.is_session_valid(db, request.session_token):
+            if not self.session_service.is_session_valid(request.session_token):
                 raise SessionNotFoundError("Invalid or expired session token")
             
-            user_session = SessionService.get_session_by_id(db, request.session_token)
+            user_session = self.session_service.get_session_by_id(request.session_token)
             if not user_session:
                 raise SessionNotFoundError("Session not found")
             
-            # Default to GitHub provider for backward compatibility
-            provider = "github"
+            # Infer provider from user data if available, otherwise default to github
+            provider = user_session.user.oauth_provider if user_session and user_session.user and user_session.user.oauth_provider else "github"
             
             try:
                 # Validate OAuth token
-                if not await self.oauth_service.validate_token(provider, user_session.oauth_token):
+                if not await self.git_provider_service.validate_token(provider, user_session.oauth_token):
                     # OAuth token is invalid, delete session
-                    SessionService.delete_session(db, request.session_token)
+                    self.session_service.delete_session(request.session_token)
                     raise TokenValidationError("OAuth token has been revoked")
                 
                 # Get fresh user info from OAuth provider
-                oauth_user_info = await self.oauth_service.get_user_info(provider, user_session.oauth_token)
+                oauth_user_info = await self.git_provider_service.get_user_info(provider, user_session.oauth_token)
                 
                 # Get user's primary email
                 primary_email = None
                 try:
-                    emails = await self.oauth_service.get_user_emails(provider, user_session.oauth_token)
+                    emails = await self.git_provider_service.get_user_emails(provider, user_session.oauth_token)
                     # Find primary email
                     primary_email = next(
                         (email.email for email in emails if email.primary and email.verified),
@@ -381,15 +375,17 @@ class AuthService:
                     logger.warning(f"Failed to get user emails from OAuth provider: {e}")
                 
                 # Get or create/update user in database
+                user_service = UserDAO(self.db)
                 user_db = User(
-                    username=oauth_user_info.username,
                     name=oauth_user_info.name or oauth_user_info.username,
+                    oauth_provider=provider,
+                    username=oauth_user_info.username,
                     email=primary_email or oauth_user_info.email or "",
                     avatar_url=oauth_user_info.avatar_url,
-                    github_id=int(oauth_user_info.id) if provider == "github" and oauth_user_info.id else None,
+                    oauth_user_id=int(oauth_user_info.id) if provider == "github" and oauth_user_info.id else None,
                     html_url=oauth_user_info.profile_url,
                 )
-                user_db = UserService.save_user(db=db, user_data=user_db)
+                user_db = user_service.save_user(user_data=user_db)
                 
                 logger.info(
                     "Session verified successfully",
@@ -408,22 +404,23 @@ class AuthService:
                 logger.warning(f"Could not validate OAuth token for session: {e}")
                 
                 # Try to get user from database if OAuth validation fails
-                from models.user import User as UserModel
-                user = db.query(UserModel).filter_by(username=user_session.username).first()
+                from database.models.user import User as UserModel
+                user = self.db.query(UserModel).filter_by(username=user_session.user.username).first()
                 
                 if user:
                     # OAuth token validation failed but user exists in DB
                     # Delete the session and raise an error
-                    SessionService.delete_session(db, request.session_token)
+                    self.session_service.delete_session(request.session_token)
                     raise TokenValidationError("OAuth token has been revoked")
                 else:
                     # Create minimal user object if not found
                     user_db = User(
-                        username=user_session.username,
-                        name=user_session.username,
+                        username=user_session.user.username,
+                        oauth_provider=provider, # Use inferred provider
+                        name=user_session.user.username,
                         email="",
                         avatar_url="",
-                        github_id=None,
+                        oauth_user_id=None,
                         html_url=""
                     )
                     
@@ -445,21 +442,18 @@ class AuthService:
         Returns:
             List of provider names
         """
-        return self.oauth_service.get_available_providers()
+        return self.git_provider_service.get_available_providers()
     
-    def cleanup_expired_sessions(self, db: Session) -> int:
+    def cleanup_expired_sessions(self) -> int:
         """
         Clean up expired sessions and OAuth states.
         
-        Args:
-            db: Database session
-            
         Returns:
             Number of sessions cleaned up
         """
         try:
             # Clean up expired OAuth states
-            oauth_cleanup_count = self.oauth_service.cleanup_expired_states()
+            oauth_cleanup_count = self.git_provider_service.cleanup_expired_states()
             
             # Note: SessionService doesn't have a cleanup method, but we could add one
             # For now, just return the OAuth cleanup count

@@ -1,5 +1,5 @@
 """
-Standardized response models following OpenAPI specifications and REST best practices.
+Standardized response database.models following OpenAPI specifications and REST best practices.
 """
 from typing import TypeVar, Generic, Optional, List, Any, Dict, Union
 from pydantic import BaseModel, Field, ConfigDict
@@ -280,7 +280,7 @@ def success_response(
     """
     Create a success response.
     """
-    # Serialize Pydantic models to ensure proper JSON serialization
+    # Serialize Pydantic database.models to ensure proper JSON serialization
     if data is not None and hasattr(data, 'model_dump'):
         data = data.model_dump(mode='json')
     

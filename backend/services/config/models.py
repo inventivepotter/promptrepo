@@ -1,12 +1,16 @@
 from pydantic import BaseModel, Field
-from typing import List, Literal
+from typing import List, Optional
 from enum import Enum
 
 
 class HostingType(Enum):
     INDIVIDUAL = "individual"
     ORGANIZATION = "organization"
-    MULTI_TENANT = "multi-tenant"
+
+
+class LLMConfigScope(Enum):
+    ORGANIZATION = "organization"
+    USER = "user"
 
 
 class HostingConfig(BaseModel):
@@ -15,7 +19,7 @@ class HostingConfig(BaseModel):
     # Hosting Configuration
     type: HostingType = Field(
         default=HostingType.INDIVIDUAL,
-        description="Hosting type: individual, organization, or multi-tenant"
+        description="Hosting type: individual, organization"
     )
 
 
@@ -49,35 +53,56 @@ class LLMConfig(BaseModel):
         default="",
         description="LLM model name"
     )
-    apiKey: str = Field(
+    api_key: str = Field(
         default="",
         description="LLM API key"
     )
-    apiBaseUrl: str = Field(
+    api_base_url: str = Field(
         default="",
         description="LLM API base URL"
+    )
+    scope: LLMConfigScope = Field(
+        default=LLMConfigScope.ORGANIZATION,
+        description="Scope of the LLM config: 'organization' for ENV configs, 'user' for user-specific configs"
     )
 
 
 class RepoConfig(BaseModel):
     """Repository management settings"""
+    repo_name: str = Field(
+        default="",
+        description="Repository name (e.g., 'owner/repo-name')"
+    )
     repo_url: str = Field(
         default="",
         description="Repository URL"
     )
     base_branch: str = Field(
-        default="",
-        description="Repository branch"
+        default="main",
+        description="Repository base branch"
     )
-    current_branch: str = Field(
-        default="",
-        description="Repository branch"
+    current_branch: Optional[str] = Field(
+        default="main",
+        description="Repository current branch"
     )
 
 
 class AppConfig(BaseModel):
     """Main application configuration"""
-    hostingConfig: HostingConfig
-    oauthConfigs: List[OAuthConfig] | None = None
-    llmConfigs: List[LLMConfig] | None = None
-    repoConfigs: List[RepoConfig] | None = None
+    
+    # Main Configuration
+    hosting_config: HostingConfig = Field(
+        description="Hosting-specific configuration settings"
+    )
+    oauth_configs: Optional[List[OAuthConfig]] = Field(
+        default=None,
+        description="List of OAuth provider configurations"
+    )
+    llm_configs: Optional[List[LLMConfig]] = Field(
+        default=None,
+        description="List of LLM provider configurations"
+    )
+    repo_configs: Optional[List[RepoConfig]] = Field(
+        default=None,
+        description="List of repository configurations"
+    )

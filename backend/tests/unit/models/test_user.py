@@ -6,7 +6,7 @@ from datetime import datetime, UTC
 from uuid import uuid4
 from sqlmodel import SQLModel, Session
 
-from models.user import User
+from database.models.user import User
 
 
 class TestUserModel:

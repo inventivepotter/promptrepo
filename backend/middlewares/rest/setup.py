@@ -104,18 +104,18 @@ class FastAPISetup:
         # don't properly support custom exception handler signatures
         
         # Custom application exceptions
-        app.add_exception_handler(AppException, app_exception_handler)
+        app.add_exception_handler(AppException, app_exception_handler)  # type: ignore
         
         # FastAPI/Starlette exceptions
-        app.add_exception_handler(HTTPException, http_exception_handler)
+        app.add_exception_handler(HTTPException, http_exception_handler)  # type: ignore
         
         # Validation exceptions
-        app.add_exception_handler(RequestValidationError, validation_exception_handler)
-        app.add_exception_handler(ValidationError, pydantic_exception_handler)
+        app.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore
+        app.add_exception_handler(ValidationError, pydantic_exception_handler)  # type: ignore
         
         # General exceptions (only in production)
         if self.is_production:
-            app.add_exception_handler(Exception, general_exception_handler)
+            app.add_exception_handler(Exception, general_exception_handler)  # type: ignore
         
         logger.info("Exception handlers registered")
     

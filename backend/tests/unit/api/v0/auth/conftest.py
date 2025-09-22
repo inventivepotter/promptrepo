@@ -13,7 +13,7 @@ from services.auth.models import (
     RefreshResponse,
     VerifyResponse
 )
-from models.user import User
+from database.models.user import User
 
 
 @pytest.fixture

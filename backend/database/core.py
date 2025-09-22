@@ -26,8 +26,8 @@ def create_db_and_tables() -> None:
     Create all database tables.
     Should be called on application startup.
     """
-    # Import models to register them with SQLModel before creating tables
-    from models import User, UserSessions, UserRepos
+    # Import database.models to register them with SQLModel before creating tables
+    from database.models import User, UserSessions, UserRepos
     
     db_manager.create_tables()
     print("Database tables created successfully")

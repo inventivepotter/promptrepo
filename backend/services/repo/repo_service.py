@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import List, Dict, Optional, Any, Union
-import git
 import yaml
 import json
+from datetime import datetime
+from services.git.git_service import GitService, CommitInfo as GitCommitInfo
 from .models import PromptFile, CommitInfo, UserCredentials
 
 class IRepoService(ABC):
@@ -36,6 +37,7 @@ class RepoService(IRepoService):
     """
     def __init__(self, repo_path: Union[str, Path]):
         self.repo_path = Path(repo_path) if isinstance(repo_path, str) else repo_path
+        self.git_service = GitService(self.repo_path)
         
     def find_prompts(self, repo_name: str, username: str) -> List[PromptFile]:
         """Find YAML files containing system_prompt and user_prompt keys"""
@@ -105,24 +107,36 @@ class RepoService(IRepoService):
         repo_path = self.repo_path / repo_name
         
         try:
-            repo = git.Repo(repo_path)
+            # Initialize git service for this specific repo
+            git_service = GitService(repo_path)
             
             # Add all changes
-            repo.git.add(all=True)
+            git_service.add_files(["."])
             
             # Commit changes
-            commit = repo.index.commit(str(commit_message), author=git.Actor(username, f"{username}@example.com"))
+            commit_result = git_service.commit_changes(
+                commit_message=commit_message,
+                author_name=username,
+                author_email=f"{username}@example.com"
+            )
+            
+            if not commit_result.success:
+                raise ValueError(f"Failed to commit changes: {commit_result.message}")
             
             # Push changes if remote exists
-            if 'origin' in repo.remotes:
-                origin = repo.remote(name='origin')
-                origin.push()
+            push_result = git_service.push_branch(oauth_token=user_credentials.token)
+            
+            if not push_result.success:
+                raise ValueError(f"Failed to push changes: {push_result.message}")
                 
+            # Get commit info from result
+            commit_hash = commit_result.data.get("commit_hash", "") if commit_result.data else ""
+            
             return CommitInfo(
-                commit_id=commit.hexsha,
-                message=str(commit.message),
-                author=commit.author.name or "Unknown",
-                timestamp=commit.authored_datetime
+                commit_id=commit_hash,
+                message=commit_message,
+                author=username,
+                timestamp=datetime.now()  # Use current time as fallback
             )
         except Exception as e:
             raise ValueError(f"Failed to commit and push changes: {str(e)}")

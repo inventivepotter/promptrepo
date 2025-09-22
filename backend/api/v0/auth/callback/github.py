@@ -13,11 +13,9 @@ from middlewares.rest import (
     AuthenticationException,
     AppException
 )
-from models.database import get_session
-from models.user import User
-from api.deps import get_auth_service
-from services.auth.auth_service import AuthService
-from services.auth.models import AuthError, AuthenticationFailedError
+from database.models.user import User
+from api.deps import AuthServiceDep, DBSession
+from services.auth import AuthError, AuthenticationFailedError
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -79,11 +77,11 @@ class LoginResponseData(BaseModel):
 )
 async def github_oauth_callback(
     request: Request,
+    db: DBSession,
+    auth_service: AuthServiceDep,
     code: str = Query(..., description="Authorization code from GitHub"),
     state: str = Query(..., description="State parameter for CSRF verification"),
     redirect_uri: str = Query(..., description="Redirect URI used in initial request"),
-    db: Session = Depends(get_session),
-    auth_service: AuthService = Depends(get_auth_service)
 ) -> StandardResponse[LoginResponseData]:
     """
     Handle GitHub OAuth callback.
@@ -122,8 +120,7 @@ async def github_oauth_callback(
             provider="github",
             code=code,
             state=state,
-            redirect_uri=redirect_uri,
-            db=db
+            redirect_uri=redirect_uri
         )
         
         # Convert response to expected format

@@ -2,17 +2,15 @@
 Auth service health check endpoint with standardized responses.
 """
 import logging
-from fastapi import APIRouter, Request, Depends, status
-from sqlmodel import Session, select, func
+from fastapi import APIRouter, Request, status
+from sqlmodel import select, func
 
 from middlewares.rest import (
     StandardResponse,
     success_response,
     AppException
 )
-from models.database import get_session
-from api.deps import get_auth_service
-from services.auth.auth_service import AuthService
+from api.deps import AuthServiceDep, DBSession
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -27,15 +25,15 @@ router = APIRouter()
 )
 async def auth_health_check(
     request: Request,
-    db: Session = Depends(get_session),
-    auth_service: AuthService = Depends(get_auth_service)
+    db: DBSession,
+    auth_service: AuthServiceDep
 ) -> StandardResponse[dict]:
     """Health check specifically for auth routes."""
     request_id = getattr(request.state, "request_id", None)
     
     try:
         # Clean up expired sessions and OAuth states using auth service
-        expired_count = auth_service.cleanup_expired_sessions(db)
+        expired_count = auth_service.cleanup_expired_sessions()
 
         statement = select(func.count())
         active_sessions_count = db.exec(statement).one()

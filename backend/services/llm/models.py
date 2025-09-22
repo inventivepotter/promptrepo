@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Literal, Any, Dict, Union
+from typing import List, Optional, Literal, Any, Dict, Union, Annotated
 
 
 class ChatMessage(BaseModel):
@@ -17,11 +17,11 @@ class ChatCompletionRequest(BaseModel):
     model: str = Field(..., description="Model name (e.g., gpt-3.5-turbo, claude-3)")
     prompt_id: Optional[str] = Field(None, description="Optional prompt ID for context")
     stream: Optional[bool] = Field(False, description="Whether to stream the response")
-    temperature: Optional[float] = Field(None, ge=0.0, le=2.0, description="Sampling temperature")
-    max_tokens: Optional[int] = Field(None, gt=0, description="Maximum tokens to generate")
-    top_p: Optional[float] = Field(None, ge=0.0, le=1.0, description="Top-p sampling parameter")
-    frequency_penalty: Optional[float] = Field(None, ge=-2.0, le=2.0, description="Frequency penalty")
-    presence_penalty: Optional[float] = Field(None, ge=-2.0, le=2.0, description="Presence penalty")
+    temperature: Optional[Annotated[float, Field(ge=0.0, le=2.0)]] = Field(None, description="Sampling temperature")
+    max_tokens: Optional[Annotated[int, Field(gt=0)]] = Field(None, description="Maximum tokens to generate")
+    top_p: Optional[Annotated[float, Field(ge=0.0, le=1.0)]] = Field(None, description="Top-p sampling parameter")
+    frequency_penalty: Optional[Annotated[float, Field(ge=-2.0, le=2.0)]] = Field(None, description="Frequency penalty")
+    presence_penalty: Optional[Annotated[float, Field(ge=-2.0, le=2.0)]] = Field(None, description="Presence penalty")
     stop: Optional[List[str]] = Field(None, description="Stop sequences")
 
 
@@ -80,9 +80,6 @@ class ChatCompletionStreamResponse(BaseModel):
     choices: List[ChatCompletionStreamChoice]
 
 
-class ErrorResponse(BaseModel):
-    """Error response model"""
-    error: Dict[str, Any]
 
 
 # Schemas for LLM Providers endpoint

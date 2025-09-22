@@ -12,7 +12,7 @@ from middlewares.rest import (
     success_response,
     AppException
 )
-from services.llm.provider_service import provider_service
+from api.deps import ProviderServiceDep
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -52,7 +52,10 @@ class BasicProvidersResponse(BaseModel):
     summary="Get available providers",
     description="Get all available LLM providers without requiring API keys"
 )
-async def get_available_providers(request: Request) -> StandardResponse[BasicProvidersResponse]:
+async def get_available_providers(
+    request: Request,
+    provider_service: ProviderServiceDep
+) -> StandardResponse[BasicProvidersResponse]:
     """
     Get all available LLM providers without models.
     This endpoint returns predefined providers without requiring API keys.

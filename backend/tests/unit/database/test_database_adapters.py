@@ -4,7 +4,7 @@ Tests SQLite, PostgreSQL, and MySQL adapter implementations
 """
 import os
 from database.database_adapter import SQLiteAdapter, PostgreSQLAdapter, MySQLAdapter
-from models.user import User
+from database.models.user import User
 
 
 class TestSQLiteAdapter:

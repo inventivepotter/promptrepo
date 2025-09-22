@@ -1,9 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Optional
 from pathlib import Path
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel
 import httpx
 from settings.base_settings import Settings
+from services.config.models import HostingType
+from services.config.config_interface import IConfig
 
 class RepoInfo(BaseModel):
     name: str
@@ -30,7 +32,6 @@ class LocalRepoLocator(IRepoLocator):
         if not self.base_path.exists():
             self.base_path.mkdir(parents=True, exist_ok=True)
 
-
     async def get_repositories(self) -> Dict[str, str]:
         repos = {}
         for item in self.base_path.iterdir():
@@ -39,70 +40,43 @@ class LocalRepoLocator(IRepoLocator):
         return repos
 
 
-class GitHubRepoLocator(IRepoLocator):
-    def __init__(self, username:str, oauth_token: str):
-        self.base_path = Path(Settings.multi_user_repo_path)
-        self.oauth_token = oauth_token
-        self.username = username
-        if not self.base_path.exists():
-            self.base_path.mkdir(parents=True, exist_ok=True)
-
-    def _get_headers(self) -> Dict[str, str]:
-        return {
-            "Authorization": f"Bearer {self.oauth_token}",
-            "Accept": "application/vnd.github.v3+json"
-        }
-
-    async def get_repositories(self) -> Dict[str, str]:
-        repos = {}
-        url = f"https://api.github.com/users/repos"
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url, headers=self._get_headers())
-            if response.status_code == 200:
-                data = response.json()
-                for repo in data:
-                    name = repo["name"]
-                    git_url = repo["clone_url"]
-                    repos[name] = git_url
-            else:
-                raise ValueError(f"GitHub API error: {response.status_code} - {response.text}")
-        return repos
-
-
-def create_repo_locator(source_type, **kwargs) -> IRepoLocator:
-    """
-    Factory function to create appropriate repository locator based on source type.
-
-    Args:
-        source_type: Type of repository source (LOCAL or GITHUB)
-        **kwargs: Additional parameters needed for specific locators
-                 For GitHub: username, oauth_token
-
-    Returns:
-        IRepoLocator: Appropriate repository locator instance
-    """
-    if source_type == 'Individual':
-        return LocalRepoLocator()
-    elif source_type == 'Organization':
-        if 'username' not in kwargs or 'oauth_token' not in kwargs:
-            raise ValueError("GitHub locator requires 'username' and 'oauth_token' parameters")
-        return GitHubRepoLocator(kwargs['username'], kwargs['oauth_token'])
-    else:
-        raise ValueError(f"Unsupported repository source type: {source_type}")
-
-
 class RepoLocatorService:
     """
     Service class for locating repositories using different strategies.
+    Uses constructor injection for config service and OAuth service following SOLID principles.
     """
-    def __init__(self, source_type: str, **kwargs):
-        self.locator = create_repo_locator(source_type, **kwargs)
+    def __init__(self, config_service: IConfig, git_provider_service):
+        self.config_service = config_service
+        self.git_provider_service = git_provider_service
     
-    async def get_repositories(self) -> Dict[str, str]:
+    async def get_repositories(
+        self,
+        oauth_provider: Optional[str] = None,
+        username: Optional[str] = None,
+        oauth_token: Optional[str] = None
+    ) -> Dict[str, str]:
         """
         Get repositories using the configured locator strategy.
         
+        Args:
+            oauth_provider: OAuth provider name ('github', 'gitlab', 'bitbucket')
+            username: Username for OAuth providers (required for organization hosting)
+            oauth_token: OAuth token for authentication (required for organization hosting)
+
         Returns:
             Dict[str, str]: Dictionary mapping repository names to their paths/URLs
         """
-        return await self.locator.get_repositories()
+        hosting_config = self.config_service.get_hosting_config()
+        
+        if hosting_config.type == HostingType.INDIVIDUAL:
+            # Use local repository locator
+            locator = LocalRepoLocator()
+            return await locator.get_repositories()
+        elif hosting_config.type == HostingType.ORGANIZATION:
+            # Use OAuth service to get repositories from user's provider
+            if not oauth_provider or not oauth_token:
+                raise ValueError("OAuth provider and token are required for Organization hosting type")
+            
+            return await self.git_provider_service.get_user_repositories(oauth_provider, oauth_token)
+        else:
+            raise ValueError(f"Unsupported hosting type: {hosting_config.type}")

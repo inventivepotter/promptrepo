@@ -1,7 +1,7 @@
 """
 Repo Data Models
 
-This module contains Pydantic models for all Repo-related data structures,
+This module contains Pydantic database.models for all Repo-related data structures,
 ensuring type safety and consistent data validation across the Repo service.
 """
 

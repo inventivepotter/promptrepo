@@ -18,8 +18,8 @@ from services.auth.models import (
     SessionNotFoundError,
     TokenValidationError
 )
-from services.oauth.models import AuthUrlResponse, OAuthToken, UserInfo, UserEmail
-from models.user import User
+from services.git_provider.models import AuthUrlResponse, OAuthToken, UserInfo, UserEmail
+from database.models.user import User
 
 
 @pytest.fixture
@@ -46,13 +46,13 @@ def mock_db():
 @pytest.fixture
 def auth_service(mock_oauth_service):
     """AuthService instance with mocked dependencies"""
-    return AuthService(oauth_service=mock_oauth_service)
+    return AuthService(git_provider_service=mock_oauth_service)
 
 
 @pytest.fixture
 def sample_user_info():
     """Sample user info from OAuth provider"""
-    from services.oauth.models import OAuthProvider
+    from services.git_provider.models import OAuthProvider
     return UserInfo(
         id="12345",
         username="testuser",

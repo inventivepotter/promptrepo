@@ -7,8 +7,7 @@ from .llm import ProviderService, ChatCompletionService
 from .config import ConfigService, IConfig
 from .repo import RepoLocatorService, RepoService
 from .auth import AuthService, SessionService
-from .user import UserService
-from .oauth import OAuthService
+from .git_provider import GitProviderService
 
 __all__ = [
     'ProviderService',
@@ -19,6 +18,5 @@ __all__ = [
     'RepoService',
     'AuthService',
     'SessionService',
-    'UserService',
-    'OAuthService',
+    'GitProviderService',
 ]

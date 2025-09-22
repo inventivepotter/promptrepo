@@ -2,15 +2,13 @@
 Update configuration endpoint with standardized responses.
 """
 import logging
-from fastapi import APIRouter, Request, status
+from fastapi import APIRouter, Request, status, Body
 
-from services.config.models import AppConfig, HostingType
-from services.config.config_service import ConfigService
+from services.config.models import AppConfig
+from api.deps import ConfigServiceDep
 from middlewares.rest import (
     StandardResponse,
     success_response,
-    AuthorizationException,
-    BadRequestException,
     AppException,
     ValidationException
 )
@@ -19,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# TODO: Fix the hostingType to hostingConfig.type in front end
 @router.patch(
     "/",
     response_model=StandardResponse[AppConfig],
@@ -34,19 +31,6 @@ router = APIRouter()
                         "type": "/errors/bad-request",
                         "title": "Bad request",
                         "detail": "Invalid configuration parameters"
-                    }
-                }
-            }
-        },
-        403: {
-            "description": "Configuration updates not allowed",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "status": "error",
-                        "type": "/errors/access-denied",
-                        "title": "Access denied",
-                        "detail": "Configuration updates are only allowed for individual hosting type"
                     }
                 }
             }
@@ -79,84 +63,67 @@ router = APIRouter()
         }
     },
     summary="Update configuration",
-    description="Update application configuration (partial update, only for individual hosting)",
+    description="Update application configuration including LLM and repository configurations (partial update).",
 )
 async def update_config(
-    configs_param: AppConfig,
-    request: Request
+    request: Request,
+    config_service: ConfigServiceDep,
+    request_body: AppConfig = Body(...)
 ) -> StandardResponse[AppConfig]:
     """
-    Update application configuration (partial update).
-    Only allowed for individual hosting type.
+    Update application configuration including LLM and repository configurations (partial update).
     
     Returns:
         StandardResponse[AppConfig]: Standardized response containing updated configuration
     
     Raises:
-        AuthorizationException: When hosting type is not individual
-        BadRequestException: When trying to set non-individual hosting type
         ValidationException: When configuration validation fails
         AppException: When configuration update fails
     """
-    request_id = getattr(request.state, "request_id", None)
+    request_id = request.state.request_id
+    user_id = request.state.user_id
+
+    if not user_id:
+        logger.error(
+            "User ID not found in request state for configuration update",
+            extra={"request_id": request_id}
+        )
+        raise AppException(
+            message="User identification is required to update configuration.",
+            detail="User ID not found."
+        )
     
     try:
-        config_service = ConfigService()
-        current_hosting_type = config_service.get_hosting_config()
-
-        # Check hosting types
-        hosting_type = getattr(configs_param, 'hostingConfig', {}).get('type', '') or ''
-        
         logger.info(
-            f"Configuration update request received",
+            f"Configuration update request received for user {user_id}",
             extra={
                 "request_id": request_id,
-                "incoming_hosting_type": hosting_type,
-                "current_hosting_type": str(current_hosting_type)
             }
         )
-        
-        # Validate hosting type - only allow saves for individual hosting
-        if current_hosting_type != HostingType.INDIVIDUAL:
-            logger.warning(
-                f"Configuration update blocked - non-individual hosting type",
-                extra={
-                    "request_id": request_id,
-                    "current_hosting_type": str(current_hosting_type)
-                }
-            )
-            raise AuthorizationException(
-                message=f"Configuration updates are only allowed for individual hosting type",
-                context={"current_hosting_type": str(current_hosting_type)}
-            )
-        
-        if hosting_type and hosting_type != HostingType.INDIVIDUAL:
-            logger.warning(
-                f"Configuration update blocked - attempting to set non-individual hosting",
-                extra={
-                    "request_id": request_id,
-                    "requested_hosting_type": hosting_type
-                }
-            )
-            raise BadRequestException(
-                message="Configuration updates can only set hosting type to 'individual'",
-                context={"requested_hosting_type": hosting_type}
-            )
-        
-        # Validate individual hosting specific configuration
-        _validate_individual_hosting_config(configs_param)
-        
-        # Update configuration
-        config_service.set_llm_configs(getattr(configs_param, 'llmConfigs'))
+
+        llm_configs = getattr(request_body, 'llm_configs', None)
+        repo_configs = getattr(request_body, 'repo_configs', None)
+
+        if llm_configs:
+            _validate_llm_configs_uniqueness(llm_configs)
+
+        if repo_configs:
+            _validate_repo_configs_uniqueness(repo_configs)
+
+        # Update configuration using the service method
+        config_service.save_configs_for_api(
+            user_id=user_id,
+            llm_configs=llm_configs,
+            repo_configs=repo_configs
+        )
 
         # Get and return the updated configuration
-        updated_config = config_service.get_config()
+        updated_config = config_service.get_configs_for_api(user_id=user_id)
         
         logger.info(
-            "Configuration updated successfully",
+            f"Configuration updated successfully for user {user_id}",
             extra={
                 "request_id": request_id,
-                "hosting_type": str(current_hosting_type)
             }
         )
         
@@ -166,12 +133,12 @@ async def update_config(
             meta={"request_id": request_id}
         )
         
-    except (AuthorizationException, BadRequestException, ValidationException, AppException):
+    except (ValidationException, AppException):
         # These will be handled by the global exception handlers
         raise
     except Exception as e:
         logger.error(
-            f"Failed to update configuration: {str(e)}",
+            f"Failed to update configuration for user {user_id}: {str(e)}",
             exc_info=True,
             extra={"request_id": request_id}
         )
@@ -181,46 +148,10 @@ async def update_config(
         )
 
 
-def _validate_individual_hosting_config(configs_param: AppConfig):
-    """
-    Validates configuration for individual hosting type only.
-    
-    Raises:
-        ValidationException: When validation fails
-    """
-    hosting_type = getattr(configs_param, 'hostingType', '') or ''
-    
-    if hosting_type != "individual":
-        raise ValidationException(
-            message="Only individual hosting type is supported for configuration updates",
-            errors=[{
-                "code": "INVALID_HOSTING_TYPE",
-                "message": "Only individual hosting type is supported",
-                "field": "hostingType",
-                "context": {"provided_type": hosting_type}
-            }]
-        )
-    
-    # Individual hosting requires LLM configs
-    llm_configs = getattr(configs_param, 'llmConfigs', []) or []
-    if not llm_configs:
-        raise ValidationException(
-            message="Individual hosting requires at least one LLM configuration",
-            errors=[{
-                "code": "MISSING_LLM_CONFIG",
-                "message": "At least one LLM configuration is required",
-                "field": "llmConfigs"
-            }]
-        )
-    
-    # Validate uniqueness of LLM configurations
-    _validate_llm_configs_uniqueness(llm_configs)
-
-
 def _validate_llm_configs_uniqueness(llm_configs):
     """
-    Validates that LLM configurations are unique based on the combination of
-    provider, model, apiKey, and apiBaseUrl.
+    Validates that LLM configurations with scope=user are unique based on the combination of
+    provider, model, api_key, and api_base_url.
     
     Raises:
         ValidationException: When duplicate configurations are found
@@ -231,25 +162,68 @@ def _validate_llm_configs_uniqueness(llm_configs):
     seen_configs = set()
     
     for idx, config_item in enumerate(llm_configs):
+        # Only validate uniqueness for user-scoped configs
+        scope = getattr(config_item, 'scope', '') or ''
+        if scope != 'user':
+            continue
+            
         # Safely handle potential None values
         provider = getattr(config_item, 'provider', '') or ''
         model = getattr(config_item, 'model', '') or ''
-        api_key = getattr(config_item, 'apiKey', '') or ''
-        api_base_url = getattr(config_item, 'apiBaseUrl', '') or ''
         
         # Create a tuple to represent the unique combination
-        config_key = (provider, model, api_key, api_base_url)
+        config_key = (provider, model)
         
         if config_key in seen_configs:
             raise ValidationException(
                 message="Duplicate LLM configuration found",
                 errors=[{
                     "code": "DUPLICATE_CONFIG",
-                    "message": "The combination of provider, model, API base URL, and API key must be unique",
-                    "field": f"llmConfigs[{idx}]",
+                    "message": "The combination of provider, model must be unique for user-scoped configurations",
+                    "field": f"llm_configs[{idx}]",
                     "context": {
                         "provider": provider,
-                        "model": model
+                        "model": model,
+                        "scope": scope
+                    }
+                }]
+            )
+        
+        seen_configs.add(config_key)
+
+
+def _validate_repo_configs_uniqueness(repo_configs):
+    """
+    Validates that repository configurations are unique based on the combination of
+    provider, repository URL, and access token.
+    
+    Raises:
+        ValidationException: When duplicate configurations are found
+    """
+    if not repo_configs:
+        return
+        
+    seen_configs = set()
+    
+    for idx, config_item in enumerate(repo_configs):
+        # Safely handle potential None values
+        provider = getattr(config_item, 'provider', '') or ''
+        repo_url = getattr(config_item, 'repo_url', '') or ''
+        access_token = getattr(config_item, 'access_token', '') or ''
+        
+        # Create a tuple to represent the unique combination
+        config_key = (provider, repo_url, access_token)
+        
+        if config_key in seen_configs:
+            raise ValidationException(
+                message="Duplicate repository configuration found",
+                errors=[{
+                    "code": "DUPLICATE_CONFIG",
+                    "message": "The combination of provider, repository URL, and access token must be unique",
+                    "field": f"repo_configs[{idx}]",
+                    "context": {
+                        "provider": provider,
+                        "repo_url": repo_url
                     }
                 }]
             )

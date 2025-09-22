@@ -10,6 +10,7 @@ ENV ENVIRONMENT=production
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy pyproject.toml, then install build backend

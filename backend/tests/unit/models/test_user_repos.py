@@ -7,7 +7,7 @@ from uuid import uuid4
 from sqlmodel import SQLModel, Session
 
 from models.user_repos import UserRepos, RepoStatus
-from models.user import User
+from database.models.user import User
 
 
 class TestUserReposModel:

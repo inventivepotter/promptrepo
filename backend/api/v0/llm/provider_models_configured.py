@@ -12,7 +12,7 @@ from middlewares.rest import (
     success_response,
     AppException
 )
-from services.llm.provider_service import provider_service
+from api.deps import ProviderServiceDep
 from services.llm.models import ProviderInfo
 
 logger = logging.getLogger(__name__)
@@ -44,9 +44,12 @@ class ProvidersResponse(BaseModel):
         }
     },
     summary="Get configured providers",
-    description="Get configured LLM providers and their models based on AppConfig"
+    description="Get configured LLM providers and their database.models based on AppConfig"
 )
-async def get_configured_providers(request: Request) -> StandardResponse[ProvidersResponse]:
+async def get_configured_providers(
+    request: Request,
+    provider_service: ProviderServiceDep,
+) -> StandardResponse[ProvidersResponse]:
     """
     Get configured LLM providers and their models.
     Returns standardized provider information based on AppConfig.
@@ -65,17 +68,19 @@ async def get_configured_providers(request: Request) -> StandardResponse[Provide
             extra={"request_id": request_id}
         )
         
-        providers_data = provider_service.get_configured_providers()
+        user_id = request.state.user_id
+        providers_data = provider_service.get_configured_providers(user_id=user_id)
         
         # provider_service.get_configured_providers() always returns a ProvidersResponse
         response_data = providers_data
         provider_count = len(providers_data.providers) if providers_data.providers else 0
         
         logger.info(
-            f"Retrieved {provider_count} configured providers",
+            f"Retrieved {provider_count} configured providers for user {user_id}",
             extra={
                 "request_id": request_id,
-                "provider_count": provider_count
+                "provider_count": provider_count,
+                "user_id": user_id
             }
         )
         
@@ -85,6 +90,8 @@ async def get_configured_providers(request: Request) -> StandardResponse[Provide
             meta={"request_id": request_id}
         )
         
+    except AppException:
+        raise
     except Exception as e:
         logger.error(
             f"Failed to retrieve configured providers: {e}",

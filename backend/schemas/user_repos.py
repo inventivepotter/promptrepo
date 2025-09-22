@@ -2,10 +2,10 @@
 """
 Pydantic schemas for user repositories API endpoints.
 """
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
-from models.user_repos import UserRepos, RepoStatus
+from models.user_repos import RepoStatus
 
 
 class AddRepositoryRequest(BaseModel):
@@ -60,17 +60,3 @@ class UserRepositoriesSummaryResponse(BaseModel):
     user_id: str = Field(..., description="User ID")
     status_summary: RepositoryStatusSummary = Field(..., description="Count by status")
     total_repositories: int = Field(..., description="Total number of repositories")
-
-
-class SuccessResponse(BaseModel):
-    """Generic success response."""
-    success: bool = Field(default=True, description="Operation success status")
-    message: str = Field(..., description="Success message")
-
-
-class ErrorResponse(BaseModel):
-    """Generic error response."""
-    success: bool = Field(default=False, description="Operation success status")
-    error: str = Field(..., description="Error type")
-    message: str = Field(..., description="Error message")
-    details: Optional[dict] = Field(default=None, description="Additional error details")

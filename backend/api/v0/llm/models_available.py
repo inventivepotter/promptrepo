@@ -1,6 +1,6 @@
 """
-LLM models endpoints with standardized responses.
-Handles fetching models for specific providers.
+LLM database.models endpoints with standardized responses.
+Handles fetching database.models for specific providers.
 """
 from fastapi import APIRouter, Request, status
 from pydantic import BaseModel
@@ -13,7 +13,7 @@ from middlewares.rest import (
     BadRequestException,
     AppException
 )
-from services.llm.provider_service import ProviderService
+from api.deps import ProviderServiceDep
 from services.llm.models import ModelInfo
 
 logger = logging.getLogger(__name__)
@@ -21,14 +21,14 @@ router = APIRouter()
 
 
 class FetchModelsRequest(BaseModel):
-    """Request for fetching models by provider and API key"""
+    """Request for fetching database.models by provider and API key"""
     provider: str
     api_key: str
     api_base: str = ''
 
 
 class ModelsResponse(BaseModel):
-    """Response for models endpoint"""
+    """Response for database.models endpoint"""
     models: List[ModelInfo]
 
 
@@ -64,16 +64,17 @@ class ModelsResponse(BaseModel):
             }
         }
     },
-    summary="Fetch models by provider",
-    description="Fetch available models for a specific provider using API key"
+    summary="Fetch database.models by provider",
+    description="Fetch available database.models for a specific provider using API key"
 )
 async def fetch_models_by_provider(
     provider_id: str,
     request_body: FetchModelsRequest,
-    request: Request
+    request: Request,
+    provider_service: ProviderServiceDep
 ) -> StandardResponse[ModelsResponse]:
     """
-    Fetch available models for a specific provider using API key.
+    Fetch available database.models for a specific provider using API key.
     This endpoint connects to the actual provider APIs to get real-time model information.
     
     Returns:
@@ -105,7 +106,7 @@ async def fetch_models_by_provider(
             )
 
         logger.info(
-            f"Fetching models for provider: {provider_id}",
+            f"Fetching database.models for provider: {provider_id}",
             extra={
                 "request_id": request_id,
                 "provider": provider_id,
@@ -113,14 +114,14 @@ async def fetch_models_by_provider(
             }
         )
 
-        models = ProviderService.fetch_models_by_provider(
+        database.models = provider_service.fetch_models_by_provider(
             provider_id,
             request_body.api_key,
             request_body.api_base
         )
         
         logger.info(
-            f"Retrieved {len(models)} models for provider: {provider_id}",
+            f"Retrieved {len(models)} database.models for provider: {provider_id}",
             extra={
                 "request_id": request_id,
                 "provider": provider_id,
@@ -130,7 +131,7 @@ async def fetch_models_by_provider(
         
         return success_response(
             data=ModelsResponse(models=models),
-            message=f"Retrieved {len(models)} models for provider {provider_id}",
+            message=f"Retrieved {len(models)} database.models for provider {provider_id}",
             meta={"request_id": request_id}
         )
         
@@ -138,7 +139,7 @@ async def fetch_models_by_provider(
         raise
     except Exception as e:
         logger.error(
-            f"Error fetching models for provider {provider_id}: {e}",
+            f"Error fetching database.models for provider {provider_id}: {e}",
             exc_info=True,
             extra={
                 "request_id": request_id,
@@ -146,6 +147,6 @@ async def fetch_models_by_provider(
             }
         )
         raise AppException(
-            message=f"Failed to fetch models for provider {provider_id}",
+            message=f"Failed to fetch database.models for provider {provider_id}",
             detail=str(e)
         )

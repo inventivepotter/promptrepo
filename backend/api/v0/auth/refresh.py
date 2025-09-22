@@ -4,7 +4,6 @@ Session refresh endpoint with standardized responses.
 import logging
 from fastapi import APIRouter, Request, Depends, status
 from pydantic import BaseModel
-from sqlmodel import Session
 
 from middlewares.rest import (
     StandardResponse,
@@ -12,10 +11,7 @@ from middlewares.rest import (
     AuthenticationException,
     AppException
 )
-from models.database import get_session
-from .verify import get_bearer_token
-from api.deps import get_auth_service
-from services.auth.auth_service import AuthService
+from api.deps import AuthServiceDep, BearerTokenDep
 from services.auth.models import RefreshRequest, AuthError, SessionNotFoundError, TokenValidationError
 
 logger = logging.getLogger(__name__)
@@ -64,9 +60,8 @@ class RefreshResponseData(BaseModel):
 )
 async def refresh_session(
     request: Request,
-    token: str = Depends(get_bearer_token),
-    db: Session = Depends(get_session),
-    auth_service: AuthService = Depends(get_auth_service)
+    token: BearerTokenDep,
+    auth_service: AuthServiceDep
 ) -> StandardResponse[RefreshResponseData]:
     """
     Refresh session token to extend expiry.
@@ -83,7 +78,7 @@ async def refresh_session(
     try:
         # Create refresh request using auth service models
         refresh_request = RefreshRequest(session_token=token)
-        refresh_response = await auth_service.refresh_session(refresh_request, db)
+        refresh_response = await auth_service.refresh_session(refresh_request)
         
         return success_response(
             data=RefreshResponseData(

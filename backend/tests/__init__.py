@@ -1,3 +1,3 @@
 """
-Test suite for the backend application
+Tests for the PromptRepo backend application.
 """

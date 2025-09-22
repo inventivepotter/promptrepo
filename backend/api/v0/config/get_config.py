@@ -4,12 +4,11 @@ Get configuration endpoint with standardized responses.
 import logging
 from fastapi import APIRouter, Request, status
 
-from services.config.models import AppConfig, HostingType
-from services.config import ConfigService
+from services.config.models import AppConfig
+from api.deps import ConfigServiceDep
 from middlewares.rest import (
     StandardResponse,
     success_response,
-    AuthorizationException,
     AppException
 )
 
@@ -22,19 +21,6 @@ router = APIRouter()
     response_model=StandardResponse[AppConfig],
     status_code=status.HTTP_200_OK,
     responses={
-        403: {
-            "description": "Configuration access not allowed for non-individual hosting",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "status": "error",
-                        "type": "/errors/access-denied",
-                        "title": "Access denied",
-                        "detail": "Configuration access is only allowed for individual hosting type"
-                    }
-                }
-            }
-        },
         500: {
             "description": "Internal server error",
             "content": {
@@ -50,56 +36,35 @@ router = APIRouter()
         }
     },
     summary="Get configuration",
-    description="Retrieve current application configuration (only for individual hosting type)",
+    description="Retrieve current application configuration",
 )
-async def get_config(request: Request) -> StandardResponse[AppConfig]:
+async def get_config(
+    request: Request,
+    config_service: ConfigServiceDep
+) -> StandardResponse[AppConfig]:
     """
     Get current application configuration.
-    Only allowed for individual hosting type.
     
     Returns:
         StandardResponse[AppConfig]: Standardized response containing the configuration
     
     Raises:
-        AuthorizationException: When hosting type is not individual
         AppException: When configuration retrieval fails
     """
-    request_id = getattr(request.state, "request_id", None)
+    request_id = request.state.request_id
+    user_id = request.state.user_id
     
     try:
-        config = ConfigService()
-        current_hosting_type = config.get_hosting_config()
-        
         logger.info(
-            f"Fetching configuration for hosting type: {current_hosting_type}",
-            extra={
-                "request_id": request_id,
-                "hosting_type": current_hosting_type.type
-            }
+            "Fetching configuration",
+            extra={"request_id": request_id, "user_id": user_id}
         )
         
-        # Check authorization based on hosting type
-        if current_hosting_type != HostingType.INDIVIDUAL:
-            logger.warning(
-                f"Configuration access denied for hosting type: {current_hosting_type}",
-                extra={
-                    "request_id": request_id,
-                    "hosting_type": current_hosting_type.type
-                }
-            )
-            raise AuthorizationException(
-                message="Configuration access is only allowed for individual hosting type",
-                context={"current_hosting_type": current_hosting_type.type}
-            )
-        
-        config_data = config.get_config()
+        config_data = config_service.get_configs_for_api(user_id=user_id)
         
         logger.info(
             "Configuration retrieved successfully",
-            extra={
-                "request_id": request_id,
-                "hosting_type": current_hosting_type.type
-            }
+            extra={"request_id": request_id, "user_id": user_id}
         )
         
         return success_response(
@@ -108,14 +73,14 @@ async def get_config(request: Request) -> StandardResponse[AppConfig]:
             meta={"request_id": request_id}
         )
         
-    except (AuthorizationException, AppException):
-        # These will be handled by the global exception handlers
+    except AppException:
+        # This will be handled by the global exception handler
         raise
     except Exception as e:
         logger.error(
             f"Failed to retrieve configuration: {str(e)}",
             exc_info=True,
-            extra={"request_id": request_id}
+            extra={"request_id": request_id, "user_id": user_id}
         )
         raise AppException(
             message="Failed to retrieve configuration",

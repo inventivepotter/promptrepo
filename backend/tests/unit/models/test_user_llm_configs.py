@@ -3,8 +3,8 @@ from datetime import datetime, UTC
 from uuid import uuid4
 from sqlmodel import SQLModel, Session
 
-from models.user_llm_configs import UserLLMConfigs
-from models.user import User
+from database.models.user_llm_configs import UserLLMConfigs
+from database.models.user import User
 
 
 def test_create_user_llm_config(db_session: Session):

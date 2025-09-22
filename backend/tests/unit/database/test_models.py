@@ -4,7 +4,7 @@ Tests User, UserSession, and UserRepository models
 """
 import pytest
 from datetime import datetime, UTC, timedelta
-from models import User, UserSessions, UserRepos, RepoStatus
+from database.models import User, UserSessions, UserRepos, RepoStatus
 
 
 class TestUserModel:

@@ -9,16 +9,16 @@ from sqlmodel.pool import StaticPool
 
 from main import app
 from database.core import get_session
-from models.user import User
-from services.oauth.models import (
+from database.models.user import User
+from services.git_provider.models import (
     UserInfo,
     UserEmail,
     OAuthToken,
     AuthUrlResponse,
     OAuthProvider
 )
-from api.deps import get_oauth_service, get_auth_service
-from services.oauth.oauth_service import OAuthService
+from api.deps import get_git_provider_service, get_auth_service
+from services.git_provider.git_provider_service import GitProviderService
 from services.auth.auth_service import AuthService
 
 # Create a test database engine
@@ -40,7 +40,7 @@ app.dependency_overrides[get_session] = get_test_session
 client = TestClient(app)
 
 # Mock OAuth service
-mock_oauth_service = Mock(spec=OAuthService)
+mock_oauth_service = Mock(spec=GitProviderService)
 mock_oauth_service.get_authorization_url = AsyncMock(return_value=AuthUrlResponse(
     provider="github",
     auth_url="https://github.com/login/oauth/authorize?client_id=test_client_id&redirect_uri=http://localhost:8080/api/v0/auth/callback/github&state=test_state",
@@ -93,7 +93,7 @@ mock_auth_service.handle_oauth_callback = AsyncMock(return_value=LoginResponse(
 ))
 
 # Override the dependencies
-app.dependency_overrides[get_oauth_service] = lambda: mock_oauth_service
+app.dependency_overrides[get_git_provider_service] = lambda: mock_oauth_service
 app.dependency_overrides[get_auth_service] = lambda: mock_auth_service
 
 

@@ -4,7 +4,8 @@ Implements the Strategy Pattern for hosting type configurations.
 """
 
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Optional
+from sqlmodel import Session
 from services.config.models import AppConfig
 from services.config.models import HostingConfig, OAuthConfig, LLMConfig, RepoConfig
 
@@ -14,16 +15,6 @@ class IConfig(ABC):
     Abstract base class for all configuration strategies.
     Defines the interface that all hosting type configurations must implement.
     """
-    
-    @abstractmethod
-    def set_hosting_type(self) -> HostingConfig:
-        """
-        Set hosting type in environment variables.
-
-        Returns:
-            HostingConfig: Updated hosting configuration
-        """
-        pass
     
     @abstractmethod
     def set_oauth_configs(self, oauth_configs: List[OAuthConfig]) -> List[OAuthConfig] | None:
@@ -39,7 +30,7 @@ class IConfig(ABC):
         pass
 
     @abstractmethod
-    def set_llm_configs(self, llm_configs: List[LLMConfig]) -> List[LLMConfig] | None:
+    def set_llm_configs(self, db: Session, user_id: str, llm_configs: List[LLMConfig]) -> List[LLMConfig] | None:
         """
         Set LLM configuration in environment variables.
         
@@ -52,11 +43,13 @@ class IConfig(ABC):
         pass
 
     @abstractmethod
-    def set_repo_configs(self, repo_configs: List[RepoConfig]) -> List[RepoConfig] | None:
+    def set_repo_configs(self, db: Session, user_id: str, repo_configs: List[RepoConfig]) -> List[RepoConfig] | None:
         """
-        Set repository configuration in environment variables.
+        Set repository configuration for a user.
 
         Args:
+            db: Database session
+            user_id: The ID of the user to set the configuration for.
             repo_configs: Repository configuration as a list of RepoConfig objects
 
         Returns:
@@ -85,7 +78,7 @@ class IConfig(ABC):
         pass
     
     @abstractmethod
-    def get_llm_configs(self) -> List[LLMConfig] | None:
+    def get_llm_configs(self, db: Session, user_id: str | None) -> List[LLMConfig] | None:
         """
         Get LLM configuration.
         
@@ -95,20 +88,15 @@ class IConfig(ABC):
         pass
 
     @abstractmethod
-    def get_repo_configs(self) -> List[RepoConfig] | None:
+    def get_repo_configs(self, db: Session, user_id: str) -> List[RepoConfig] | None:
         """
-        Get repository configuration.
+        Get repository configuration for a user.
+
+        Args:
+            db: Database session
+            user_id: The ID of the user to get the configuration for.
 
         Returns:
             List[RepoConfig]: Repository configuration
         """
         pass
-
-    def get_config(self) -> AppConfig:
-        """Get the current configuration object based on the hosting type."""
-        return AppConfig(
-            hostingConfig=self.get_hosting_config(),
-            oauthConfigs=self.get_oauth_configs(),
-            llmConfigs=self.get_llm_configs(),
-            repoConfigs=self.get_repo_configs()
-        )

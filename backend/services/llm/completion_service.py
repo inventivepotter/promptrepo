@@ -71,14 +71,14 @@ class ChatCompletionService:
     async def stream_completion(
         self,
         request: ChatCompletionRequest,
-        model: str,
+        user_id: str,
         completion_id: str
     ) -> AsyncGenerator[str, None]:
         """Generate streaming chat completion responses."""
         # Validate system message is present
         self._validate_system_message(request.messages)
 
-        api_key, api_base_url = self._get_api_details(request.provider, request.model)
+        api_key, api_base_url = self._get_api_details(request.provider, request.model, user_id=user_id)
 
         # Build completion parameters
         completion_params = self.build_completion_params(request, api_key, api_base_url, stream=True)
@@ -93,7 +93,7 @@ class ChatCompletionService:
             stream_iterator = cast(AsyncIterator[ChatCompletionChunk], stream_response)
             
             async for chunk in stream_iterator:
-                processed_chunk = await self._process_streaming_chunk(chunk, completion_id, model)
+                processed_chunk = await self._process_streaming_chunk(chunk, completion_id, request.model)
                 if processed_chunk:  # Only yield non-empty chunks
                     yield processed_chunk
                     
@@ -107,9 +107,9 @@ class ChatCompletionService:
     def __init__(self):
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.config_service = ConfigService()
-    
-    def _get_api_details(self, provider: str, model: str) -> tuple[str, str | None]:
-        llm_configs = self.config_service.get_llm_configs() or []
+
+    def _get_api_details(self, provider: str, model: str, user_id: str) -> tuple[str, str | None]:
+        llm_configs = self.config_service.get_llm_configs(user_id=user_id) or []
             
         # Filter llm_configs to find matching provider and model
         matching_config = None
@@ -125,8 +125,8 @@ class ChatCompletionService:
                 )
             
         # Get API key and base URL from the matching configuration
-        api_key = matching_config.apiKey
-        api_base_url = matching_config.apiBaseUrl if matching_config.apiBaseUrl else None
+        api_key = matching_config.api_key
+        api_base_url = matching_config.api_base_url if matching_config.api_base_url else None
         return api_key, api_base_url
     
     async def _process_streaming_chunk(
@@ -218,13 +218,14 @@ class ChatCompletionService:
     
     async def execute_non_streaming_completion(
         self,
-        request: ChatCompletionRequest
+        request: ChatCompletionRequest,
+        user_id: str
     ) -> tuple[str, str | None, UsageStats | None, float]:
         """Execute non-streaming completion and return content, finish_reason, usage stats, and inference time."""
         # Validate system message is present
         self._validate_system_message(request.messages)
 
-        api_key, api_base_url = self._get_api_details(request.provider, request.model)
+        api_key, api_base_url = self._get_api_details(request.provider, request.model, user_id=user_id)
         
         # Build completion parameters
         completion_params = self.build_completion_params(request, api_key, api_base_url, stream=False)

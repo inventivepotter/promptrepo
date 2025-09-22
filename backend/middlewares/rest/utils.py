@@ -4,6 +4,7 @@ Utility functions for API operations.
 from typing import Optional, Dict, Any, List, TypeVar
 from datetime import datetime, timezone
 from fastapi import Query, Depends
+from middlewares.rest.models import PaginationMetadata
 
 T = TypeVar("T")
 
@@ -61,7 +62,7 @@ def sanitize_dict(data: Dict[str, Any], sensitive_keys: Optional[List[str]] = No
     Remove sensitive information from dictionary.
     """
     if sensitive_keys is None:
-        sensitive_keys = ["password", "api_key", "secret", "token", "apiKey"]
+        sensitive_keys = ["password", "api_key", "secret", "token", "api_key"]
     
     sanitized = {}
     for key, value in data.items():
@@ -84,20 +85,20 @@ def calculate_pagination_metadata(
     total_items: int,
     page: int,
     page_size: int
-) -> Dict[str, Any]:
+) -> PaginationMetadata:
     """
     Calculate pagination metadata.
     """
     total_pages = (total_items + page_size - 1) // page_size if page_size > 0 else 0
     
-    return {
-        "page": page,
-        "page_size": page_size,
-        "total_items": total_items,
-        "total_pages": total_pages,
-        "has_next": page < total_pages,
-        "has_previous": page > 1,
-    }
+    return PaginationMetadata(
+        page=page,
+        page_size=page_size,
+        total_items=total_items,
+        total_pages=total_pages,
+        has_next=page < total_pages,
+        has_previous=page > 1,
+    )
 
 
 # Dependency for getting pagination params

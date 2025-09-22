@@ -5,7 +5,6 @@ from fastapi import APIRouter, Request, status
 from fastapi.responses import StreamingResponse
 import uuid
 import time
-import json
 import logging
 
 from middlewares.rest import (
@@ -20,7 +19,7 @@ from services.llm.models import (
     ChatCompletionChoice,
     ChatMessage,
 )
-from services.llm.completion_service import chat_completion_service
+from api.deps import ChatCompletionServiceDep
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -63,7 +62,8 @@ router = APIRouter()
 )
 async def chat_completions(
     request_body: ChatCompletionRequest,
-    request: Request
+    request: Request,
+    chat_completion_service: ChatCompletionServiceDep
 ):
     """
     Create a chat completion using any-llm.
@@ -133,7 +133,7 @@ async def chat_completions(
         
         # Handle non-streaming response
         try:
-            content, finish_reason, usage_stats, inference_time_ms = await chat_completion_service.execute_non_streaming_completion(request_body)
+            content, finish_reason, usage_stats, inference_time_ms = await chat_completion_service.execute_non_streaming_completion(request_body, request.state.user_id)
         except Exception as e:
             logger.error(
                 f"Error in completion processing: {e}",

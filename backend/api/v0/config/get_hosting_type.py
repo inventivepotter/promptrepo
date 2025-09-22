@@ -3,26 +3,21 @@ Get hosting type endpoint without authentication - with standardized responses.
 """
 import logging
 from fastapi import APIRouter, Request, status
-from pydantic import BaseModel
-from services.config.config_service import ConfigService
+from api.deps import ConfigServiceDep
 from middlewares.rest import (
     StandardResponse,
     success_response,
     AppException
 )
+from services.config.models import HostingConfig
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-class HostingTypeResponse(BaseModel):
-    """Response for hosting type endpoint"""
-    hosting_type: str
-
-
 @router.get(
     "/hosting-type",
-    response_model=StandardResponse[HostingTypeResponse],
+    response_model=StandardResponse[HostingConfig],
     status_code=status.HTTP_200_OK,
     responses={
         500: {
@@ -42,7 +37,10 @@ class HostingTypeResponse(BaseModel):
     summary="Get hosting type",
     description="Get current hosting type without authentication (publicly accessible)",
 )
-async def get_hosting_type(request: Request) -> StandardResponse[HostingTypeResponse]:
+async def get_hosting_type(
+    request: Request,
+    config_service: ConfigServiceDep
+) -> StandardResponse[HostingConfig]:
     """
     Get current hosting type without authentication.
     This endpoint is publicly accessible to determine UI behavior.
@@ -53,12 +51,11 @@ async def get_hosting_type(request: Request) -> StandardResponse[HostingTypeResp
     Raises:
         AppException: When hosting type retrieval fails
     """
-    request_id = getattr(request.state, "request_id", None)
-    
+    request_id = request.state.request_id
+    correlation_id = request.state.correlation_id
+
     try:
-        config_service = ConfigService()
-        hosting_config = config_service.get_hosting_config()
-        hosting_type = hosting_config.type.value
+        hosting_type = config_service.get_hosting_config()
         
         logger.info(
             f"Hosting type retrieved: {hosting_type}",
@@ -68,21 +65,20 @@ async def get_hosting_type(request: Request) -> StandardResponse[HostingTypeResp
             }
         )
         
-        response_data = HostingTypeResponse(hosting_type=hosting_type)
         
         return success_response(
-            data=response_data,
+            data=hosting_type,
             message="Hosting type retrieved successfully",
-            meta={"request_id": request_id}
+            meta={"request_id": request_id, "correlation_id": correlation_id}
         )
         
-    except Exception as e:
+    except AttributeError as e:
         logger.error(
-            f"Failed to retrieve hosting type: {str(e)}",
+            f"Hosting type not found in request state: {str(e)}",
             exc_info=True,
             extra={"request_id": request_id}
         )
         raise AppException(
-            message="Failed to retrieve hosting type",
-            detail=str(e)
+            message="Hosting type not available",
+            detail="Request state is missing hosting_type, check middleware configuration."
         )

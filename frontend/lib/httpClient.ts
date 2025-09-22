@@ -1,5 +1,11 @@
-import { ApiResponse, ApiResult, HttpMethod, RequestConfig } from '@/types/ApiResponse';
+import { HttpMethod, RequestConfig } from '@/types/ApiResponse';
 import { getAuthHeaders } from '../utils/authHeaders';
+import {
+  OpenApiResponse,
+  StandardResponse,
+  ErrorResponse,
+  ResponseStatus
+} from '@/types/OpenApiResponse';
 
 interface HttpClientConfig {
   baseUrl?: string;
@@ -56,7 +62,7 @@ class HttpClient {
     method: HttpMethod,
     data?: unknown,
     config?: RequestConfig
-  ): Promise<ApiResult<T>> {
+  ): Promise<OpenApiResponse<T>> {
     try {
       // Ensure endpoint has /api prefix for backend calls
       const normalizedEndpoint = endpoint.startsWith('/api/') ? endpoint : `/api${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
@@ -87,80 +93,121 @@ class HttpClient {
       
       const statusCode = response.status;
 
-      let responseData: ApiResponse<T>;
+      let responseData: unknown;
       
       try {
         responseData = await response.json();
       } catch {
-        // If response is not JSON, create a structured response
-        responseData = {
-          success: response.ok,
-          data: response.ok ? ({} as T) : undefined,
-          error: response.ok ? undefined : `HTTP ${response.status}: ${response.statusText}`,
-          message: response.statusText
+        // If response is not JSON, create an error response in OpenAPI format
+        const errorResponse: ErrorResponse = {
+          status: ResponseStatus.ERROR,
+          type: `/errors/http-${response.status}`,
+          title: response.statusText || 'Request Failed',
+          detail: `HTTP ${response.status}: ${response.statusText}`,
+          meta: {
+            timestamp: new Date().toISOString(),
+            request_id: config?.headers?.['X-Request-ID'],
+            correlation_id: config?.headers?.['X-Correlation-ID']
+          }
         };
+        return errorResponse;
       }
 
-      if (response.ok && responseData.success !== false) {
-        return {
-          success: true,
-          data: responseData.data || responseData as T,
-          message: responseData.message
+      // Check if the response is already in OpenAPI format by checking for required fields
+      const apiResponse = responseData as Record<string, unknown>;
+      const hasOpenApiFormat = apiResponse?.status && apiResponse?.meta;
+      
+      if (hasOpenApiFormat) {
+        // Response is already in OpenAPI format, return as-is
+        return responseData as OpenApiResponse<T>;
+      }
+      
+      // Convert legacy format to OpenAPI format for consistency
+      if (response.ok) {
+        const standardResponse: StandardResponse<T> = {
+          status: ResponseStatus.SUCCESS,
+          data: responseData as T,
+          message: apiResponse?.message as string | undefined,
+          meta: {
+            timestamp: new Date().toISOString(),
+            request_id: config?.headers?.['X-Request-ID'],
+            correlation_id: config?.headers?.['X-Correlation-ID']
+          }
         };
+        return standardResponse;
       } else {
-        return {
-          success: false,
-          error: responseData.error || `HTTP ${response.status}: ${response.statusText}`,
-          message: responseData.message || response.statusText,
-          statusCode: response.status
+        // Convert to error response
+        const errorResponse: ErrorResponse = {
+          status: ResponseStatus.ERROR,
+          type: `/errors/http-${response.status}`,
+          title: apiResponse?.title as string || 'Request Failed',
+          detail: apiResponse?.detail as string || apiResponse?.error as string || `HTTP ${response.status}`,
+          meta: {
+            timestamp: new Date().toISOString(),
+            request_id: config?.headers?.['X-Request-ID'],
+            correlation_id: config?.headers?.['X-Correlation-ID']
+          }
         };
+        return errorResponse;
       }
     } catch (error) {
       // Handle AbortError specifically
       if (error instanceof Error && error.name === 'AbortError') {
-        return {
-          success: false,
-          error: 'Request timeout',
-          message: 'The request timed out. Please try again.',
-          statusCode: 408
+        const timeoutError: ErrorResponse = {
+          status: ResponseStatus.ERROR,
+          type: '/errors/timeout',
+          title: 'Request Timeout',
+          detail: 'The request timed out. Please try again.',
+          meta: {
+            timestamp: new Date().toISOString(),
+            request_id: config?.headers?.['X-Request-ID'],
+            correlation_id: config?.headers?.['X-Correlation-ID']
+          }
         };
+        return timeoutError;
       }
       
       // Handle all other errors with proper error handling
       const errorMessage = error instanceof Error ? error.message :
                           (error ? String(error) : 'Unknown error occurred');
 
-      return {
-        success: false,
-        error: errorMessage,
-        message: 'Network error occurred. Please check your connection.',
-        statusCode: 0
+      const networkError: ErrorResponse = {
+        status: ResponseStatus.ERROR,
+        type: '/errors/network',
+        title: 'Network Error',
+        detail: errorMessage,
+        meta: {
+          timestamp: new Date().toISOString(),
+          request_id: config?.headers?.['X-Request-ID'],
+          correlation_id: config?.headers?.['X-Correlation-ID']
+        }
       };
+      return networkError;
     }
   }
 
   // GET request
-  async get<T>(endpoint: string, config?: RequestConfig): Promise<ApiResult<T>> {
+  async get<T>(endpoint: string, config?: RequestConfig): Promise<OpenApiResponse<T>> {
     return this.makeRequest<T>(endpoint, HttpMethod.GET, undefined, config);
   }
 
   // POST request
-  async post<T>(endpoint: string, data?: unknown, config?: RequestConfig): Promise<ApiResult<T>> {
+  async post<T>(endpoint: string, data?: unknown, config?: RequestConfig): Promise<OpenApiResponse<T>> {
     return this.makeRequest<T>(endpoint, HttpMethod.POST, data, config);
   }
 
   // PUT request
-  async put<T>(endpoint: string, data?: unknown, config?: RequestConfig): Promise<ApiResult<T>> {
+  async put<T>(endpoint: string, data?: unknown, config?: RequestConfig): Promise<OpenApiResponse<T>> {
     return this.makeRequest<T>(endpoint, HttpMethod.PUT, data, config);
   }
 
   // PATCH request
-  async patch<T>(endpoint: string, data?: unknown, config?: RequestConfig): Promise<ApiResult<T>> {
+  async patch<T>(endpoint: string, data?: unknown, config?: RequestConfig): Promise<OpenApiResponse<T>> {
     return this.makeRequest<T>(endpoint, HttpMethod.PATCH, data, config);
   }
 
   // DELETE request
-  async delete<T>(endpoint: string, config?: RequestConfig): Promise<ApiResult<T>> {
+  async delete<T>(endpoint: string, config?: RequestConfig): Promise<OpenApiResponse<T>> {
     return this.makeRequest<T>(endpoint, HttpMethod.DELETE, undefined, config);
   }
 

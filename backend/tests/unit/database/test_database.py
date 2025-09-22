@@ -3,7 +3,7 @@ Test script to verify database adapter pattern implementation
 Tests both SQLite and PostgreSQL adapters
 """
 from database.database_factory import DatabaseFactory, DatabaseManager
-from models.user import User
+from database.models.user import User
 import os
 
 def test_sqlite_adapter():

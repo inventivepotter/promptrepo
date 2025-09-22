@@ -1,14 +1,14 @@
 """
 Authentication Data Models
 
-This module contains Pydantic models for authentication-related data structures,
+This module contains Pydantic database.models for authentication-related data structures,
 ensuring type safety and consistent data validation across the auth service.
 """
 
 from typing import Optional
 from pydantic import BaseModel, Field
 from datetime import datetime
-from models.user import User
+from database.models.user import User
 
 
 class LoginRequest(BaseModel):
@@ -81,3 +81,12 @@ class TokenValidationError(AuthError):
     """Raised when token validation fails"""
     def __init__(self, message: str = "Token validation failed", context: Optional[dict] = None):
         super().__init__(message, context)
+
+
+class OAuthTokenUserInfo(BaseModel):
+    """Response model for OAuth token and user info"""
+    oauth_token: str = Field(..., description="OAuth access token")
+    oauth_provider: str = Field(..., description="OAuth provider name")
+    user_id: str = Field(..., description="User ID")
+    username: str = Field(..., description="Username")
+    name: Optional[str] = Field(None, description="User's display name")
