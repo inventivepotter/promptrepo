@@ -1,12 +1,12 @@
 import { PromptsState } from '../_types/PromptState';
 import { Prompt } from '@/types/Prompt';
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { loadConfiguredRepos } from '../../../lib/repos/loadConfiguredRepos';
+import { ReposService } from '@/services/repos/reposService';
 import { loadConfiguredModels } from './loadConfiguredModels';
 import { loadPrompts, persistPromptsToBrowserStorage } from './loadPrompts';
 import { useManagePrompts } from './managePrompt';
 import { useManagePromptsList } from './managePromptsList';
-import { useAuth } from '../../(auth)/_components/AuthProvider';
+import { useAuth } from '@/app/(auth)/_components/AuthProvider';
 
 export function usePromptsState() {
   const [promptsState, setPromptsState] = useState<PromptsState>(defaultPromptsState);
@@ -19,14 +19,14 @@ export function usePromptsState() {
       const initializeData = async () => {
         try {
           // Load configured repos and models from localStorage with API fallback
-          const configuredRepos = await loadConfiguredRepos();
+          const configuredRepos = await ReposService.getConfiguredRepos();
           const configuredModels = await loadConfiguredModels();
           const prompts = await loadPrompts();
 
           setPromptsState(prev => ({
             ...prev,
             prompts: prompts,
-            configuredRepos: configuredRepos,
+            configuredRepos: configuredRepos.repositories,
             configuredModels: configuredModels,
           }));
         } catch (error) {

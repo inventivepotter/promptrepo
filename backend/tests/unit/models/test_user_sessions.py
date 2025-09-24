@@ -17,7 +17,7 @@ class TestUserSessionModel:
         """Test creating a session"""
         # First create a user
         user_id = str(uuid4())
-        user = User(id=user_id, username="session_test_user", oauth_provider="github", oauth_user_id=123)
+        user = User(id=user_id, oauth_username="session_test_user", oauth_provider="github", oauth_user_id=123)
         db_session.add(user)
         db_session.commit()
         

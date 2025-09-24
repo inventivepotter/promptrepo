@@ -19,7 +19,7 @@ router = APIRouter()
 
 class ConfiguredReposResponse(BaseModel):
     """Response for configured repositories endpoint"""
-    repos: List[RepoConfig] = Field(..., description="List of configured repositories")
+    repositories: List[RepoConfig] = Field(..., description="List of configured repositories")
 
 
 @router.get(
@@ -83,7 +83,7 @@ async def get_configured_repositories(
         )
         
         return success_response(
-            data=ConfiguredReposResponse(repos=configured_repos),
+            data=ConfiguredReposResponse(repositories=configured_repos),
             message=f"Found {len(configured_repos)} configured repositories",
             meta={"request_id": request_id, "count": len(configured_repos)}
         )

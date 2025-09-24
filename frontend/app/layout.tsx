@@ -1,8 +1,13 @@
+import type { Metadata } from "next"
 import { Provider } from "@/components/ui/provider"
 import { Box, Stack } from "@chakra-ui/react"
 import { Sidebar } from "@/components/Sidebar"
 import { Toaster } from "@/components/ui/toaster"
 import AuthProvider from "./(auth)/_components/AuthProvider"
+
+export const metadata: Metadata = {
+  icons: "/favicon.svg",
+}
 
 export default function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props

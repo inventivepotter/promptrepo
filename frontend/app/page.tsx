@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PromptQuotes } from "@/components/PromptQuotes";
 import { Branding } from "@/components/Branding";
-import { getHostingType, shouldSkipAuth } from "@/utils/hostingType";
+import { ConfigService } from "@/services/config/configService";
 
 const AuthButton = () => {
   const { isAuthenticated, isLoading, user, login, logout } = useAuth();
@@ -15,7 +15,7 @@ const AuthButton = () => {
   useEffect(() => {
     const loadHostingType = async () => {
       try {
-        const type = await getHostingType();
+        const type = await ConfigService.getHostingType();
         setHostingType(type);
       } catch (error) {
         console.warn('Failed to load hosting type:', error);
@@ -40,15 +40,15 @@ const AuthButton = () => {
       <HStack gap={3}>
         <Box>
           <Image
-            src={user.avatar_url}
-            alt={user.name}
+            src={user.oauth_avatar_url || ''}
+            alt={user.oauth_name || ''}
             borderRadius="full"
             boxSize="32px"
           />
         </Box>
         <VStack gap={0} alignItems="flex-start">
-          <Text fontSize="sm" fontWeight="medium">{user.name}</Text>
-          <Text fontSize="xs" color="gray.500">@{user.username}</Text>
+          <Text fontSize="sm" fontWeight="medium">{user.oauth_name}</Text>
+          <Text fontSize="xs" color="gray.500">@{user.oauth_username}</Text>
         </VStack>
         <Button size="sm" colorScheme="red" variant="outline" onClick={() => logout()}>
           Logout
@@ -58,7 +58,7 @@ const AuthButton = () => {
   }
 
   // Don't show GitHub login for individual hosting
-  if (shouldSkipAuth(hostingType)) {
+  if (ConfigService.shouldSkipAuth(hostingType)) {
     return null;
   }
 
@@ -78,12 +78,12 @@ const Demo = () => {
     checkAuth();
   }, [checkAuth]);
 
-  useEffect(() => {
-    // Redirect authenticated users to prompts page
-    if (isAuthenticated && !isLoading) {
-      router.push('/prompts');
-    }
-  }, [isAuthenticated, isLoading, router]);
+  // useEffect(() => {
+  //   // Redirect authenticated users to prompts page
+  //   if (isAuthenticated && !isLoading) {
+  //     router.push('/prompts');
+  //   }
+  // }, [isAuthenticated, isLoading, router]);
 
 
   return (

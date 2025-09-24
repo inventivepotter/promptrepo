@@ -1,10 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { AuthState, AuthContextType } from '../_types/AuthState';
-import { getAuthUrl } from '../_lib/getAuthUrl';
-import { getAuthUser } from '../_lib/getAuthUser';
-import { handleLogout } from '../_lib/handleLogout';
-import { handleAuthCallback } from '../_lib/handleAuthCallback';
-import { refreshAuthSession } from '../_lib/refreshAuthSession';
+import { authService } from '@/services/auth/authService';
 import { storageState } from './storageState';
 import { errorNotification } from '@/lib/notifications';
 
@@ -45,7 +41,7 @@ export function useAuthState(): AuthContextType {
       
       // If we have a stored session, verify it
       if (storedState.sessionToken) {
-        const user = await getAuthUser();
+        const user = await authService.getUser();
         
         if (user) {
           updateAuthState({
@@ -92,11 +88,13 @@ export function useAuthState(): AuthContextType {
   }, [updateAuthState]);
 
   // Initiate login flow
-  const login = useCallback(async () => {
+  const login = useCallback(async (redirectUrl?: string) => {
     try {
       updateAuthState(prev => ({ ...prev, isLoading: true }));
 
-      const authUrl = await getAuthUrl();
+      // Use provided redirect URL or current pathname
+      const promptrepoRedirectUrl = redirectUrl || window.location.pathname;
+      const authUrl = await authService.getAuthUrl(promptrepoRedirectUrl);
 
       if (authUrl) {
         window.location.href = authUrl;
@@ -111,11 +109,11 @@ export function useAuthState(): AuthContextType {
   }, [updateAuthState]);
 
   // Handle OAuth callback
-  const handleOAuthCallback = useCallback(async (sessionToken: string, expiresAt: string) => {
+  const handleOAuthCallback = useCallback(async (code: string, state: string) => {
     try {
       updateAuthState(prev => ({ ...prev, isLoading: true }));
 
-      const result = await handleAuthCallback(sessionToken, expiresAt);
+      const result = await authService.handleCallback(code, state);
       
       if (result) {
         updateAuthState({
@@ -144,7 +142,7 @@ export function useAuthState(): AuthContextType {
     try {
       updateAuthState(prev => ({ ...prev, isLoading: true }));
       
-      const success = await handleLogout();
+      const success = await authService.logout();
       
       if (success) {
         updateAuthState({

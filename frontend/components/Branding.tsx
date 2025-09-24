@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { Text, TextProps } from "@chakra-ui/react"
 
 interface BrandingProps extends Omit<TextProps, 'children'> {
@@ -14,26 +15,30 @@ export const Branding = ({ collapsed = false, fontSize, ...props }: BrandingProp
   
   if (collapsed) {
     return (
+      <Link href="/">
+        <Text
+          fontSize={finalFontSize}
+          fontWeight="300"
+          letterSpacing="tight"
+          {...props}
+        >
+          {'{'}P<Text as="span" fontWeight="700">R</Text>{'}'}
+        </Text>
+      </Link>
+    )
+  }
+
+  return (
+    <Link href="/">
       <Text
         fontSize={finalFontSize}
         fontWeight="300"
         letterSpacing="tight"
         {...props}
       >
-        {'{'}P<Text as="span" fontWeight="700">R</Text>{'}'}
+        {'{'}Prompt{'}'}<Text as="span" fontWeight="700"> Repo</Text>
       </Text>
-    )
-  }
-
-  return (
-    <Text
-      fontSize={finalFontSize}
-      fontWeight="300"
-      letterSpacing="tight"
-      {...props}
-    >
-      {'{'}Prompt{'}'}<Text as="span" fontWeight="700"> Repo</Text>
-    </Text>
+    </Link>
   )
 }
 

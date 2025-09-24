@@ -25,7 +25,7 @@ class HostingConfig(BaseModel):
 
 class OAuthConfig(BaseModel):
     """Authentication-specific configuration settings"""
-    
+
     # OAuth Configuration
     provider: str = Field(
         default="",
@@ -42,9 +42,17 @@ class OAuthConfig(BaseModel):
         description="OAuth client secret"
     )
 
+    redirect_url: str = Field(
+        default="",
+        description="OAuth redirect URL"
+    )
+
 
 class LLMConfig(BaseModel):
     """LLM Provider configuration settings"""
+    id: str = Field(
+        description="Unique identifier for the llm configuration"
+    )
     provider: str = Field(
         default="",
         description="LLM provider name"
@@ -69,6 +77,9 @@ class LLMConfig(BaseModel):
 
 class RepoConfig(BaseModel):
     """Repository management settings"""
+    id: str = Field(
+        description="Unique identifier for the repository configuration"
+    )
     repo_name: str = Field(
         default="",
         description="Repository name (e.g., 'owner/repo-name')"

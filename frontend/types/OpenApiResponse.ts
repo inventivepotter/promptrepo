@@ -29,6 +29,7 @@ export interface ErrorDetail {
 // Standard successful response wrapper
 export interface StandardResponse<T = unknown> {
   status: ResponseStatus;
+  status_code: number;
   data?: T;
   message?: string;
   meta: ResponseMeta;
@@ -37,6 +38,7 @@ export interface StandardResponse<T = unknown> {
 // Error response following RFC 7807 Problem Details
 export interface ErrorResponse {
   status: ResponseStatus;
+  status_code: number;
   type: string;
   title: string;
   detail?: string;
@@ -58,6 +60,7 @@ export interface PaginationMeta {
 // Paginated response
 export interface PaginatedResponse<T = unknown> {
   status: ResponseStatus;
+  status_code: number;
   data: T[];
   pagination: PaginationMeta;
   message?: string;

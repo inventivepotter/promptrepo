@@ -2,7 +2,10 @@
 Test suite for database adapters
 Tests SQLite, PostgreSQL, and MySQL adapter implementations
 """
+import pytest
 import os
+import tempfile
+from unittest.mock import patch, MagicMock
 from database.database_adapter import SQLiteAdapter, PostgreSQLAdapter, MySQLAdapter
 from database.models.user import User
 
@@ -19,6 +22,23 @@ class TestSQLiteAdapter:
         assert adapter.database_url == sqlite_url
         assert adapter.echo is False
     
+    def test_sqlite_adapter_creation_with_memory_db(self):
+        """Test SQLite adapter can be created with in-memory database"""
+        sqlite_url = "sqlite:///:memory:"
+        adapter = SQLiteAdapter(sqlite_url, echo=True)
+        
+        assert adapter is not None
+        assert adapter.database_url == sqlite_url
+        assert adapter.echo is True
+    
+    def test_sqlite_adapter_creation_with_relative_path(self):
+        """Test SQLite adapter with relative path"""
+        sqlite_url = "sqlite:///./test_relative.db"
+        adapter = SQLiteAdapter(sqlite_url)
+        
+        assert adapter is not None
+        assert adapter.database_url == sqlite_url
+    
     def test_sqlite_connection_args(self):
         """Test SQLite returns correct connection arguments"""
         adapter = SQLiteAdapter("sqlite:///test.db")
@@ -28,36 +48,81 @@ class TestSQLiteAdapter:
     
     def test_sqlite_database_preparation(self):
         """Test SQLite creates database file"""
-        test_db = "test_prep_sqlite.db"
-        sqlite_url = f"sqlite:///{test_db}"
+        with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as tmp:
+            test_db = tmp.name
+        
+        try:
+            sqlite_url = f"sqlite:///{test_db}"
+            adapter = SQLiteAdapter(sqlite_url, echo=False)
+            
+            # Prepare database (should create file)
+            adapter.prepare_database()
+            
+            # Check file exists
+            assert os.path.exists(test_db)
+        finally:
+            # Clean up
+            if os.path.exists(test_db):
+                os.remove(test_db)
+    
+    def test_sqlite_database_preparation_memory_db(self):
+        """Test SQLite prepare_database with in-memory database"""
+        sqlite_url = "sqlite:///:memory:"
         adapter = SQLiteAdapter(sqlite_url, echo=False)
         
-        # Prepare database (should create file)
+        # Should not raise error for in-memory database
         adapter.prepare_database()
-        
-        # Check file exists
-        assert os.path.exists(test_db)
-        
-        # Clean up
-        os.remove(test_db)
     
     def test_sqlite_table_creation(self):
         """Test SQLite can create tables"""
-        test_db = "test_tables.db"
-        sqlite_url = f"sqlite:///{test_db}"
-        adapter = SQLiteAdapter(sqlite_url, echo=False)
+        with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as tmp:
+            test_db = tmp.name
         
-        # Create tables
-        adapter.create_tables()
+        try:
+            sqlite_url = f"sqlite:///{test_db}"
+            adapter = SQLiteAdapter(sqlite_url, echo=False)
+            
+            # Create tables
+            adapter.create_tables()
+            
+            # Test session creation
+            for session in adapter.get_session():
+                # Try to query (tables should exist)
+                users = session.query(User).all()
+                assert users == []
+        finally:
+            # Clean up
+            if os.path.exists(test_db):
+                os.remove(test_db)
+    
+    def test_sqlite_session_context_manager(self):
+        """Test SQLite session context manager handles exceptions"""
+        with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as tmp:
+            test_db = tmp.name
         
-        # Test session creation
-        for session in adapter.get_session():
-            # Try to query (tables should exist)
-            users = session.query(User).all()
-            assert users == []
-        
-        # Clean up
-        os.remove(test_db)
+        try:
+            sqlite_url = f"sqlite:///{test_db}"
+            adapter = SQLiteAdapter(sqlite_url, echo=False)
+            adapter.create_tables()
+            
+            # Test session context manager
+            session_generator = adapter.get_session()
+            session = next(session_generator)
+            
+            # Session should be active
+            assert session.is_active is True
+            
+            # Close generator properly
+            session_generator.close()
+        finally:
+            # Clean up
+            if os.path.exists(test_db):
+                os.remove(test_db)
+    
+    def test_sqlite_invalid_url(self):
+        """Test SQLite adapter with invalid URL"""
+        with pytest.raises(Exception):
+            SQLiteAdapter("invalid://url")
 
 
 class TestPostgreSQLAdapter:
@@ -72,6 +137,21 @@ class TestPostgreSQLAdapter:
         assert adapter.database_url == postgres_url
         assert adapter.echo is False
     
+    def test_postgresql_adapter_creation_with_different_schemes(self):
+        """Test PostgreSQL adapter with different URL schemes"""
+        urls = [
+            "postgresql://user:pass@localhost:5432/testdb",
+            "postgresql+psycopg2://user:pass@localhost:5432/testdb",
+            "postgresql+asyncpg://user:pass@localhost:5432/testdb",
+            "postgres://user:pass@localhost:5432/testdb"
+        ]
+        
+        for url in urls:
+            adapter = PostgreSQLAdapter(url, echo=True)
+            assert adapter is not None
+            assert adapter.database_url == url
+            assert adapter.echo is True
+    
     def test_postgresql_connection_args(self):
         """Test PostgreSQL returns correct connection arguments"""
         adapter = PostgreSQLAdapter("postgresql://localhost/test")
@@ -81,6 +161,55 @@ class TestPostgreSQLAdapter:
         assert args["max_overflow"] == 20
         assert args["pool_pre_ping"] is True
         assert args["pool_recycle"] == 3600
+    
+    def test_postgresql_connection_args_custom(self):
+        """Test PostgreSQL connection args are fixed values"""
+        adapter = PostgreSQLAdapter("postgresql://localhost/test")
+        args = adapter.get_connection_args()
+        
+        # PostgreSQL adapter uses fixed values
+        assert args["pool_size"] == 10
+        assert args["max_overflow"] == 20
+        assert args["pool_recycle"] == 3600
+        assert args["pool_pre_ping"] is True
+    
+    @patch('database.database_adapter.create_engine')
+    @patch('sqlmodel.SQLModel.metadata.create_all')
+    def test_postgresql_create_tables(self, mock_create_all, mock_create_engine):
+        """Test PostgreSQL create_tables method"""
+        mock_engine = MagicMock()
+        mock_create_engine.return_value = mock_engine
+        
+        adapter = PostgreSQLAdapter("postgresql://localhost/test")
+        adapter.create_tables()
+        
+        # Verify create_engine was called
+        mock_create_engine.assert_called_once()
+        # Verify SQLModel.metadata.create_all was called
+        mock_create_all.assert_called_once_with(mock_engine)
+    
+    @patch('database.database_adapter.create_engine')
+    def test_postgresql_get_session(self, mock_create_engine):
+        """Test PostgreSQL get_session method"""
+        mock_engine = MagicMock()
+        mock_create_engine.return_value = mock_engine
+        
+        with patch('database.database_adapter.sessionmaker') as mock_sessionmaker:
+            mock_session = MagicMock()
+            mock_sessionmaker.return_value = mock_session
+            
+            adapter = PostgreSQLAdapter("postgresql://localhost/test")
+            session_generator = adapter.get_session()
+            session = next(session_generator)
+            
+            # Verify session was created
+            assert session == mock_session
+    
+    def test_postgresql_invalid_url(self):
+        """Test PostgreSQL adapter with invalid URL format"""
+        # Should not raise error during creation, but might fail during connection
+        adapter = PostgreSQLAdapter("postgresql://invalid-url-without-port/test")
+        assert adapter is not None
 
 
 class TestMySQLAdapter:
@@ -95,6 +224,20 @@ class TestMySQLAdapter:
         assert adapter.database_url == mysql_url
         assert adapter.echo is False
     
+    def test_mysql_adapter_creation_with_different_schemes(self):
+        """Test MySQL adapter with different URL schemes"""
+        urls = [
+            "mysql://user:pass@localhost:3306/testdb",
+            "mysql+pymysql://user:pass@localhost:3306/testdb",
+            "mysql+mysqldb://user:pass@localhost:3306/testdb"
+        ]
+        
+        for url in urls:
+            adapter = MySQLAdapter(url, echo=True)
+            assert adapter is not None
+            assert adapter.database_url == url
+            assert adapter.echo is True
+    
     def test_mysql_connection_args(self):
         """Test MySQL returns correct connection arguments"""
         adapter = MySQLAdapter("mysql://localhost/test")
@@ -104,3 +247,96 @@ class TestMySQLAdapter:
         assert args["max_overflow"] == 20
         assert args["pool_pre_ping"] is True
         assert args["pool_recycle"] == 3600
+    
+    def test_mysql_connection_args_custom(self):
+        """Test MySQL connection args are fixed values"""
+        adapter = MySQLAdapter("mysql://localhost/test")
+        args = adapter.get_connection_args()
+        
+        # MySQL adapter uses fixed values
+        assert args["pool_size"] == 10
+        assert args["max_overflow"] == 20
+        assert args["pool_recycle"] == 3600
+        assert args["pool_pre_ping"] is True
+    
+    @patch('database.database_adapter.create_engine')
+    @patch('sqlmodel.SQLModel.metadata.create_all')
+    def test_mysql_create_tables(self, mock_create_all, mock_create_engine):
+        """Test MySQL create_tables method"""
+        mock_engine = MagicMock()
+        mock_create_engine.return_value = mock_engine
+        
+        adapter = MySQLAdapter("mysql://localhost/test")
+        adapter.create_tables()
+        
+        # Verify create_engine was called
+        mock_create_engine.assert_called_once()
+        # Verify SQLModel.metadata.create_all was called
+        mock_create_all.assert_called_once_with(mock_engine)
+    
+    @patch('database.database_adapter.create_engine')
+    def test_mysql_get_session(self, mock_create_engine):
+        """Test MySQL get_session method"""
+        mock_engine = MagicMock()
+        mock_create_engine.return_value = mock_engine
+        
+        with patch('database.database_adapter.sessionmaker') as mock_sessionmaker:
+            mock_session = MagicMock()
+            mock_sessionmaker.return_value = mock_session
+            
+            adapter = MySQLAdapter("mysql://localhost/test")
+            session_generator = adapter.get_session()
+            session = next(session_generator)
+            
+            # Verify session was created
+            assert session == mock_session
+    
+    def test_mysql_invalid_url(self):
+        """Test MySQL adapter with invalid URL format"""
+        # Should not raise error during creation, but might fail during connection
+        adapter = MySQLAdapter("mysql://invalid-url-without-port/test")
+        assert adapter is not None
+
+
+class TestDatabaseAdapterCommon:
+    """Test cases common to all database adapters"""
+    
+    def test_adapter_equality(self):
+        """Test adapter equality comparison"""
+        adapter1 = SQLiteAdapter("sqlite:///test1.db")
+        adapter2 = SQLiteAdapter("sqlite:///test1.db")
+        adapter3 = SQLiteAdapter("sqlite:///test2.db")
+        
+        # Same URL should be equal
+        assert adapter1 == adapter2
+        # Different URL should not be equal
+        assert adapter1 != adapter3
+        # Different type should not be equal
+        assert adapter1 != PostgreSQLAdapter("postgresql://localhost/test")
+    
+    def test_adapter_hash(self):
+        """Test adapter hash for use in sets/dicts"""
+        adapter1 = SQLiteAdapter("sqlite:///test.db")
+        adapter2 = SQLiteAdapter("sqlite:///test.db")
+        
+        # Same adapters should have same hash
+        assert hash(adapter1) == hash(adapter2)
+        
+        # Should be usable in a set
+        adapter_set = {adapter1, adapter2}
+        assert len(adapter_set) == 1  # Duplicates should be removed
+    
+    def test_adapter_string_representation(self):
+        """Test adapter string representation"""
+        sqlite_adapter = SQLiteAdapter("sqlite:///test.db")
+        postgres_adapter = PostgreSQLAdapter("postgresql://localhost/test")
+        mysql_adapter = MySQLAdapter("mysql://localhost/test")
+        
+        assert "SQLiteAdapter" in str(sqlite_adapter)
+        assert "sqlite:///test.db" in str(sqlite_adapter)
+        
+        assert "PostgreSQLAdapter" in str(postgres_adapter)
+        assert "postgresql://localhost/test" in str(postgres_adapter)
+        
+        assert "MySQLAdapter" in str(mysql_adapter)
+        assert "mysql://localhost/test" in str(mysql_adapter)

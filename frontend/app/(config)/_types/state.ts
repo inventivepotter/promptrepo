@@ -1,15 +1,13 @@
-import { Configuration } from "@/types/Configuration";
-import { LLMProvider } from "@/types/LLMProvider";
-import { Repo } from "@/types/Repo";
+import type { components } from '@/types/generated/api';
 
-export interface ConfigError {
-  isUnauthorized: boolean;
-  hasNoConfig: boolean;
-  message?: string;
-}
+type AppConfigOutput = components['schemas']['AppConfig-Output'];
+type BasicProviderInfo = components['schemas']['BasicProviderInfo'];
+type RepoConfig = components['schemas']['RepoConfig'];
+type RepoInfo = components['schemas']['RepoInfo'];
+type LLMConfig = components['schemas']['LLMConfig'];
 
 export interface ConfigState {
-  config: Configuration;
+  config: AppConfigOutput;
   currentStep: {
     step: number;
     selectedProvider: string;
@@ -18,17 +16,15 @@ export interface ConfigState {
     apiBaseUrl: string;
   };
   providers: {
-    available: LLMProvider[];
+    available: BasicProviderInfo[];
+    configured: LLMConfig[];
     isLoading: boolean;
-    error: string | null;
   };
   repos: {
-    available: Repo[];
-    configured: Repo[];
+    available: RepoInfo[];
+    configured: RepoConfig[];
     isLoading: boolean;
-    error: string | null;
   };
   isLoading: boolean;
   isSaving: boolean;
-  error: ConfigError | null;
 }

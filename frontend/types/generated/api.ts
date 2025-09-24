@@ -164,7 +164,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v0/llm/providers/models/{provider_id}": {
+    "/api/v0/llm/provider/{provider_id}/models": {
         parameters: {
             query?: never;
             header?: never;
@@ -177,7 +177,7 @@ export interface paths {
          * Fetch database.models by provider
          * @description Fetch available database.models for a specific provider using API key
          */
-        post: operations["fetch_models_by_provider_api_v0_llm_providers_models__provider_id__post"];
+        post: operations["fetch_models_by_provider_api_v0_llm_provider__provider_id__models_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -308,7 +308,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v0/llm/chat/providers/models/{provider_id}": {
+    "/api/v0/llm/chat/provider/{provider_id}/models": {
         parameters: {
             query?: never;
             header?: never;
@@ -321,7 +321,7 @@ export interface paths {
          * Fetch database.models by provider
          * @description Fetch available database.models for a specific provider using API key
          */
-        post: operations["fetch_models_by_provider_api_v0_llm_chat_providers_models__provider_id__post"];
+        post: operations["fetch_models_by_provider_api_v0_llm_chat_provider__provider_id__models_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -360,6 +360,46 @@ export interface paths {
          * @description Health check for chat endpoints
          */
         get: operations["chat_health_check_api_v0_llm_chat_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v0/repos/available": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get available repositories
+         * @description Get list of available repositories
+         */
+        get: operations["get_available_repositories_api_v0_repos_available_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v0/repos/configured": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get configured repositories
+         * @description Get list of configured repositories for the authenticated user
+         */
+        get: operations["get_configured_repositories_api_v0_repos_configured_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -610,12 +650,21 @@ export interface components {
             rejected_prediction_tokens?: number | null;
         };
         /**
+         * ConfiguredReposResponse
+         * @description Response for configured repositories endpoint
+         */
+        ConfiguredReposResponse: {
+            /**
+             * Repositories
+             * @description List of configured repositories
+             */
+            repositories: components["schemas"]["RepoConfig"][];
+        };
+        /**
          * FetchModelsRequest
-         * @description Request for fetching database.models by provider and API key
+         * @description Request model for fetching models from a provider
          */
         FetchModelsRequest: {
-            /** Provider */
-            provider: string;
             /** Api Key */
             api_key: string;
             /**
@@ -650,6 +699,11 @@ export interface components {
          * @description LLM Provider configuration settings
          */
         LLMConfig: {
+            /**
+             * Id
+             * @description Unique identifier for the llm configuration
+             */
+            id: string;
             /**
              * Provider
              * @description LLM provider name
@@ -692,6 +746,8 @@ export interface components {
             sessionToken: string;
             /** Expiresat */
             expiresAt: string;
+            /** Promptreporedirecturl */
+            promptrepoRedirectUrl?: string | null;
         };
         /**
          * ModelInfo
@@ -734,7 +790,19 @@ export interface components {
              * @default
              */
             client_secret: string;
+            /**
+             * Redirect Url
+             * @description OAuth redirect URL
+             * @default
+             */
+            redirect_url: string;
         };
+        /**
+         * OAuthProvider
+         * @description Supported OAuth providers
+         * @enum {string}
+         */
+        OAuthProvider: "github" | "gitlab" | "bitbucket";
         /**
          * PromptTokensDetails
          * @description Breakdown of tokens used in the prompt
@@ -778,6 +846,11 @@ export interface components {
          */
         RepoConfig: {
             /**
+             * Id
+             * @description Unique identifier for the repository configuration
+             */
+            id: string;
+            /**
              * Repo Name
              * @description Repository name (e.g., 'owner/repo-name')
              * @default
@@ -801,6 +874,48 @@ export interface components {
              * @default main
              */
             current_branch: string | null;
+        };
+        /** RepoInfo */
+        RepoInfo: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Full Name */
+            full_name: string;
+            /** Clone Url */
+            clone_url: string;
+            /** Owner */
+            owner: string;
+            /**
+             * Private
+             * @default false
+             */
+            private: boolean;
+            /**
+             * Default Branch
+             * @default main
+             */
+            default_branch: string;
+            /** Language */
+            language?: string | null;
+            /**
+             * Size
+             * @default 0
+             */
+            size: number;
+            /** Updated At */
+            updated_at?: string | null;
+            /** All Branches */
+            all_branches?: string[] | null;
+        };
+        /**
+         * RepositoryList
+         * @description Pydantic model for a list of repositories.
+         */
+        RepositoryList: {
+            /** Repositories */
+            repositories: components["schemas"]["RepoInfo"][];
         };
         /**
          * ResponseMeta
@@ -858,6 +973,12 @@ export interface components {
              * @default success
              */
             status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
             /** @description Response payload */
             data?: components["schemas"]["APIInfo"] | null;
             /**
@@ -890,6 +1011,12 @@ export interface components {
              * @default success
              */
             status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
             /** @description Response payload */
             data?: components["schemas"]["AppConfig-Output"] | null;
             /**
@@ -922,6 +1049,12 @@ export interface components {
              * @default success
              */
             status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
             /** @description Response payload */
             data?: components["schemas"]["AuthUrlResponseData"] | null;
             /**
@@ -954,6 +1087,12 @@ export interface components {
              * @default success
              */
             status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
             /** @description Response payload */
             data?: components["schemas"]["BasicProvidersResponse"] | null;
             /**
@@ -986,8 +1125,52 @@ export interface components {
              * @default success
              */
             status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
             /** @description Response payload */
             data?: components["schemas"]["ChatCompletionResponse"] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
+         * StandardResponse[ConfiguredReposResponse]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_ConfiguredReposResponse_: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /** @description Response payload */
+            data?: components["schemas"]["ConfiguredReposResponse"] | null;
             /**
              * Message
              * @description Human-readable message about the response
@@ -1018,6 +1201,12 @@ export interface components {
              * @default success
              */
             status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
             /** @description Response payload */
             data?: components["schemas"]["HostingConfig"] | null;
             /**
@@ -1050,6 +1239,12 @@ export interface components {
              * @default success
              */
             status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
             /** @description Response payload */
             data?: components["schemas"]["LoginResponseData"] | null;
             /**
@@ -1082,6 +1277,12 @@ export interface components {
              * @default success
              */
             status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
             /** @description Response payload */
             data?: components["schemas"]["ModelsResponse"] | null;
             /**
@@ -1114,6 +1315,12 @@ export interface components {
              * @default success
              */
             status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
             /** @description Response payload */
             data?: components["schemas"]["ProvidersResponse"] | null;
             /**
@@ -1146,8 +1353,52 @@ export interface components {
              * @default success
              */
             status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
             /** @description Response payload */
             data?: components["schemas"]["RefreshResponseData"] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
+         * StandardResponse[RepositoryList]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_RepositoryList_: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /** @description Response payload */
+            data?: components["schemas"]["RepositoryList"] | null;
             /**
              * Message
              * @description Human-readable message about the response
@@ -1178,6 +1429,12 @@ export interface components {
              * @default success
              */
             status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
             /** @description Response payload */
             data?: components["schemas"]["User"] | null;
             /**
@@ -1210,6 +1467,12 @@ export interface components {
              * @default success
              */
             status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
             /**
              * Data
              * @description Response payload
@@ -1249,41 +1512,38 @@ export interface components {
              * @description Unique user identifier
              */
             id?: string;
+            /** @description OAuth provider, e.g., 'github' */
+            oauth_provider: components["schemas"]["OAuthProvider"];
             /**
-             * Oauth Provider
-             * @description OAuth provider, e.g., 'github'
-             */
-            oauth_provider: string;
-            /**
-             * Username
+             * Oauth Username
              * @description OAuth username
              */
-            username: string;
+            oauth_username: string;
             /**
-             * Name
+             * Oauth Name
              * @description OAuth display name
              */
-            name?: string | null;
+            oauth_name?: string | null;
             /**
-             * Email
+             * Oauth Email
              * @description OAuth email
              */
-            email?: string | null;
+            oauth_email?: string | null;
             /**
-             * Avatar Url
+             * Oauth Avatar Url
              * @description OAuth avatar URL
              */
-            avatar_url?: string | null;
+            oauth_avatar_url?: string | null;
             /**
              * Oauth User Id
              * @description OAuth user ID
              */
-            oauth_user_id?: number | null;
+            oauth_user_id?: string | null;
             /**
-             * Html Url
+             * Oauth Profile Url
              * @description OAuth profile URL
              */
-            html_url?: string | null;
+            oauth_profile_url?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -1475,9 +1735,9 @@ export interface operations {
     };
     initiate_github_login_api_v0_auth_login_github__get: {
         parameters: {
-            query: {
-                /** @description Callback URL after authorization */
-                redirect_uri: string;
+            query?: {
+                /** @description PromptRepo app URL to redirect after login */
+                promptrepo_redirect_url?: string | null;
             };
             header?: never;
             path?: never;
@@ -1649,7 +1909,9 @@ export interface operations {
     get_configured_providers_api_v0_llm_providers_configured_get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -1662,6 +1924,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StandardResponse_ProvidersResponse_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
             /** @description Internal server error */
@@ -1716,10 +1987,12 @@ export interface operations {
             };
         };
     };
-    fetch_models_by_provider_api_v0_llm_providers_models__provider_id__post: {
+    fetch_models_by_provider_api_v0_llm_provider__provider_id__models_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path: {
                 provider_id: string;
             };
@@ -1784,7 +2057,9 @@ export interface operations {
     chat_completions_api_v0_llm_completions_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -1867,7 +2142,9 @@ export interface operations {
     get_config_api_v0_config__get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -1880,6 +2157,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StandardResponse_AppConfig_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
             /** @description Internal server error */
@@ -1902,7 +2188,9 @@ export interface operations {
     update_config_api_v0_config__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2006,7 +2294,9 @@ export interface operations {
     get_configured_providers_api_v0_llm_chat_providers_configured_get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2019,6 +2309,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StandardResponse_ProvidersResponse_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
             /** @description Internal server error */
@@ -2073,10 +2372,12 @@ export interface operations {
             };
         };
     };
-    fetch_models_by_provider_api_v0_llm_chat_providers_models__provider_id__post: {
+    fetch_models_by_provider_api_v0_llm_chat_provider__provider_id__models_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path: {
                 provider_id: string;
             };
@@ -2141,7 +2442,9 @@ export interface operations {
     chat_completions_api_v0_llm_chat_completions_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2217,6 +2520,128 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StandardResponse_dict_"];
+                };
+            };
+        };
+    };
+    get_available_repositories_api_v0_repos_available_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_RepositoryList_"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /** @example {
+                     *       "status": "error",
+                     *       "type": "/errors/authentication-required",
+                     *       "title": "Authentication required",
+                     *       "detail": "Session not found or invalid"
+                     *     } */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /** @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to retrieve repositories"
+                     *     } */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_configured_repositories_api_v0_repos_configured_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_ConfiguredReposResponse_"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /** @example {
+                     *       "status": "error",
+                     *       "type": "/errors/authentication-required",
+                     *       "title": "Authentication required",
+                     *       "detail": "Valid session required"
+                     *     } */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /** @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to retrieve configured repositories"
+                     *     } */
+                    "application/json": unknown;
                 };
             };
         };

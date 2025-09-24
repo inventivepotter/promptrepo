@@ -32,7 +32,7 @@ class TestGetBearerToken:
         with pytest.raises(AuthenticationException) as exc_info:
             await get_bearer_token(authorization=None)
         
-        assert "Authorization header required" in str(exc_info.value)
+        assert "Unauthorized Access" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_get_bearer_token_invalid_format(self):
@@ -53,7 +53,7 @@ class TestGetBearerToken:
         with pytest.raises(AuthenticationException) as exc_info:
             await get_bearer_token(authorization="")
         
-        assert "Authorization header required" in str(exc_info.value)
+        assert "Unauthorized Access" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_get_bearer_token_bearer_only(self):

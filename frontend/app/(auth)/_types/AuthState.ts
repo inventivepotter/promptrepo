@@ -1,4 +1,7 @@
-import { User } from "../../../types/User";
+import type { components } from "@/types/generated/api";
+
+export type User = components['schemas']['User'];
+export type LoginResponse = components['schemas']['LoginResponseData'];
 
 export interface AuthState {
   isAuthenticated: boolean;
@@ -11,13 +14,7 @@ export interface AuthContextType extends AuthState {
   login: () => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
-  handleOAuthCallback: (sessionToken: string, expiresAt: string) => Promise<void>;
-}
-
-export interface LoginResponse {
-  user: User;
-  sessionToken: string;
-  expiresAt: string;
+  handleOAuthCallback: (code: string, state: string) => Promise<void>;
 }
 
 export interface AuthSession {

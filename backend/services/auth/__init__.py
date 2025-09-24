@@ -8,7 +8,6 @@ refresh, and verification operations with OAuth integration.
 from .auth_service import AuthService
 from .session_service import SessionService
 from .models import (
-    LoginRequest,
     LoginResponse,
     LogoutRequest,
     LogoutResponse,

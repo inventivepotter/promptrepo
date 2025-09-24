@@ -28,3 +28,4 @@ class ErrorDetails(BaseModel):
     code: str = Field(..., description="Error code")
     message: str = Field(..., description="Error message")
     context: dict[str, Any] = Field(default_factory=dict, description="Additional error context")
+    detail: Optional[str] = Field(None, description="Detailed error message")

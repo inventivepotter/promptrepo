@@ -1,113 +1,152 @@
 """
-Test script to verify database adapter pattern implementation
-Tests both SQLite and PostgreSQL adapters
+Test suite for database adapter pattern implementation
+Tests both SQLite and PostgreSQL adapters using pytest conventions
 """
+import pytest
+import os
 from database.database_factory import DatabaseFactory, DatabaseManager
 from database.models.user import User
-import os
 
-def test_sqlite_adapter():
-    """Test SQLite adapter"""
-    print("\n=== Testing SQLite Adapter ===")
+
+class TestDatabaseAdapterPattern:
+    """Test cases for database adapter pattern implementation"""
     
-    # Create SQLite adapter
-    sqlite_url = "sqlite:///test_database.db"
-    adapter = DatabaseFactory.create_adapter(sqlite_url, echo=False)
+    def teardown_method(self):
+        """Clean up after each test method"""
+        # Reset singleton instance
+        DatabaseManager._instance = None
+        DatabaseManager._adapter = None
     
-    # Create tables
-    adapter.create_tables()
-    print("✓ SQLite tables created successfully")
-    
-    # Test session creation
-    for session in adapter.get_session():
-        print("✓ SQLite session created successfully")
+    def test_sqlite_adapter_creation_and_operations(self, db_session):
+        """Test SQLite adapter creation and basic operations"""
+        # Create SQLite adapter
+        sqlite_url = "sqlite:///:memory:"
+        adapter = DatabaseFactory.create_adapter(sqlite_url, echo=False)
         
-        # Create test user
-        test_user = User(
-            username="test_user",
-            name="Test User",
-            email="test@example.com"
-        )
-        session.add(test_user)
-        session.commit()
-        print("✓ Test user created in SQLite")
+        # Create tables
+        adapter.create_tables()
+        
+        # Test session creation
+        for session in adapter.get_session():
+            # Create test user
+            test_user = User(
+                oauth_username="test_user",
+                oauth_name="Test User",
+                oauth_email="test@example.com",
+                oauth_provider="github",
+                oauth_user_id=12345
+            )
+            session.add(test_user)
+            session.commit()
+            
+            # Verify user was created
+            saved_user = session.query(User).filter_by(username="test_user").first()
+            assert saved_user is not None
+            assert saved_user.username == "test_user"
+            assert saved_user.email == "test@example.com"
+            
+            # Clean up
+            session.delete(test_user)
+            session.commit()
+    
+    def test_postgresql_adapter_creation(self):
+        """Test PostgreSQL adapter creation (without actual connection)"""
+        postgres_url = "postgresql://user:password@localhost:5432/testdb"
+        
+        # Should create adapter without error
+        adapter = DatabaseFactory.create_adapter(postgres_url, echo=False)
+        assert adapter is not None
+        assert adapter.database_url == postgres_url
+        assert adapter.echo is False
+    
+    def test_database_manager_singleton_pattern(self):
+        """Test DatabaseManager singleton pattern"""
+        sqlite_url = "sqlite:///test_singleton.db"
+        
+        # Create two instances
+        manager1 = DatabaseManager(sqlite_url, echo=False)
+        manager2 = DatabaseManager(sqlite_url, echo=False)
+        
+        # Verify singleton
+        assert manager1 is manager2
+        
+        # Test table creation
+        manager1.create_tables()
         
         # Clean up
-        session.delete(test_user)
-        session.commit()
-    
-    # Clean up test database
-    if os.path.exists("test_database.db"):
-        os.remove("test_database.db")
-        print("✓ SQLite test database cleaned up")
-
-def test_postgresql_adapter():
-    """Test PostgreSQL adapter (requires PostgreSQL to be running)"""
-    print("\n=== Testing PostgreSQL Adapter ===")
-    
-    # Create PostgreSQL adapter (this will only test creation, not actual connection)
-    postgres_url = "postgresql://user:password@localhost:5432/testdb"
-    
-    try:
-        adapter = DatabaseFactory.create_adapter(postgres_url, echo=False)
-        print("✓ PostgreSQL adapter created successfully")
+        if os.path.exists("test_singleton.db"):
+            os.remove("test_singleton.db")
         
-        # Note: Actual database operations would require a running PostgreSQL instance
-        print("ℹ️  PostgreSQL connection would require a running PostgreSQL instance")
+        # Reset manager
+        manager1.reset()
+    
+    def test_database_manager_singleton_with_different_urls(self):
+        """Test DatabaseManager singleton with different URLs"""
+        url1 = "sqlite:///test1.db"
+        url2 = "sqlite:///test2.db"
         
-    except Exception as e:
-        print(f"⚠️  PostgreSQL adapter creation failed (expected if PostgreSQL not running): {e}")
-
-def test_database_manager():
-    """Test DatabaseManager singleton pattern"""
-    print("\n=== Testing DatabaseManager Singleton ===")
+        # Create manager with first URL
+        manager1 = DatabaseManager(url1, echo=False)
+        
+        # Create manager with second URL - should return same instance
+        manager2 = DatabaseManager(url2, echo=False)
+        
+        # Should still be the same instance (singleton)
+        assert manager1 is manager2
+        
+        # Clean up
+        for db_file in ["test1.db", "test2.db"]:
+            if os.path.exists(db_file):
+                os.remove(db_file)
+        
+        manager1.reset()
     
-    # Initialize manager
-    sqlite_url = "sqlite:///test_singleton.db"
-    manager1 = DatabaseManager(sqlite_url, echo=False)
-    manager2 = DatabaseManager(sqlite_url, echo=False)
-    
-    # Verify singleton
-    assert manager1 is manager2, "DatabaseManager should be a singleton"
-    print("✓ DatabaseManager singleton pattern working correctly")
-    
-    # Test table creation
-    manager1.create_tables()
-    print("✓ Tables created through DatabaseManager")
-    
-    # Clean up
-    if os.path.exists("test_singleton.db"):
-        os.remove("test_singleton.db")
-    
-    # Reset manager for next test
-    manager1.reset()
-    print("✓ DatabaseManager reset successfully")
-
-def test_unsupported_database():
-    """Test error handling for unsupported database types"""
-    print("\n=== Testing Unsupported Database Handling ===")
-    
-    try:
+    def test_unsupported_database_type(self):
+        """Test error handling for unsupported database types"""
         unsupported_url = "mongodb://localhost:27017/testdb"
-        adapter = DatabaseFactory.create_adapter(unsupported_url)
-        print("✗ Should have raised ValueError for unsupported database")
-    except ValueError as e:
-        print(f"✓ Correctly raised ValueError: {e}")
-
-def main():
-    """Run all tests"""
-    print("=" * 50)
-    print("Testing Database Adapter Pattern Implementation")
-    print("=" * 50)
+        
+        with pytest.raises(ValueError) as exc_info:
+            DatabaseFactory.create_adapter(unsupported_url)
+        
+        assert "Unsupported database type: mongodb" in str(exc_info.value)
     
-    test_sqlite_adapter()
-    test_postgresql_adapter()
-    test_database_manager()
-    test_unsupported_database()
+    def test_adapter_echo_parameter(self):
+        """Test adapter echo parameter"""
+        sqlite_url = "sqlite:///:memory:"
+        
+        # Test with echo=True
+        adapter1 = DatabaseFactory.create_adapter(sqlite_url, echo=True)
+        assert adapter1.echo is True
+        
+        # Test with echo=False
+        adapter2 = DatabaseFactory.create_adapter(sqlite_url, echo=False)
+        assert adapter2.echo is False
     
-    print("\n" + "=" * 50)
-    print("✅ All tests completed successfully!")
-    print("=" * 50)
-
-if __name__ == "__main__":
-    main()
+    def test_database_manager_initialization(self):
+        """Test DatabaseManager initialization"""
+        sqlite_url = "sqlite:///test_init.db"
+        
+        # Initialize manager
+        manager = DatabaseManager(sqlite_url, echo=False)
+        
+        # Verify adapter is initialized
+        assert manager.adapter is not None
+        assert manager.adapter.database_url == sqlite_url
+        assert manager.adapter.echo is False
+        
+        # Clean up
+        if os.path.exists("test_init.db"):
+            os.remove("test_init.db")
+        
+        manager.reset()
+    
+    def test_database_manager_uninitialized_access(self):
+        """Test accessing DatabaseManager without initialization"""
+        # Create manager without parameters
+        manager = DatabaseManager()
+        
+        # Should raise error when accessing adapter
+        with pytest.raises(RuntimeError) as exc_info:
+            _ = manager.adapter
+        
+        assert "Database not initialized" in str(exc_info.value)

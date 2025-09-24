@@ -8,15 +8,15 @@ from typing import Any
 
 PROVIDER_NAMES_MAP: dict[str, dict[str, Any]] = {
     "anthropic": {"name": "Anthropic", "custom_api_base": False},
-    "aws": {"name": "AWS", "custom_api_base": True},
     "azure": {"name": "Azure", "custom_api_base": True},
     "azureopenai": {"name": "Azure OpenAI", "custom_api_base": False},
+    "bedrock": {"name": "AWS Bedrock", "custom_api_base": False},
     "cerebras": {"name": "Cerebras", "custom_api_base": False},
     "cohere": {"name": "Cohere", "custom_api_base": False},
     "databricks": {"name": "Databricks", "custom_api_base": False},
     "deepseek": {"name": "DeepSeek", "custom_api_base": False},
     "fireworks": {"name": "Fireworks", "custom_api_base": False},
-    "google": {"name": "Google", "custom_api_base": False},
+    "gemini": {"name": "Google Gemini", "custom_api_base": False},
     "groq": {"name": "Groq", "custom_api_base": False},
     "huggingface": {"name": "Hugging Face", "custom_api_base": False},
     "inception": {"name": "Inception", "custom_api_base": False},
@@ -30,11 +30,13 @@ PROVIDER_NAMES_MAP: dict[str, dict[str, Any]] = {
     "ollama": {"name": "Ollama", "custom_api_base": True},
     "openai": {"name": "OpenAI", "custom_api_base": False},
     "openrouter": {"name": "OpenRouter", "custom_api_base": False},
+    "perplexity": {"name": "Perplexity", "custom_api_base": False},
     "portkey": {"name": "PortKey", "custom_api_base": False},
+    "sagemaker": {"name": "SageMaker", "custom_api_base": False},
     "sambanova": {"name": "SambaNova", "custom_api_base": False},
     "together": {"name": "Together", "custom_api_base": False},
+    "vertexai": {"name": "Vertex AI", "custom_api_base": False},
     "voyage": {"name": "Voyage", "custom_api_base": False},
     "watsonx": {"name": "WatsonX", "custom_api_base": False},
-    "xai": {"name": "XAI", "custom_api_base": False},
-    "perplexity": {"name": "Perplexity", "custom_api_base": False}
+    "xai": {"name": "XAI", "custom_api_base": False}
 }

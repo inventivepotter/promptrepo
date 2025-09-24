@@ -1,4 +1,6 @@
-import type { User } from "../../../types/User";
+import type { components } from "@/types/generated/api";
+
+export type User = components['schemas']['User'];
 
 interface StorageData {
   sessionToken: string;

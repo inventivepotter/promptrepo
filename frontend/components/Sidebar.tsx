@@ -25,28 +25,16 @@ import {
 import { useColorMode, useColorModeValue } from './ui/color-mode'
 import { useAuth } from '@/app/(auth)/_components/AuthProvider'
 import { Branding } from './Branding'
-import { getHostingType, shouldSkipAuth } from '@/utils/hostingType'
+import { ConfigService } from '@/services/config/configService'
+import { useLocalStorage } from '@/hooks/useLocalStorage'
 
 interface SidebarProps {
   className?: string
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useLocalStorage('sidebarCollapsed', false)
   const [hostingType, setHostingType] = useState<string>('')
-
-  // Load saved sidebar state from localStorage on component mount
-  useEffect(() => {
-    const savedState = localStorage.getItem('sidebarCollapsed')
-    if (savedState !== null) {
-      setIsCollapsed(JSON.parse(savedState))
-    }
-  }, [])
-
-  // Save sidebar state to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('sidebarCollapsed', JSON.stringify(isCollapsed))
-  }, [isCollapsed])
   const { colorMode, toggleColorMode } = useColorMode()
   const { isAuthenticated, user, login, logout } = useAuth()
 
@@ -54,7 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   useEffect(() => {
     const loadHostingType = async () => {
       try {
-        const type = await getHostingType()
+        const type = await ConfigService.getHostingType()
         setHostingType(type)
       } catch (error) {
         console.warn('Failed to load hosting type in sidebar:', error)
@@ -192,11 +180,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
-                    backgroundImage={user.avatar_url ? `url(${user.avatar_url})` : undefined}
+                    backgroundImage={user.oauth_avatar_url ? `url(${user.oauth_avatar_url})` : undefined}
                     backgroundSize="cover"
                     backgroundPosition="center"
                   >
-                    {!user.avatar_url && (
+                    {!user.oauth_avatar_url && (
                       <LuUser size={16} color="white" />
                     )}
                   </Box>
@@ -212,11 +200,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                       display="flex"
                       alignItems="center"
                       justifyContent="center"
-                      backgroundImage={user.avatar_url ? `url(${user.avatar_url})` : undefined}
+                      backgroundImage={user.oauth_avatar_url ? `url(${user.oauth_avatar_url})` : undefined}
                       backgroundSize="cover"
                       backgroundPosition="center"
                     >
-                      {!user.avatar_url && (
+                      {!user.oauth_avatar_url && (
                         <LuUser size={16} color="white" />
                       )}
                     </Box>
@@ -230,7 +218,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                         textOverflow="ellipsis"
                         whiteSpace="nowrap"
                       >
-                        {user.name || user.username}
+                        {user.oauth_name || user.oauth_username}
                       </Text>
                       <Text
                         fontSize="12px"
@@ -240,7 +228,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                         textOverflow="ellipsis"
                         whiteSpace="nowrap"
                       >
-                        @{user.username}
+                        @{user.oauth_username}
                       </Text>
                     </VStack>
                   </HStack>
@@ -252,7 +240,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
           <Separator borderColor={borderColor} />
 
           {/* GitHub Login or Logout Button - Hidden for individual hosting */}
-          {!shouldSkipAuth(hostingType) && isAuthenticated ? (
+          {!ConfigService.shouldSkipAuth(hostingType) && isAuthenticated ? (
             <Button
               variant="ghost"
               justifyContent={isCollapsed ? "center" : "flex-start"}
@@ -275,7 +263,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                 </Text>
               )}
             </Button>
-          ) : !shouldSkipAuth(hostingType) ? (
+          ) : !ConfigService.shouldSkipAuth(hostingType) ? (
             <Button
               variant="ghost"
               justifyContent={isCollapsed ? "center" : "flex-start"}

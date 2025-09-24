@@ -47,42 +47,8 @@ class UserSessions(SQLModel, table=True):
         default=None, description="JSON string for session metadata"
     )
 
-    def __init__(self, **kwargs):
-        if "session_key" not in kwargs:
-            kwargs["session_key"] = self.generate_session_key()
-        super().__init__(**kwargs)
+    def __repr__(self) -> str:
+        return f"<UserSessions(id={self.id}, session_id={self.session_id[:8]}..., user_id={self.user_id})>"
 
-    @staticmethod
-    def generate_session_key() -> str:
-        """Generate a secure random session key"""
-        return str(uuid.uuid4()).replace("-", "")
-
-    @classmethod
-    def delete_expired(cls, db: DBSession, ttl: timedelta):
-        """
-        Delete sessions older than the given TTL.
-
-        Args:
-            db: SQLModel database session
-            ttl: timedelta after which sessions are considered expired
-        """
-        expiration_time = datetime.now(UTC) - ttl
-        statement = select(cls).where(cls.accessed_at < expiration_time)
-        expired_sessions = db.exec(statement).all()
-        for session in expired_sessions:
-            db.delete(session)
-        db.commit()
-        return len(expired_sessions)
-
-    def is_expired(self, ttl_seconds: int) -> bool:
-        """
-        Check if the session is expired based on the time-to-live (TTL).
-
-        Args:
-            ttl_seconds: Time-to-live in seconds.
-
-        Returns:
-            True if the session is expired, False otherwise.
-        """
-        expiration_time = datetime.now(UTC) - timedelta(seconds=ttl_seconds)
-        return self.accessed_at < expiration_time
+    def __str__(self) -> str:
+        return f"Session {self.session_id[:8]}... for user {self.user_id}"

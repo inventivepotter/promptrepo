@@ -2,9 +2,9 @@
 GitHub OAuth callback endpoint with standardized responses.
 """
 import logging
-from fastapi import APIRouter, Request, Depends, status, Query
+from typing import Optional
+from fastapi import APIRouter, Request, status, Query
 from pydantic import BaseModel
-from sqlmodel import Session
 
 from middlewares.rest import (
     StandardResponse,
@@ -16,6 +16,7 @@ from middlewares.rest import (
 from database.models.user import User
 from api.deps import AuthServiceDep, DBSession
 from services.auth import AuthError, AuthenticationFailedError
+from services.oauth.enums import OAuthProvider
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -25,6 +26,7 @@ class LoginResponseData(BaseModel):
     user: User
     sessionToken: str
     expiresAt: str
+    promptrepoRedirectUrl: Optional[str] = None
 
 
 @router.get(
@@ -77,11 +79,9 @@ class LoginResponseData(BaseModel):
 )
 async def github_oauth_callback(
     request: Request,
-    db: DBSession,
     auth_service: AuthServiceDep,
     code: str = Query(..., description="Authorization code from GitHub"),
     state: str = Query(..., description="State parameter for CSRF verification"),
-    redirect_uri: str = Query(..., description="Redirect URI used in initial request"),
 ) -> StandardResponse[LoginResponseData]:
     """
     Handle GitHub OAuth callback.
@@ -90,7 +90,6 @@ async def github_oauth_callback(
     Args:
         code: Authorization code from GitHub
         state: State parameter for CSRF verification
-        redirect_uri: Redirect URI used in initial request
         request: FastAPI request object
         db: Database session
         auth_service: Auth service instance
@@ -112,28 +111,29 @@ async def github_oauth_callback(
         if not state or state.strip() == "":
             raise BadRequestException("State parameter is required")
         
-        if not redirect_uri or redirect_uri.strip() == "":
-            raise BadRequestException("Redirect URI parameter is required")
-        
         # Handle OAuth callback using auth service
         login_response = await auth_service.handle_oauth_callback(
-            provider="github",
+            provider=OAuthProvider.GITHUB,
             code=code,
-            state=state,
-            redirect_uri=redirect_uri
+            state=state
         )
         
         # Convert response to expected format
         response_data = LoginResponseData(
             user=login_response.user,
             sessionToken=login_response.session_token,
-            expiresAt=login_response.expires_at
+            expiresAt=login_response.expires_at,
+            promptrepoRedirectUrl=login_response.promptrepo_redirect_url
         )
         
         return success_response(
             data=response_data,
             message="User authenticated successfully",
-            meta={"request_id": request_id, "provider": "github"}
+            meta={
+                "request_id": request_id,
+                "provider": OAuthProvider.GITHUB,
+                "has_promptrepo_redirect": login_response.promptrepo_redirect_url is not None
+            }
         )
         
     except AuthenticationFailedError as e:

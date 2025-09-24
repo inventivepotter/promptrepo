@@ -17,7 +17,7 @@ class TestUserReposModel:
         """Test creating a repository"""
         # First create a user
         user_id = str(uuid4())
-        user = User(id=user_id, username="repo_test_user", oauth_provider="github")
+        user = User(id=user_id, oauth_username="repo_test_user", oauth_provider="github")
         db_session.add(user)
         db_session.commit()
         

@@ -2,7 +2,8 @@
 GitHub OAuth login initiation endpoint with standardized responses.
 """
 import logging
-from fastapi import APIRouter, Request, status, Query
+from typing import Optional
+from fastapi import APIRouter, Request, Query, status
 from pydantic import BaseModel
 
 from middlewares.rest import (
@@ -11,8 +12,9 @@ from middlewares.rest import (
     AppException,
     BadRequestException
 )
-from api.deps import AuthServiceDep, DBSession
-from services.auth.models import LoginRequest, AuthError, AuthenticationFailedError
+from api.deps import AuthServiceDep
+from services.auth.models import AuthError, AuthenticationFailedError, LoginRequest
+from services.oauth.enums import OAuthProvider
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -85,9 +87,8 @@ class AuthUrlResponseData(BaseModel):
 )
 async def initiate_github_login(
     request: Request,
-    db: DBSession,
     auth_service: AuthServiceDep,
-    redirect_uri: str = Query(..., description="Callback URL after authorization")
+    promptrepo_redirect_url: Optional[str] = Query(None, description="PromptRepo app URL to redirect after login")
 ) -> StandardResponse[AuthUrlResponseData]:
     """
     Start GitHub OAuth flow.
@@ -95,27 +96,25 @@ async def initiate_github_login(
     
     Args:
         request: FastAPI request object
-        redirect_uri: Callback URL after authorization
         auth_service: Auth service instance
+        promptrepo_redirect_url: Optional PromptRepo app URL to redirect after login
         
     Returns:
         StandardResponse[AuthUrlResponseData]: Standardized response containing the auth URL
         
     Raises:
-        BadRequestException: When redirect_uri is missing
         AppException: When OAuth URL generation fails
     """
     request_id = getattr(request.state, "request_id", None)
     
     try:
-        # Validate redirect_uri
-        if not redirect_uri or redirect_uri.strip() == "":
-            raise BadRequestException("Redirect URI parameter is required")
-        
-        # Create login request using auth service models
-        login_request = LoginRequest(provider="github", redirect_uri=redirect_uri)
-        auth_url = await auth_service.initiate_oauth_login(login_request)
-        
+        # Create login request with optional promptrepo redirect URL
+        login_request = LoginRequest(
+            provider=OAuthProvider.GITHUB,
+            promptrepo_redirect_url=promptrepo_redirect_url
+        )
+        auth_url = await auth_service.initiate_oauth_login(request=login_request)
+
         return success_response(
             data=AuthUrlResponseData(authUrl=auth_url),
             message="GitHub authorization URL generated successfully",

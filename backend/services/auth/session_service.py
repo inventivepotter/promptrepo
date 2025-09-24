@@ -4,6 +4,7 @@ Session management service for UserSessions database operations.
 from sqlmodel import Session, select
 from database.models.user_sessions import UserSessions
 from database.models.user import User
+from database.daos.user.user_sessions_dao import UserSessionDAO
 from services.auth.models import OAuthTokenUserInfo
 from datetime import datetime, timedelta, UTC
 from typing import Optional
@@ -23,6 +24,7 @@ class SessionService:
             db: Database session instance
         """
         self.db = db
+        self.user_session_dao = UserSessionDAO(db)
 
     def create_session(
             self,
@@ -43,7 +45,7 @@ class SessionService:
         """
         try:
             # Generate unique session ID
-            session_id = UserSessions.generate_session_key()
+            session_id = self.user_session_dao.generate_session_key()
 
             # Create new session record
             user_session = UserSessions(
@@ -101,6 +103,22 @@ class SessionService:
         except Exception as e:
             logger.error(f"Failed to get sessions for user_id {user_id}: {e}")
             return []
+
+    def get_active_session(self, user_id: str) -> Optional[UserSessions]:
+        """
+        Get the most recently accessed session for a user.
+
+        Args:
+            user_id: User ID
+
+        Returns:
+            UserSessions object if found, None otherwise
+        """
+        try:
+            return self.user_session_dao.get_active_session(user_id)
+        except Exception as e:
+            logger.error(f"Failed to get active session for user_id {user_id}: {e}")
+            return None
 
     def update_session(
             self,
@@ -216,7 +234,7 @@ class SessionService:
         """
         try:
             ttl = timedelta(minutes=ttl_minutes)
-            return UserSessions.delete_expired(self.db, ttl)
+            return self.user_session_dao.delete_expired(ttl)
 
         except Exception as e:
             logger.error(f"Failed to cleanup expired sessions: {e}")
@@ -240,16 +258,8 @@ class SessionService:
                 return False
 
             # Check if session is expired
-            ttl = timedelta(minutes=ttl_minutes)
-            expiry_time = datetime.now(UTC) - ttl
-
-            # Ensure both datetimes have timezone info for comparison
-            accessed_at = user_session.accessed_at
-            if accessed_at.tzinfo is None:
-                # If accessed_at is naive, assume it's UTC
-                accessed_at = accessed_at.replace(tzinfo=UTC)
-
-            return accessed_at > expiry_time
+            ttl_seconds = ttl_minutes * 60
+            return not self.user_session_dao.is_expired(user_session, ttl_seconds)
 
         except Exception as e:
             logger.error(f"Failed to validate session {session_id}: {e}")
@@ -274,8 +284,8 @@ class SessionService:
                     oauth_token=user_session.oauth_token,
                     oauth_provider=user_session.user.oauth_provider,
                     user_id=user_session.user_id,
-                    username=user_session.user.username,
-                    name=user_session.user.name
+                    username=user_session.user.oauth_username,
+                    name=user_session.user.oauth_name
                 )
             return None
 

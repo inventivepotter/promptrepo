@@ -56,6 +56,7 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
         detail=exc.detail,
         errors=errors,
         instance=request.url.path,
+        status_code=exc.status_code,
         meta={
             "request_id": request_id,
             "correlation_id": correlation_id
@@ -101,6 +102,7 @@ async def http_exception_handler(
         title=getattr(exc, "detail", "Error"),
         detail=getattr(exc, "detail", None),
         instance=request.url.path,
+        status_code=exc.status_code,
         meta={
             "request_id": request_id,
             "correlation_id": correlation_id
@@ -144,6 +146,7 @@ async def validation_exception_handler(
         detail="The request contains invalid data",
         errors=errors,
         instance=request.url.path,
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         meta={
             "request_id": request_id,
             "correlation_id": correlation_id
@@ -184,6 +187,7 @@ async def pydantic_exception_handler(
         detail="The provided data failed validation",
         errors=errors,
         instance=request.url.path,
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         meta={
             "request_id": request_id,
             "correlation_id": correlation_id
@@ -220,6 +224,7 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
         title="Internal Server Error",
         detail="An unexpected error occurred while processing your request",
         instance=request.url.path,
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         meta={
             "request_id": request_id,
             "correlation_id": correlation_id

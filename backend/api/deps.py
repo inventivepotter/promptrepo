@@ -16,7 +16,7 @@ from middlewares.rest import AuthenticationException
 logger = logging.getLogger(__name__)
 
 from database.core import get_session
-from services.git_provider.git_provider_service import GitProviderService
+from services.oauth.oauth_service import OAuthService
 from services.auth.auth_service import AuthService
 from services.auth.session_service import SessionService
 from services.config.config_service import ConfigService
@@ -107,17 +107,17 @@ ConfigServiceDep = Annotated[ConfigService, Depends(get_config_service)]
 
 def get_git_provider_service(
     config_service: ConfigServiceDep
-) -> GitProviderService:
+) -> OAuthService:
     """
     Git Provider service dependency.
     
     Creates an GitProviderService with the configuration from ConfigService.
     Handles Git Provider operations for multiple providers (GitHub, GitLab, etc.).
     """
-    return GitProviderService(config_service=config_service.config)
+    return OAuthService(config_service=config_service.config)
 
 
-OAuthServiceDep = Annotated[GitProviderService, Depends(get_git_provider_service)]
+OAuthServiceDep = Annotated[OAuthService, Depends(get_git_provider_service)]
 
 
 # ==============================================================================
@@ -142,7 +142,7 @@ SessionServiceDep = Annotated[SessionService, Depends(get_session_service)]
 
 def get_auth_service(
     db: DBSession,
-    git_provider_service: OAuthServiceDep,
+    oauth_service: OAuthServiceDep,
     session_service: SessionServiceDep
 ) -> AuthService:
     """
@@ -153,7 +153,7 @@ def get_auth_service(
     """
     return AuthService(
         db=db,
-        git_provider_service=git_provider_service,
+        oauth_service=oauth_service,
         session_service=session_service
     )
 
@@ -250,17 +250,18 @@ ProviderServiceDep = Annotated[ProviderService, Depends(get_provider_service)]
 # ==============================================================================
 
 def get_repo_locator_service(
+    db: DBSession,
     config_service: ConfigServiceDep,
-    git_provider_service: OAuthServiceDep
+    session_service: SessionServiceDep
 ) -> RepoLocatorService:
     """
     Repository locator service dependency.
     
-    Creates a RepoLocatorService with config and Git Provider service injection.
+    Creates a RepoLocatorService with database session, config, and session service injection.
     This service can handle both individual and organization hosting types
     dynamically based on the configuration and user context.
     """
-    return RepoLocatorService(config_service.config, git_provider_service)
+    return RepoLocatorService(db=db, config_service=config_service.config, session_service=session_service)
 
 
 RepoLocatorServiceDep = Annotated[RepoLocatorService, Depends(get_repo_locator_service)]
@@ -277,7 +278,8 @@ async def get_bearer_token(authorization: Annotated[str | None, Header()] = None
     """Extract Bearer token from Authorization header."""
     if not authorization:
         raise AuthenticationException(
-            message="Authorization header required",
+            message="Unauthorized Access",
+            detail="Please login to access this resource",
             context={"header": "Authorization"}
         )
 
@@ -328,37 +330,42 @@ async def get_current_user(
     
     # Extract Bearer token
     if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
+        raise AuthenticationException(
+            message="Authentication Required",
+            detail="Please sign in to access this feature",
+            context={"user_action": "login_required"}
         )
     
     if not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authorization header format. Expected: 'Bearer <token>'"
+        raise AuthenticationException(
+            message="Invalid Authorization Header",
+            detail="Authentication failed. Please sign in again",
+            context={"user_action": "login_required"}
         )
     
     token = authorization.replace("Bearer ", "")
     if not token or token.isspace():
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token cannot be empty"
+        raise AuthenticationException(
+            message="Empty Authentication Token",
+            detail="Authentication failed. Please sign in again",
+            context={"user_action": "login_required"}
         )
     
     # Validate session
     if not session_service.is_session_valid(token):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired session token"
+        raise AuthenticationException(
+            message="Session Expired",
+            detail="Your session has expired. Please sign in again",
+            context={"user_action": "session_expired"}
         )
     
     # Get session and user
     user_session = session_service.get_session_by_id(token)
     if not user_session:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Session not found"
+        raise AuthenticationException(
+            message="Session Not Found",
+            detail="Your session could not be found. Please sign in again",
+            context={"user_action": "session_not_found"}
         )
     
     return user_session.user_id

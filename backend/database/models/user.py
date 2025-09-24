@@ -3,13 +3,14 @@ User table model
 """
 
 from sqlmodel import SQLModel, Field, Column, func, Relationship
-from sqlalchemy import DateTime
+from sqlalchemy import DateTime, Index
 from datetime import datetime, UTC
 from typing import Optional, List
 import uuid
 from database.models.user_repos import UserRepos
 from database.models.user_sessions import UserSessions
 from database.models.user_llm_configs import UserLLMConfigs
+from services.oauth.enums import OAuthProvider
 
 
 class User(SQLModel, table=True):
@@ -27,19 +28,19 @@ class User(SQLModel, table=True):
     )
 
     # User information from OAuth provider (OAuth)
-    oauth_provider: str = Field(
+    oauth_provider: OAuthProvider = Field(
         index=True, description="OAuth provider, e.g., 'github'"
     )
-    username: str = Field(index=True, unique=True, description="OAuth username")
-    name: Optional[str] = Field(
-        default=None, index=True, description="OAuth display name"
+    oauth_username: str = Field(index=True, description="OAuth username")
+    oauth_name: Optional[str] = Field(
+        default=None, description="OAuth display name"
     )
-    email: Optional[str] = Field(default=None, index=True, description="OAuth email")
-    avatar_url: Optional[str] = Field(default=None, description="OAuth avatar URL")
-    oauth_user_id: Optional[int] = Field(
-        default=None, index=True, unique=True, description="OAuth user ID"
+    oauth_email: Optional[str] = Field(default=None, description="OAuth email")
+    oauth_avatar_url: Optional[str] = Field(default=None, description="OAuth avatar URL")
+    oauth_user_id: Optional[str] = Field(
+        default=None, description="OAuth user ID"
     )
-    html_url: Optional[str] = Field(default=None, description="OAuth profile URL")
+    oauth_profile_url: Optional[str] = Field(default=None, description="OAuth profile URL")
 
     # Relationships
     sessions: List["UserSessions"] = Relationship(back_populates="user")
@@ -61,7 +62,7 @@ class User(SQLModel, table=True):
     )
 
     def __repr__(self) -> str:
-        return f"<User(id={self.id}, username={self.username})>"
+        return f"<User(id={self.id}, oauth_username={self.oauth_username}, oauth_provider={self.oauth_provider})>"
 
     def __str__(self) -> str:
-        return self.username or self.id
+        return f"{self.oauth_username} ({self.oauth_provider})"

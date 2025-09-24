@@ -68,6 +68,9 @@ class UserRepos(SQLModel, table=True):
     def __repr__(self) -> str:
         return f"<UserRepos(id={self.id}, user_id={self.user_id}, repo_name={self.repo_name}, status={self.status})>"
 
+    def __str__(self) -> str:
+        return f"{self.repo_name} ({self.status.value})"
+
     def is_cloned_successfully(self) -> bool:
         """Check if repository is successfully cloned"""
         return self.status == RepoStatus.CLONED

@@ -8,6 +8,7 @@ import os
 from typing import List
 
 from sqlmodel import Session
+
 from services.config.models import HostingConfig, HostingType, LLMConfig, LLMConfigScope, OAuthConfig, RepoConfig
 from services.config.config_interface import IConfig
 from database.daos.user import UserLLMDAO, UserDAO
@@ -25,19 +26,15 @@ class IndividualConfig(IConfig):
         Ensures that the default user for individual hosting exists.
         If not, creates the user.
         """
-        user_service = UserDAO(db)
-        user = user_service.get_user_by_id(user_id)
+        user_dao = UserDAO(db)
+        user = user_dao.get_user_by_id(user_id)
         if not user:
             new_user = User(
                 id=user_id,
-                username=user_id,
+                oauth_username=user_id,
                 oauth_provider=user_id,
             )
-            user_service.save_user(new_user)
-    """
-    Configuration strategy for individual hosting type.
-    Requirements: llmConfigs only
-    """
+            user_dao.save_user(new_user)
 
     def set_oauth_configs(self, oauth_configs: List[OAuthConfig]) -> List[OAuthConfig] | None:
         # For individual hosting, OAuth will not be configured
@@ -50,12 +47,12 @@ class IndividualConfig(IConfig):
         ENV configs remain in ENV and are not modified by this method.
         """
         self._ensure_individual_user_exists(db, user_id)
-
+        user_llm_dao = UserLLMDAO(db)
         if not llm_configs:
             # If an empty list is provided, delete all existing configs for the user.
-            existing_db_llm_configs = UserLLMDAO.get_llm_configs_for_user(db, user_id)
+            existing_db_llm_configs = user_llm_dao.get_llm_configs_for_user(user_id)
             for config in existing_db_llm_configs:
-                UserLLMDAO.delete_llm_config(db, config.id)
+                user_llm_dao.delete_llm_config(config.id)
             return []
 
         # Filter out organization-scoped configs (these should remain in ENV)
@@ -64,7 +61,7 @@ class IndividualConfig(IConfig):
         if not user_configs:
             return []
 
-        existing_db_llm_configs = UserLLMDAO.get_llm_configs_for_user(db, user_id)
+        existing_db_llm_configs = user_llm_dao.get_llm_configs_for_user(user_id)
         existing_configs_map = {(config.provider, config.model_name): config for config in existing_db_llm_configs}
         processed_existing_ids = set()
 
@@ -73,8 +70,7 @@ class IndividualConfig(IConfig):
             if key in existing_configs_map:
                 # Update existing config
                 existing_config = existing_configs_map[key]
-                UserLLMDAO.update_llm_config(
-                    db=db,
+                user_llm_dao.update_llm_config(
                     config_id=existing_config.id,
                     provider=config_data.provider,
                     model_name=config_data.model,
@@ -84,8 +80,7 @@ class IndividualConfig(IConfig):
                 processed_existing_ids.add(existing_config.id)
             else:
                 # Create new config
-                UserLLMDAO.add_llm_config(
-                    db=db,
+                user_llm_dao.add_llm_config(
                     user_id=user_id,
                     provider=config_data.provider,
                     model_name=config_data.model,
@@ -96,7 +91,7 @@ class IndividualConfig(IConfig):
         # Delete any existing configs that were not in the new list
         for config in existing_db_llm_configs:
             if config.id not in processed_existing_ids:
-                UserLLMDAO.delete_llm_config(db, config.id)
+                user_llm_dao.delete_llm_config(config.id)
         
         return user_configs
     
@@ -126,7 +121,7 @@ class IndividualConfig(IConfig):
         User configs override ENV configs for the same provider/model combination.
         """
         llm_configs = []
-        
+        user_llm_dao = UserLLMDAO(db)
         # First, get LLM configs from ENV (organization-wide)
         llm_configs_str = os.environ.get("DEFAULT_LLM_CONFIGS", "[]")
         env_configs = []
@@ -135,6 +130,7 @@ class IndividualConfig(IConfig):
             if llm_configs_data:
                 env_configs = [
                     LLMConfig(
+                        id=config.get("id"),
                         provider=config.get("provider"),
                         model=config.get("model"),
                         api_key=config.get("api_key"),
@@ -149,10 +145,11 @@ class IndividualConfig(IConfig):
         # Then, get user-specific LLM configs from database if user_id is provided
         user_configs = []
         if user_id:
-            db_llm_configs = UserLLMDAO.get_llm_configs_for_user(db, user_id)
+            db_llm_configs = user_llm_dao.get_llm_configs_for_user(user_id)
             if db_llm_configs:
                 user_configs = [
                     LLMConfig(
+                        id=config.id,
                         provider=config.provider,
                         model=config.model_name,
                         api_key=config.api_key or "",

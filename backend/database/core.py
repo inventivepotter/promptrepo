@@ -5,7 +5,7 @@ using the adapter pattern based on the DATABASE_URL
 from typing import Generator
 from sqlmodel import Session as SQLSession
 from .database_factory import DatabaseManager
-from settings.base_settings import settings
+from settings.settings import settings
 
 
 # Initialize the database manager singleton with settings

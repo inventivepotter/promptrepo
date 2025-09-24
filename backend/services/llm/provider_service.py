@@ -96,7 +96,7 @@ class ProviderService:
             logger.error(f"Error getting available providers: {e}")
             return []
 
-    def fetch_models_by_provider(self, provider_id: str, user_id: str) -> List[ModelInfo]:
+    def fetch_models_by_provider(self, provider_id: str, api_key: str, api_base: str = "") -> List[ModelInfo]:
         """
         Fetch available models for a specific provider using API key.
         Connects to the actual provider APIs to get real-time model information.
@@ -106,15 +106,8 @@ class ProviderService:
             if provider_id not in LLMProvider.__members__.values():
                 logger.error(f"Unsupported provider: {provider_id}")
                 raise ValueError(f"Unsupported provider: {provider_id}")
-            
-            llm_configs = self.config_service.get_llm_configs(user_id=user_id) or []
-            matching_configs = [cfg for cfg in llm_configs if cfg.provider == provider_id]
-            if not matching_configs:
-                logger.warning(f"No configuration found for provider {provider_id} for user {user_id}")
-                raise ValueError(f"No configuration found for provider {provider_id}")
-            llm_config = matching_configs[0]
 
-            raw_models = list_models(provider_id, llm_config.api_key, api_base=llm_config.api_base_url)
+            raw_models = list_models(provider_id, api_key, api_base=api_base)
             models = [
                 ModelInfo(id=model.id, name=model.id)
                 for model in raw_models

@@ -85,6 +85,7 @@ class ConfigService:
                 if config.scope == LLMConfigScope.ORGANIZATION:
                     # Strip sensitive info from organization-scoped configs
                     sanitized_config = LLMConfig(
+                        id=config.id,
                         provider=config.provider,
                         model=config.model,
                         api_key="",  # Strip api_key

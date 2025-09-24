@@ -19,13 +19,18 @@ from services.llm.models import ModelInfo
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+class FetchModelsRequest(BaseModel):
+    """Request model for fetching models from a provider"""
+    api_key: str
+    api_base: str = ""
+
 class ModelsResponse(BaseModel):
     """Response for database.models endpoint"""
     models: List[ModelInfo]
 
 
-@router.get(
-    "/providers/models/{provider_id}",
+@router.post(
+    "/provider/{provider_id}/models",
     response_model=StandardResponse[ModelsResponse],
     status_code=status.HTTP_200_OK,
     responses={
@@ -62,6 +67,7 @@ class ModelsResponse(BaseModel):
 async def fetch_models_by_provider(
     provider_id: str,
     request: Request,
+    req_body: FetchModelsRequest,
     user_id: CurrentUserDep,
     provider_service: ProviderServiceDep
 ) -> StandardResponse[ModelsResponse]:
@@ -104,7 +110,8 @@ async def fetch_models_by_provider(
 
         models = provider_service.fetch_models_by_provider(
             provider_id=provider_id,
-            user_id=user_id
+            api_key=req_body.api_key,
+            api_base=req_body.api_base
         )
         
         logger.info(

@@ -61,6 +61,10 @@ class StandardResponse(BaseModel, Generic[T]):
         default=ResponseStatus.SUCCESS,
         description="Response status indicator"
     )
+    status_code: int = Field(
+        default=200,
+        description="HTTP status code"
+    )
     data: Optional[T] = Field(
         None,
         description="Response payload"
@@ -125,6 +129,10 @@ class ErrorResponse(BaseModel):
     status: ResponseStatus = Field(
         default=ResponseStatus.ERROR,
         description="Always 'error' for error responses"
+    )
+    status_code: int = Field(
+        default=400,
+        description="HTTP status code"
     )
     type: str = Field(
         ...,
@@ -230,6 +238,10 @@ class PaginatedResponse(BaseModel, Generic[T]):
         default=ResponseStatus.SUCCESS,
         description="Response status"
     )
+    status_code: int = Field(
+        default=200,
+        description="HTTP status code"
+    )
     data: List[T] = Field(
         default_factory=list,
         description="List of items in the current page"
@@ -253,6 +265,7 @@ def create_response(
     data: Optional[Any] = None,
     message: Optional[str] = None,
     status: ResponseStatus = ResponseStatus.SUCCESS,
+    status_code: int = 200,
     meta: Optional[Dict[str, Any]] = None
 ) -> StandardResponse:
     """
@@ -266,6 +279,7 @@ def create_response(
     
     return StandardResponse(
         status=status,
+        status_code=status_code,
         data=data,
         message=message,
         meta=response_meta
@@ -275,6 +289,7 @@ def create_response(
 def success_response(
     data: Optional[Any] = None,
     message: str = "Operation completed successfully",
+    status_code: int = 200,
     meta: Optional[Dict[str, Any]] = None
 ) -> StandardResponse:
     """
@@ -288,6 +303,7 @@ def success_response(
         data=data,
         message=message,
         status=ResponseStatus.SUCCESS,
+        status_code=status_code,
         meta=meta
     )
 
@@ -298,6 +314,7 @@ def error_response(
     detail: Optional[str] = None,
     errors: Optional[List[ErrorDetail]] = None,
     instance: Optional[str] = None,
+    status_code: int = 400,
     meta: Optional[Dict[str, Any]] = None
 ) -> ErrorResponse:
     """
@@ -315,6 +332,7 @@ def error_response(
         detail=detail,
         errors=errors,
         instance=instance,
+        status_code=status_code,
         meta=response_meta
     )
 
@@ -325,6 +343,7 @@ def paginated_response(
     page_size: int,
     total_items: int,
     message: Optional[str] = None,
+    status_code: int = 200,
     meta: Optional[Dict[str, Any]] = None
 ) -> PaginatedResponse:
     """
@@ -348,6 +367,7 @@ def paginated_response(
                 setattr(response_meta, key, value)
     
     return PaginatedResponse(
+        status_code=status_code,
         data=items,
         pagination=pagination_meta,
         message=message,

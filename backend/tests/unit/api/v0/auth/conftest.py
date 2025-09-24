@@ -49,10 +49,10 @@ def sample_user():
     """Sample user for testing"""
     return User(
         id="1",
-        username="testuser",
-        name="Test User",
-        email="test@example.com",
-        avatar_url="https://example.com/avatar.jpg",
+        oauth_username="testuser",
+        oauth_name="Test User",
+        oauth_email="test@example.com",
+        oauth_avatar_url="https://example.com/avatar.jpg",
         github_id=12345,
         html_url="https://github.com/testuser"
     )

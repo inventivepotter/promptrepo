@@ -32,7 +32,8 @@ class AppException(Exception):
         return ErrorDetails(
             code=self.error_code,
             message=self.message,
-            context=self.context
+            context=self.context,
+            detail=self.detail,
         )
 
 
@@ -60,13 +61,15 @@ class AuthenticationException(AppException):
     def __init__(
         self,
         message: str = "Authentication required",
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
+        detail: Optional[str] = None
     ):
         super().__init__(
             status_code=status.HTTP_401_UNAUTHORIZED,
             error_code="AUTHENTICATION_REQUIRED",
             message=message,
-            context=context
+            context=context,
+            detail=detail
         )
 
 

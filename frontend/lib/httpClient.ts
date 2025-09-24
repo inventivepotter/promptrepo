@@ -1,11 +1,25 @@
-import { HttpMethod, RequestConfig } from '@/types/ApiResponse';
-import { getAuthHeaders } from '../utils/authHeaders';
+import { authService } from '@/services/auth/authService';
 import {
   OpenApiResponse,
   StandardResponse,
   ErrorResponse,
   ResponseStatus
 } from '@/types/OpenApiResponse';
+
+// HTTP method enum
+export enum HttpMethod {
+  GET = 'GET',
+  POST = 'POST',
+  PUT = 'PUT',
+  PATCH = 'PATCH',
+  DELETE = 'DELETE'
+}
+
+// Request configuration interface
+export interface RequestConfig {
+  headers?: Record<string, string>;
+  signal?: AbortSignal;
+}
 
 interface HttpClientConfig {
   baseUrl?: string;
@@ -48,8 +62,8 @@ class HttpClient {
       return headers;
     }
 
-    // Get auth headers from utility
-    const authHeaders = getAuthHeaders();
+    // Get auth headers from auth service
+    const authHeaders = authService.getAuthHeaders();
     
     return {
       ...headers,
@@ -90,8 +104,6 @@ class HttpClient {
 
       const response = await fetch(url, requestConfig);
       clearTimeout(timeoutId);
-      
-      const statusCode = response.status;
 
       let responseData: unknown;
       
@@ -101,6 +113,7 @@ class HttpClient {
         // If response is not JSON, create an error response in OpenAPI format
         const errorResponse: ErrorResponse = {
           status: ResponseStatus.ERROR,
+          status_code: response.status,
           type: `/errors/http-${response.status}`,
           title: response.statusText || 'Request Failed',
           detail: `HTTP ${response.status}: ${response.statusText}`,
@@ -126,6 +139,7 @@ class HttpClient {
       if (response.ok) {
         const standardResponse: StandardResponse<T> = {
           status: ResponseStatus.SUCCESS,
+          status_code: response.status,
           data: responseData as T,
           message: apiResponse?.message as string | undefined,
           meta: {
@@ -139,6 +153,7 @@ class HttpClient {
         // Convert to error response
         const errorResponse: ErrorResponse = {
           status: ResponseStatus.ERROR,
+          status_code: response.status,
           type: `/errors/http-${response.status}`,
           title: apiResponse?.title as string || 'Request Failed',
           detail: apiResponse?.detail as string || apiResponse?.error as string || `HTTP ${response.status}`,
@@ -155,6 +170,7 @@ class HttpClient {
       if (error instanceof Error && error.name === 'AbortError') {
         const timeoutError: ErrorResponse = {
           status: ResponseStatus.ERROR,
+          status_code: 408, // HTTP 408 Request Timeout
           type: '/errors/timeout',
           title: 'Request Timeout',
           detail: 'The request timed out. Please try again.',
@@ -173,6 +189,7 @@ class HttpClient {
 
       const networkError: ErrorResponse = {
         status: ResponseStatus.ERROR,
+        status_code: 500, // Network error, no HTTP status
         type: '/errors/network',
         title: 'Network Error',
         detail: errorMessage,

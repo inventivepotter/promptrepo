@@ -9,7 +9,6 @@ from sqlmodel import Session
 
 from services.auth.auth_service import AuthService
 from services.auth.models import (
-    LoginRequest,
     LoginResponse,
     LogoutRequest,
     RefreshRequest,
@@ -18,7 +17,7 @@ from services.auth.models import (
     SessionNotFoundError,
     TokenValidationError
 )
-from services.git_provider.models import AuthUrlResponse, OAuthToken, UserInfo, UserEmail
+from services.oauth.models import AuthUrlResponse, OAuthToken, OAuthUserInfo, OAuthUserEmail
 from database.models.user import User
 
 
@@ -59,7 +58,7 @@ def auth_service(mock_oauth_service, mock_db, mock_session_service):
     """AuthService instance with mocked dependencies"""
     return AuthService(
         db=mock_db,
-        git_provider_service=mock_oauth_service,
+        oauth_service=mock_oauth_service,
         session_service=mock_session_service
     )
 
@@ -67,8 +66,8 @@ def auth_service(mock_oauth_service, mock_db, mock_session_service):
 @pytest.fixture
 def sample_user_info():
     """Sample user info from OAuth provider"""
-    from services.git_provider.models import OAuthProvider
-    return UserInfo(
+    from services.oauth.enums import OAuthProvider
+    return OAuthUserInfo(
         id="12345",
         username="testuser",
         name="Test User",
@@ -94,8 +93,8 @@ def sample_oauth_token():
 def sample_user_emails():
     """Sample user emails from OAuth provider"""
     return [
-        UserEmail(email="test@example.com", primary=True, verified=True),
-        UserEmail(email="test2@example.com", primary=False, verified=True)
+        OAuthUserEmail(email="test@example.com", primary=True, verified=True),
+        OAuthUserEmail(email="test2@example.com", primary=False, verified=True)
     ]
 
 
@@ -177,10 +176,10 @@ class TestAuthServiceCallback:
         mock_user = User(
             id="1",
             oauth_provider="github",
-            username="testuser",
-            name="Test User",
-            email="test@example.com",
-            avatar_url="https://example.com/avatar.jpg",
+            oauth_username="testuser",
+            oauth_name="Test User",
+            oauth_email="test@example.com",
+            oauth_avatar_url="https://example.com/avatar.jpg",
             oauth_user_id=12345,
             html_url="https://github.com/testuser"
         )
@@ -201,7 +200,7 @@ class TestAuthServiceCallback:
 
             # Assert
             assert isinstance(result, LoginResponse)
-            assert result.user.username == "testuser"
+            assert result.user.oauth_username == "testuser"
             assert result.session_token == "test_session_id"
             assert result.expires_at.endswith("Z")
 
@@ -381,10 +380,10 @@ class TestAuthServiceVerify:
         mock_user = User(
             id="1",
             oauth_provider="github",
-            username="testuser",
-            name="Test User",
-            email="test@example.com",
-            avatar_url="https://example.com/avatar.jpg",
+            oauth_username="testuser",
+            oauth_name="Test User",
+            oauth_email="test@example.com",
+            oauth_avatar_url="https://example.com/avatar.jpg",
             oauth_user_id=12345,
             html_url="https://github.com/testuser"
         )
@@ -434,9 +433,9 @@ class TestAuthServiceVerify:
         mock_user = User(
             id="1",
             oauth_provider="github",
-            username="testuser",
-            name="Test User",
-            email="test@example.com"
+            oauth_username="testuser",
+            oauth_name="Test User",
+            oauth_email="test@example.com"
         )
 
         mock_oauth_service.validate_token.return_value = False

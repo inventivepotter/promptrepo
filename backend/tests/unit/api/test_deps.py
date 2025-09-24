@@ -34,7 +34,7 @@ class TestBearerTokenDependency:
         with pytest.raises(AuthenticationException) as exc_info:
             _ = await get_bearer_token(None)
         
-        assert "Authorization header required" in str(exc_info.value)
+        assert "Unauthorized Access" in str(exc_info.value)
 
     async def test_get_bearer_token_invalid_format(self):
         """Test error when authorization header format is invalid"""
@@ -103,7 +103,7 @@ class TestAuthenticationDependencies:
                 )
             
             assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
-            assert "Authorization header required" in exc_info.value.detail
+            assert "Unauthorized Access" in exc_info.value.detail
 
         async def test_invalid_authorization_format(self, mock_config_service):
             """Test error when authorization format is invalid"""

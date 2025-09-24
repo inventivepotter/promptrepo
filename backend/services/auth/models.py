@@ -7,21 +7,21 @@ ensuring type safety and consistent data validation across the auth service.
 
 from typing import Optional
 from pydantic import BaseModel, Field
-from datetime import datetime
 from database.models.user import User
+from services.oauth.enums import OAuthProvider
 
 
 class LoginRequest(BaseModel):
     """Request model for OAuth login initiation"""
-    provider: str = Field(..., description="OAuth provider name (e.g., 'github')")
-    redirect_uri: str = Field(..., description="Callback URL after authorization")
-
+    provider: OAuthProvider = Field(..., description="OAuth provider name (e.g., 'github')")
+    promptrepo_redirect_url: Optional[str] = Field(None, description="PromptRepo app URL to redirect after login")
 
 class LoginResponse(BaseModel):
     """Response model for successful OAuth callback"""
     user: User = Field(..., description="User information")
     session_token: str = Field(..., description="Session token")
     expires_at: str = Field(..., description="Session expiration time (ISO format)")
+    promptrepo_redirect_url: Optional[str] = Field(None, description="PromptRepo app URL to redirect to")
 
 
 class LogoutRequest(BaseModel):
@@ -86,7 +86,7 @@ class TokenValidationError(AuthError):
 class OAuthTokenUserInfo(BaseModel):
     """Response model for OAuth token and user info"""
     oauth_token: str = Field(..., description="OAuth access token")
-    oauth_provider: str = Field(..., description="OAuth provider name")
+    oauth_provider: OAuthProvider = Field(..., description="OAuth provider name")
     user_id: str = Field(..., description="User ID")
     username: str = Field(..., description="Username")
     name: Optional[str] = Field(None, description="User's display name")

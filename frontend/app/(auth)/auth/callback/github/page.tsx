@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Box, Center, Spinner, Text, VStack } from '@chakra-ui/react';
-import { handleAuthCallback } from '../../../_lib/handleAuthCallback';
+import { Center, Spinner, Text, VStack } from '@chakra-ui/react';
+import { authService } from '@/services/auth/authService';
 import { errorNotification } from '@/lib/notifications';
 
 export default function GitHubCallbackPage() {
@@ -32,11 +32,12 @@ export default function GitHubCallbackPage() {
         }
 
         // Handle the authentication callback
-        const result = await handleAuthCallback(code, state);
+        const result = await authService.handleCallback(code, state);
 
         if (result) {
-          // Success - redirect to the main application
-          router.push('/');
+          // Success - redirect to the PromptRepo redirect URL if provided, otherwise to home
+          const redirectUrl = result.promptrepoRedirectUrl || '/';
+          router.push(redirectUrl);
         } else {
           // Failed - redirect to home or login page
           router.push('/');

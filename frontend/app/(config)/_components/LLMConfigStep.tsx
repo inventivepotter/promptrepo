@@ -12,9 +12,12 @@ import {
 } from '@chakra-ui/react'
 import React, { useState, useEffect } from "react";
 import { FaChevronDown } from 'react-icons/fa';
-import { LLMConfig } from "@/types/Configuration";
-import { LLMProvider, LLMProviderModel } from "@/types/LLMProvider";
-import { modelsApi } from "../_lib/api/modelsApi";
+import type { components } from '@/types/generated/api';
+import { ModelsService } from "@/services/models/modelsService";
+
+type LLMConfig = components['schemas']['LLMConfig'];
+type BasicProviderInfo = components['schemas']['BasicProviderInfo'];
+type ModelInfo = components['schemas']['ModelInfo'];
 
 interface LLMStepProps {
   selectedProvider: string
@@ -29,9 +32,8 @@ interface LLMStepProps {
   addLLMConfig: () => void
   removeLLMConfig: (index: number) => void
   disabled?: boolean
-  availableProviders: LLMProvider[]
+  availableProviders: BasicProviderInfo[]
   isLoadingProviders: boolean
-  hostingType?: string
 }
 
 export default function LLMStep({
@@ -48,10 +50,9 @@ export default function LLMStep({
   removeLLMConfig,
   disabled = false,
   availableProviders,
-  isLoadingProviders,
-  hostingType = 'individual'
+  isLoadingProviders
 }: LLMStepProps) {
-  const [availableModels, setAvailableModels] = useState<LLMProviderModel[]>([]);
+  const [availableModels, setAvailableModels] = useState<ModelInfo[]>([]);
   const [isFetchingModels, setIsFetchingModels] = useState(false);
   const [providerSearchValue, setProviderSearchValue] = useState('');
   const [modelSearchValue, setModelSearchValue] = useState('');
@@ -90,17 +91,12 @@ export default function LLMStep({
 
       setIsFetchingModels(true);
       try {
-        const result = await modelsApi.fetchModelsByProvider(
+        const result = await ModelsService.getAvailableModels(
           selectedProvider,
           apiKey,
           requiresApiBase ? apiBaseUrl : ''
         );
-        if (result.success && result.data && result.data.models && Array.isArray(result.data.models)) {
-          setAvailableModels(result.data.models);
-        } else {
-          console.error('Failed to fetch models:', 'error' in result ? result.error : 'Unknown error');
-          setAvailableModels([]);
-        }
+        setAvailableModels(result.models || []);
       } catch (error) {
         console.error('Error fetching models:', error);
         setAvailableModels([]);
@@ -130,13 +126,6 @@ export default function LLMStep({
         <Text fontSize="sm" opacity={0.7} mb={2}>
           Setup your AI provider and API key first, then select from available models.
         </Text>
-        {hostingType !== 'individual' && (
-          <Box p={3} bg="blue.50" _dark={{ bg: "blue.900", borderColor: "blue.700" }} borderRadius="md" border="1px solid" borderColor="blue.200">
-            <Text fontSize="sm" color="blue.600" _dark={{ color: "blue.300" }}>
-              💡 <strong>Note:</strong> LLM configurations are editable here but will be displayed as environment variables for you to copy to your deployment configuration. Only repository settings are saved to the system.
-            </Text>
-          </Box>
-        )}
         {/* Add new LLM configuration */}
         <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.muted">
           <VStack gap={4}>
@@ -147,7 +136,7 @@ export default function LLMStep({
                 <Box flex={1}>
                   <Combobox.Root
                     collection={createListCollection({
-                      items: filteredProviders.map((p: LLMProvider) => ({ label: p.name, value: p.id }))
+                      items: filteredProviders.map((p: BasicProviderInfo) => ({ label: p.name, value: p.id }))
                     })}
                     value={[selectedProvider]}
                     onValueChange={(e) => {
@@ -171,7 +160,7 @@ export default function LLMStep({
                     </Combobox.Control>
                     <Combobox.Positioner>
                       <Combobox.Content>
-                        {filteredProviders.map((provider: LLMProvider) => (
+                        {filteredProviders.map((provider: BasicProviderInfo) => (
                           <Combobox.Item key={provider.id} item={provider.id}>
                             <Combobox.ItemText>{provider.name}</Combobox.ItemText>
                             <Combobox.ItemIndicator />
@@ -218,7 +207,7 @@ export default function LLMStep({
                 <Text mb={2} fontWeight="medium">2. Model</Text>
                 <Combobox.Root
                   collection={createListCollection({
-                    items: filteredModels.map((m: LLMProviderModel) => ({ label: m.name, value: m.id }))
+                    items: filteredModels.map((m: ModelInfo) => ({ label: m.name, value: m.id }))
                   })}
                   value={[selectedModel]}
                   onValueChange={(e) => setSelectedModel(e.value[0] || '')}
@@ -239,7 +228,7 @@ export default function LLMStep({
                   </Combobox.Control>
                   <Combobox.Positioner>
                     <Combobox.Content>
-                      {filteredModels.map((model: LLMProviderModel) => (
+                      {filteredModels.map((model: ModelInfo) => (
                         <Combobox.Item key={model.id} item={model.id}>
                           <Combobox.ItemText>{model.name}</Combobox.ItemText>
                           <Combobox.ItemIndicator />
@@ -250,7 +239,7 @@ export default function LLMStep({
                 </Combobox.Root>
                 {isFetchingModels && (
                   <Text fontSize="sm" opacity={0.7} mt={1}>
-                    Fetching available models for {(Array.isArray(availableProviders) ? availableProviders : []).find((p: LLMProvider) => p.id === selectedProvider)?.name}...
+                    Fetching available models for {(Array.isArray(availableProviders) ? availableProviders : []).find((p: BasicProviderInfo) => p.id === selectedProvider)?.name}...
                   </Text>
                 )}
                 {!isFetchingModels && availableModels.length === 0 && apiKey && apiKey.length >= 3 && (!requiresApiBase || (apiBaseUrl && apiBaseUrl.length >= 3)) && (
@@ -281,23 +270,29 @@ export default function LLMStep({
           <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.muted">
             <Text fontWeight="bold" mb={4}>Configured LLM Providers</Text>
             <VStack gap={2}>
-              {llmConfigs.map((config, index) => (
-                <HStack key={index} justify="space-between" width="100%" p={2} bg="bg.subtle" borderRadius="md">
-                  <Text fontSize="sm" fontWeight="400">
-                    Provider: <Text as="span" fontWeight="bold">{config.provider}</Text> | Model: <Text as="span" fontWeight="bold">{config.model}</Text>
-                    {config.apiBaseUrl && (
-                      <> | API Base: <Text as="span" fontWeight="bold">{config.apiBaseUrl}</Text></>
-                    )}
-                  </Text>
-                  <Button
-                    size="sm"
-                    onClick={() => removeLLMConfig(index)}
-                    disabled={disabled}
-                  >
-                    Remove
-                  </Button>
-                </HStack>
-              ))}
+              {llmConfigs.map((config, index) => {
+                const isOrgScope = config.scope === 'organization';
+                return (
+                  <HStack key={index} justify="space-between" width="100%" p={2} bg="bg.subtle" borderRadius="md">
+                    <Text fontSize="sm" fontWeight="400">
+                      Provider: <Text as="span" fontWeight="bold">{config.provider}</Text> | Model: <Text as="span" fontWeight="bold">{config.model}</Text>
+                      {!isOrgScope && config.api_base_url && (
+                        <> | API Base: <Text as="span" fontWeight="bold">{config.api_base_url}</Text></>
+                      )}
+                      {isOrgScope && (
+                        <Text as="span" fontSize="xs" color="gray.500" ml={2}>(Organization Scoped)</Text>
+                      )}
+                    </Text>
+                    <Button
+                      size="sm"
+                      onClick={() => removeLLMConfig(index)}
+                      disabled={disabled || isOrgScope}
+                    >
+                      Remove
+                    </Button>
+                  </HStack>
+                );
+              })}
             </VStack>
           </Box>
         )}

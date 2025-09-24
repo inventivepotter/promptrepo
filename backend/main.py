@@ -15,6 +15,7 @@ from middlewares import ContextMiddleware
 # Import core setup and components from middlewares
 from middlewares.rest.setup import setup_fastapi_app
 from middlewares.rest.responses import StandardResponse, success_response
+from services import repo
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -24,6 +25,7 @@ logger = logging.getLogger(__name__)
 from api.v0.auth import router as auth_router
 from api.v0.llm import router as llm_router
 from api.v0.config import router as config_router
+from api.v0.repos import router as repos_router
 from api.v0.health import router as health_router
 from api.v0.info import router as info_router
 
@@ -74,6 +76,12 @@ app.include_router(
     llm_router,
     prefix="/api/v0/llm/chat",
     tags=["llm"]
+)
+
+app.include_router(
+    repos_router,
+    prefix="/api/v0/repos",
+    tags=["repos"]
 )
 
 app.include_router(

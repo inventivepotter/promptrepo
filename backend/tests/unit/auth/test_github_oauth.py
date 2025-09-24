@@ -10,15 +10,15 @@ from sqlmodel.pool import StaticPool
 from main import app
 from database.core import get_session
 from database.models.user import User
-from services.git_provider.models import (
-    UserInfo,
-    UserEmail,
+from services.oauth.models import (
+    OAuthUserInfo,
+    OAuthUserEmail,
     OAuthToken,
     AuthUrlResponse,
     OAuthProvider
 )
 from api.deps import get_git_provider_service, get_auth_service
-from services.git_provider.git_provider_service import GitProviderService
+from services.oauth.oauth_service import OAuthService
 from services.auth.auth_service import AuthService
 
 # Create a test database engine
@@ -40,7 +40,7 @@ app.dependency_overrides[get_session] = get_test_session
 client = TestClient(app)
 
 # Mock OAuth service
-mock_oauth_service = Mock(spec=GitProviderService)
+mock_oauth_service = Mock(spec=OAuthService)
 mock_oauth_service.get_authorization_url = AsyncMock(return_value=AuthUrlResponse(
     provider="github",
     auth_url="https://github.com/login/oauth/authorize?client_id=test_client_id&redirect_uri=http://localhost:8080/api/v0/auth/callback/github&state=test_state",
@@ -52,7 +52,7 @@ mock_oauth_service.exchange_code_for_token = AsyncMock(return_value=OAuthToken(
     scope="user:email",
     expires_in=3600
 ))
-mock_oauth_service.get_user_info = AsyncMock(return_value=UserInfo(
+mock_oauth_service.get_user_info = AsyncMock(return_value=OAuthUserInfo(
     provider=OAuthProvider.GITHUB,
     id="12345",
     username="testuser",
@@ -62,7 +62,7 @@ mock_oauth_service.get_user_info = AsyncMock(return_value=UserInfo(
     profile_url="https://github.com/testuser"
 ))
 mock_oauth_service.get_user_emails = AsyncMock(return_value=[
-    UserEmail(
+    OAuthUserEmail(
         email="test@example.com",
         primary=True,
         verified=True
@@ -77,10 +77,10 @@ from services.auth.models import LoginResponse
 mock_user = User(
     id="1",
     oauth_provider="github",
-    username="testuser",
-    name="Test User",
-    email="test@example.com",
-    avatar_url="https://avatars.githubusercontent.com/u/12345",
+    oauth_username="testuser",
+    oauth_name="Test User",
+    oauth_email="test@example.com",
+    oauth_avatar_url="https://avatars.githubusercontent.com/u/12345",
     oauth_user_id=12345,
     html_url="https://github.com/testuser"
 )

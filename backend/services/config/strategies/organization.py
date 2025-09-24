@@ -38,7 +38,8 @@ class OrganizationConfig(IConfig):
             {
                 "provider": config.provider,
                 "client_id": config.client_id,
-                "client_secret": config.client_secret
+                "client_secret": config.client_secret,
+                "redirect_url": config.redirect_url
             }
             for config in oauth_configs
         ]
@@ -51,11 +52,12 @@ class OrganizationConfig(IConfig):
         For organization hosting, user-specific LLM configs are stored in database.
         ENV configs remain in ENV and are not modified by this method.
         """
+        user_llm_dao = UserLLMDAO(db)
         if not llm_configs:
             # If an empty list is provided, delete all existing configs for the user.
-            existing_db_llm_configs = UserLLMDAO.get_llm_configs_for_user(db, user_id)
+            existing_db_llm_configs = user_llm_dao.get_llm_configs_for_user(user_id)
             for config in existing_db_llm_configs:
-                UserLLMDAO.delete_llm_config(db, config.id)
+                user_llm_dao.delete_llm_config(config.id)
             return []
 
         # Filter out organization-scoped configs (these should remain in ENV)
@@ -64,7 +66,7 @@ class OrganizationConfig(IConfig):
         if not user_configs:
             return []
 
-        existing_db_llm_configs = UserLLMDAO.get_llm_configs_for_user(db, user_id)
+        existing_db_llm_configs = user_llm_dao.get_llm_configs_for_user(user_id)
         existing_configs_map = {(config.provider, config.model_name): config for config in existing_db_llm_configs}
         processed_existing_ids = set()
 
@@ -73,8 +75,7 @@ class OrganizationConfig(IConfig):
             if key in existing_configs_map:
                 # Update existing config
                 existing_config = existing_configs_map[key]
-                UserLLMDAO.update_llm_config(
-                    db=db,
+                user_llm_dao.update_llm_config(
                     config_id=existing_config.id,
                     provider=config_data.provider,
                     model_name=config_data.model,
@@ -84,8 +85,7 @@ class OrganizationConfig(IConfig):
                 processed_existing_ids.add(existing_config.id)
             else:
                 # Create new config
-                UserLLMDAO.add_llm_config(
-                    db=db,
+                user_llm_dao.add_llm_config(
                     user_id=user_id,
                     provider=config_data.provider,
                     model_name=config_data.model,
@@ -96,7 +96,7 @@ class OrganizationConfig(IConfig):
         # Delete any existing configs that were not in the new list
         for config in existing_db_llm_configs:
             if config.id not in processed_existing_ids:
-                UserLLMDAO.delete_llm_config(db, config.id)
+                user_llm_dao.delete_llm_config(config.id)
         
         return user_configs
     
@@ -106,6 +106,7 @@ class OrganizationConfig(IConfig):
         For organization hosting, repo configs are managed per-user in database.
         This method uses UserReposService to store configurations.
         """
+        user_repos_dao = UserReposDAO(db)
         if not repo_configs:
             return []
 
@@ -113,7 +114,7 @@ class OrganizationConfig(IConfig):
         for config in repo_configs:
             try:
                 # Check if repo already exists to avoid duplicates
-                existing_repo = UserReposDAO.get_repository_by_url(db, user_id, config.repo_url)
+                existing_repo = user_repos_dao.get_repository_by_url(user_id, config.repo_url)
                 if existing_repo:
                     # If it exists, we can optionally update it or just acknowledge it.
                     # For now, we'll consider it as successfully "set" and add to the return list.
@@ -132,8 +133,7 @@ class OrganizationConfig(IConfig):
                     print(f"Warning: repo_name is missing and cannot be derived from repo_url: {config.repo_url}. Skipping.")
                     continue
 
-                UserReposDAO.add_repository(
-                    db=db,
+                user_repos_dao.add_repository(
                     user_id=user_id,
                     repo_clone_url=config.repo_url,
                     repo_name=repo_name_to_use,
@@ -167,7 +167,8 @@ class OrganizationConfig(IConfig):
                     OAuthConfig(
                         provider=config["provider"],
                         client_id=config["client_id"],
-                        client_secret=config["client_secret"]
+                        client_secret=config["client_secret"],
+                        redirect_url=config.get("redirect_url", "")
                     )
                     for config in oauth_configs_dict
                 ]
@@ -193,6 +194,7 @@ class OrganizationConfig(IConfig):
             if llm_configs_data:
                 env_configs = [
                     LLMConfig(
+                        id=config.get("id"),
                         provider=config.get("provider"),
                         model=config.get("model"),
                         api_key=config.get("api_key"),
@@ -207,10 +209,12 @@ class OrganizationConfig(IConfig):
         # Then, get user-specific LLM configs from database if user_id is provided
         user_configs = []
         if user_id:
-            db_llm_configs = UserLLMDAO.get_llm_configs_for_user(db, user_id)
+            user_llm_dao = UserLLMDAO(db)
+            db_llm_configs = user_llm_dao.get_llm_configs_for_user(user_id)
             if db_llm_configs:
                 user_configs = [
                     LLMConfig(
+                        id=config.id,
                         provider=config.provider,
                         model=config.model_name,
                         api_key=config.api_key or "",
@@ -244,7 +248,8 @@ class OrganizationConfig(IConfig):
         For organization hosting, repo configs are retrieved from user context.
         This method uses UserReposService to fetch configurations from the database.
         """
-        user_repos = UserReposDAO.get_user_repositories(db, user_id)
+        user_repos_dao = UserReposDAO(db)
+        user_repos = user_repos_dao.get_user_repositories(user_id)
         if not user_repos:
             return None
 
@@ -252,6 +257,7 @@ class OrganizationConfig(IConfig):
         for user_repo in user_repos:
             # Map UserRepos object to RepoConfig object
             config = RepoConfig(
+                id=user_repo.id,
                 repo_name=user_repo.repo_name,
                 repo_url=user_repo.repo_clone_url,
                 base_branch=user_repo.branch or "main",
