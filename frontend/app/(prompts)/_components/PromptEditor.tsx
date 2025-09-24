@@ -17,7 +17,7 @@ import { EnableThinkingFieldGroup } from './EnableThinkingFieldGroup';
 import { Chat } from './Chat';
 import { PromptTimeline } from './PromptTimeline';
 import { LLMProvider } from '@/types/LLMProvider';
-import { commitPushOperations } from '../_lib/commitPush';
+import { promptsService } from '@/services/prompts';
 import { useAuth } from '../../(auth)/_components/AuthProvider';
 
 
@@ -169,7 +169,7 @@ export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], con
     
     setIsCommitPushing(true);
     try {
-      await commitPushOperations.commitPushPrompt(prompt.id);
+      await promptsService.commitPushPrompt(prompt.id);
     } finally {
       setIsCommitPushing(false);
     }

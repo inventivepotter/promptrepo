@@ -1,4 +1,4 @@
-import { storageState } from '@/app/(auth)/_state/storageState';
+import * as authStore from '@/stores/authStore';
 import { authApi } from './api';
 import { errorNotification } from '@/lib/notifications';
 import { LOCAL_STORAGE_KEYS } from '@/utils/localStorageConstants';
@@ -19,7 +19,7 @@ export class AuthService {
    * @returns Headers object with Authorization header
    */
   getAuthHeaders(): Record<string, string> {
-    const sessionToken = storageState.getSessionToken();
+    const sessionToken = authStore.getSessionToken();
     if (!sessionToken) {
       return {
         'Authorization': ''
@@ -35,7 +35,7 @@ export class AuthService {
    * @returns Session token string or null if not authenticated
    */
   getSessionToken(): string | null {
-    return storageState.getSessionToken();
+    return authStore.getSessionToken();
   }
 
   /**
@@ -43,7 +43,7 @@ export class AuthService {
    * @returns true if user has a valid session token
    */
   isAuthenticated(): boolean {
-    const token = storageState.getSessionToken();
+    const token = authStore.getSessionToken();
     return Boolean(token && token.trim().length > 0);
   }
 
@@ -54,9 +54,9 @@ export class AuthService {
    * @param user - The user data to store
    */
   setSession(token: string, expiresAt: string, user?: User): void {
-    storageState.setSession(token, expiresAt);
+    authStore.setSession(token, expiresAt);
     if (user) {
-      storageState.setUserData(user);
+      authStore.setUserData(user);
     }
   }
 
@@ -64,8 +64,8 @@ export class AuthService {
    * Clear session token and user data (for logout scenarios)
    */
   clearSession(): void {
-    storageState.clearSession();
-    storageState.clearUserData();
+    authStore.clearSession();
+    authStore.clearUserData();
   }
 
   /**
@@ -111,7 +111,7 @@ export class AuthService {
    */
   async getUser(): Promise<User | null> {
     try {
-      const currentSessionToken = storageState.getSessionToken();
+      const currentSessionToken = authStore.getSessionToken();
       if (!currentSessionToken) {
         return null;
       }
@@ -137,11 +137,11 @@ export class AuthService {
       }
 
       // Store verified user data and refresh session
-      storageState.setUserData(result.data);
+      authStore.setUserData(result.data);
       
       // Re-store session with a new expiry time to keep it fresh
       const newExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
-      storageState.setSession(currentSessionToken, newExpiresAt);
+      authStore.setSession(currentSessionToken, newExpiresAt);
       
       return result.data;
 
@@ -202,7 +202,7 @@ export class AuthService {
    */
   async logout(): Promise<boolean> {
     try {
-      const sessionToken = storageState.getSessionToken();
+      const sessionToken = authStore.getSessionToken();
       
       if (sessionToken) {
         // Attempt to invalidate session on server
@@ -240,14 +240,14 @@ export class AuthService {
    */
   async refreshSession(): Promise<{ success: boolean; user: User | null }> {
     try {
-      const sessionToken = storageState.getSessionToken();
+      const sessionToken = authStore.getSessionToken();
       if (!sessionToken) {
         return { success: false, user: null };
       }
 
       // Only refresh if needed
-      if (!storageState.shouldRefreshSession()) {
-        const cachedUser = storageState.getUserData();
+      if (!authStore.shouldRefreshSession()) {
+        const cachedUser = authStore.getUserData();
         return { success: true, user: cachedUser };
       }
 
@@ -272,7 +272,7 @@ export class AuthService {
       }
 
       // Update session with new token
-      storageState.setSession(result.data.sessionToken, result.data.expiresAt);
+      authStore.setSession(result.data.sessionToken, result.data.expiresAt);
 
       // Verify the new session to get updated user data
       const verifyResult = await authApi.verifySession();
@@ -292,7 +292,7 @@ export class AuthService {
       }
 
       // Update cached user data
-      storageState.setUserData(verifyResult.data);
+      authStore.setUserData(verifyResult.data);
       return { success: true, user: verifyResult.data };
 
     } catch (error: unknown) {
@@ -302,7 +302,7 @@ export class AuthService {
       );
 
       // Try to get cached user data
-      const cachedUser = storageState.getUserData();
+      const cachedUser = authStore.getUserData();
       return {
         success: !!cachedUser,
         user: cachedUser

@@ -11,7 +11,7 @@ import {
 import { LuRefreshCw, LuBot, LuDollarSign } from 'react-icons/lu';
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { ChatMessage } from '../_types/ChatState';
-import { formatCost } from '../_lib/utils/pricingUtils';
+import { pricingService } from '@/services/llm/pricing/pricingService';
 
 interface ChatSimpleHeaderProps {
   onReset: () => void;
@@ -49,7 +49,7 @@ export function ChatSimpleHeader({
                 <HStack gap={1} fontSize="xs" color="green.600" _dark={{ color: "green.400" }}>
                   <LuDollarSign size={12} />
                   <Text fontFamily="mono" fontWeight="medium">
-                    {formatCost(totalCost)}
+                    {pricingService.formatCost(totalCost)}
                   </Text>
                 </HStack>
               )}

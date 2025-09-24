@@ -14,7 +14,7 @@ from utils.constants import PROVIDER_NAMES_MAP
 logger = logging.getLogger(__name__)
 
 
-class ProviderService:
+class LLMProviderService:
     """Service for handling LLM provider operations."""
     
     def __init__(self, config_service: ConfigService):

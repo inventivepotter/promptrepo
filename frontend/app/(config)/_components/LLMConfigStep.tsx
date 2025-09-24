@@ -13,7 +13,7 @@ import {
 import React, { useState, useEffect } from "react";
 import { FaChevronDown } from 'react-icons/fa';
 import type { components } from '@/types/generated/api';
-import { ModelsService } from "@/services/models/modelsService";
+import { LLMProviderService } from "@/services/llm/llmProvider/llmProviderService";
 
 type LLMConfig = components['schemas']['LLMConfig'];
 type BasicProviderInfo = components['schemas']['BasicProviderInfo'];
@@ -91,7 +91,7 @@ export default function LLMStep({
 
       setIsFetchingModels(true);
       try {
-        const result = await ModelsService.getAvailableModels(
+        const result = await LLMProviderService.getAvailableModels(
           selectedProvider,
           apiKey,
           requiresApiBase ? apiBaseUrl : ''

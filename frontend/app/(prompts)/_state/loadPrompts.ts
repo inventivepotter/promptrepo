@@ -1,6 +1,6 @@
 import { Prompt } from '@/types/Prompt';
 import { LOCAL_STORAGE_KEYS } from '../../../utils/localStorageConstants';
-import { getPrompts } from '../_lib/getPrompts';
+import { promptsService } from '@/services/prompts';
 import { PromptJson } from '../_types/PromptState';
 
 // Cache prompts to localStorage for fallback (primary source is now API via getPrompts)
@@ -58,7 +58,7 @@ export const loadPrompts = async (): Promise<Prompt[]> => {
     }
 
     // If no valid data in localStorage, try to get from API
-    const apiPrompts = await getPrompts();
+    const apiPrompts = await promptsService.getPrompts();
 
     // Update localStorage cache with fresh API data
     if (apiPrompts.length > 0) {

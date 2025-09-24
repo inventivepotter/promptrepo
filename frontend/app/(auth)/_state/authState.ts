@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { AuthState, AuthContextType } from '../_types/AuthState';
 import { authService } from '@/services/auth/authService';
-import { storageState } from './storageState';
+import * as authStore from '@/stores/authStore';
 import { errorNotification } from '@/lib/notifications';
 
 // Initialize with stored auth state if available
@@ -14,7 +14,7 @@ const getInitialAuthState = (): AuthState => {
       sessionToken: null,
     };
   }
-  return storageState.getInitialState();
+  return authStore.getInitialAuthState();
 };
 
 export function useAuthState(): AuthContextType {
@@ -37,7 +37,7 @@ export function useAuthState(): AuthContextType {
 
     try {
       // Get initial state from storage
-      const storedState = storageState.getInitialState();
+      const storedState = authStore.getInitialAuthState();
       
       // If we have a stored session, verify it
       if (storedState.sessionToken) {
@@ -52,8 +52,8 @@ export function useAuthState(): AuthContextType {
           });
         } else {
           // Invalid session - clear everything
-          storageState.clearSession();
-          storageState.clearUserData();
+          authStore.clearSession();
+          authStore.clearUserData();
           updateAuthState({
             isAuthenticated: false,
             isLoading: false,
@@ -73,8 +73,8 @@ export function useAuthState(): AuthContextType {
     } catch (error) {
       console.error('Auth check failed:', error);
       // Clear everything on error
-      storageState.clearSession();
-      storageState.clearUserData();
+      authStore.clearSession();
+      authStore.clearUserData();
       updateAuthState({
         isAuthenticated: false,
         isLoading: false,

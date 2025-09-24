@@ -7,8 +7,8 @@ import {
   Text,
   Textarea,
 } from '@chakra-ui/react';
-import { useColorModeValue } from '../../../components/ui/color-mode';
-import { extractVariables, hasVariables } from '../_lib/utils/templateUtils';
+import { useColorModeValue } from '@/components/ui/color-mode';
+import { TemplateUtils } from '@/services/prompts';
 
 interface TemplateVariablesProps {
   promptTemplate: string;
@@ -26,10 +26,10 @@ export function TemplateVariables({
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
 
   // Extract variables from the prompt template
-  const extractedVariables = React.useMemo(() => extractVariables(promptTemplate), [promptTemplate]);
+  const extractedVariables = React.useMemo(() => TemplateUtils.extractVariables(promptTemplate), [promptTemplate]);
 
   // Don't render anything if there are no variables
-  if (!hasVariables(promptTemplate) || extractedVariables.length === 0) {
+  if (!TemplateUtils.hasVariables(promptTemplate) || extractedVariables.length === 0) {
     return null;
   }
 

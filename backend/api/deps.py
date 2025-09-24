@@ -6,7 +6,7 @@ This module provides centralized dependency injection for all services.
 We use function-based dependencies as recommended by FastAPI documentation.
 """
 from typing import Generator, Annotated, Optional
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, Header
 from sqlmodel import Session
 from pathlib import Path
 import logging
@@ -22,7 +22,7 @@ from services.auth.session_service import SessionService
 from services.config.config_service import ConfigService
 from services.config.models import HostingType
 from services.llm.completion_service import ChatCompletionService
-from services.llm.provider_service import ProviderService
+from services.llm.llm_provider_service import LLMProviderService
 from services.repo.repo_service import RepoService
 from services.git.git_service import GitService
 from services.repo.repo_locator_service import RepoLocatorService
@@ -165,17 +165,17 @@ AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 # LLM Completion Service
 # ==============================================================================
 
-def get_chat_completion_service() -> ChatCompletionService:
+def get_chat_completion_service(
+    config_service: ConfigServiceDep
+) -> ChatCompletionService:
     """
     Chat completion service dependency.
     
     Creates a ChatCompletionService for handling LLM operations.
     The service manages interactions with various LLM providers.
-    
-    Note: Currently ChatCompletionService creates its own ConfigService.
-    TODO: Refactor to accept ConfigService as constructor parameter.
+    Uses proper dependency injection with ConfigService.
     """
-    return ChatCompletionService()
+    return ChatCompletionService(config_service=config_service)
 
 
 ChatCompletionServiceDep = Annotated[ChatCompletionService, Depends(get_chat_completion_service)]
@@ -232,17 +232,17 @@ GitServiceDep = Annotated[GitService, Depends(get_git_service)]
 
 def get_provider_service(
     config_service: ConfigServiceDep
-) -> ProviderService:
+) -> LLMProviderService:
     """
     LLM Provider service dependency.
     
     Creates a ProviderService with the configuration from ConfigService.
     Handles LLM provider and model operations.
     """
-    return ProviderService(config_service=config_service)
+    return LLMProviderService(config_service=config_service)
 
 
-ProviderServiceDep = Annotated[ProviderService, Depends(get_provider_service)]
+ProviderServiceDep = Annotated[LLMProviderService, Depends(get_provider_service)]
 
 
 # ==============================================================================

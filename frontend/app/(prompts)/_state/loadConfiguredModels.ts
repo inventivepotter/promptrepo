@@ -1,4 +1,4 @@
-import { getConfiguredModels } from "../_lib/getConfiguredModels";
+import { LLMProviderService } from "@/services/llm/llmProvider/llmProviderService";
 import { LOCAL_STORAGE_KEYS } from "@/utils/localStorageConstants";
 import { PromptsState } from "../_types/PromptState";
 import { LLMProvider } from "@/types/LLMProvider";
@@ -55,7 +55,7 @@ export const loadConfiguredModels = async (): Promise<PromptsState['configuredMo
     }
 
     // If no valid data in localStorage, try to get from API
-    const apiModels = await getConfiguredModels();
+    const apiModels = await LLMProviderService.getConfiguredModelsFlattened();
 
     // Update localStorage cache with fresh API data
     if (apiModels.length > 0) {

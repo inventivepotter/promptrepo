@@ -6,8 +6,7 @@ import { Box } from '@chakra-ui/react';
 import { Prompt } from '@/types/Prompt';
 import { usePromptsState } from "../_state/promptState";
 import { PromptEditor } from '../_components/PromptEditor';
-import { updatePrompt as updatePromptBackend } from '../_lib/updatePrompt';
-import { getPrompt } from '../_lib/getPrompt';
+import { promptsService } from '@/services/prompts';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 
 function EditorPageContent() {
@@ -32,7 +31,7 @@ function EditorPageContent() {
       
       const fetchPrompt = async () => {
         try {
-          const prompt = await getPrompt(promptId);
+          const prompt = await promptsService.getPrompt(promptId);
           // Only update state if we're still fetching this prompt ID
           if (fetchingRef.current === promptId) {
             if (prompt) {
@@ -65,7 +64,7 @@ function EditorPageContent() {
         const updatesWithId = { ...updates, id: currentPrompt.id };
         
         // First try to save to backend
-        await updatePromptBackend(updatesWithId);
+        await promptsService.updatePrompt(updatesWithId);
         // Only update localStorage if backend save was successful
         updatePrompt(currentPrompt.id, updatesWithId);
       } catch (error) {

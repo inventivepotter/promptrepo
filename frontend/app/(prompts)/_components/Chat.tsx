@@ -5,7 +5,7 @@ import {
   Box,
   VStack,
 } from '@chakra-ui/react';
-import { useColorModeValue } from '../../../components/ui/color-mode';
+import { useColorModeValue } from '@/components/ui/color-mode';
 import { ChatMessages } from './ChatMessages';
 import { ChatInput } from './ChatInput';
 import { ChatFooter } from './ChatFooter';
@@ -13,10 +13,9 @@ import { ChatSimpleHeader } from './ChatSimpleHeader';
 import { TokenStats } from './TokenStats';
 import { TemplateVariables } from './TemplateVariables';
 import { ChatState, Tool } from '../_types/ChatState';
-import { chatCompletion } from '../_lib/chatCompletion';
-import { createUserMessage, createAssistantMessage, toOpenAIMessages } from '../_lib/utils/messageUtils';
-import type { ChatCompletionOptions } from '../_types/ChatApi';
-import { extractVariables, resolveTemplate, hasVariables } from '../_lib/utils/templateUtils';
+import { chatService } from '@/services/llm/chat/chatService';
+import type { ChatCompletionOptions } from '@/types/Chat';
+import { TemplateUtils } from '@/services/prompts';
 
 interface ChatProps {
   // Optional props for customization
@@ -87,7 +86,7 @@ export function Chat({ height = "700px", onMessageSend, promptData }: ChatProps)
 
   // Extract variables from the active prompt template
   const promptTemplate = activePrompt?.prompt || '';
-  const extractedVariables = React.useMemo(() => extractVariables(promptTemplate), [promptTemplate]);
+  const extractedVariables = React.useMemo(() => TemplateUtils.extractVariables(promptTemplate), [promptTemplate]);
 
   // Initialize template variables when extracted variables change
   React.useEffect(() => {
@@ -108,8 +107,8 @@ export function Chat({ height = "700px", onMessageSend, promptData }: ChatProps)
 
   // Get resolved template with current variable values
   const resolvedPrompt = React.useMemo(() => {
-    if (!hasVariables(promptTemplate)) return promptTemplate;
-    return resolveTemplate(promptTemplate, templateVariables);
+    if (!TemplateUtils.hasVariables(promptTemplate)) return promptTemplate;
+    return TemplateUtils.resolveTemplate(promptTemplate, templateVariables);
   }, [promptTemplate, templateVariables]);
 
   const handleToolsChange = (tools: string[]) => {
@@ -145,8 +144,8 @@ export function Chat({ height = "700px", onMessageSend, promptData }: ChatProps)
       }
     }
     
-    // Create user message using utility function
-    const userMessage = createUserMessage(message);
+    // Create user message using chat service
+    const userMessage = chatService.createUserMessage(message);
 
     // Add user message and set loading state
     const updatedMessages = [...chatState.messages, userMessage];
@@ -162,7 +161,7 @@ export function Chat({ height = "700px", onMessageSend, promptData }: ChatProps)
     }
 
     // Convert messages to OpenAI format for API call
-    const openAIMessages = toOpenAIMessages(updatedMessages);
+    const openAIMessages = chatService.toOpenAIMessages(updatedMessages);
 
     // Build completion options from active prompt (prioritize promptData prop)
     const completionOptions: ChatCompletionOptions | undefined = activePrompt ? {
@@ -178,10 +177,10 @@ export function Chat({ height = "700px", onMessageSend, promptData }: ChatProps)
     } : undefined;
 
     // Get system message from active prompt (use resolved template if variables exist)
-    const systemMessage = hasVariables(promptTemplate) ? resolvedPrompt : activePrompt?.prompt;
+    const systemMessage = TemplateUtils.hasVariables(promptTemplate) ? resolvedPrompt : activePrompt?.prompt;
 
     // Call chat completion middleware (handles all errors and notifications)
-    const aiMessage = await chatCompletion(openAIMessages, undefined, completionOptions, systemMessage);
+    const aiMessage = await chatService.sendChatCompletion(openAIMessages, undefined, completionOptions, systemMessage);
     
     if (aiMessage) {
       // Success - add AI response
@@ -192,7 +191,7 @@ export function Chat({ height = "700px", onMessageSend, promptData }: ChatProps)
       }));
     } else {
       // Error handled by middleware, just add fallback message and stop loading
-      const fallbackMessage = createAssistantMessage(
+      const fallbackMessage = chatService.createAssistantMessage(
         'Unable to get AI response. Please try again.'
       );
 
@@ -268,11 +267,11 @@ export function Chat({ height = "700px", onMessageSend, promptData }: ChatProps)
             <ChatMessages
               messages={[
                 // Add system prompt as first message if there are any messages
-                ...(chatState.messages.length > 0 && (hasVariables(promptTemplate) ? resolvedPrompt : activePrompt?.prompt)
+                ...(chatState.messages.length > 0 && (TemplateUtils.hasVariables(promptTemplate) ? resolvedPrompt : activePrompt?.prompt)
                   ? [{
                       id: 'system-prompt',
                       role: 'system' as const,
-                      content: hasVariables(promptTemplate) ? resolvedPrompt : activePrompt?.prompt || '',
+                      content: TemplateUtils.hasVariables(promptTemplate) ? resolvedPrompt : activePrompt?.prompt || '',
                       timestamp: new Date()
                     }]
                   : []),

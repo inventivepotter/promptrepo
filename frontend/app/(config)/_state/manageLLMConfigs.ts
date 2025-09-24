@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { ConfigState } from '../_types/state';
-import { ModelsService } from '@/services/models/modelsService';
+import { LLMProviderService } from '@/services/llm/llmProvider/llmProviderService';
 import { errorNotification } from '@/lib/notifications';
 import type { components } from '@/types/generated/api';
 
@@ -18,7 +18,7 @@ export function useLLMConfigActions(
     }));
 
     try {
-      const providersData = await ModelsService.getAvailableProviders();
+      const providersData = await LLMProviderService.getAvailableProviders();
       setConfigState(prev => ({
         ...prev,
         providers: {

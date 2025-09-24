@@ -7,7 +7,7 @@ from typing import AsyncGenerator, cast, AsyncIterator
 from any_llm import acompletion
 from any_llm.types.completion import ChatCompletion, ChatCompletionChunk
 from fastapi import HTTPException
-from services.llm.models import ChatMessage
+from services.config.config_service import ConfigService
 from services.llm.models import (
     ChatCompletionRequest,
     ChatCompletionStreamResponse,
@@ -17,11 +17,9 @@ from services.llm.models import (
     PromptTokensDetails,
     CompletionTokensDetails
 )
-from services.config.config_service import ConfigService
 from middlewares.rest.exceptions import (
     BadRequestException,
-    ServiceUnavailableException,
-    AppException
+    ServiceUnavailableException
 )
 
 logger = logging.getLogger(__name__)
@@ -104,9 +102,9 @@ class ChatCompletionService:
                 context={"provider": request.provider, "model": request.model}
             )
 
-    def __init__(self):
+    def __init__(self, config_service: ConfigService):
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-        self.config_service = ConfigService()
+        self.config_service = config_service
 
     def _get_api_details(self, provider: str, model: str, user_id: str) -> tuple[str, str | None]:
         llm_configs = self.config_service.get_llm_configs(user_id=user_id) or []
@@ -321,5 +319,3 @@ class ChatCompletionService:
                 any_llm_msg["tool_calls"] = msg.tool_calls
             converted_messages.append(any_llm_msg)
         return converted_messages
-# Create a singleton instance
-chat_completion_service = ChatCompletionService()

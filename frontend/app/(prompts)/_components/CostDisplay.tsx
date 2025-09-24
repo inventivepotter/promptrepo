@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { pricingService, formatCost } from '../_lib/utils/pricingUtils';
-import { CostCalculation, TokenUsage } from '../_types/PricingTypes';
+import { pricingService } from '@/services/llm/pricing/pricingService';
+import { CostCalculation, TokenUsage } from '@/types/Pricing';
 
 interface CostDisplayProps {
   modelName: string;
@@ -61,13 +61,13 @@ export default function CostDisplay({
         <div className="flex justify-between items-center">
           <span className="text-gray-600">Input:</span>
           <span className="font-mono text-gray-800">
-            {tokenUsage.inputTokens.toLocaleString()} tokens • {formatCost(costCalculation.inputCost)}
+            {tokenUsage.inputTokens.toLocaleString()} tokens • {pricingService.formatCost(costCalculation.inputCost)}
           </span>
         </div>
         <div className="flex justify-between items-center">
           <span className="text-gray-600">Output:</span>
           <span className="font-mono text-gray-800">
-            {tokenUsage.outputTokens.toLocaleString()} tokens • {formatCost(costCalculation.outputCost)}
+            {tokenUsage.outputTokens.toLocaleString()} tokens • {pricingService.formatCost(costCalculation.outputCost)}
           </span>
         </div>
         {tokenUsage.reasoningTokens && tokenUsage.reasoningTokens > 0 && (
@@ -81,7 +81,7 @@ export default function CostDisplay({
         <div className="flex justify-between items-center pt-1 border-t border-gray-200">
           <span className="font-medium text-gray-700">Total:</span>
           <span className="font-mono font-bold text-gray-900">
-            {formatCost(costCalculation.totalCost)}
+            {pricingService.formatCost(costCalculation.totalCost)}
           </span>
         </div>
       </div>
@@ -91,7 +91,7 @@ export default function CostDisplay({
   return (
     <div className={`inline-flex items-center space-x-1 text-xs ${className}`}>
       <span className="text-gray-500">Cost:</span>
-      <span className="font-mono text-gray-700">{formatCost(costCalculation.totalCost)}</span>
+      <span className="font-mono text-gray-700">{pricingService.formatCost(costCalculation.totalCost)}</span>
       <span className="text-gray-400">({costCalculation.provider})</span>
     </div>
   );

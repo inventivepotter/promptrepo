@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useRef } from 'react';
 import { AuthContextType } from '../_types/AuthState';
 import { useAuthState } from '../_state/authState';
-import { storageState } from '../_state/storageState';
+import * as authStore from '@/stores/authStore';
 
 // Create Auth Context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,7 +20,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (hasInitialized.current) return;
     
     // Get initial state from storage
-    const storedState = storageState.getInitialState();
+    const storedState = authStore.getInitialAuthState();
     if (storedState.isAuthenticated) {
       // Only verify session if we have stored credentials
       auth.checkAuth();
@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Only set up refresh timer if authenticated
     if (auth.isAuthenticated && !checkTimer.current) {
       checkTimer.current = setInterval(() => {
-        if (storageState.shouldRefreshSession()) {
+        if (authStore.shouldRefreshSession()) {
           auth.checkAuth();
         }
       }, 5 * 60 * 1000); // Check every 5 minutes
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const handleStorageChange = (e: StorageEvent) => {
       if (!e.key?.includes('auth_') && !e.key?.includes('user_')) return;
       
-      const currentState = storageState.getInitialState();
+      const currentState = authStore.getInitialAuthState();
       const hasStateChanged = (
         currentState.isAuthenticated !== auth.isAuthenticated ||
         currentState.sessionToken !== auth.sessionToken

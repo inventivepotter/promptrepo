@@ -13,7 +13,7 @@ import { LuBot, LuUser, LuSettings, LuWrench } from 'react-icons/lu';
 import { useColorModeValue } from '../../../components/ui/color-mode';
 import { ChatMessage } from '../_types/ChatState';
 import { MarkdownRenderer } from './MarkdownRenderer';
-import { formatCost } from '../_lib/utils/pricingUtils';
+import { pricingService } from '@/services/llm/pricing/pricingService';
 
 interface ChatMessagesProps {
   messages: ChatMessage[];
@@ -90,7 +90,7 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
           )}
           {message.cost && (
             <Text>
-              <Text as="span" fontWeight="medium">Cost:</Text> {formatCost(message.cost)}
+              <Text as="span" fontWeight="medium">Cost:</Text> {pricingService.formatCost(message.cost)}
             </Text>
           )}
           {message.model && (

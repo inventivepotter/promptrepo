@@ -9,6 +9,7 @@ import type { components } from '@/types/generated/api';
 type BasicProvidersResponse = components['schemas']['BasicProvidersResponse'];
 type ModelsResponse = components['schemas']['ModelsResponse'];
 type FetchModelsRequest = components['schemas']['FetchModelsRequest'];
+type ProvidersResponse = components['schemas']['ProvidersResponse'];
 export default class ModelsApi {
   /**
    * Get all available LLM providers (static list)
@@ -31,5 +32,13 @@ export default class ModelsApi {
       api_base: apiBase
     };
     return await httpClient.post<ModelsResponse>(`/api/v0/llm/provider/${providerId}/models`, request);
+  }
+
+  /**
+   * Get all configured LLM providers
+   * @returns OpenAPI response with configured providers
+   */
+  static async getConfiguredModels(): Promise<OpenApiResponse<ProvidersResponse>> {
+    return await httpClient.get<ProvidersResponse>('/api/v0/llm/providers/configured');
   }
 }

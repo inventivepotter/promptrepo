@@ -18,7 +18,7 @@ import { PromptSearch } from '../_components/PromptSearch';
 import { PromptCard } from '../_components/PromptCard';
 import { Pagination } from '../_components/Pagination';
 import { PromptsHeader } from '@/components/PromptsHeader';
-import { commitPushOperations } from '../_lib/commitPush';
+import { promptsService } from '@/services/prompts';
 
 export default function PromptsPage() {
   const router = useRouter();
@@ -66,7 +66,7 @@ export default function PromptsPage() {
   };
 
   const handleCommitPushAll = async () => {
-    await commitPushOperations.commitPushAll();
+    await promptsService.commitPushAll();
   };
 
   return (
