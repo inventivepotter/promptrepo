@@ -1,4 +1,4 @@
-import * as authStore from '@/stores/authStore';
+import * as authStore from '@/stores/authStore_old';
 import { authApi } from './api';
 import { errorNotification } from '@/lib/notifications';
 import { LOCAL_STORAGE_KEYS } from '@/utils/localStorageConstants';

@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useRef } from 'react';
 import { AuthContextType } from '../_types/AuthState';
 import { useAuthState } from '../_state/authState';
-import * as authStore from '@/stores/authStore';
+import * as authStore from '@/stores/authStore_old';
 
 // Create Auth Context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

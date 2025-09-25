@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { AuthState, AuthContextType } from '../_types/AuthState';
 import { authService } from '@/services/auth/authService';
-import * as authStore from '@/stores/authStore';
+import * as authStore from '@/stores/authStore_old';
 import { errorNotification } from '@/lib/notifications';
 
 // Initialize with stored auth state if available
