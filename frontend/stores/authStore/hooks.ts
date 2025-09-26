@@ -18,6 +18,7 @@ export const useAuthActions = () => {
   const {
     login,
     logout,
+    oauthCallbackGithub,
     refreshSession,
     updateUser,
     initializeAuth,
@@ -26,6 +27,7 @@ export const useAuthActions = () => {
   return {
     login,
     logout,
+    oauthCallbackGithub,
     refreshSession,
     updateUser,
     initializeAuth,

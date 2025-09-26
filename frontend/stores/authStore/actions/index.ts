@@ -1,6 +1,7 @@
 // Combined auth store actions
 import { createLoginAction } from './login';
 import { createLogoutAction } from './logout';
+import { createLoginWithGithubAction } from './oauthCallbackGithub';
 import { createRefreshSessionAction } from './refreshSession';
 import { createInitializeAuthAction } from './initializeAuth';
 import { createUpdateUserAction } from './updateUser';
@@ -15,6 +16,7 @@ import type { AuthStore, AuthActions } from '../types';
 export const createAuthActions: StateCreator<AuthStore, [], [], AuthActions> = (set, get, api) => ({
   // Public actions
   ...createLoginAction(set, get, api),
+  ...createLoginWithGithubAction(set, get, api),
   ...createLogoutAction(set, get, api),
   ...createRefreshSessionAction(set, get, api),
   ...createInitializeAuthAction(set, get, api),

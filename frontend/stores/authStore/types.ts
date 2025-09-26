@@ -11,11 +11,13 @@ export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  promptrepoRedirectUrl: string;
 }
 
 export interface AuthActions {
   login: (customRedirectUrl?: string) => void; // Initial GitHub OAuth redirect
   logout: () => Promise<void>;
+  oauthCallbackGithub: (code: string, stateParam?: string) => Promise<void>; // Handle GitHub OAuth callback
   refreshSession: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
   initializeAuth: () => Promise<void>;

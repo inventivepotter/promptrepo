@@ -9,7 +9,7 @@ import {
 } from '@/stores/authStore';
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PromptQuotes } from "@/components/PromptQuotes";
+import { PromptQuotes } from "@/components/home/PromptQuotes";
 import { Branding } from "@/components/Branding";
 import { ConfigService } from "@/services/config/configService";
 

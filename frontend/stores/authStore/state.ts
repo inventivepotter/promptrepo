@@ -6,4 +6,5 @@ export const initialAuthState: AuthState = {
   isAuthenticated: false,
   isLoading: false,
   error: null,
+  promptrepoRedirectUrl: '/',
 };
