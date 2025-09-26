@@ -3,6 +3,7 @@ import { Provider } from "@/components/ui/provider"
 import { Box, Stack } from "@chakra-ui/react"
 import { Sidebar } from "@/components/sidebar/Sidebar"
 import { Toaster } from "@/components/ui/toaster"
+import { GlobalLoadingOverlay } from "@/components/GlobalLoadingOverlay"
 
 export const metadata: Metadata = {
   icons: "/favicon.svg",
@@ -21,6 +22,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
               </Box>
             </Stack>
             <Toaster />
+            <GlobalLoadingOverlay />
         </Provider>
       </body>
     </html>

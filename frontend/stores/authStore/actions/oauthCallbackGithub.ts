@@ -4,6 +4,7 @@ import type { AuthStore } from '../types';
 import { authService } from '@/services/auth/authService';
 import { handleStoreError, logStoreAction } from '@/lib/zustand';
 import { errorNotification } from '@/lib/notifications';
+import { useLoadingStore } from '@/stores/loadingStore';
 
 export const createLoginWithGithubAction: StateCreator<
   AuthStore,
@@ -14,8 +15,13 @@ export const createLoginWithGithubAction: StateCreator<
   oauthCallbackGithub: async (code: string, stateParam?: string) => {
     logStoreAction('AuthStore', 'oauthCallbackGithub', { code, stateParam });
     
+    // Show global loading overlay
+    useLoadingStore.getState().showLoading(
+      'Authenticating with GitHub',
+      'Please wait while we complete your GitHub authentication'
+    );
+    
     set((draft) => {
-      draft.isLoading = true;
       draft.error = null;
     // @ts-expect-error - Immer middleware supports 3 params
     }, false, 'auth/oauth/callback/github/start');
@@ -29,7 +35,6 @@ export const createLoginWithGithubAction: StateCreator<
         set((draft) => {
           draft.user = response.user;
           draft.isAuthenticated = true;
-          draft.isLoading = false;
           draft.promptrepoRedirectUrl = response.promptrepoRedirectUrl || '/';
     // @ts-expect-error - Immer middleware supports 3 params
         }, false, 'auth/oauth/callback/github/success');
@@ -42,11 +47,13 @@ export const createLoginWithGithubAction: StateCreator<
     } catch (error) {
       const storeError = handleStoreError(error, 'oauthCallbackGithub');
       set((draft) => {
-        draft.isLoading = false;
         draft.error = storeError.message;
     // @ts-expect-error - Immer middleware supports 3 params
       }, false, 'auth/oauth/callback/github/error');
       throw error;
+    } finally {
+      // Hide global loading overlay
+      useLoadingStore.getState().hideLoading();
     }
   },
 });

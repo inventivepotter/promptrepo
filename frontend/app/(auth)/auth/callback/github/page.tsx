@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
-import { Center, Spinner, Text, VStack } from '@chakra-ui/react';
+import { Center, Text, VStack } from '@chakra-ui/react';
 import { useAuthActions, useAuthStore } from '@/stores/authStore';
 import { errorNotification } from '@/lib/notifications';
 
@@ -11,8 +11,7 @@ export default function GitHubCallbackPage() {
   const searchParams = useSearchParams();
   const { oauthCallbackGithub } = useAuthActions();
   
-  // Subscribe to store state for UI feedback
-  const isLoading = useAuthStore((state) => state.isLoading);
+  // Subscribe to store state for error feedback
   const error = useAuthStore((state) => state.error);
 
   useEffect(() => {
@@ -49,18 +48,7 @@ export default function GitHubCallbackPage() {
   return (
     <Center height="100vh" width="100%">
       <VStack gap={6}>
-        {isLoading && !error && (
-          <>
-            <Spinner size="xl" color="blue.500" />
-            <Text fontSize="lg" fontWeight="medium">
-              Logging you in...
-            </Text>
-            <Text fontSize="sm" color="gray.500">
-              Please wait while we complete your GitHub authentication
-            </Text>
-          </>
-        )}
-        {error && !isLoading && (
+        {error && (
           <>
             <Text fontSize="lg" fontWeight="medium" color="red.500">
               Authentication Failed
