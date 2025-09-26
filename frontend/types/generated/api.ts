@@ -742,8 +742,6 @@ export interface components {
         /** LoginResponseData */
         LoginResponseData: {
             user: components["schemas"]["User"];
-            /** Sessiontoken */
-            sessionToken: string;
             /** Expiresat */
             expiresAt: string;
             /** Promptreporedirecturl */
@@ -832,13 +830,6 @@ export interface components {
         ProvidersResponse: {
             /** Providers */
             providers: components["schemas"]["ProviderInfo"][];
-        };
-        /** RefreshResponseData */
-        RefreshResponseData: {
-            /** Sessiontoken */
-            sessionToken: string;
-            /** Expiresat */
-            expiresAt: string;
         };
         /**
          * RepoConfig
@@ -1294,6 +1285,47 @@ export interface components {
             meta?: components["schemas"]["ResponseMeta"];
         };
         /**
+         * StandardResponse[NoneType]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_NoneType_: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /**
+             * Data
+             * @description Response payload
+             */
+            data?: null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
          * StandardResponse[ProvidersResponse]
          * @example {
          *       "data": {
@@ -1323,44 +1355,6 @@ export interface components {
             status_code: number;
             /** @description Response payload */
             data?: components["schemas"]["ProvidersResponse"] | null;
-            /**
-             * Message
-             * @description Human-readable message about the response
-             */
-            message?: string | null;
-            /** @description Response metadata */
-            meta?: components["schemas"]["ResponseMeta"];
-        };
-        /**
-         * StandardResponse[RefreshResponseData]
-         * @example {
-         *       "data": {
-         *         "id": 1,
-         *         "name": "Example"
-         *       },
-         *       "message": "Operation completed successfully",
-         *       "meta": {
-         *         "request_id": "req_123",
-         *         "timestamp": "2024-01-01T00:00:00Z",
-         *         "version": "1.0.0"
-         *       },
-         *       "status": "success"
-         *     }
-         */
-        StandardResponse_RefreshResponseData_: {
-            /**
-             * @description Response status indicator
-             * @default success
-             */
-            status: components["schemas"]["ResponseStatus"];
-            /**
-             * Status Code
-             * @description HTTP status code
-             * @default 200
-             */
-            status_code: number;
-            /** @description Response payload */
-            data?: components["schemas"]["RefreshResponseData"] | null;
             /**
              * Message
              * @description Human-readable message about the response
@@ -1578,9 +1572,7 @@ export interface operations {
     verify_session_api_v0_auth_verify_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -1610,23 +1602,12 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
         };
     };
     logout_api_v0_auth_logout_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -1641,23 +1622,12 @@ export interface operations {
                     "application/json": components["schemas"]["StandardResponse_dict_"];
                 };
             };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
         };
     };
     refresh_session_api_v0_auth_refresh_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -1669,7 +1639,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StandardResponse_RefreshResponseData_"];
+                    "application/json": components["schemas"]["StandardResponse_NoneType_"];
                 };
             };
             /** @description Authentication required */
@@ -1685,15 +1655,6 @@ export interface operations {
                      *       "detail": "Invalid session token"
                      *     } */
                     "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
             /** @description Internal server error */
@@ -1832,8 +1793,6 @@ export interface operations {
                 code: string;
                 /** @description State parameter for CSRF verification */
                 state: string;
-                /** @description Redirect URI used in initial request */
-                redirect_uri: string;
             };
             header?: never;
             path?: never;
@@ -1909,9 +1868,7 @@ export interface operations {
     get_configured_providers_api_v0_llm_providers_configured_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -1924,15 +1881,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StandardResponse_ProvidersResponse_"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
             /** @description Internal server error */
@@ -1990,9 +1938,7 @@ export interface operations {
     fetch_models_by_provider_api_v0_llm_provider__provider_id__models_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-            };
+            header?: never;
             path: {
                 provider_id: string;
             };
@@ -2057,9 +2003,7 @@ export interface operations {
     chat_completions_api_v0_llm_completions_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -2142,9 +2086,7 @@ export interface operations {
     get_config_api_v0_config__get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -2157,15 +2099,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StandardResponse_AppConfig_"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
             /** @description Internal server error */
@@ -2188,9 +2121,7 @@ export interface operations {
     update_config_api_v0_config__patch: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -2294,9 +2225,7 @@ export interface operations {
     get_configured_providers_api_v0_llm_chat_providers_configured_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -2309,15 +2238,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StandardResponse_ProvidersResponse_"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
             /** @description Internal server error */
@@ -2375,9 +2295,7 @@ export interface operations {
     fetch_models_by_provider_api_v0_llm_chat_provider__provider_id__models_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-            };
+            header?: never;
             path: {
                 provider_id: string;
             };
@@ -2442,9 +2360,7 @@ export interface operations {
     chat_completions_api_v0_llm_chat_completions_post: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -2527,9 +2443,7 @@ export interface operations {
     get_available_repositories_api_v0_repos_available_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -2559,15 +2473,6 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
             /** @description Internal server error */
             500: {
                 headers: {
@@ -2588,9 +2493,7 @@ export interface operations {
     get_configured_repositories_api_v0_repos_configured_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -2618,15 +2521,6 @@ export interface operations {
                      *       "detail": "Valid session required"
                      *     } */
                     "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
             /** @description Internal server error */

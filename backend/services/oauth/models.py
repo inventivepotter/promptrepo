@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field, field_validator, ConfigDict
 from datetime import datetime, timedelta, UTC
 
 from settings import settings
-from .enums import OAuthProvider
+from schemas.oauth_provider_enum import OAuthProvider
 
 
 class OAuthToken(BaseModel):

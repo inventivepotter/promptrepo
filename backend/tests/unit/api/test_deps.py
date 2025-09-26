@@ -16,7 +16,7 @@ from api.deps import (
 )
 from middlewares.rest import AuthenticationException
 from services.config.config_service import ConfigService
-from services.config.models import HostingType
+from schemas.hosting_type_enum import HostingType
 from services.auth.session_service import SessionService
 
 

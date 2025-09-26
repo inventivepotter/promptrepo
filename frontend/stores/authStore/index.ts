@@ -16,7 +16,6 @@ export type {
   AuthActions,
   AuthStore,
   LoginResponseData,
-  RefreshResponseData,
   AuthUrlResponseData,
   AuthPersistConfig
 } from './types';
@@ -27,7 +26,6 @@ export {
   selectIsAuthenticated,
   selectIsLoading,
   selectError,
-  selectSessionToken,
   selectUserName,
   selectUserAvatar,
   selectHasSession,
@@ -45,7 +43,6 @@ export {
   useIsAuthenticated,
   useAuthLoading,
   useAuthError,
-  useSessionToken,
   useAuthActions,
   useAuthState,
 } from './hooks';
@@ -70,7 +67,7 @@ export {
  * import { useAuth, selectUserName } from '@/stores/authStore/exports';
  * 
  * function MyComponent() {
- *   const { user, isAuthenticated, loginWithGithub } = useAuth();
+ *   const { user, isAuthenticated, oauthCallbackGithub } = useAuth();
  *   // or
  *   const userName = useAuthStore(selectUserName);
  * }

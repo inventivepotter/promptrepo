@@ -6,7 +6,6 @@ import type { components } from '@/types/generated/api';
 type AuthUrlResponseData = components['schemas']['AuthUrlResponseData'];
 type LoginResponseData = components['schemas']['LoginResponseData'];
 type User = components['schemas']['User'];
-type RefreshResponseData = components['schemas']['RefreshResponseData'];
 
 export const authApi = {
   // Start OAuth flow - redirects to GitHub
@@ -20,7 +19,7 @@ export const authApi = {
   },
 
   // Exchange OAuth code for session token (called by backend after GitHub redirect)
-  exchangeCodeForToken: async (code: string, state: string): Promise<OpenApiResponse<LoginResponseData>> => {
+  handleGithubCallback: async (code: string, state: string): Promise<OpenApiResponse<LoginResponseData>> => {
     const params = new URLSearchParams({
       code,
       state
@@ -39,8 +38,8 @@ export const authApi = {
   },
 
   // Refresh session token
-  refreshSession: async (): Promise<OpenApiResponse<RefreshResponseData>> => {
-    return await httpClient.post<RefreshResponseData>('/api/v0/auth/refresh');
+  refreshSession: async (): Promise<OpenApiResponse<null>> => {
+    return await httpClient.post<null>('/api/v0/auth/refresh');
   }
 };
 

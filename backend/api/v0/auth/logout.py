@@ -2,7 +2,7 @@
 Logout endpoint with standardized responses.
 """
 import logging
-from fastapi import APIRouter, Request, Depends, status
+from fastapi import APIRouter, Request, Response, Depends, status
 
 from middlewares.rest import (
     StandardResponse,
@@ -10,7 +10,7 @@ from middlewares.rest import (
     AppException,
     AuthenticationException
 )
-from api.deps import AuthServiceDep, BearerTokenDep
+from api.deps import AuthServiceDep, SessionCookieDep
 from services.auth.models import LogoutRequest, AuthError, SessionNotFoundError
 
 logger = logging.getLogger(__name__)
@@ -26,8 +26,9 @@ router = APIRouter()
 )
 async def logout(
     request: Request,
+    response: Response,
     auth_service: AuthServiceDep,
-    token: BearerTokenDep,
+    token: SessionCookieDep,
 ) -> StandardResponse[dict]:
     """
     Logout user and invalidate session.
@@ -41,6 +42,14 @@ async def logout(
         # Create logout request using auth service models
         logout_request = LogoutRequest(session_token=token)
         logout_response = await auth_service.logout(logout_request)
+        
+        # Clear the session cookie
+        response.delete_cookie(
+            key="sessionId",
+            httponly=True,
+            secure=True,
+            samesite='lax'
+        )
         
         return success_response(
             data={

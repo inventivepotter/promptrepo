@@ -10,7 +10,7 @@ import uuid
 from database.models.user_repos import UserRepos
 from database.models.user_sessions import UserSessions
 from database.models.user_llm_configs import UserLLMConfigs
-from services.oauth.enums import OAuthProvider
+from schemas.oauth_provider_enum import OAuthProvider
 
 
 class User(SQLModel, table=True):

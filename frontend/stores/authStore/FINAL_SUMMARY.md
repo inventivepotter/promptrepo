@@ -50,7 +50,7 @@ Your auth store implementation follows ALL Zustand best practices with:
 1. `storage.ts` - Now uses `createSessionStorage` from lib/zustand
 2. `index.ts` - Imports middleware from lib/zustand
 3. `hooks.ts` - Updated to use selectors
-4. `actions/loginWithGithub.ts` - Uses handleStoreError
+4. `actions/oauthCallbackGithub.ts` - Uses handleStoreError
 5. `actions/initializeAuth.ts` - Uses handleStoreError and logStoreAction
 
 ## 🔧 Utilities Integration

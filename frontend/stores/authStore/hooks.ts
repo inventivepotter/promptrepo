@@ -13,13 +13,10 @@ export const useAuthLoading = () => useAuthStore((state) => state.isLoading);
 // Hook for error state
 export const useAuthError = () => useAuthStore((state) => state.error);
 
-// Hook for session token
-export const useSessionToken = () => useAuthStore((state) => state.sessionToken);
-
 // Hook for auth actions
 export const useAuthActions = () => {
   const {
-    loginWithGithub,
+    login,
     logout,
     refreshSession,
     updateUser,
@@ -27,7 +24,7 @@ export const useAuthActions = () => {
   } = useAuthStore();
   
   return {
-    loginWithGithub,
+    login,
     logout,
     refreshSession,
     updateUser,
@@ -41,13 +38,11 @@ export const useAuthState = () => {
   const isAuthenticated = useIsAuthenticated();
   const isLoading = useAuthLoading();
   const error = useAuthError();
-  const sessionToken = useSessionToken();
   
   return {
     user,
     isAuthenticated,
     isLoading,
     error,
-    sessionToken,
   };
 };

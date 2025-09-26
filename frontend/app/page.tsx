@@ -1,7 +1,12 @@
 'use client';
 
 import { Button, HStack, VStack, Text, Box, Spinner, Image, Container, Flex } from "@chakra-ui/react";
-import { useAuth } from "./(auth)/_components/AuthProvider";
+import {
+  useUser,
+  useIsAuthenticated,
+  useAuthLoading,
+  useAuthActions
+} from '@/stores/authStore';
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PromptQuotes } from "@/components/PromptQuotes";
@@ -9,8 +14,16 @@ import { Branding } from "@/components/Branding";
 import { ConfigService } from "@/services/config/configService";
 
 const AuthButton = () => {
-  const { isAuthenticated, isLoading, user, login, logout } = useAuth();
+  const isAuthenticated = useIsAuthenticated();
+  const isLoading = useAuthLoading();
+  const user = useUser();
+  const { login, logout, initializeAuth } = useAuthActions();
   const [hostingType, setHostingType] = useState<string>('');
+
+  useEffect(() => {
+    // Initialize authentication on component mount
+    initializeAuth();
+  }, [initializeAuth]);
 
   useEffect(() => {
     const loadHostingType = async () => {
@@ -69,14 +82,11 @@ const AuthButton = () => {
   );
 };
 
-const Demo = () => {
-  const { checkAuth, isAuthenticated, isLoading } = useAuth();
+const HomePage = () => {
+  const isAuthenticated = useIsAuthenticated();
+  const isLoading = useAuthLoading();
   const router = useRouter();
 
-  useEffect(() => {
-    // Check authentication status on component mount
-    checkAuth();
-  }, [checkAuth]);
 
   // useEffect(() => {
   //   // Redirect authenticated users to prompts page
@@ -229,6 +239,6 @@ const Demo = () => {
 
 export default function Home() {
   return (
-    <Demo />
+    <HomePage />
   );
 }

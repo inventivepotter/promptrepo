@@ -5,13 +5,14 @@ This module provides the main authentication service that orchestrates
 authentication operations including OAuth login, logout, refresh, and verification.
 """
 
+import asyncio
 import logging
 from datetime import datetime, timedelta, UTC
 from sqlmodel import Session
 
+from services.config import ConfigService
 from services.oauth import OAuthService
-from services.oauth.enums import OAuthProvider
-from settings import settings
+from schemas.oauth_provider_enum import OAuthProvider
 from .session_service import SessionService
 from database.daos.user import UserDAO
 from database.models.user import User
@@ -40,8 +41,8 @@ class AuthService:
     This service orchestrates authentication flows, handling OAuth integration,
     session management, and user verification operations.
     """
-    
-    def __init__(self, db: Session, oauth_service: OAuthService, session_service: SessionService):
+
+    def __init__(self, db: Session, config_service: ConfigService, session_service: SessionService):
         """
         Initialize the authentication service.
         
@@ -51,8 +52,9 @@ class AuthService:
             session_service: Session service instance for session management
         """
         self.db = db
-        self.oauth_service = oauth_service
+        self.oauth_service = OAuthService(db=db, config_service=config_service)
         self.session_service = session_service
+
     
     async def initiate_oauth_login(
         self,
@@ -449,24 +451,3 @@ class AuthService:
             List of provider names
         """
         return self.oauth_service.get_available_providers()
-    
-    def cleanup_expired_sessions(self) -> int:
-        """
-        Clean up expired sessions and OAuth states.
-        
-        Returns:
-            Number of sessions cleaned up
-        """
-        try:
-            # Clean up expired OAuth states
-            oauth_cleanup_count = self.oauth_service.cleanup_expired_states()
-            
-            # Note: SessionService doesn't have a cleanup method, but we could add one
-            # For now, just return the OAuth cleanup count
-            logger.info(f"Cleaned up {oauth_cleanup_count} expired OAuth states")
-            
-            return oauth_cleanup_count
-            
-        except Exception as e:
-            logger.error(f"Failed to cleanup expired sessions: {e}", exc_info=True)
-            return 0

@@ -2,10 +2,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from enum import Enum
 
-
-class HostingType(Enum):
-    INDIVIDUAL = "individual"
-    ORGANIZATION = "organization"
+from schemas.hosting_type_enum import HostingType
 
 
 class LLMConfigScope(Enum):

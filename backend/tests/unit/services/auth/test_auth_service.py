@@ -66,7 +66,7 @@ def auth_service(mock_oauth_service, mock_db, mock_session_service):
 @pytest.fixture
 def sample_user_info():
     """Sample user info from OAuth provider"""
-    from services.oauth.enums import OAuthProvider
+    from schemas.oauth_provider_enum import OAuthProvider
     return OAuthUserInfo(
         id="12345",
         username="testuser",

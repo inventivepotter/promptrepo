@@ -15,7 +15,6 @@ export const authPersistConfig = {
   partialize: (state: AuthStore) => ({
     user: state.user,
     isAuthenticated: state.isAuthenticated,
-    sessionToken: state.sessionToken,
   }),
   // Set to true if you want to manually hydrate
   skipHydration: false,

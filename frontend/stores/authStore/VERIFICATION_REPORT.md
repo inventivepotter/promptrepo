@@ -52,7 +52,7 @@ set((state) => {
 
 **Files Updated:**
 - `actions/initializeAuth.ts`
-- `actions/loginWithGithub.ts`
+- `actions/oauthCallbackGithub.ts`
 - `actions/logout.ts`
 - `actions/refreshSession.ts`
 - `actions/setError.ts`
@@ -68,15 +68,15 @@ Enhanced hooks to use shallow comparison for multi-property selections:
 ```typescript
 // Before
 export const useAuthActions = () => {
-  const { loginWithGithub, logout, ... } = useAuthStore();
-  return { loginWithGithub, logout, ... };
+  const { oauthCallbackGithub, logout, ... } = useAuthStore();
+  return { oauthCallbackGithub, logout, ... };
 };
 
 // After
 export const useAuthActions = () => {
   return useAuthStore(
     useShallow((state) => ({
-      loginWithGithub: state.loginWithGithub,
+      oauthCallbackGithub: state.oauthCallbackGithub,
       logout: state.logout,
       // ...
     }))
@@ -136,7 +136,7 @@ authStore/
 └── actions/          # Individual action implementations
     ├── index.ts
     ├── initializeAuth.ts
-    ├── loginWithGithub.ts
+    ├── oauthCallbackGithub.ts
     ├── logout.ts
     ├── refreshSession.ts
     ├── setError.ts
@@ -190,7 +190,7 @@ import { useUser, useAuthActions } from '@/stores/authStore';
 
 function Component() {
   const user = useUser();
-  const { loginWithGithub, logout } = useAuthActions();
+  const { oauthCallbackGithub, logout } = useAuthActions();
   
   // Component logic
 }

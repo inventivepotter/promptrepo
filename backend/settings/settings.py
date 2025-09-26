@@ -26,8 +26,14 @@ class Settings(BaseSettings):
     reload: bool = Field(default=True, description="Auto-reload on changes")
 
     session_key_expiry_minutes: int = Field(
-        default=60, 
+        default=60,
         description="Session expiry in minutes"
+    )
+
+    # Security Configuration
+    fernet_key: str = Field(
+        default="a_very_secret_default_key_for_development",
+        description="Secret key for session and other data encryption"
     )
 
     # Core Repository Paths

@@ -8,7 +8,7 @@ ensuring type safety and consistent data validation across the auth service.
 from typing import Optional
 from pydantic import BaseModel, Field
 from database.models.user import User
-from services.oauth.enums import OAuthProvider
+from schemas.oauth_provider_enum import OAuthProvider
 
 
 class LoginRequest(BaseModel):

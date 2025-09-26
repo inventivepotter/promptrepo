@@ -1,9 +1,8 @@
 import type { Metadata } from "next"
 import { Provider } from "@/components/ui/provider"
 import { Box, Stack } from "@chakra-ui/react"
-import { Sidebar } from "@/components/Sidebar"
+import { Sidebar } from "@/components/sidebar/Sidebar"
 import { Toaster } from "@/components/ui/toaster"
-import AuthProvider from "./(auth)/_components/AuthProvider"
 
 export const metadata: Metadata = {
   icons: "/favicon.svg",
@@ -15,7 +14,6 @@ export default function RootLayout(props: { children: React.ReactNode }) {
     <html suppressHydrationWarning>
       <body>
         <Provider defaultTheme="light">
-          <AuthProvider>
             <Stack direction="row" gap={0} align="stretch" minHeight="100vh">
               <Sidebar />
               <Box flex={1} overflow="auto" height="100vh">
@@ -23,7 +21,6 @@ export default function RootLayout(props: { children: React.ReactNode }) {
               </Box>
             </Stack>
             <Toaster />
-          </AuthProvider>
         </Provider>
       </body>
     </html>

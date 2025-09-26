@@ -5,7 +5,7 @@ using the adapter pattern based on the DATABASE_URL
 from typing import Generator
 from sqlmodel import Session as SQLSession
 from .database_factory import DatabaseManager
-from settings.settings import settings
+from settings import settings
 
 
 # Initialize the database manager singleton with settings
@@ -27,7 +27,7 @@ def create_db_and_tables() -> None:
     Should be called on application startup.
     """
     # Import database.models to register them with SQLModel before creating tables
-    from database.models import User, UserSessions, UserRepos
+    from database.models import User, UserSessions, UserRepos, OAuthState
     
     db_manager.create_tables()
     print("Database tables created successfully")

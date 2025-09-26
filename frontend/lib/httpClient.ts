@@ -1,4 +1,3 @@
-import { authService } from '@/services/auth/authService';
 import {
   OpenApiResponse,
   StandardResponse,
@@ -34,8 +33,8 @@ class HttpClient {
   private timeout: number;
 
   constructor(config: HttpClientConfig = {}) {
-    // Use direct backend calls instead of proxy for non-public endpoints
-    this.baseUrl = config.baseUrl || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
+    // Use Next.js API proxy to ensure cookies are properly forwarded
+    this.baseUrl = config.baseUrl || 'http://localhost:3000';
     
     // Add port if specified
     if (config.port && !this.baseUrl.includes(':')) {
@@ -50,25 +49,22 @@ class HttpClient {
     this.timeout = config.timeout || 180000; // 180 seconds (3 minutes) default
   }
 
-  // Middleware to automatically inject auth token for backend calls only
-  private injectAuthTokenForBackendCalls(
+  // Middleware to ensure credentials are included for API calls (httpOnly cookies)
+  private injectAuthTokenForApiCalls(
     url: string,
     headers: Record<string, string>
   ): Record<string, string> {
-    // Only inject auth for backend API calls (not proxy calls or external requests)
-    const isBackendCall = url.includes(this.baseUrl) && url.includes('/api/');
+    // All API calls should include credentials for cookie forwarding
+    const isApiCall = url.includes('/api/v0');
     
-    if (!isBackendCall) {
+    if (!isApiCall) {
       return headers;
     }
 
-    // Get auth headers from auth service
-    const authHeaders = authService.getAuthHeaders();
-    
-    return {
-      ...headers,
-      ...authHeaders
-    };
+    // With httpOnly cookies, we don't need to manually inject auth headers
+    // The browser automatically sends cookies with requests to same origin
+    // Just return the headers as-is
+    return headers;
   }
 
   private async makeRequest<T>(
@@ -78,23 +74,24 @@ class HttpClient {
     config?: RequestConfig
   ): Promise<OpenApiResponse<T>> {
     try {
-      // Ensure endpoint has /api prefix for backend calls
-      const normalizedEndpoint = endpoint.startsWith('/api/') ? endpoint : `/api${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+      // Ensure endpoint has /api prefix and goes through Next.js proxy
+      const normalizedEndpoint = endpoint.startsWith('/api/v0') ? endpoint : `/api${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
       const url = `${this.baseUrl}${normalizedEndpoint}`;
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
-      // Merge headers and inject auth token for backend calls only
+      // Merge headers and ensure credentials are included for cookie forwarding
       const mergedHeaders = {
         ...this.defaultHeaders,
         ...config?.headers
       };
       
-      const headersWithAuth = this.injectAuthTokenForBackendCalls(url, mergedHeaders);
+      const headersWithAuth = this.injectAuthTokenForApiCalls(url, mergedHeaders);
 
       const requestConfig: RequestInit = {
         method,
         headers: headersWithAuth,
+        credentials: 'include', // Include cookies for httpOnly authentication
         signal: config?.signal || controller.signal,
       };
 
@@ -125,46 +122,8 @@ class HttpClient {
         };
         return errorResponse;
       }
-
-      // Check if the response is already in OpenAPI format by checking for required fields
-      const apiResponse = responseData as Record<string, unknown>;
-      const hasOpenApiFormat = apiResponse?.status && apiResponse?.meta;
       
-      if (hasOpenApiFormat) {
-        // Response is already in OpenAPI format, return as-is
-        return responseData as OpenApiResponse<T>;
-      }
-      
-      // Convert legacy format to OpenAPI format for consistency
-      if (response.ok) {
-        const standardResponse: StandardResponse<T> = {
-          status: ResponseStatus.SUCCESS,
-          status_code: response.status,
-          data: responseData as T,
-          message: apiResponse?.message as string | undefined,
-          meta: {
-            timestamp: new Date().toISOString(),
-            request_id: config?.headers?.['X-Request-ID'],
-            correlation_id: config?.headers?.['X-Correlation-ID']
-          }
-        };
-        return standardResponse;
-      } else {
-        // Convert to error response
-        const errorResponse: ErrorResponse = {
-          status: ResponseStatus.ERROR,
-          status_code: response.status,
-          type: `/errors/http-${response.status}`,
-          title: apiResponse?.title as string || 'Request Failed',
-          detail: apiResponse?.detail as string || apiResponse?.error as string || `HTTP ${response.status}`,
-          meta: {
-            timestamp: new Date().toISOString(),
-            request_id: config?.headers?.['X-Request-ID'],
-            correlation_id: config?.headers?.['X-Correlation-ID']
-          }
-        };
-        return errorResponse;
-      }
+      return responseData as OpenApiResponse<T>;
     } catch (error) {
       // Handle AbortError specifically
       if (error instanceof Error && error.name === 'AbortError') {

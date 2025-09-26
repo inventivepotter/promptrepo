@@ -6,11 +6,12 @@ This module provides centralized dependency injection for all services.
 We use function-based dependencies as recommended by FastAPI documentation.
 """
 from typing import Generator, Annotated, Optional
-from fastapi import Depends, Header
+from fastapi import Depends, Header, Cookie, Request
 from sqlmodel import Session
 from pathlib import Path
 import logging
 from middlewares.rest import AuthenticationException
+from utils.cookie import get_session_from_cookie
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -20,7 +21,7 @@ from services.oauth.oauth_service import OAuthService
 from services.auth.auth_service import AuthService
 from services.auth.session_service import SessionService
 from services.config.config_service import ConfigService
-from services.config.models import HostingType
+from schemas.hosting_type_enum import HostingType
 from services.llm.completion_service import ChatCompletionService
 from services.llm.llm_provider_service import LLMProviderService
 from services.repo.repo_service import RepoService
@@ -100,26 +101,6 @@ def get_config_service(db: DBSession) -> ConfigService:
 
 ConfigServiceDep = Annotated[ConfigService, Depends(get_config_service)]
 
-
-# ==============================================================================
-# Git Provider Service
-# ==============================================================================
-
-def get_git_provider_service(
-    config_service: ConfigServiceDep
-) -> OAuthService:
-    """
-    Git Provider service dependency.
-    
-    Creates an GitProviderService with the configuration from ConfigService.
-    Handles Git Provider operations for multiple providers (GitHub, GitLab, etc.).
-    """
-    return OAuthService(config_service=config_service.config)
-
-
-OAuthServiceDep = Annotated[OAuthService, Depends(get_git_provider_service)]
-
-
 # ==============================================================================
 # Session Management Service
 # ==============================================================================
@@ -142,7 +123,7 @@ SessionServiceDep = Annotated[SessionService, Depends(get_session_service)]
 
 def get_auth_service(
     db: DBSession,
-    oauth_service: OAuthServiceDep,
+    config_service: ConfigServiceDep,
     session_service: SessionServiceDep
 ) -> AuthService:
     """
@@ -153,7 +134,7 @@ def get_auth_service(
     """
     return AuthService(
         db=db,
-        oauth_service=oauth_service,
+        config_service=config_service,
         session_service=session_service
     )
 
@@ -296,6 +277,25 @@ BearerTokenDep = Annotated[str, Depends(get_bearer_token)]
 
 
 # ==============================================================================
+# Session Cookie Dependency
+# ==============================================================================
+
+async def get_session_cookie(request: Request) -> str | None:
+    """Extract and decrypt session token from HttpOnly cookie."""
+    session_id = await get_session_from_cookie(request)
+    if not session_id:
+        raise AuthenticationException(
+            message="Unauthorized Access",
+            detail="Please login to access this resource",
+            context={"cookie": "sessionId"}
+        )
+    return session_id
+
+
+SessionCookieDep = Annotated[str, Depends(get_session_cookie)]
+
+
+# ==============================================================================
 # Authentication Dependencies
 # ==============================================================================
 
@@ -306,12 +306,12 @@ INDIVIDUAL_USER_ID = "individual-user"
 async def get_current_user(
     session_service: SessionServiceDep,
     config_service: ConfigServiceDep,
-    authorization: Annotated[str | None, Header()] = None
+    session_id: SessionCookieDep
 ) -> str:
     """
     Get current authenticated user.
     
-    Validates Bearer token and session, returns user_id or raises HTTPException.
+    Validates session cookie, returns user_id or raises HTTPException.
     Handles INDIVIDUAL hosting type by returning INDIVIDUAL_USER_ID.
     
     Returns:
@@ -328,42 +328,19 @@ async def get_current_user(
     except Exception as e:
         logger.warning(f"Failed to get hosting type: {e}")
     
-    # Extract Bearer token
-    if not authorization:
+    # Validate session
+    if not session_service.is_session_valid(session_id):
         raise AuthenticationException(
             message="Authentication Required",
-            detail="Please sign in to access this feature",
-            context={"user_action": "login_required"}
-        )
-    
-    if not authorization.startswith("Bearer "):
-        raise AuthenticationException(
-            message="Invalid Authorization Header",
-            detail="Authentication failed. Please sign in again",
-            context={"user_action": "login_required"}
-        )
-    
-    token = authorization.replace("Bearer ", "")
-    if not token or token.isspace():
-        raise AuthenticationException(
-            message="Empty Authentication Token",
-            detail="Authentication failed. Please sign in again",
-            context={"user_action": "login_required"}
-        )
-    
-    # Validate session
-    if not session_service.is_session_valid(token):
-        raise AuthenticationException(
-            message="Session Expired",
             detail="Your session has expired. Please sign in again",
             context={"user_action": "session_expired"}
         )
     
     # Get session and user
-    user_session = session_service.get_session_by_id(token)
+    user_session = session_service.get_session_by_id(session_id)
     if not user_session:
         raise AuthenticationException(
-            message="Session Not Found",
+            message="Authentication Required",
             detail="Your session could not be found. Please sign in again",
             context={"user_action": "session_not_found"}
         )
@@ -374,7 +351,7 @@ async def get_current_user(
 async def get_optional_user(
     session_service: SessionServiceDep,
     config_service: ConfigServiceDep,
-    authorization: Annotated[str | None, Header()] = None
+    request: Request
 ) -> Optional[str]:
     """
     Get current user if authenticated, return None otherwise.
@@ -393,24 +370,17 @@ async def get_optional_user(
     except Exception as e:
         logger.warning(f"Failed to get hosting type: {e}")
     
-    # If no authorization header, return None
-    if not authorization:
-        return None
-    
-    # Validate Bearer token format
-    if not authorization.startswith("Bearer "):
-        return None
-    
-    token = authorization.replace("Bearer ", "")
-    if not token or token.isspace():
+    # If no session cookie, return None
+    session_id = await get_session_from_cookie(request)
+    if not session_id:
         return None
     
     # Validate session
-    if not session_service.is_session_valid(token):
+    if not session_service.is_session_valid(session_id):
         return None
     
     # Get session and user
-    user_session = session_service.get_session_by_id(token)
+    user_session = session_service.get_session_by_id(session_id)
     if not user_session:
         return None
     

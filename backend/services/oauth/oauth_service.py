@@ -6,19 +6,21 @@ OAuth flows, authentication operations across multiple providers using the Strat
 """
 
 import logging
-from typing import List, Optional, Dict, Any
-from middlewares.rest.exceptions import AppException
+from typing import List, Optional
+
+from sqlmodel import Session
+from middlewares.rest.exceptions import AppException, BadRequestException
+from services.config.config_service import ConfigService
 from services.config.models import OAuthConfig
-from services.oauth.enums import OAuthProvider
+from schemas.oauth_provider_enum import OAuthProvider
 from services.oauth.oauth_factory import OAuthProviderFactory, auto_register_providers
 from services.oauth.oauth_interface import IOAuthProvider
-from services.oauth.state_manager_singleton import get_state_manager
+from services.oauth.state_manager import StateManager
 from services.oauth.models import (
     OAuthToken, 
     OAuthUserInfo, 
     OAuthUserEmail, 
     AuthUrlResponse, 
-    LoginResponse,
     OAuthError,
     ProviderNotFoundError,
     InvalidStateError,
@@ -38,8 +40,8 @@ class OAuthService:
     handling state management, provider instantiation, and common
     OAuth operations.
     """
-    
-    def __init__(self, config_service: IConfig, auto_register: bool = True):
+
+    def __init__(self, db: Session, config_service: ConfigService):
         """
         Initialize the OAuth service.
         
@@ -47,13 +49,12 @@ class OAuthService:
             config_service: Configuration service instance
             auto_register: Whether to auto-register known providers
         """
-        self.config_service = config_service
-        # Use singleton state manager to persist states across requests
-        self.state_manager = get_state_manager()
+        self.config_service = config_service        
+
+        self.state_manager = StateManager(db=db)
         
         # Auto-register providers if requested
-        if auto_register:
-            auto_register_providers()
+        auto_register_providers()
     
     def _get_oauth_provider(self, provider: OAuthProvider) -> IOAuthProvider:
         """
@@ -68,8 +69,9 @@ class OAuthService:
         Raises:
             ProviderNotFoundError: If provider is not supported
         """
-        return OAuthProviderFactory.create_provider(provider, self.config_service)
-    
+        oauth_config = self.get_provider_config(provider)
+        return OAuthProviderFactory.create_provider(provider, oauth_config.client_id, oauth_config.client_secret)
+
     async def get_authorization_url(
         self,
         provider: OAuthProvider,
@@ -164,17 +166,26 @@ class OAuthService:
         try:
             # Validate state
             if not self.state_manager.validate_state(state, provider):
-                raise InvalidStateError(state, provider)
+                raise BadRequestException(
+                    message="Invalid or expired OAuth state",
+                    context={"error_code": "INVALID_OAUTH_STATE"}
+                )
             
             # Get state data
             state_data = self.state_manager.get_state_data(state)
             if not state_data:
-                raise InvalidStateError(state, provider)
+                raise BadRequestException(
+                    message="Invalid or expired OAuth state",
+                    context={"error_code": "INVALID_OAUTH_STATE"}
+                )
             
             # Get redirect URI from state
             stored_redirect_uri = state_data.redirect_uri
             if not stored_redirect_uri:
-                raise InvalidStateError("Missing redirect URI in state", provider)
+                raise BadRequestException(
+                    message="Invalid or expired OAuth state",
+                    context={"error_code": "INVALID_OAUTH_STATE"}
+                )
             
             # Create provider instance
             oauth_provider = self._get_oauth_provider(provider)
@@ -355,7 +366,7 @@ class OAuthService:
             List of provider names
         """
         return OAuthProviderFactory.get_available_providers()
-    
+
     def cleanup_expired_states(self) -> int:
         """
         Clean up expired OAuth states.

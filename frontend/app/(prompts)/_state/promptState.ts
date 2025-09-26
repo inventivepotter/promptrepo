@@ -6,12 +6,12 @@ import { loadConfiguredModels } from './loadConfiguredModels';
 import { loadPrompts, persistPromptsToBrowserStorage } from './loadPrompts';
 import { useManagePrompts } from './managePrompt';
 import { useManagePromptsList } from './managePromptsList';
-import { useAuth } from '@/app/(auth)/_components/AuthProvider';
+import { useUser } from '@/stores/authStore';
 
 export function usePromptsState() {
   const [promptsState, setPromptsState] = useState<PromptsState>(defaultPromptsState);
   const hasRestoredData = useRef(false);
-  const { user } = useAuth();
+  const user = useUser();
 
   useEffect(() => {
     if (!hasRestoredData.current && typeof window !== "undefined") {

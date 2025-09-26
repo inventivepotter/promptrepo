@@ -17,7 +17,7 @@ frontend/stores/authStore/
 └── actions/          # Individual action creators
     ├── index.ts
     ├── initializeAuth.ts
-    ├── loginWithGithub.ts
+    ├── oauthCallbackGithub.ts
     ├── logout.ts
     ├── refreshSession.ts
     ├── setError.ts

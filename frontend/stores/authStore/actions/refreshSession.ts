@@ -11,8 +11,11 @@ export const createRefreshSessionAction: StateCreator<
   Pick<AuthStore, 'refreshSession'>
 > = (set, get) => ({
   refreshSession: async () => {
-    const currentToken = get().sessionToken;
-    if (!currentToken) return;
+    const currentUser = get().user;
+    if (!currentUser) {
+      console.warn('No user to refresh session for');
+      return;
+    }
     
     logStoreAction('AuthStore', 'refreshSession');
     
@@ -28,14 +31,19 @@ export const createRefreshSessionAction: StateCreator<
       if (success && user) {
         set((draft) => {
           draft.user = user;
-          draft.sessionToken = authService.getSessionToken();
-          draft.isAuthenticated = authService.isAuthenticated();
+          draft.isAuthenticated = true;
           draft.isLoading = false;
         // @ts-expect-error - Immer middleware supports 3 params
         }, false, 'auth/refresh/success');
       } else {
         // Session expired or invalid, logout
-        await get().logout();
+        set((draft) => {
+          draft.user = null;
+          draft.isAuthenticated = false;
+          draft.isLoading = false;
+          draft.error = 'Session expired';
+        // @ts-expect-error - Immer middleware supports 3 params
+        }, false, 'auth/refresh/expired');
       }
     } catch (error) {
       const storeError = handleStoreError(error, 'refreshSession');
@@ -46,8 +54,6 @@ export const createRefreshSessionAction: StateCreator<
         draft.error = storeError.message;
       // @ts-expect-error - Immer middleware supports 3 params
       }, false, 'auth/refresh/error');
-      
-      await get().logout();
     }
   },
 });

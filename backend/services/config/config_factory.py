@@ -5,7 +5,7 @@ Implements a registry pattern for extensibility.
 
 import os
 from typing import Type, Dict, List
-from services.config.models import HostingType
+from schemas.hosting_type_enum import HostingType
 from services.config.config_interface import IConfig
 from services.config.strategies.individual import IndividualConfig
 from services.config.strategies.organization import OrganizationConfig

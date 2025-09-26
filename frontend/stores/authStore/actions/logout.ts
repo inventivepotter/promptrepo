@@ -27,7 +27,6 @@ export const createLogoutAction: StateCreator<
       // Reset state to initial values
       set((draft) => {
         draft.user = null;
-        draft.sessionToken = null;
         draft.isAuthenticated = false;
         draft.isLoading = false;
         draft.error = null;

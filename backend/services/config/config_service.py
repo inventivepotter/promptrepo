@@ -1,7 +1,8 @@
 from typing import List, Optional
 from sqlmodel import Session
 from services.config.config_factory import ConfigStrategyFactory
-from services.config.models import HostingType, OAuthConfig, LLMConfig, LLMConfigScope, RepoConfig, HostingConfig, AppConfig
+from schemas.hosting_type_enum import HostingType
+from services.config.models import OAuthConfig, LLMConfig, LLMConfigScope, RepoConfig, HostingConfig, AppConfig
 from services.config.config_interface import IConfig
 
 class ConfigService:

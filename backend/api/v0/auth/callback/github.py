@@ -3,7 +3,7 @@ GitHub OAuth callback endpoint with standardized responses.
 """
 import logging
 from typing import Optional
-from fastapi import APIRouter, Request, status, Query
+from fastapi import APIRouter, Request, Response, status, Query
 from pydantic import BaseModel
 
 from middlewares.rest import (
@@ -16,7 +16,8 @@ from middlewares.rest import (
 from database.models.user import User
 from api.deps import AuthServiceDep, DBSession
 from services.auth import AuthError, AuthenticationFailedError
-from services.oauth.enums import OAuthProvider
+from schemas.oauth_provider_enum import OAuthProvider
+from utils.cookie import set_session_cookie
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -24,7 +25,6 @@ router = APIRouter()
 
 class LoginResponseData(BaseModel):
     user: User
-    sessionToken: str
     expiresAt: str
     promptrepoRedirectUrl: Optional[str] = None
 
@@ -79,6 +79,7 @@ class LoginResponseData(BaseModel):
 )
 async def github_oauth_callback(
     request: Request,
+    response: Response,
     auth_service: AuthServiceDep,
     code: str = Query(..., description="Authorization code from GitHub"),
     state: str = Query(..., description="State parameter for CSRF verification"),
@@ -121,10 +122,12 @@ async def github_oauth_callback(
         # Convert response to expected format
         response_data = LoginResponseData(
             user=login_response.user,
-            sessionToken=login_response.session_token,
             expiresAt=login_response.expires_at,
             promptrepoRedirectUrl=login_response.promptrepo_redirect_url
         )
+
+        # Set the encrypted session token in an HttpOnly, Secure cookie
+        await set_session_cookie(response, login_response.session_token, login_response.expires_at)
         
         return success_response(
             data=response_data,

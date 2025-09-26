@@ -6,8 +6,14 @@ It generates, stores, validates, and cleans up OAuth states.
 """
 
 import secrets
+from datetime import datetime, timedelta, UTC
 from typing import Dict, Optional, Any
-from services.oauth.models import OAuthState, InvalidStateError
+from sqlmodel import Session
+
+from database.models import OAuthState as DBOAuthState
+from database.daos.oauth_state import OAuthStateDAO
+from schemas.oauth_provider_enum import OAuthProvider
+from services.oauth.models import InvalidStateError
 
 
 class StateManager:
@@ -18,15 +24,16 @@ class StateManager:
     of OAuth states used to prevent CSRF attacks during OAuth flows.
     """
     
-    def __init__(self, state_expiry_minutes: int = 10):
+    def __init__(self, db: Session, state_expiry_minutes: int = 10):
         """
         Initialize the state manager.
         
         Args:
+            db: Database session
             state_expiry_minutes: Minutes after which a state expires
         """
+        self.oauth_state_dao = OAuthStateDAO(db=db)
         self.state_expiry_minutes = state_expiry_minutes
-        self._states: Dict[str, OAuthState] = {}
     
     def generate_state(self, length: int = 32) -> str:
         """
@@ -43,7 +50,7 @@ class StateManager:
     def store_state(
         self,
         state: str,
-        provider: str,
+        provider: OAuthProvider,
         redirect_uri: str,
         scopes: Optional[list[str]] = None,
         metadata: Optional[Dict[str, Any]] = None,
@@ -66,7 +73,7 @@ class StateManager:
         if not state or not isinstance(state, str):
             raise ValueError("State must be a non-empty string")
         
-        if not provider or not isinstance(provider, str):
+        if not provider or not isinstance(provider, OAuthProvider):
             raise ValueError("Provider must be a non-empty string")
         
         if not redirect_uri or not isinstance(redirect_uri, str):
@@ -77,17 +84,19 @@ class StateManager:
         if promptrepo_redirect_url:
             final_metadata["promptrepo_redirect_url"] = promptrepo_redirect_url
         
-        # Create OAuth state object
-        oauth_state = OAuthState(
-            state=state,
-            provider=provider.lower(),
+        # Create OAuth state object for database
+        expires_at = datetime.now(UTC) + timedelta(minutes=self.state_expiry_minutes)
+        db_oauth_state = DBOAuthState(
+            state_token=state,
+            provider=provider,
             redirect_uri=redirect_uri,
-            scopes=scopes or [],
-            metadata=final_metadata
+            scopes=",".join(scopes or []),
+            meta_data=final_metadata,
+            expires_at=expires_at
         )
         
-        # Store state
-        self._states[state] = oauth_state
+        # Store state in database
+        self.oauth_state_dao.save_state(db_oauth_state)
     
     def validate_state(self, state: str, provider: str) -> bool:
         """
@@ -100,19 +109,21 @@ class StateManager:
         Returns:
             True if state is valid and matches provider, False otherwise
         """
-        if not state or state not in self._states:
+        if not state:
             return False
         
-        oauth_state = self._states[state]
+        db_oauth_state = self.oauth_state_dao.get_state_by_token(state)
+        if not db_oauth_state:
+            return False
         
         # Check if state is expired
-        if oauth_state.is_expired:
+        if db_oauth_state.is_expired:
             # Clean up expired state
-            del self._states[state]
+            self.oauth_state_dao.delete_state_by_token(state)
             return False
         
-        # Check provider match (case-insensitive)
-        if oauth_state.provider != provider.lower():
+        # Check provider match
+        if db_oauth_state.provider != provider:
             return False
         
         return True
@@ -130,20 +141,19 @@ class StateManager:
         Raises:
             InvalidStateError: If state is not found or expired
         """
-        if state not in self._states:
+        db_oauth_state = self.oauth_state_dao.get_state_by_token(state)
+        if not db_oauth_state:
             raise InvalidStateError(f"State not found: {state}")
         
-        oauth_state = self._states[state]
-        
         # Check expiration
-        if oauth_state.is_expired:
+        if db_oauth_state.is_expired:
             # Clean up expired state
-            del self._states[state]
+            self.oauth_state_dao.delete_state_by_token(state)
             raise InvalidStateError(f"State expired: {state}")
         
-        return oauth_state.metadata
-    
-    def get_state_data(self, state: str) -> Optional[OAuthState]:
+        return db_oauth_state.meta_data
+
+    def get_state_data(self, state: str) -> Optional[DBOAuthState]:
         """
         Get complete OAuth state data.
         
@@ -151,20 +161,19 @@ class StateManager:
             state: State token
             
         Returns:
-            OAuthState object if state exists and is valid, None otherwise
+            DBOAuthState object if state exists and is valid, None otherwise
         """
-        if state not in self._states:
+        db_oauth_state = self.oauth_state_dao.get_state_by_token(state)
+        if not db_oauth_state:
             return None
-        
-        oauth_state = self._states[state]
         
         # Check expiration
-        if oauth_state.is_expired:
+        if db_oauth_state.is_expired:
             # Clean up expired state
-            del self._states[state]
+            self.oauth_state_dao.delete_state_by_token(state)
             return None
         
-        return oauth_state
+        return db_oauth_state
     
     def remove_state(self, state: str) -> bool:
         """
@@ -176,8 +185,8 @@ class StateManager:
         Returns:
             True if state was removed, False if not found
         """
-        return self._states.pop(state, None) is not None
-    
+        return self.oauth_state_dao.delete_state_by_token(state)
+
     def cleanup_expired_states(self) -> int:
         """
         Remove all expired states from storage.
@@ -185,50 +194,9 @@ class StateManager:
         Returns:
             Number of expired states removed
         """
-        expired_states = []
-        
-        for state, oauth_state in self._states.items():
-            if oauth_state.is_expired:
-                expired_states.append(state)
-        
-        # Remove expired states
-        for state in expired_states:
-            del self._states[state]
-        
-        return len(expired_states)
-    
-    def get_all_states(self) -> Dict[str, OAuthState]:
-        """
-        Get all currently stored states.
-        
-        Note: This is primarily for debugging and testing purposes.
-        
-        Returns:
-            Dictionary of state tokens to OAuthState objects
-        """
-        # First, clean up any expired states
-        self.cleanup_expired_states()
-        
-        # Return a copy to prevent external modification
-        return self._states.copy()
-    
-    def clear_all_states(self) -> int:
-        """
-        Clear all stored states.
-        
-        Warning: This is primarily for testing purposes.
-        
-        Returns:
-            Number of states cleared
-        """
-        count = len(self._states)
-        self._states.clear()
-        return count
-    
-    def __len__(self) -> int:
-        """Get number of stored states."""
-        return len(self._states)
+        return self.oauth_state_dao.cleanup_expired_states()
     
     def __contains__(self, state: str) -> bool:
         """Check if state exists in storage."""
-        return state in self._states
+        db_state = self.oauth_state_dao.get_state_by_token(state)
+        return db_state is not None and not db_state.is_expired

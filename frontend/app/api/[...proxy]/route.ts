@@ -84,13 +84,19 @@ async function proxyRequest(
       'authorization',
       'content-type',
       'accept',
-      'user-agent'
+      'user-agent',
+      'cookie'  // Forward cookies to backend
     ];
+    
+    console.log('\n=== Proxy Debug Info ===');
+    console.log('Original request headers:', Object.fromEntries(request.headers.entries()));
+    console.log('Original request cookies:', request.headers.get('cookie'));
     
     relevantHeaders.forEach(headerName => {
       const headerValue = request.headers.get(headerName);
       if (headerValue) {
         headers.set(headerName, headerValue);
+        console.log(`Forwarded header ${headerName}: ${headerValue}`);
       }
     });
 
@@ -127,7 +133,8 @@ async function proxyRequest(
       'cache-control',
       'etag',
       'expires',
-      'last-modified'
+      'last-modified',
+      'set-cookie'  // Forward cookies from backend
     ];
     
     relevantResponseHeaders.forEach(headerName => {
@@ -140,7 +147,8 @@ async function proxyRequest(
     // Add CORS headers for frontend
     responseHeaders.set('Access-Control-Allow-Origin', '*');
     responseHeaders.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-    responseHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    responseHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+    responseHeaders.set('Access-Control-Allow-Credentials', 'true');
 
     return new NextResponse(responseBody, {
       status: response.status,
@@ -190,7 +198,8 @@ export async function OPTIONS(request: NextRequest, context: { params: Promise<{
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cookie',
+      'Access-Control-Allow-Credentials': 'true',
     },
   });
 }

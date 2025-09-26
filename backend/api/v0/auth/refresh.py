@@ -2,7 +2,7 @@
 Session refresh endpoint with standardized responses.
 """
 import logging
-from fastapi import APIRouter, Request, Depends, status
+from fastapi import APIRouter, Request, Response, Depends, status
 from pydantic import BaseModel
 
 from middlewares.rest import (
@@ -11,21 +11,18 @@ from middlewares.rest import (
     AuthenticationException,
     AppException
 )
-from api.deps import AuthServiceDep, BearerTokenDep
+from api.deps import AuthServiceDep, SessionCookieDep
 from services.auth.models import RefreshRequest, AuthError, SessionNotFoundError, TokenValidationError
+from utils.cookie import set_session_cookie
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-class RefreshResponseData(BaseModel):
-    sessionToken: str
-    expiresAt: str
-
 
 @router.post(
     "/refresh",
-    response_model=StandardResponse[RefreshResponseData],
+    response_model=StandardResponse[None],
     status_code=status.HTTP_200_OK,
     responses={
         401: {
@@ -60,14 +57,15 @@ class RefreshResponseData(BaseModel):
 )
 async def refresh_session(
     request: Request,
-    token: BearerTokenDep,
+    response: Response,
+    token: SessionCookieDep,
     auth_service: AuthServiceDep
-) -> StandardResponse[RefreshResponseData]:
+) -> StandardResponse[None]:
     """
     Refresh session token to extend expiry.
     
     Returns:
-        StandardResponse[RefreshResponseData]: Standardized response containing new session info
+        StandardResponse[None]: Standardized response indicating success
     
     Raises:
         AuthenticationException: When session is invalid
@@ -80,19 +78,19 @@ async def refresh_session(
         refresh_request = RefreshRequest(session_token=token)
         refresh_response = await auth_service.refresh_session(refresh_request)
         
+        # Set the new encrypted session token in an HttpOnly, Secure cookie
+        await set_session_cookie(response, refresh_response.session_token, refresh_response.expires_at)
+        
         return success_response(
-            data=RefreshResponseData(
-                sessionToken=refresh_response.session_token,
-                expiresAt=refresh_response.expires_at
-            ),
+            data=None,
             message="Session refreshed successfully",
             meta={"request_id": request_id}
         )
         
     except SessionNotFoundError:
-        raise AuthenticationException(message="Invalid session token")
+        raise AuthenticationException(message="Authentication required")
     except TokenValidationError:
-        raise AuthenticationException(message="Invalid OAuth token")
+        raise AuthenticationException(message="Authentication failed")
     except AuthError as e:
         logger.error(
             f"Auth error during refresh: {e}",

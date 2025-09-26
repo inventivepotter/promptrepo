@@ -20,21 +20,20 @@ export const createInitializeAuthAction: StateCreator<
     }, false, 'auth/initialize/start');
     
     try {
-      // Check if we have a session token
-      const sessionToken = authService.getSessionToken();
-      if (sessionToken) {
-        // Try to get user data
-        const user = await authService.getUser();
-        
+      // Check authentication status using httpOnly cookie verification
+      const { success, user } = await authService.checkAuthStatus();
+      
+      if (success && user) {
         set((draft) => {
-          draft.sessionToken = sessionToken;
           draft.user = user;
-          draft.isAuthenticated = authService.isAuthenticated();
+          draft.isAuthenticated = true;
           draft.isLoading = false;
         // @ts-expect-error - Immer middleware supports 3 params
         }, false, 'auth/initialize/success');
       } else {
         set((draft) => {
+          draft.user = null;
+          draft.isAuthenticated = false;
           draft.isLoading = false;
         // @ts-expect-error - Immer middleware supports 3 params
         }, false, 'auth/initialize/no-session');
@@ -44,6 +43,8 @@ export const createInitializeAuthAction: StateCreator<
       console.error('Failed to initialize auth:', error);
       
       set((draft) => {
+        draft.user = null;
+        draft.isAuthenticated = false;
         draft.isLoading = false;
         draft.error = storeError.message;
       // @ts-expect-error - Immer middleware supports 3 params

@@ -11,14 +11,11 @@ from middlewares.rest import (
     AppException
 )
 from database.models.user import User
-from api.deps import AuthServiceDep, BearerTokenDep
+from api.deps import AuthServiceDep, SessionCookieDep
 from services.auth.models import VerifyRequest, AuthError, SessionNotFoundError, TokenValidationError
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-
-
-
 
 @router.get(
     "/verify",
@@ -44,7 +41,7 @@ router = APIRouter()
 )
 async def verify_session(
     request: Request,
-    token: BearerTokenDep,
+    token: SessionCookieDep,
     auth_service: AuthServiceDep
 ) -> StandardResponse[User]:
     """
@@ -59,6 +56,7 @@ async def verify_session(
     request_id = getattr(request.state, "request_id", None)
     
     try:
+        print(f"\n\n\n\nVerifying session with token: {token}\n\n\n\n")
         # Create verify request using auth service models
         verify_request = VerifyRequest(session_token=token)
         verify_response = await auth_service.verify_session(verify_request)
@@ -70,9 +68,9 @@ async def verify_session(
         )
         
     except SessionNotFoundError:
-        raise AuthenticationException(message="Invalid or expired session token")
+        raise AuthenticationException(message="Authentication required")
     except TokenValidationError:
-        raise AuthenticationException(message="OAuth token has been revoked")
+        raise AuthenticationException(message="Authentication failed")
     except AuthError as e:
         logger.error(
             f"Auth error during verification: {e}",

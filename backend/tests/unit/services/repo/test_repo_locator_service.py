@@ -11,7 +11,8 @@ from pathlib import Path
 from typing import Dict
 
 from services.repo.repo_locator_service import RepoLocatorService, LocalRepoLocator, RepoInfo
-from services.config.models import HostingType, HostingConfig
+from schemas.hosting_type_enum import HostingType
+from services.config.models import HostingConfig
 from services.config.config_interface import IConfig
 
 

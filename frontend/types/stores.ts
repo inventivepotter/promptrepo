@@ -24,7 +24,7 @@ export interface AuthState {
   error: string | null;
   
   // Actions
-  loginWithGithub: (code: string, state?: string) => Promise<void>;
+  oauthCallbackGithub: (code: string, state?: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
   updateUser: (updates: Partial<AuthUser>) => void;

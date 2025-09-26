@@ -5,7 +5,8 @@ Tests IndividualConfig, OrganizationConfig, and MultiTenantConfig strategies
 import pytest
 import os
 from services.config import ConfigStrategyFactory
-from services.config.models import HostingType, LLMConfig, OAuthConfig, RepoConfig
+from schemas.hosting_type_enum import HostingType
+from services.config.models import LLMConfig, OAuthConfig, RepoConfig
 
 
 class TestIndividualConfigStrategyStandalone:

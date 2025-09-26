@@ -14,7 +14,7 @@ from middlewares.rest import (
 )
 from api.deps import AuthServiceDep
 from services.auth.models import AuthError, AuthenticationFailedError, LoginRequest
-from services.oauth.enums import OAuthProvider
+from schemas.oauth_provider_enum import OAuthProvider
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

@@ -5,11 +5,11 @@ import logging
 import uuid
 
 from sqlmodel import Session
-from settings.settings import Settings
-from services.config.models import HostingType
+from settings import settings
+from schemas.hosting_type_enum import HostingType
 from services.config.config_interface import IConfig
 from services.oauth.models import OAuthError
-from services.oauth.enums import OAuthProvider
+from schemas.oauth_provider_enum import OAuthProvider
 from database.daos.user.user_dao import UserDAO
 from services.auth.session_service import SessionService
 from services.repo.models import RepoInfo, RepositoryList
@@ -26,7 +26,7 @@ class IRepoLocator(ABC):
 
 class LocalRepoLocator(IRepoLocator):
     def __init__(self):
-        self.base_path = Path(Settings.local_repo_path)
+        self.base_path = Path(settings.local_repo_path)
         if not self.base_path.exists():
             self.base_path.mkdir(parents=True, exist_ok=True)
 
