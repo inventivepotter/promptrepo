@@ -14,44 +14,44 @@ import React, { useState, useEffect } from "react";
 import { FaChevronDown } from 'react-icons/fa';
 import type { components } from '@/types/generated/api';
 import { LLMProviderService } from "@/services/llm/llmProvider/llmProviderService";
+import { useConfig, useConfigActions, useAvailableProviders } from '@/stores/configStore';
 
 type LLMConfig = components['schemas']['LLMConfig'];
 type BasicProviderInfo = components['schemas']['BasicProviderInfo'];
 type ModelInfo = components['schemas']['ModelInfo'];
 
 interface LLMStepProps {
-  selectedProvider: string
-  setSelectedProvider: (id: string) => void
-  selectedModel: string
-  setSelectedModel: (id: string) => void
-  apiKey: string
-  setApiKey: (key: string) => void
-  apiBaseUrl: string
-  setApiBaseUrl: (url: string) => void
-  llmConfigs: LLMConfig[]
-  addLLMConfig: () => void
-  removeLLMConfig: (index: number) => void
   disabled?: boolean
-  availableProviders: BasicProviderInfo[]
-  isLoadingProviders: boolean
 }
 
 export default function LLMStep({
-  selectedProvider,
-  setSelectedProvider,
-  selectedModel,
-  setSelectedModel,
-  apiKey,
-  setApiKey,
-  apiBaseUrl,
-  setApiBaseUrl,
-  llmConfigs,
-  addLLMConfig,
-  removeLLMConfig,
-  disabled = false,
-  availableProviders,
-  isLoadingProviders
+  disabled = false
 }: LLMStepProps) {
+  const config = useConfig();
+  const { addLLMConfig, removeLLMConfig, loadProviders } = useConfigActions();
+  const availableProviders = useAvailableProviders();
+  
+  // Local state for the current form
+  const [selectedProvider, setSelectedProvider] = useState('');
+  const [selectedModel, setSelectedModel] = useState('');
+  const [apiKey, setApiKey] = useState('');
+  const [apiBaseUrl, setApiBaseUrl] = useState('');
+  const [isLoadingProviders, setIsLoadingProviders] = useState(false);
+  
+  // Load providers on mount
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoadingProviders(true);
+      try {
+        await loadProviders();
+      } finally {
+        setIsLoadingProviders(false);
+      }
+    };
+    loadData();
+  }, [loadProviders]);
+  
+  const llmConfigs = config.llm_configs || [];
   const [availableModels, setAvailableModels] = useState<ModelInfo[]>([]);
   const [isFetchingModels, setIsFetchingModels] = useState(false);
   const [providerSearchValue, setProviderSearchValue] = useState('');
@@ -251,7 +251,22 @@ export default function LLMStep({
             )}
             
             <Button
-              onClick={addLLMConfig}
+              onClick={() => {
+                const newConfig: LLMConfig = {
+                  id: '',
+                  provider: selectedProvider,
+                  model: selectedModel,
+                  api_key: apiKey,
+                  api_base_url: requiresApiBase ? apiBaseUrl : undefined,
+                  scope: 'user'
+                };
+                addLLMConfig(newConfig);
+                // Reset form
+                setSelectedProvider('');
+                setSelectedModel('');
+                setApiKey('');
+                setApiBaseUrl('');
+              }}
               disabled={
                 !selectedProvider ||
                 !selectedModel ||
@@ -285,7 +300,7 @@ export default function LLMStep({
                     </Text>
                     <Button
                       size="sm"
-                      onClick={() => removeLLMConfig(index)}
+                      onClick={() => removeLLMConfig(config.provider)}
                       disabled={disabled || isOrgScope}
                     >
                       Remove
