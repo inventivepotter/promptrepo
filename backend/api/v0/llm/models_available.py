@@ -108,7 +108,7 @@ async def fetch_models_by_provider(
             }
         )
 
-        models = provider_service.fetch_models_by_provider(
+        models = await provider_service.fetch_models_by_provider(
             provider_id=provider_id,
             api_key=req_body.api_key,
             api_base=req_body.api_base

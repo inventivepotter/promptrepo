@@ -16,6 +16,25 @@ export const useAvailableRepos = () => useConfigStore((state) => state.available
 // Hook for error state
 export const useConfigError = () => useConfigStore((state) => state.error);
 
+// Hook for LLM form state
+export const useLLMFormState = () => {
+  const llmProvider = useConfigStore((state) => state.llmProvider);
+  const apiKey = useConfigStore((state) => state.apiKey);
+  const llmModel = useConfigStore((state) => state.llmModel);
+  const apiBaseUrl = useConfigStore((state) => state.apiBaseUrl);
+  const availableModels = useConfigStore((state) => state.availableModels);
+  const isLoadingModels = useConfigStore((state) => state.isLoadingModels);
+  
+  return {
+    llmProvider,
+    apiKey,
+    llmModel,
+    apiBaseUrl,
+    availableModels,
+    isLoadingModels,
+  };
+};
+
 // Hook for config actions
 export const useConfigActions = () => {
   const {
@@ -25,12 +44,20 @@ export const useConfigActions = () => {
     addLLMConfig,
     removeLLMConfig,
     loadProviders,
+    getModels,
+    setLLMProvider,
+    setApiKey,
+    setLLMModel,
+    setApiBaseUrl,
+    resetLLMForm,
+    setAvailableModels,
+    setLoadingModels,
     addRepoConfig,
     removeRepoConfig,
     loadRepos,
     updateConfiguredRepos,
   } = useConfigStore();
-  
+
   return {
     getConfig,
     updateConfig,
@@ -38,6 +65,14 @@ export const useConfigActions = () => {
     addLLMConfig,
     removeLLMConfig,
     loadProviders,
+    getModels,
+    setLLMProvider,
+    setApiKey,
+    setLLMModel,
+    setApiBaseUrl,
+    resetLLMForm,
+    setAvailableModels,
+    setLoadingModels,
     addRepoConfig,
     removeRepoConfig,
     loadRepos,
@@ -52,7 +87,7 @@ export const useConfigState = () => {
   const availableProviders = useAvailableProviders();
   const availableRepos = useAvailableRepos();
   const error = useConfigError();
-  
+
   return {
     config,
     hostingType,

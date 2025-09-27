@@ -257,7 +257,7 @@ export default function LLMStep({
                   provider: selectedProvider,
                   model: selectedModel,
                   api_key: apiKey,
-                  api_base_url: requiresApiBase ? apiBaseUrl : undefined,
+                  api_base_url: requiresApiBase ? apiBaseUrl : '',
                   scope: 'user'
                 };
                 addLLMConfig(newConfig);
@@ -300,7 +300,7 @@ export default function LLMStep({
                     </Text>
                     <Button
                       size="sm"
-                      onClick={() => removeLLMConfig(config.provider)}
+                      onClick={() => removeLLMConfig(index)}
                       disabled={disabled || isOrgScope}
                     >
                       Remove

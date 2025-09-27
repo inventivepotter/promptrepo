@@ -13,4 +13,14 @@ export const initialConfigState: ConfigState = {
   hostingType: null,
   availableProviders: [],
   availableRepos: [],
+  
+  // LLM form state
+  llmProvider: '',
+  apiKey: '',
+  llmModel: '',
+  apiBaseUrl: '',
+  
+  // Model loading state
+  availableModels: [],
+  isLoadingModels: false,
 };

@@ -9,6 +9,7 @@ export type BasicProviderInfo = components['schemas']['BasicProviderInfo'];
 export type RepoConfig = components['schemas']['RepoConfig'];
 export type RepoInfo = components['schemas']['RepoInfo'];
 export type LLMConfig = components['schemas']['LLMConfig'];
+export type ModelInfo = components['schemas']['ModelInfo'];
 
 export interface ConfigState {
   config: AppConfigOutput;
@@ -16,6 +17,16 @@ export interface ConfigState {
   hostingType: string | null;
   availableProviders: BasicProviderInfo[];
   availableRepos: RepoInfo[];
+  
+  // LLM form state
+  llmProvider: string;
+  apiKey: string;
+  llmModel: string;
+  apiBaseUrl: string;
+  
+  // Model loading state
+  availableModels: ModelInfo[];
+  isLoadingModels: boolean;
 }
 
 export interface ConfigActions {
@@ -26,12 +37,20 @@ export interface ConfigActions {
   
   // LLM Config actions
   addLLMConfig: (config: LLMConfig) => void;
-  removeLLMConfig: (providerName: string) => void;
+  removeLLMConfig: (index: number) => void;
   loadProviders: () => Promise<void>;
+  getModels: () => Promise<ModelInfo[]>;
+  setLLMProvider: (provider: string) => void;
+  setApiKey: (apiKey: string) => void;
+  setLLMModel: (model: string) => void;
+  setApiBaseUrl: (url: string) => void;
+  resetLLMForm: () => void;
+  setAvailableModels: (models: ModelInfo[]) => void;
+  setLoadingModels: (loading: boolean) => void;
   
   // Repo Config actions
   addRepoConfig: (config: RepoConfig) => void;
-  removeRepoConfig: (repoName: string) => void;
+  removeRepoConfig: (index: number) => void;
   loadRepos: () => Promise<void>;
   updateConfiguredRepos: (repos: RepoConfig[]) => void;
 

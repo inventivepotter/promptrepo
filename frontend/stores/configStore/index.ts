@@ -1,6 +1,6 @@
 // Config Store exports
 export { useConfigStore } from './configStore';
-export type { ConfigStore, ConfigActions, AppConfigOutput, LLMConfig, RepoConfig, BasicProviderInfo, RepoInfo } from './types';
+export type { ConfigStore, ConfigActions, AppConfigOutput, LLMConfig, RepoConfig, BasicProviderInfo, RepoInfo, ModelInfo } from './types';
 export { initialConfigState } from './state';
 export {
   useConfig,
@@ -10,4 +10,5 @@ export {
   useConfigError,
   useConfigActions,
   useConfigState,
+  useLLMFormState,
 } from './hooks';

@@ -5,7 +5,7 @@ Handles provider information, configured providers, and model fetching.
 from typing import Dict, List, Any
 import logging
 from any_llm import LLMProvider
-from any_llm.api import list_models
+from any_llm.api import list_models, alist_models
 
 from services.config.config_service import ConfigService
 from services.llm.models import ProviderInfo, ModelInfo, ProvidersResponse
@@ -96,7 +96,7 @@ class LLMProviderService:
             logger.error(f"Error getting available providers: {e}")
             return []
 
-    def fetch_models_by_provider(self, provider_id: str, api_key: str, api_base: str = "") -> List[ModelInfo]:
+    async def fetch_models_by_provider(self, provider_id: str, api_key: str, api_base: str = "") -> List[ModelInfo]:
         """
         Fetch available models for a specific provider using API key.
         Connects to the actual provider APIs to get real-time model information.
@@ -107,7 +107,7 @@ class LLMProviderService:
                 logger.error(f"Unsupported provider: {provider_id}")
                 raise ValueError(f"Unsupported provider: {provider_id}")
 
-            raw_models = list_models(provider_id, api_key, api_base=api_base)
+            raw_models = await alist_models(provider_id, api_key, api_base=api_base)
             models = [
                 ModelInfo(id=model.id, name=model.id)
                 for model in raw_models

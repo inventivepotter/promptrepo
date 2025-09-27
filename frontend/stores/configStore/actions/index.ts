@@ -14,6 +14,8 @@ import { createSetConfigAction } from './setConfig';
 import { createSetHostingTypeAction } from './setHostingType';
 import { createSetAvailableProvidersAction } from './setAvailableProviders';
 import { createSetAvailableReposAction } from './setAvailableRepos';
+import { createGetModelsAction } from './getModels';
+import { createLLMActions } from './llmActions';
 import type { StateCreator } from '@/lib/zustand';
 import type { ConfigStore, ConfigActions } from '../types';
 
@@ -25,16 +27,18 @@ export const createConfigActions: StateCreator<ConfigStore, [], [], ConfigAction
   ...createGetHostingTypeAction(set, get, api),
   ...createLoadProvidersAction(set, get, api),
   ...createLoadReposAction(set, get, api),
-  
+
   // LLM Config actions
   ...createAddLLMConfigAction(set, get, api),
   ...createRemoveLLMConfigAction(set, get, api),
-  
+  ...createGetModelsAction(set, get, api),
+  ...createLLMActions(set, get, api),
+
   // Repo Config actions
   ...createAddRepoConfigAction(set, get, api),
   ...createRemoveRepoConfigAction(set, get, api),
   ...createUpdateConfiguredReposAction(set, get, api),
-  
+
   // Internal actions
   ...createSetErrorAction(set, get, api),
   ...createSetConfigAction(set, get, api),

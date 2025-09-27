@@ -29,7 +29,7 @@ const PUBLIC_ENDPOINTS = new Set([
 const PUBLIC_ENDPOINT_PREFIXES = [
   // TODO: Make sure to only allow prompts/:id here not other endpoints
   '/api/v0/prompts/',
-  '/api/v0/llm/providers/models/'
+  '/api/v0/llm/provider/'
 ];
 
 function isPublicEndpoint(path: string): boolean {
@@ -88,15 +88,10 @@ async function proxyRequest(
       'cookie'  // Forward cookies to backend
     ];
     
-    console.log('\n=== Proxy Debug Info ===');
-    console.log('Original request headers:', Object.fromEntries(request.headers.entries()));
-    console.log('Original request cookies:', request.headers.get('cookie'));
-    
     relevantHeaders.forEach(headerName => {
       const headerValue = request.headers.get(headerName);
       if (headerValue) {
         headers.set(headerName, headerValue);
-        console.log(`Forwarded header ${headerName}: ${headerValue}`);
       }
     });
 
