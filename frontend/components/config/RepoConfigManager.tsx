@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
 import {
   Box,
   Button,
@@ -38,9 +37,8 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
     addRepoConfig,
     removeRepoConfig,
     updateConfig,
-    fetchBranches,
     resetBranches,
-    setSelectedRepo,
+    setSelectedRepoWithSideEffects,
     setSelectedBranch,
     setIsSaving,
     setRepoSearchValue,
@@ -61,20 +59,6 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
   const errorBg = useColorModeValue('red.50', 'red.900');
 
 
-  // Fetch branches when a repository is selected
-  useEffect(() => {
-    if (selectedRepo) {
-      // Parse owner and repo from full_name (e.g., "owner/repo")
-      const [owner, repo] = selectedRepo.split('/');
-      fetchBranches(owner, repo);
-      
-      // Reset selected branch when repo changes
-      setSelectedBranch('');
-      setBranchSearchValue('');
-    } else {
-      resetBranches();
-    }
-  }, [selectedRepo]);
 
   const handleAddRepoConfig = async () => {
     if (!selectedRepo) return;
@@ -192,12 +176,8 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                         items: filteredRepos.map(r => ({ label: r.name, value: r.full_name }))
                       })}
                       value={[selectedRepo]}
-                      onValueChange={(e) => {
-                        setSelectedRepo(e.value?.[0] || '');
-                        if (selectedRepo !== e.value?.[0]) {
-                          setSelectedBranch('');
-                          setBranchSearchValue('');
-                        }
+                      onValueChange={async (e) => {
+                        await setSelectedRepoWithSideEffects(e.value?.[0] || '');
                       }}
                       inputValue={repoSearchValue}
                       onInputValueChange={(e) => setRepoSearchValue(e.inputValue)}

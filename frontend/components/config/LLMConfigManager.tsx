@@ -10,10 +10,10 @@ import {
   createListCollection,
   HStack
 } from '@chakra-ui/react'
-import React, { useState, useEffect } from "react";
 import { FaChevronDown } from 'react-icons/fa';
+import { useEffect } from 'react';
 import type { components } from '@/types/generated/api';
-import { useConfig, useConfigActions, useAvailableProviders, useLLMFormState } from '@/stores/configStore';
+import { useConfig, useConfigActions, useAvailableProviders, useLLMFormState, useLLMFormUIState } from '@/stores/configStore';
 import { useLoadingStore } from '@/stores/loadingStore';
 
 type LLMConfig = components['schemas']['LLMConfig'];
@@ -31,43 +31,22 @@ export default function LLMConfigManager({
   const {
     addLLMConfig,
     removeLLMConfig,
-    loadAvailableLLMProviders,
-    getModels,
-    setLLMProvider,
     setApiKey,
     setLLMModel,
     setApiBaseUrl,
     resetLLMForm,
-    updateConfig
+    updateConfig,
+    setProviderSearchValue,
+    setModelSearchValue,
+    setLLMProviderWithSideEffects,
+    fetchModelsIfReady,
   } = useConfigActions();
   const availableProviders = useAvailableProviders();
   const { llmProvider, apiKey, llmModel, apiBaseUrl, availableModels, isLoadingModels } = useLLMFormState();
+  const { providerSearchValue, modelSearchValue } = useLLMFormUIState();
   const { isLoading, showLoading, hideLoading } = useLoadingStore();
   
-  // Local state only for UI-specific concerns
-  const [isLoadingProviders, setIsLoadingProviders] = useState(false);
-  const [isFetchingModels, setIsFetchingModels] = useState(false);
-  
-  // Load providers on mount using global loading
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoadingProviders(true);
-      showLoading('Loading Providers', 'Fetching available LLM providers...');
-      try {
-        await loadAvailableLLMProviders();
-      } finally {
-        setIsLoadingProviders(false);
-        hideLoading();
-      }
-    };
-    if (availableProviders.length === 0) {
-      loadData();
-    }
-  }, [loadAvailableLLMProviders, availableProviders.length, showLoading, hideLoading]);
-  
   const llmConfigs = config.llm_configs || [];
-  const [providerSearchValue, setProviderSearchValue] = useState('');
-  const [modelSearchValue, setModelSearchValue] = useState('');
 
   // Find the current provider to check if it requires custom API base
   const currentProvider = availableProviders.find(p => p.id === llmProvider);
@@ -87,38 +66,21 @@ export default function LLMConfigManager({
       model.id.toLowerCase().includes(modelSearchValue.toLowerCase())
     );
 
-  // Fetch models when provider and API key are available
-  useEffect(() => {
-    const fetchModels = async () => {
-      if (!llmProvider || !apiKey || apiKey.length < 3) {
-        return;
-      }
-
-      // For providers that require API base, wait until it's provided
-      if (requiresApiBase && (!apiBaseUrl || apiBaseUrl.length < 3)) {
-        return;
-      }
-
-      setIsFetchingModels(true);
-      try {
-        await getModels();
-      } finally {
-        setIsFetchingModels(false);
-      }
-    };
-
-    // Debounce the API call
-    const timeoutId = setTimeout(fetchModels, 500);
-    return () => clearTimeout(timeoutId);
-  }, [llmProvider, apiKey, apiBaseUrl, requiresApiBase, getModels]);
 
   // Clear selected model when provider changes
-  const handleProviderChange = (newProvider: string) => {
-    setLLMProvider(newProvider);
+  const handleProviderChange = async (newProvider: string) => {
     if (newProvider !== llmProvider) {
       setLLMModel('');
     }
+    await setLLMProviderWithSideEffects(newProvider);
   };
+
+  // Fetch models when API key or API base URL changes
+  useEffect(() => {
+    if (llmProvider && apiKey && apiKey.length >= 3 && (!requiresApiBase || (apiBaseUrl && apiBaseUrl.length >= 3))) {
+      fetchModelsIfReady();
+    }
+  }, [apiKey, apiBaseUrl, llmProvider, requiresApiBase, fetchModelsIfReady]);
 
   const handleAddConfiguration = async () => {
     showLoading('Adding Configuration', 'Saving your LLM configuration...');
@@ -202,17 +164,19 @@ export default function LLMConfigManager({
                     inputValue={providerSearchValue}
                     onInputValueChange={(e) => setProviderSearchValue(e.inputValue)}
                     openOnClick
-                    disabled={disabled || isLoadingProviders}
+                    disabled={disabled || isLoading}
                   >
                     <Combobox.Control position="relative">
                       <Combobox.Input
-                        placeholder={isLoadingProviders ? "Loading providers..." : "Select provider"}
+                        placeholder={isLoading ? "Loading providers..." : "Select provider"}
                         paddingRight="2rem"
-                        disabled={disabled || isLoadingProviders}
+                        disabled={disabled || isLoading}
                       />
-                      <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
-                        <FaChevronDown size={16} />
-                      </Combobox.Trigger>
+                      <Combobox.IndicatorGroup position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
+                        <Combobox.Trigger>
+                          <FaChevronDown size={16} />
+                        </Combobox.Trigger>
+                      </Combobox.IndicatorGroup>
                     </Combobox.Control>
                     <Combobox.Positioner>
                       <Combobox.Content>
@@ -270,17 +234,19 @@ export default function LLMConfigManager({
                   inputValue={modelSearchValue}
                   onInputValueChange={(e) => setModelSearchValue(e.inputValue)}
                   openOnClick
-                  disabled={disabled || isFetchingModels || isLoadingModels}
+                  disabled={disabled || isLoadingModels}
                 >
                   <Combobox.Control position="relative">
                     <Combobox.Input
-                      placeholder={isFetchingModels || isLoadingModels ? "Fetching models..." : "Select model"}
+                      placeholder={isLoadingModels ? "Fetching models..." : "Select model"}
                       paddingRight="2rem"
-                      disabled={disabled || isFetchingModels || isLoadingModels}
+                      disabled={disabled || isLoadingModels}
                     />
-                    <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
-                      <FaChevronDown size={16} />
-                    </Combobox.Trigger>
+                    <Combobox.IndicatorGroup position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
+                      <Combobox.Trigger>
+                        <FaChevronDown size={16} />
+                      </Combobox.Trigger>
+                    </Combobox.IndicatorGroup>
                   </Combobox.Control>
                   <Combobox.Positioner>
                     <Combobox.Content>
@@ -293,12 +259,12 @@ export default function LLMConfigManager({
                     </Combobox.Content>
                   </Combobox.Positioner>
                 </Combobox.Root>
-                {(isFetchingModels || isLoadingModels) && (
+                {isLoadingModels && (
                   <Text fontSize="sm" opacity={0.7} mt={1}>
                     Fetching available models for {(Array.isArray(availableProviders) ? availableProviders : []).find((p: BasicProviderInfo) => p.id === llmProvider)?.name}...
                   </Text>
                 )}
-                {!isFetchingModels && !isLoadingModels && availableModels.length === 0 && apiKey && apiKey.length >= 3 && (!requiresApiBase || (apiBaseUrl && apiBaseUrl.length >= 3)) && (
+                {!isLoadingModels && availableModels.length === 0 && apiKey && apiKey.length >= 3 && (!requiresApiBase || (apiBaseUrl && apiBaseUrl.length >= 3)) && (
                   <Text fontSize="sm" color="red.500" mt={1}>
                     Unable to fetch models. Please check your API key{requiresApiBase ? ' and API base URL' : ''}.
                   </Text>

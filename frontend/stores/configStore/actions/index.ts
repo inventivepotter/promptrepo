@@ -18,6 +18,9 @@ import { createGetModelsAction } from './getModels';
 import { createLLMActions } from './llmActions';
 import { createGetRepoBranchesAction } from './getRepoBranches';
 import { createRepoFormActions } from './repoFormActions';
+import { createLLMFormActions } from './llmFormActions';
+import { createSetLLMProviderWithSideEffectsAction } from './setLLMProviderWithSideEffects';
+import { createFetchModelsIfReadyAction } from './fetchModelsIfReady';
 import type { StateCreator } from '@/lib/zustand';
 import type { ConfigStore, ConfigActions } from '../types';
 
@@ -36,6 +39,10 @@ export const createConfigActions: StateCreator<ConfigStore, [], [], ConfigAction
   ...createGetModelsAction(set, get, api),
   ...createLLMActions(set, get, api),
 
+  // LLM side effect actions
+  ...createSetLLMProviderWithSideEffectsAction(set, get, api),
+  ...createFetchModelsIfReadyAction(set, get, api),
+
   // Repo Config actions
   ...createAddRepoConfigAction(set, get, api),
   ...createRemoveRepoConfigAction(set, get, api),
@@ -44,6 +51,9 @@ export const createConfigActions: StateCreator<ConfigStore, [], [], ConfigAction
   
   // Repo form actions
   ...createRepoFormActions(set, get, api),
+
+  // LLM form actions
+  ...createLLMFormActions(set, get, api),
 
   // Internal actions
   ...createSetErrorAction(set, get, api),

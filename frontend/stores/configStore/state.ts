@@ -34,4 +34,8 @@ export const initialConfigState: ConfigState = {
   isSaving: false,
   repoSearchValue: '',
   branchSearchValue: '',
+
+  // LLM form UI state
+  providerSearchValue: '',
+  modelSearchValue: '',
 };

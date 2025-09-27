@@ -39,6 +39,10 @@ export interface ConfigState {
   isSaving: boolean;
   repoSearchValue: string;
   branchSearchValue: string;
+
+  // LLM form UI state
+  providerSearchValue: string;
+  modelSearchValue: string;
 }
 
 export interface ConfigActions {
@@ -53,12 +57,14 @@ export interface ConfigActions {
   loadAvailableLLMProviders: () => Promise<void>;
   getModels: () => Promise<ModelInfo[]>;
   setLLMProvider: (provider: string) => void;
+  setLLMProviderWithSideEffects: (provider: string) => Promise<void>;
   setApiKey: (apiKey: string) => void;
   setLLMModel: (model: string) => void;
   setApiBaseUrl: (url: string) => void;
   resetLLMForm: () => void;
   setAvailableModels: (models: ModelInfo[]) => void;
   setLoadingModels: (loading: boolean) => void;
+  fetchModelsIfReady: () => Promise<void>;
   
   // Repo Config actions
   addRepoConfig: (config: RepoConfig) => void;
@@ -70,11 +76,16 @@ export interface ConfigActions {
   
   // Repo form actions
   setSelectedRepo: (repo: string) => void;
+  setSelectedRepoWithSideEffects: (repo: string) => Promise<void>;
   setSelectedBranch: (branch: string) => void;
   setIsSaving: (saving: boolean) => void;
   setRepoSearchValue: (value: string) => void;
   setBranchSearchValue: (value: string) => void;
   resetRepoForm: () => void;
+
+  // LLM form actions
+  setProviderSearchValue: (value: string) => void;
+  setModelSearchValue: (value: string) => void;
 
   // Internal actions
   setError: (error: string | null) => void;
@@ -82,6 +93,7 @@ export interface ConfigActions {
   setHostingType: (hostingType: string) => void;
   setAvailableProviders: (providers: BasicProviderInfo[]) => void;
   setAvailableRepos: (repos: RepoInfo[]) => void;
+
 }
 
 export type ConfigStore = ConfigState & ConfigActions;

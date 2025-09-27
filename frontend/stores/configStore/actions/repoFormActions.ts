@@ -8,19 +8,44 @@ export const createRepoFormActions: StateCreator<
   [],
   {
     setSelectedRepo: (repo: string) => void;
+    setSelectedRepoWithSideEffects: (repo: string) => Promise<void>;
     setSelectedBranch: (branch: string) => void;
     setIsSaving: (saving: boolean) => void;
     setRepoSearchValue: (value: string) => void;
     setBranchSearchValue: (value: string) => void;
     resetRepoForm: () => void;
   }
-> = (set) => {
+> = (set, get) => {
   return {
     setSelectedRepo: (repo: string) => {
       set((draft) => {
         draft.selectedRepo = repo;
       // @ts-expect-error - Immer middleware supports 3 params
       }, false, 'config/setSelectedRepo');
+    },
+
+    setSelectedRepoWithSideEffects: async (repo: string) => {
+      // First set the selected repo
+      set((draft) => {
+        draft.selectedRepo = repo;
+      // @ts-expect-error - Immer middleware supports 3 params
+      }, false, 'config/setSelectedRepoWithSideEffects');
+
+      // If a repo is selected, fetch its branches and reset branch-related state
+      if (repo) {
+        const [owner, repoName] = repo.split('/');
+        await get().fetchBranches(owner, repoName);
+        
+        // Reset selected branch and search value when repo changes
+        set((draft) => {
+          draft.selectedBranch = '';
+          draft.branchSearchValue = '';
+        // @ts-expect-error - Immer middleware supports 3 params
+        }, false, 'config/resetBranchState');
+      } else {
+        // If no repo is selected, reset branches
+        get().resetBranches();
+      }
     },
 
     setSelectedBranch: (branch: string) => {

@@ -48,6 +48,17 @@ export const useLLMFormState = () => {
   };
 };
 
+// Hook for LLM form UI state
+export const useLLMFormUIState = () => {
+  const providerSearchValue = useConfigStore((state) => state.providerSearchValue);
+  const modelSearchValue = useConfigStore((state) => state.modelSearchValue);
+  
+  return {
+    providerSearchValue,
+    modelSearchValue,
+  };
+};
+
 // Hook for repo form state
 export const useRepoFormState = () => {
   const selectedRepo = useConfigStore((state) => state.selectedRepo);
@@ -76,6 +87,8 @@ export const useConfigActions = () => {
     loadAvailableLLMProviders,
     getModels,
     setLLMProvider,
+    setLLMProviderWithSideEffects,
+    fetchModelsIfReady,
     setApiKey,
     setLLMModel,
     setApiBaseUrl,
@@ -89,11 +102,14 @@ export const useConfigActions = () => {
     fetchBranches,
     resetBranches,
     setSelectedRepo,
+    setSelectedRepoWithSideEffects,
     setSelectedBranch,
     setIsSaving,
     setRepoSearchValue,
     setBranchSearchValue,
     resetRepoForm,
+    setProviderSearchValue,
+    setModelSearchValue,
   } = useConfigStore();
 
   return {
@@ -105,6 +121,8 @@ export const useConfigActions = () => {
     loadAvailableLLMProviders,
     getModels,
     setLLMProvider,
+    setLLMProviderWithSideEffects,
+    fetchModelsIfReady,
     setApiKey,
     setLLMModel,
     setApiBaseUrl,
@@ -118,11 +136,14 @@ export const useConfigActions = () => {
     fetchBranches,
     resetBranches,
     setSelectedRepo,
+    setSelectedRepoWithSideEffects,
     setSelectedBranch,
     setIsSaving,
     setRepoSearchValue,
     setBranchSearchValue,
     resetRepoForm,
+    setProviderSearchValue,
+    setModelSearchValue,
   };
 };
 

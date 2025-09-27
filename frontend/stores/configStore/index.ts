@@ -11,6 +11,7 @@ export {
   useConfigActions,
   useConfigState,
   useLLMFormState,
+  useLLMFormUIState,
   useAvailableBranches,
   useIsLoadingBranches,
   useSelectedRepo,
