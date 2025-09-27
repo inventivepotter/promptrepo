@@ -17,6 +17,7 @@ import { createSetAvailableReposAction } from './setAvailableRepos';
 import { createGetModelsAction } from './getModels';
 import { createLLMActions } from './llmActions';
 import { createGetRepoBranchesAction } from './getRepoBranches';
+import { createRepoFormActions } from './repoFormActions';
 import type { StateCreator } from '@/lib/zustand';
 import type { ConfigStore, ConfigActions } from '../types';
 
@@ -40,6 +41,9 @@ export const createConfigActions: StateCreator<ConfigStore, [], [], ConfigAction
   ...createRemoveRepoConfigAction(set, get, api),
   ...createUpdateConfiguredReposAction(set, get, api),
   ...createGetRepoBranchesAction(set, get, api),
+  
+  // Repo form actions
+  ...createRepoFormActions(set, get, api),
 
   // Internal actions
   ...createSetErrorAction(set, get, api),

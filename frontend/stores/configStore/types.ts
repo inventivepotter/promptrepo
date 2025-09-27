@@ -32,6 +32,13 @@ export interface ConfigState {
   // Branch loading state
   availableBranches: BranchInfo[];
   isLoadingBranches: boolean;
+
+  // Repo form state
+  selectedRepo: string;
+  selectedBranch: string;
+  isSaving: boolean;
+  repoSearchValue: string;
+  branchSearchValue: string;
 }
 
 export interface ConfigActions {
@@ -60,6 +67,14 @@ export interface ConfigActions {
   updateConfiguredRepos: (repos: RepoConfig[]) => void;
   fetchBranches: (owner: string, repo: string) => Promise<void>;
   resetBranches: () => void;
+  
+  // Repo form actions
+  setSelectedRepo: (repo: string) => void;
+  setSelectedBranch: (branch: string) => void;
+  setIsSaving: (saving: boolean) => void;
+  setRepoSearchValue: (value: string) => void;
+  setBranchSearchValue: (value: string) => void;
+  resetRepoForm: () => void;
 
   // Internal actions
   setError: (error: string | null) => void;

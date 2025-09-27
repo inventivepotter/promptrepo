@@ -27,4 +27,11 @@ export const initialConfigState: ConfigState = {
   // Branch loading state
   availableBranches: [],
   isLoadingBranches: false,
+
+  // Repo form state
+  selectedRepo: '',
+  selectedBranch: '',
+  isSaving: false,
+  repoSearchValue: '',
+  branchSearchValue: '',
 };

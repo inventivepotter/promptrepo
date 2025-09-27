@@ -22,6 +22,13 @@ export const useIsLoadingBranches = () => useConfigStore((state) => state.isLoad
 // Hook for error state
 export const useConfigError = () => useConfigStore((state) => state.error);
 
+// Hooks for repo form state
+export const useSelectedRepo = () => useConfigStore((state) => state.selectedRepo);
+export const useSelectedBranch = () => useConfigStore((state) => state.selectedBranch);
+export const useIsSavingRepo = () => useConfigStore((state) => state.isSaving);
+export const useRepoSearchValue = () => useConfigStore((state) => state.repoSearchValue);
+export const useBranchSearchValue = () => useConfigStore((state) => state.branchSearchValue);
+
 // Hook for LLM form state
 export const useLLMFormState = () => {
   const llmProvider = useConfigStore((state) => state.llmProvider);
@@ -38,6 +45,23 @@ export const useLLMFormState = () => {
     apiBaseUrl,
     availableModels,
     isLoadingModels,
+  };
+};
+
+// Hook for repo form state
+export const useRepoFormState = () => {
+  const selectedRepo = useConfigStore((state) => state.selectedRepo);
+  const selectedBranch = useConfigStore((state) => state.selectedBranch);
+  const isSaving = useConfigStore((state) => state.isSaving);
+  const repoSearchValue = useConfigStore((state) => state.repoSearchValue);
+  const branchSearchValue = useConfigStore((state) => state.branchSearchValue);
+  
+  return {
+    selectedRepo,
+    selectedBranch,
+    isSaving,
+    repoSearchValue,
+    branchSearchValue,
   };
 };
 
@@ -64,6 +88,12 @@ export const useConfigActions = () => {
     updateConfiguredRepos,
     fetchBranches,
     resetBranches,
+    setSelectedRepo,
+    setSelectedBranch,
+    setIsSaving,
+    setRepoSearchValue,
+    setBranchSearchValue,
+    resetRepoForm,
   } = useConfigStore();
 
   return {
@@ -87,6 +117,12 @@ export const useConfigActions = () => {
     updateConfiguredRepos,
     fetchBranches,
     resetBranches,
+    setSelectedRepo,
+    setSelectedBranch,
+    setIsSaving,
+    setRepoSearchValue,
+    setBranchSearchValue,
+    resetRepoForm,
   };
 };
 

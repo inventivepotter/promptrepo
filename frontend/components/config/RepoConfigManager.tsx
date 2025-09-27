@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import {
   Box,
   Button,
@@ -19,8 +19,9 @@ import {
   useConfigError,
   useAvailableBranches,
   useIsLoadingBranches,
+  useRepoFormState,
 } from '@/stores/configStore';
-import type { RepoInfo, BranchInfo } from '@/stores/configStore';
+import type { RepoInfo } from '@/stores/configStore';
 
 interface RepoConfigManagerProps {
   disabled?: boolean;
@@ -30,24 +31,31 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
   const config = useConfig();
   const availableRepos = useAvailableRepos();
   const error = useConfigError();
+  const availableBranches = useAvailableBranches();
+  const isLoadingBranches = useIsLoadingBranches();
+  
   const {
     addRepoConfig,
     removeRepoConfig,
     updateConfig,
     fetchBranches,
     resetBranches,
+    setSelectedRepo,
+    setSelectedBranch,
+    setIsSaving,
+    setRepoSearchValue,
+    setBranchSearchValue,
+    resetRepoForm,
   } = useConfigActions();
   
-  // Local state for form
-  const [selectedRepo, setSelectedRepo] = useState<string>('');
-  const [selectedBranch, setSelectedBranch] = useState<string>('');
-  const [isSaving, setIsSaving] = useState(false);
-  const availableBranches = useAvailableBranches();
-  const isLoadingBranches = useIsLoadingBranches();
-
-  // Search states for comboboxes
-  const [repoSearchValue, setRepoSearchValue] = useState('');
-  const [branchSearchValue, setBranchSearchValue] = useState('');
+  // Repo form state from store
+  const {
+    selectedRepo,
+    selectedBranch,
+    isSaving,
+    repoSearchValue,
+    branchSearchValue,
+  } = useRepoFormState();
 
   // Theme values - called at top level
   const errorBg = useColorModeValue('red.50', 'red.900');
@@ -95,10 +103,7 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
       await updateConfig(updatedConfig);
 
       // Reset selections
-      setSelectedRepo('');
-      setSelectedBranch('');
-      setRepoSearchValue('');
-      setBranchSearchValue('');
+      resetRepoForm();
       resetBranches();
     } catch (error) {
       console.error('Failed to add repository:', error);
