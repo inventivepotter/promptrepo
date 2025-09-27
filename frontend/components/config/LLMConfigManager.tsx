@@ -31,7 +31,7 @@ export default function LLMConfigManager({
   const {
     addLLMConfig,
     removeLLMConfig,
-    loadProviders,
+    loadAvailableLLMProviders,
     getModels,
     setLLMProvider,
     setApiKey,
@@ -54,7 +54,7 @@ export default function LLMConfigManager({
       setIsLoadingProviders(true);
       showLoading('Loading Providers', 'Fetching available LLM providers...');
       try {
-        await loadProviders();
+        await loadAvailableLLMProviders();
       } finally {
         setIsLoadingProviders(false);
         hideLoading();
@@ -63,7 +63,7 @@ export default function LLMConfigManager({
     if (availableProviders.length === 0) {
       loadData();
     }
-  }, [loadProviders, availableProviders.length, showLoading, hideLoading]);
+  }, [loadAvailableLLMProviders, availableProviders.length, showLoading, hideLoading]);
   
   const llmConfigs = config.llm_configs || [];
   const [providerSearchValue, setProviderSearchValue] = useState('');

@@ -1,9 +1,0 @@
-{
-  "repositories": [
-    { "id": "1", "repo_url": "http://repo.url", "repo_name": "frontend", "base_branch": "main" },
-    { "id": "2", "repo_url": "http://repo.url", "repo_name": "backend", "base_branch": "develop" },
-    { "id": "3", "repo_url": "http://repo.url", "repo_name": "database", "base_branch": "main" },
-    { "id": "4", "repo_url": "http://repo.url", "repo_name": "api-server", "base_branch": "main" },
-    { "id": "5", "repo_url": "http://repo.url", "repo_name": "web-app", "base_branch": "main" }
-  ]
-}

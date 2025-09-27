@@ -1,31 +1,26 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Box,
   Button,
   VStack,
   HStack,
   Text,
-  Spinner,
-  Center,
   Combobox,
   createListCollection,
 } from '@chakra-ui/react';
 import { FaChevronDown } from 'react-icons/fa';
 import { useColorModeValue } from '@/components/ui/color-mode';
-import { 
-  useConfig, 
-  useAvailableRepos, 
+import {
+  useConfig,
+  useAvailableRepos,
   useConfigActions,
   useConfigError,
+  useAvailableBranches,
+  useIsLoadingBranches,
 } from '@/stores/configStore';
-import type { RepoInfo } from '@/stores/configStore';
-
-interface BranchInfo {
-  name: string;
-  is_default: boolean;
-}
+import type { RepoInfo, BranchInfo } from '@/stores/configStore';
 
 interface RepoConfigManagerProps {
   disabled?: boolean;
@@ -38,111 +33,40 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
   const {
     addRepoConfig,
     removeRepoConfig,
-    loadRepos,
     updateConfig,
-    getConfig,
+    fetchBranches,
+    resetBranches,
   } = useConfigActions();
   
   // Local state for form
-  const [selectedRepo, setSelectedRepo] = React.useState<string>('');
-  const [selectedBranch, setSelectedBranch] = React.useState<string>('');
-  const [isLoadingRepos, setIsLoadingRepos] = React.useState(false);
-  const [isSaving, setIsSaving] = React.useState(false);
-  const [isLoadingBranches, setIsLoadingBranches] = React.useState(false);
-  const [availableBranches, setAvailableBranches] = React.useState<BranchInfo[]>([]);
+  const [selectedRepo, setSelectedRepo] = useState<string>('');
+  const [selectedBranch, setSelectedBranch] = useState<string>('');
+  const [isSaving, setIsSaving] = useState(false);
+  const availableBranches = useAvailableBranches();
+  const isLoadingBranches = useIsLoadingBranches();
 
   // Search states for comboboxes
-  const [repoSearchValue, setRepoSearchValue] = React.useState('');
-  const [branchSearchValue, setBranchSearchValue] = React.useState('');
+  const [repoSearchValue, setRepoSearchValue] = useState('');
+  const [branchSearchValue, setBranchSearchValue] = useState('');
 
   // Theme values - called at top level
   const errorBg = useColorModeValue('red.50', 'red.900');
 
-  // Load repos and config on mount
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoadingRepos(true);
-      try {
-        await Promise.all([
-          loadRepos(),
-          getConfig()
-        ]);
-      } catch (error) {
-        console.error('Failed to load data:', error);
-      } finally {
-        setIsLoadingRepos(false);
-      }
-    };
-    loadData();
-  }, [loadRepos, getConfig]);
 
   // Fetch branches when a repository is selected
   useEffect(() => {
-    const fetchBranches = async () => {
-      if (!selectedRepo) {
-        setAvailableBranches([]);
-        return;
-      }
-
-      setIsLoadingBranches(true);
-      try {
-        // Parse owner and repo from full_name (e.g., "owner/repo")
-        const [owner, repo] = selectedRepo.split('/');
-        
-        const response = await fetch(`/api/v0/repos/branches?owner=${owner}&repo=${repo}`, {
-          method: 'GET',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          if (result.status === 'success' && result.data) {
-            setAvailableBranches(result.data.branches || []);
-            // Set default branch as selected if no branch is selected
-            if (!selectedBranch && result.data.default_branch) {
-              setSelectedBranch(result.data.default_branch);
-              setBranchSearchValue(result.data.default_branch);
-            }
-          }
-        } else {
-          console.error('Failed to fetch branches');
-          // Fallback to default branch from repo info
-          const repoInfo = availableRepos.find(r => r.full_name === selectedRepo);
-          if (repoInfo) {
-            setAvailableBranches([{
-              name: repoInfo.default_branch,
-              is_default: true
-            }]);
-            if (!selectedBranch) {
-              setSelectedBranch(repoInfo.default_branch);
-              setBranchSearchValue(repoInfo.default_branch);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching branches:', error);
-        // Fallback to default branch
-        const repoInfo = availableRepos.find(r => r.full_name === selectedRepo);
-        if (repoInfo) {
-          setAvailableBranches([{
-            name: repoInfo.default_branch,
-            is_default: true
-          }]);
-          if (!selectedBranch) {
-            setSelectedBranch(repoInfo.default_branch);
-            setBranchSearchValue(repoInfo.default_branch);
-          }
-        }
-      } finally {
-        setIsLoadingBranches(false);
-      }
-    };
-
-    fetchBranches();
-  }, [selectedRepo, availableRepos]);
+    if (selectedRepo) {
+      // Parse owner and repo from full_name (e.g., "owner/repo")
+      const [owner, repo] = selectedRepo.split('/');
+      fetchBranches(owner, repo);
+      
+      // Reset selected branch when repo changes
+      setSelectedBranch('');
+      setBranchSearchValue('');
+    } else {
+      resetBranches();
+    }
+  }, [selectedRepo]);
 
   const handleAddRepoConfig = async () => {
     if (!selectedRepo) return;
@@ -175,6 +99,7 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
       setSelectedBranch('');
       setRepoSearchValue('');
       setBranchSearchValue('');
+      resetBranches();
     } catch (error) {
       console.error('Failed to add repository:', error);
     } finally {
@@ -248,14 +173,7 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
         )}
 
         {/* Loading state */}
-        {isLoadingRepos ? (
-          <Center py={8}>
-            <VStack gap={3}>
-              <Spinner size="lg" color="blue.500" />
-              <Text opacity={0.7}>Loading repositories...</Text>
-            </VStack>
-          </Center>
-        ) : (
+        {(
           <VStack gap={4}>
             {/* Add Repository Section */}
             <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.muted" width="100%">
@@ -279,11 +197,11 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                       inputValue={repoSearchValue}
                       onInputValueChange={(e) => setRepoSearchValue(e.inputValue)}
                       openOnClick
-                      disabled={isLoadingRepos || disabled || isSaving}
+                      disabled={ disabled || isSaving}
                     >
                       <Combobox.Control position="relative">
                         <Combobox.Input
-                          placeholder={isLoadingRepos ? "Loading repositories..." : "Select or search repository"}
+                          placeholder={"Select or search repository"}
                           paddingRight="2rem"
                         />
                         <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
@@ -292,11 +210,7 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                       </Combobox.Control>
                       <Combobox.Positioner>
                         <Combobox.Content>
-                          {isLoadingRepos ? (
-                            <Box p={2} textAlign="center" opacity={0.7}>
-                              Loading repositories...
-                            </Box>
-                          ) : filteredRepos.length === 0 ? (
+                          {filteredRepos.length === 0 ? (
                             <Box p={2} textAlign="center" opacity={0.7}>
                               {availableForSelection.length === 0
                                 ? 'All repositories configured or none available'
@@ -396,7 +310,7 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                         <Button
                           size="sm"
                           onClick={() => handleRemoveRepoConfig(index)}
-                          disabled={disabled || isLoadingRepos || isSaving}
+                          disabled={disabled || isSaving}
                         >
                           Remove
                         </Button>

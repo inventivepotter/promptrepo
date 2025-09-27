@@ -1,15 +1,11 @@
 import ReposApi from './api';
 import { isErrorResponse, isStandardResponse } from '@/types/OpenApiResponse';
-import { errorNotification } from '@/lib/notifications';
 import type { components } from '@/types/generated/api';
 
-import * as configuredReposData from './configuredRepos.json';
-import * as availableReposData from './availableRepos.json';
-const mockConfiguredRepos = configuredReposData as ConfiguredReposResponse;
-const mockAvailableRepos = availableReposData as RepositoryList;
 
 type RepositoryList = components['schemas']['RepositoryList'];
 type ConfiguredReposResponse = components['schemas']['ConfiguredReposResponse'];
+type RepositoryBranchesResponse = components['schemas']['RepositoryBranchesResponse'];
 
 export class ReposService {
   /**
@@ -21,31 +17,17 @@ export class ReposService {
       const response = await ReposApi.getConfiguredRepos();
       
       if (isErrorResponse(response)) {
-        errorNotification(
-          response.title || 'Repository Sync Failed',
-          response.detail || 'Unable to load configured repositories from server. Using local data.'
-        );
-        return mockConfiguredRepos;
-      }
- 
-      if (isStandardResponse(response) && response.data) {
-        return response.data as ConfiguredReposResponse;
+        throw response;
+
       }
 
-      // Fallback for unexpected response types, though ideally this path shouldn't be hit
-      // if the API contract is correctly followed.
-      errorNotification(
-        'Unexpected Data Format',
-        'Received an unexpected response format from the server. Using local data.'
-      );
-      return mockConfiguredRepos;
+      if (!isStandardResponse(response) || !response.data) {
+        throw response;
+      }
+
+      return response.data as ConfiguredReposResponse;
     } catch (error: unknown) {
-      console.error('Failed to load configured repositories:', error);
-      errorNotification(
-        'Connection Error',
-        'Unable to connect to repository service. Using local data.'
-      );
-      return mockConfiguredRepos;
+      throw error;
     }
   }
 
@@ -59,30 +41,40 @@ export class ReposService {
       
       // Handle error responses
       if (isErrorResponse(response)) {
-        errorNotification(
-          response.title || 'Failed to Load Repositories',
-          response.detail || 'Unable to load available repositories.'
-        );
-        return mockAvailableRepos;
+        throw response;
       }
 
-      if (isStandardResponse(response) && response.data) {
-        return response.data;
+      if (!isStandardResponse(response) || !response.data) {
+        throw response;
       }
 
-      // Fallback for unexpected response types
-      errorNotification(
-        'Unexpected Data Format',
-        'Received an unexpected response format from the server. Using local data.'
-      );
-      return mockAvailableRepos;
+      return response.data;
     } catch (error: unknown) {
-      console.error('Failed to load repositories:', error);
-      errorNotification(
-        'Connection Error',
-        'Unable to connect to repository service. Using local data.'
-      );
-      return mockAvailableRepos;
+      throw error;
+    }
+  }
+
+  /**
+   * Get branches for a specific repository
+   * @param owner The repository owner
+   * @param repo The repository name
+   * @returns The repository branches
+   */
+  static async getBranches(owner: string, repo: string): Promise<RepositoryBranchesResponse> {
+    try {
+      const response = await ReposApi.getBranches(owner, repo);
+      
+      if (isErrorResponse(response)) {
+        throw response;
+      }
+
+      if (!isStandardResponse(response) || !response.data) {
+        throw response;
+      }
+
+      return response.data;
+    } catch (error: unknown) {
+      throw error;
     }
   }
 }

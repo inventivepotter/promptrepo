@@ -4,10 +4,10 @@ import { createUpdateConfigAction } from './updateConfig';
 import { createGetHostingTypeAction } from './getHostingType';
 import { createAddLLMConfigAction } from './addLLMConfig';
 import { createRemoveLLMConfigAction } from './removeLLMConfig';
-import { createLoadProvidersAction } from './loadProviders';
+import { createLoadProvidersAction } from './loadAvailableLLMProviders';
 import { createAddRepoConfigAction } from './addRepoConfig';
 import { createRemoveRepoConfigAction } from './removeRepoConfig';
-import { createLoadReposAction } from './loadRepos';
+import { createLoadReposAction } from './loadAvailableRepos';
 import { createUpdateConfiguredReposAction } from './updateConfiguredRepos';
 import { createSetErrorAction } from './setError';
 import { createSetConfigAction } from './setConfig';
@@ -16,6 +16,7 @@ import { createSetAvailableProvidersAction } from './setAvailableProviders';
 import { createSetAvailableReposAction } from './setAvailableRepos';
 import { createGetModelsAction } from './getModels';
 import { createLLMActions } from './llmActions';
+import { createGetRepoBranchesAction } from './getRepoBranches';
 import type { StateCreator } from '@/lib/zustand';
 import type { ConfigStore, ConfigActions } from '../types';
 
@@ -38,6 +39,7 @@ export const createConfigActions: StateCreator<ConfigStore, [], [], ConfigAction
   ...createAddRepoConfigAction(set, get, api),
   ...createRemoveRepoConfigAction(set, get, api),
   ...createUpdateConfiguredReposAction(set, get, api),
+  ...createGetRepoBranchesAction(set, get, api),
 
   // Internal actions
   ...createSetErrorAction(set, get, api),

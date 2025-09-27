@@ -19,8 +19,8 @@ export function useConfigState() {
   // Import initialization logic
   const initActions = useInitLoad(
     setConfigState, 
-    llmActions.loadProviders, 
-    repoActions.loadRepos
+    llmActions.loadAvailableLLMProviders, 
+    repoActions.loadAvailableRepos
   );
 
   // Update config field
@@ -54,12 +54,12 @@ export function useConfigState() {
     // LLM config actions
     addLLMConfig: llmActions.addLLMConfig,
     removeLLMConfig: llmActions.removeLLMConfig,
-    loadProviders: llmActions.loadProviders,
+    loadAvailableLLMProviders: llmActions.loadAvailableLLMProviders,
     
     // Repo config actions
     addRepoConfig: repoActions.addRepoConfig,
     removeRepoConfig: repoActions.removeRepoConfig,
-    loadRepos: repoActions.loadRepos,
+    loadAvailableRepos: repoActions.loadAvailableRepos,
     updateConfiguredRepos: repoActions.updateConfiguredRepos,
     
     // Init and loading actions

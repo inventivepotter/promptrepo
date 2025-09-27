@@ -11,7 +11,7 @@ export const createSetAvailableProvidersAction: StateCreator<
   return {
     setAvailableProviders: (providers: BasicProviderInfo[]) => {
       set((draft) => {
-        draft.availableProviders = providers;
+        draft.availableLLMProviders = providers;
       // @ts-expect-error - Immer middleware supports 3 params
       }, false, 'config/setAvailableProviders');
     },

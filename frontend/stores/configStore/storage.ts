@@ -14,7 +14,7 @@ export const configPersistConfig = {
   ...createLocalStorage('config-store'),
   // Only persist essential config data
   partialize: (state: ConfigStore) => ({
-    availableProviders: state.availableProviders,
+    availableProviders: state.availableLLMProviders,
     availableRepos: state.availableRepos,
     hostingType: state.hostingType,
     config: state.config,

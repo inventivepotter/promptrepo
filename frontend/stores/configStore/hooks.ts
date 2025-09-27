@@ -8,10 +8,16 @@ export const useConfig = () => useConfigStore((state) => state.config);
 export const useHostingType = () => useConfigStore((state) => state.hostingType);
 
 // Hook for available providers
-export const useAvailableProviders = () => useConfigStore((state) => state.availableProviders);
+export const useAvailableProviders = () => useConfigStore((state) => state.availableLLMProviders);
 
 // Hook for available repos
 export const useAvailableRepos = () => useConfigStore((state) => state.availableRepos);
+
+// Hook for available branches
+export const useAvailableBranches = () => useConfigStore((state) => state.availableBranches);
+
+// Hook for loading branches state
+export const useIsLoadingBranches = () => useConfigStore((state) => state.isLoadingBranches);
 
 // Hook for error state
 export const useConfigError = () => useConfigStore((state) => state.error);
@@ -43,7 +49,7 @@ export const useConfigActions = () => {
     getHostingType,
     addLLMConfig,
     removeLLMConfig,
-    loadProviders,
+    loadAvailableLLMProviders,
     getModels,
     setLLMProvider,
     setApiKey,
@@ -54,8 +60,10 @@ export const useConfigActions = () => {
     setLoadingModels,
     addRepoConfig,
     removeRepoConfig,
-    loadRepos,
+    loadAvailableRepos,
     updateConfiguredRepos,
+    fetchBranches,
+    resetBranches,
   } = useConfigStore();
 
   return {
@@ -64,7 +72,7 @@ export const useConfigActions = () => {
     getHostingType,
     addLLMConfig,
     removeLLMConfig,
-    loadProviders,
+    loadAvailableLLMProviders,
     getModels,
     setLLMProvider,
     setApiKey,
@@ -75,8 +83,10 @@ export const useConfigActions = () => {
     setLoadingModels,
     addRepoConfig,
     removeRepoConfig,
-    loadRepos,
+    loadAvailableRepos,
     updateConfiguredRepos,
+    fetchBranches,
+    resetBranches,
   };
 };
 

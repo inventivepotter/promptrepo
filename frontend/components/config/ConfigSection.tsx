@@ -16,7 +16,7 @@ export const ConfigSection = ({
   autoLoad = true,
   className
 }: ConfigSectionProps) => {
-  const { getConfig, getHostingType, loadProviders, loadRepos } = useConfigActions();
+  const { getConfig, getHostingType, loadAvailableLLMProviders, loadAvailableRepos } = useConfigActions();
   const { showLoading, hideLoading } = useLoadingStore();
 
   // Initialize config data when component mounts
@@ -29,8 +29,8 @@ export const ConfigSection = ({
           await Promise.all([
             getConfig(),
             getHostingType(),
-            loadProviders(),
-            loadRepos(),
+            loadAvailableLLMProviders(),
+            loadAvailableRepos(),
           ]);
         } catch (err) {
           console.error('Failed to initialize config:', err);
@@ -41,7 +41,7 @@ export const ConfigSection = ({
 
       initializeConfig();
     }
-  }, [autoLoad, getConfig, getHostingType, loadProviders, loadRepos, showLoading, hideLoading]);
+  }, [autoLoad, getConfig, getHostingType, loadAvailableLLMProviders, loadAvailableRepos, showLoading, hideLoading]);
 
   return (
     <Box className={className}>

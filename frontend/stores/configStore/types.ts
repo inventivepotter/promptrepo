@@ -10,12 +10,13 @@ export type RepoConfig = components['schemas']['RepoConfig'];
 export type RepoInfo = components['schemas']['RepoInfo'];
 export type LLMConfig = components['schemas']['LLMConfig'];
 export type ModelInfo = components['schemas']['ModelInfo'];
+export type BranchInfo = components['schemas']['BranchInfo'];
 
 export interface ConfigState {
   config: AppConfigOutput;
   error: string | null;
   hostingType: string | null;
-  availableProviders: BasicProviderInfo[];
+  availableLLMProviders: BasicProviderInfo[];
   availableRepos: RepoInfo[];
   
   // LLM form state
@@ -27,18 +28,22 @@ export interface ConfigState {
   // Model loading state
   availableModels: ModelInfo[];
   isLoadingModels: boolean;
+
+  // Branch loading state
+  availableBranches: BranchInfo[];
+  isLoadingBranches: boolean;
 }
 
 export interface ConfigActions {
   // Public actions
   getConfig: () => Promise<void>;
-  updateConfig: (config: Partial<AppConfigInput>) => Promise<void>;
+  updateConfig: (config: AppConfigInput) => Promise<void>;
   getHostingType: () => Promise<void>;
   
   // LLM Config actions
   addLLMConfig: (config: LLMConfig) => void;
   removeLLMConfig: (index: number) => void;
-  loadProviders: () => Promise<void>;
+  loadAvailableLLMProviders: () => Promise<void>;
   getModels: () => Promise<ModelInfo[]>;
   setLLMProvider: (provider: string) => void;
   setApiKey: (apiKey: string) => void;
@@ -51,8 +56,10 @@ export interface ConfigActions {
   // Repo Config actions
   addRepoConfig: (config: RepoConfig) => void;
   removeRepoConfig: (index: number) => void;
-  loadRepos: () => Promise<void>;
+  loadAvailableRepos: () => Promise<void>;
   updateConfiguredRepos: (repos: RepoConfig[]) => void;
+  fetchBranches: (owner: string, repo: string) => Promise<void>;
+  resetBranches: () => void;
 
   // Internal actions
   setError: (error: string | null) => void;

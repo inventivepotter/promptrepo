@@ -33,7 +33,7 @@ export const createGetModelsAction: StateCreator<
       }
 
       // Find the current provider to check if it requires custom API base
-      const currentProvider = get().availableProviders.find(p => p.id === llmProvider);
+      const currentProvider = get().availableLLMProviders.find(p => p.id === llmProvider);
       const requiresApiBase = currentProvider?.custom_api_base || false;
       
       // For providers that require API base, check if it's provided

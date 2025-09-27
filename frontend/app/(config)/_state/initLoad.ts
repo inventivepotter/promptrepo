@@ -37,8 +37,8 @@ export const initConfigState: ConfigState = {
 
 export function useInitLoad(
   setConfigState: React.Dispatch<React.SetStateAction<ConfigState>>,
-  loadProviders: () => Promise<void>,
-  loadRepos: () => Promise<void>
+  loadAvailableLLMProviders: () => Promise<void>,
+  loadAvailableRepos: () => Promise<void>
 ) {
   const hasInitialized = useRef(false);
 
@@ -72,9 +72,9 @@ export function useInitLoad(
   // Initialize on mount
   useEffect(() => {
     loadConfig();
-    loadProviders();
-    loadRepos();
-  }, [loadConfig, loadProviders, loadRepos]);
+    loadAvailableLLMProviders();
+    loadAvailableRepos();
+  }, [loadConfig, loadAvailableLLMProviders, loadAvailableRepos]);
 
   // Set loading states
   const setIsLoading = useCallback((loading: boolean) => {

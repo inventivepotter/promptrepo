@@ -11,7 +11,7 @@ export function useRepoConfigActions(
   setConfigState: React.Dispatch<React.SetStateAction<ConfigState>>
 ) {
   // Load available repositories
-  const loadRepos = useCallback(async () => {
+  const loadAvailableRepos = useCallback(async () => {
     setConfigState(prev => ({
       ...prev,
       repos: { ...prev.repos, isLoading: true }
@@ -93,7 +93,7 @@ export function useRepoConfigActions(
   }, [setConfigState]);
 
   return {
-    loadRepos,
+    loadAvailableRepos,
     addRepoConfig,
     removeRepoConfig,
     updateConfiguredRepos,

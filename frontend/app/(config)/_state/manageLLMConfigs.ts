@@ -11,7 +11,7 @@ export function useLLMConfigActions(
   setConfigState: React.Dispatch<React.SetStateAction<ConfigState>>
 ) {
   // Load available providers
-  const loadProviders = useCallback(async () => {
+  const loadAvailableLLMProviders = useCallback(async () => {
     setConfigState(prev => ({
       ...prev,
       providers: { ...prev.providers, isLoading: true }
@@ -94,7 +94,7 @@ export function useLLMConfigActions(
   }, [setConfigState]);
 
   return {
-    loadProviders,
+    loadAvailableLLMProviders,
     addLLMConfig,
     removeLLMConfig,
   };

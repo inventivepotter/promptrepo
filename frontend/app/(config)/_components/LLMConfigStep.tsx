@@ -28,7 +28,7 @@ export default function LLMStep({
   disabled = false
 }: LLMStepProps) {
   const config = useConfig();
-  const { addLLMConfig, removeLLMConfig, loadProviders } = useConfigActions();
+  const { addLLMConfig, removeLLMConfig, loadAvailableLLMProviders } = useConfigActions();
   const availableProviders = useAvailableProviders();
   
   // Local state for the current form
@@ -43,13 +43,13 @@ export default function LLMStep({
     const loadData = async () => {
       setIsLoadingProviders(true);
       try {
-        await loadProviders();
+        await loadAvailableLLMProviders();
       } finally {
         setIsLoadingProviders(false);
       }
     };
     loadData();
-  }, [loadProviders]);
+  }, [loadAvailableLLMProviders]);
   
   const llmConfigs = config.llm_configs || [];
   const [availableModels, setAvailableModels] = useState<ModelInfo[]>([]);

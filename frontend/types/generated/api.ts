@@ -408,6 +408,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v0/repos/branches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get repository branches
+         * @description Get list of branches for a specific repository
+         */
+        get: operations["get_repository_branches_api_v0_repos_branches_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v0/info": {
         parameters: {
             query?: never;
@@ -523,6 +543,23 @@ export interface components {
         BasicProvidersResponse: {
             /** Providers */
             providers: components["schemas"]["BasicProviderInfo"][];
+        };
+        /**
+         * BranchInfo
+         * @description Information about a repository branch
+         */
+        BranchInfo: {
+            /**
+             * Name
+             * @description Branch name
+             */
+            name: string;
+            /**
+             * Is Default
+             * @description Whether this is the default branch
+             * @default false
+             */
+            is_default: boolean;
         };
         /**
          * ChatCompletionChoice
@@ -899,6 +936,22 @@ export interface components {
             updated_at?: string | null;
             /** All Branches */
             all_branches?: string[] | null;
+        };
+        /**
+         * RepositoryBranchesResponse
+         * @description Response for repository branches endpoint
+         */
+        RepositoryBranchesResponse: {
+            /**
+             * Branches
+             * @description List of repository branches
+             */
+            branches: components["schemas"]["BranchInfo"][];
+            /**
+             * Default Branch
+             * @description The default branch name
+             */
+            default_branch: string;
         };
         /**
          * RepositoryList
@@ -1355,6 +1408,44 @@ export interface components {
             status_code: number;
             /** @description Response payload */
             data?: components["schemas"]["ProvidersResponse"] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
+         * StandardResponse[RepositoryBranchesResponse]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_RepositoryBranchesResponse_: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /** @description Response payload */
+            data?: components["schemas"]["RepositoryBranchesResponse"] | null;
             /**
              * Message
              * @description Human-readable message about the response
@@ -2534,6 +2625,85 @@ export interface operations {
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
                      *       "detail": "Failed to retrieve configured repositories"
+                     *     } */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_repository_branches_api_v0_repos_branches_get: {
+        parameters: {
+            query: {
+                /** @description Repository owner/organization */
+                owner: string;
+                /** @description Repository name */
+                repo: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_RepositoryBranchesResponse_"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /** @example {
+                     *       "status": "error",
+                     *       "type": "/errors/authentication-required",
+                     *       "title": "Authentication required",
+                     *       "detail": "Session not found or invalid"
+                     *     } */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Repository not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /** @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Not Found",
+                     *       "detail": "Repository not found"
+                     *     } */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /** @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to retrieve repository branches"
                      *     } */
                     "application/json": unknown;
                 };

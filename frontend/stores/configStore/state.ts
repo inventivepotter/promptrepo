@@ -11,7 +11,7 @@ export const initialConfigState: ConfigState = {
   },
   error: null,
   hostingType: null,
-  availableProviders: [],
+  availableLLMProviders: [],
   availableRepos: [],
   
   // LLM form state
@@ -23,4 +23,8 @@ export const initialConfigState: ConfigState = {
   // Model loading state
   availableModels: [],
   isLoadingModels: false,
+
+  // Branch loading state
+  availableBranches: [],
+  isLoadingBranches: false,
 };

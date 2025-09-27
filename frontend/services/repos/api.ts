@@ -8,6 +8,7 @@ import type { components } from '@/types/generated/api';
  */
 type RepositoryList = components['schemas']['RepositoryList'];
 type ConfiguredReposResponse = components['schemas']['ConfiguredReposResponse'];
+type RepositoryBranchesResponse = components['schemas']['RepositoryBranchesResponse'];
 
 export default class ReposApi {
   /**
@@ -24,5 +25,15 @@ export default class ReposApi {
    */
   static async getConfiguredRepos(): Promise<OpenApiResponse<ConfiguredReposResponse>> {
     return await httpClient.get<ConfiguredReposResponse>('/api/v0/repos/configured');
+  }
+
+  /**
+   * Get branches for a specific repository
+   * @param owner The repository owner
+   * @param repo The repository name
+   * @returns OpenAPI response with a list of branches
+   */
+  static async getBranches(owner: string, repo: string): Promise<OpenApiResponse<RepositoryBranchesResponse>> {
+    return await httpClient.get<RepositoryBranchesResponse>(`/api/v0/repos/branches?owner=${owner}&repo=${repo}`);
   }
 }

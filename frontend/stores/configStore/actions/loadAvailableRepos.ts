@@ -8,23 +8,23 @@ export const createLoadReposAction: StateCreator<
   ConfigStore,
   [],
   [],
-  { loadRepos: () => Promise<void> }
+  { loadAvailableRepos: () => Promise<void> }
 > = (set, get) => {
   return {
-    loadRepos: async () => {
-      logStoreAction('ConfigStore', 'loadRepos');
+    loadAvailableRepos: async () => {
+      logStoreAction('ConfigStore', 'loadAvailableRepos');
       
       set((draft) => {
         draft.error = null;
       // @ts-expect-error - Immer middleware supports 3 params
-      }, false, 'config/loadRepos/start');
+      }, false, 'config/loadAvailableRepos/start');
 
       try {
         // Check if we already have repos data (from localStorage hydration)
         const currentState = get();
         if (currentState.availableRepos && currentState.availableRepos.length > 0) {
           // We have valid repos data, no need to call API
-          logStoreAction('ConfigStore', 'loadRepos/skip - data from localStorage');
+          logStoreAction('ConfigStore', 'loadAvailableRepos/skip - data from localStorage');
           return;
         }
 
@@ -33,15 +33,15 @@ export const createLoadReposAction: StateCreator<
         set((draft) => {
           draft.availableRepos = reposResponse.repositories || [];
         // @ts-expect-error - Immer middleware supports 3 params
-        }, false, 'config/loadRepos/success');
+        }, false, 'config/loadAvailableRepos/success');
       } catch (error) {
-        const storeError = handleStoreError(error, 'loadRepos');
+        const storeError = handleStoreError(error, 'loadAvailableRepos');
         console.error('Load repos error:', error);
         
         set((draft) => {
           draft.error = storeError.message;
         // @ts-expect-error - Immer middleware supports 3 params
-        }, false, 'config/loadRepos/error');
+        }, false, 'config/loadAvailableRepos/error');
       }
     },
   };
