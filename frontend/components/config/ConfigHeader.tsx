@@ -5,20 +5,12 @@ import {
   HStack,
   VStack,
   Text,
-  Button,
   Box,
   Container,
-  Spinner,
 } from '@chakra-ui/react';
-import { LuSave } from 'react-icons/lu';
 import { useColorModeValue } from '@/components/ui/color-mode';
 
-interface ConfigHeaderProps {
-  onSave: () => void;
-  isLoading?: boolean;
-}
-
-export function ConfigHeader({ onSave, isLoading = false }: ConfigHeaderProps) {
+export function ConfigHeader() {
   const headerBg = useColorModeValue('gray.50', 'gray.900');
 
   return (
@@ -43,24 +35,6 @@ export function ConfigHeader({ onSave, isLoading = false }: ConfigHeaderProps) {
               </Text>
             </VStack>
           </HStack>
-          <Button
-            variant="solid"
-            onClick={onSave}
-            size="sm"
-            disabled={isLoading}
-            loading={isLoading}
-          >
-            <HStack gap={2}>
-              {isLoading ? (
-                <Spinner size="sm" />
-              ) : (
-                <LuSave size={16} />
-              )}
-              <Text>
-                {isLoading ? 'Saving...' : 'Save Configuration'}
-              </Text>
-            </HStack>
-          </Button>
         </HStack>
       </Container>
     </Box>

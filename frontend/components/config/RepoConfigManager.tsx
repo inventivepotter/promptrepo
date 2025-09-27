@@ -7,14 +7,11 @@ import {
   VStack,
   HStack,
   Text,
-  IconButton,
-  Badge,
   Spinner,
   Center,
   Combobox,
   createListCollection,
 } from '@chakra-ui/react';
-import { LuPlus, LuTrash2 } from 'react-icons/lu';
 import { FaChevronDown } from 'react-icons/fa';
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { 
@@ -25,6 +22,11 @@ import {
 } from '@/stores/configStore';
 import type { RepoInfo } from '@/stores/configStore';
 
+interface BranchInfo {
+  name: string;
+  is_default: boolean;
+}
+
 interface RepoConfigManagerProps {
   disabled?: boolean;
 }
@@ -33,10 +35,10 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
   const config = useConfig();
   const availableRepos = useAvailableRepos();
   const error = useConfigError();
-  const { 
-    addRepoConfig, 
-    removeRepoConfig, 
-    loadRepos, 
+  const {
+    addRepoConfig,
+    removeRepoConfig,
+    loadRepos,
     updateConfig,
     getConfig,
   } = useConfigActions();
@@ -46,6 +48,8 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
   const [selectedBranch, setSelectedBranch] = React.useState<string>('');
   const [isLoadingRepos, setIsLoadingRepos] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
+  const [isLoadingBranches, setIsLoadingBranches] = React.useState(false);
+  const [availableBranches, setAvailableBranches] = React.useState<BranchInfo[]>([]);
 
   // Search states for comboboxes
   const [repoSearchValue, setRepoSearchValue] = React.useState('');
@@ -53,7 +57,6 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
 
   // Theme values - called at top level
   const errorBg = useColorModeValue('red.50', 'red.900');
-  const repoCardBg = useColorModeValue('gray.50', 'gray.700');
 
   // Load repos and config on mount
   useEffect(() => {
@@ -72,6 +75,74 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
     };
     loadData();
   }, [loadRepos, getConfig]);
+
+  // Fetch branches when a repository is selected
+  useEffect(() => {
+    const fetchBranches = async () => {
+      if (!selectedRepo) {
+        setAvailableBranches([]);
+        return;
+      }
+
+      setIsLoadingBranches(true);
+      try {
+        // Parse owner and repo from full_name (e.g., "owner/repo")
+        const [owner, repo] = selectedRepo.split('/');
+        
+        const response = await fetch(`/api/v0/repos/branches?owner=${owner}&repo=${repo}`, {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.status === 'success' && result.data) {
+            setAvailableBranches(result.data.branches || []);
+            // Set default branch as selected if no branch is selected
+            if (!selectedBranch && result.data.default_branch) {
+              setSelectedBranch(result.data.default_branch);
+              setBranchSearchValue(result.data.default_branch);
+            }
+          }
+        } else {
+          console.error('Failed to fetch branches');
+          // Fallback to default branch from repo info
+          const repoInfo = availableRepos.find(r => r.full_name === selectedRepo);
+          if (repoInfo) {
+            setAvailableBranches([{
+              name: repoInfo.default_branch,
+              is_default: true
+            }]);
+            if (!selectedBranch) {
+              setSelectedBranch(repoInfo.default_branch);
+              setBranchSearchValue(repoInfo.default_branch);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching branches:', error);
+        // Fallback to default branch
+        const repoInfo = availableRepos.find(r => r.full_name === selectedRepo);
+        if (repoInfo) {
+          setAvailableBranches([{
+            name: repoInfo.default_branch,
+            is_default: true
+          }]);
+          if (!selectedBranch) {
+            setSelectedBranch(repoInfo.default_branch);
+            setBranchSearchValue(repoInfo.default_branch);
+          }
+        }
+      } finally {
+        setIsLoadingBranches(false);
+      }
+    };
+
+    fetchBranches();
+  }, [selectedRepo, availableRepos]);
 
   const handleAddRepoConfig = async () => {
     if (!selectedRepo) return;
@@ -145,12 +216,9 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
     repo.full_name.toLowerCase().includes(repoSearchValue.toLowerCase())
   );
   
-  // Get current repo for branch selection
-  const currentRepo = availableRepos.find(r => r.full_name === selectedRepo);
-  // For now, we'll use a simple branch list - this should be extended when the API supports branch listing
-  const availableBranches = currentRepo ? [currentRepo.default_branch] : [];
+  // Filter branches based on search
   const filteredBranches = availableBranches.filter(branch =>
-    branch.toLowerCase().includes(branchSearchValue.toLowerCase())
+    branch.name.toLowerCase().includes(branchSearchValue.toLowerCase())
   );
 
   return (
@@ -253,18 +321,21 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                       <Text mb={2} fontWeight="medium">Branch</Text>
                       <Combobox.Root
                         collection={createListCollection({
-                          items: filteredBranches.map(b => ({ label: b, value: b }))
+                          items: filteredBranches.map(b => ({
+                            label: b.is_default ? `${b.name} (default)` : b.name,
+                            value: b.name
+                          }))
                         })}
                         value={[selectedBranch]}
                         onValueChange={(e) => setSelectedBranch(e.value?.[0] || '')}
                         inputValue={branchSearchValue}
                         onInputValueChange={(e) => setBranchSearchValue(e.inputValue)}
                         openOnClick
-                        disabled={isSaving}
+                        disabled={isSaving || isLoadingBranches}
                       >
                         <Combobox.Control position="relative">
                           <Combobox.Input
-                            placeholder="Select or search branch"
+                            placeholder={isLoadingBranches ? "Loading branches..." : "Select or search branch"}
                             paddingRight="2rem"
                           />
                           <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
@@ -273,14 +344,22 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                         </Combobox.Control>
                         <Combobox.Positioner>
                           <Combobox.Content>
-                            {filteredBranches.length === 0 ? (
+                            {isLoadingBranches ? (
                               <Box p={2} textAlign="center" opacity={0.7}>
-                                No branches available
+                                Loading branches...
+                              </Box>
+                            ) : filteredBranches.length === 0 ? (
+                              <Box p={2} textAlign="center" opacity={0.7}>
+                                {availableBranches.length === 0
+                                  ? 'No branches available'
+                                  : 'No matching branches'}
                               </Box>
                             ) : (
                               filteredBranches.map(branch => (
-                                <Combobox.Item key={branch} item={branch}>
-                                  <Combobox.ItemText>{branch}</Combobox.ItemText>
+                                <Combobox.Item key={branch.name} item={branch.name}>
+                                  <Combobox.ItemText>
+                                    {branch.is_default ? `${branch.name} (default)` : branch.name}
+                                  </Combobox.ItemText>
                                   <Combobox.ItemIndicator />
                                 </Combobox.Item>
                               ))

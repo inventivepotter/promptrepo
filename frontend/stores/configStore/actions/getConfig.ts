@@ -9,7 +9,7 @@ export const createGetConfigAction: StateCreator<
   [],
   [],
   { getConfig: () => Promise<void> }
-> = (set) => {
+> = (set, get) => {
   return {
     getConfig: async () => {
       logStoreAction('ConfigStore', 'getConfig');
@@ -20,6 +20,17 @@ export const createGetConfigAction: StateCreator<
       }, false, 'config/getConfig/start');
 
       try {
+        // Check if we already have config data (from localStorage hydration)
+        const currentState = get();
+        if (currentState.config &&
+            currentState.config.hosting_config &&
+            currentState.config.llm_configs !== undefined &&
+            currentState.config.repo_configs !== undefined) {
+          // We have valid config data, no need to call API
+          logStoreAction('ConfigStore', 'getConfig/skip - data from localStorage');
+          return;
+        }
+
         const config = await ConfigService.getConfig();
         
         set((draft) => {

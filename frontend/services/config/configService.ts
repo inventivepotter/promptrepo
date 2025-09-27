@@ -53,13 +53,13 @@ export class ConfigService {
     try {
       const result = await ConfigApi.updateConfig(config);
 
-      // Handle error responses - show toast and return original config
+      // Handle error responses - show toast and throw error
       if (isErrorResponse(result)) {
         errorNotification(
           result.title || 'Configuration Save Failed',
           result.detail || 'Unable to save configuration on server. Changes may not be saved.'
         );
-        return config as AppConfigOutput;
+        throw new Error(result.detail || 'Configuration save failed');
       }
 
       if (!isStandardResponse(result) || !result.data) {
@@ -67,7 +67,7 @@ export class ConfigService {
           'Configuration Save Failed',
           'Unexpected response format from server.'
         );
-        return config as AppConfigOutput;
+        throw new Error('Unexpected response format');
       }
 
       return result.data;
@@ -76,7 +76,7 @@ export class ConfigService {
         'Connection Error',
         'Unable to connect to configuration service. Changes may not be saved.'
       );
-      return config as AppConfigOutput;
+      throw error;
     }
   }
 

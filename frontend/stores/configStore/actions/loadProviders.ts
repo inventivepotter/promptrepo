@@ -9,7 +9,7 @@ export const createLoadProvidersAction: StateCreator<
   [],
   [],
   { loadProviders: () => Promise<void> }
-> = (set) => {
+> = (set, get) => {
   return {
     loadProviders: async () => {
       logStoreAction('ConfigStore', 'loadProviders');
@@ -20,6 +20,14 @@ export const createLoadProvidersAction: StateCreator<
       }, false, 'config/loadProviders/start');
 
       try {
+        // Check if we already have providers data (from localStorage hydration)
+        const currentState = get();
+        if (currentState.availableProviders && currentState.availableProviders.length > 0) {
+          // We have valid providers data, no need to call API
+          logStoreAction('ConfigStore', 'loadProviders/skip - data from localStorage');
+          return;
+        }
+
         const providersResponse = await LLMProviderService.getAvailableProviders();
         
         set((draft) => {

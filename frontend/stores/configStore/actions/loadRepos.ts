@@ -9,7 +9,7 @@ export const createLoadReposAction: StateCreator<
   [],
   [],
   { loadRepos: () => Promise<void> }
-> = (set) => {
+> = (set, get) => {
   return {
     loadRepos: async () => {
       logStoreAction('ConfigStore', 'loadRepos');
@@ -20,6 +20,14 @@ export const createLoadReposAction: StateCreator<
       }, false, 'config/loadRepos/start');
 
       try {
+        // Check if we already have repos data (from localStorage hydration)
+        const currentState = get();
+        if (currentState.availableRepos && currentState.availableRepos.length > 0) {
+          // We have valid repos data, no need to call API
+          logStoreAction('ConfigStore', 'loadRepos/skip - data from localStorage');
+          return;
+        }
+
         const reposResponse = await ReposService.getAvailableRepos();
         
         set((draft) => {

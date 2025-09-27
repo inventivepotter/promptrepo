@@ -127,8 +127,8 @@ class ConfigService:
         """
         hosting_type = self.get_hosting_config().type
         
-        # Validate and save LLM configs only for appropriate hosting types
-        if llm_configs is not None and hosting_type != HostingType.ORGANIZATION:
+        # Validate and save LLM configs for all hosting types
+        if llm_configs is not None:
             self._validate_llm_configs(llm_configs)
             self.set_llm_configs(user_id=user_id, llm_configs=llm_configs)
         
