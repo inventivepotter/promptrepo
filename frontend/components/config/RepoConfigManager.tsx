@@ -1,20 +1,27 @@
 'use client';
 
-import { useState } from 'react';
-import { 
-  Box, 
-  VStack, 
-  HStack, 
-  Text, 
-  Button, 
+import React, { useEffect } from 'react';
+import {
+  Box,
+  Button,
+  VStack,
+  HStack,
+  Text,
   IconButton,
-  Badge
+  Badge,
+  Spinner,
+  Center,
+  Combobox,
+  createListCollection,
 } from '@chakra-ui/react';
 import { LuPlus, LuTrash2 } from 'react-icons/lu';
+import { FaChevronDown } from 'react-icons/fa';
+import { useColorModeValue } from '@/components/ui/color-mode';
 import { 
   useConfig, 
   useAvailableRepos, 
-  useConfigActions
+  useConfigActions,
+  useConfigError,
 } from '@/stores/configStore';
 import type { RepoInfo } from '@/stores/configStore';
 
@@ -25,131 +32,303 @@ interface RepoConfigManagerProps {
 export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) => {
   const config = useConfig();
   const availableRepos = useAvailableRepos();
-  const { addRepoConfig, removeRepoConfig } = useConfigActions();
+  const error = useConfigError();
+  const { 
+    addRepoConfig, 
+    removeRepoConfig, 
+    loadRepos, 
+    updateConfig,
+    getConfig,
+  } = useConfigActions();
   
-  const [selectedRepo, setSelectedRepo] = useState<string>('');
+  // Local state for form
+  const [selectedRepo, setSelectedRepo] = React.useState<string>('');
+  const [selectedBranch, setSelectedBranch] = React.useState<string>('');
+  const [isLoadingRepos, setIsLoadingRepos] = React.useState(false);
+  const [isSaving, setIsSaving] = React.useState(false);
 
-  const handleAddRepoConfig = () => {
+  // Search states for comboboxes
+  const [repoSearchValue, setRepoSearchValue] = React.useState('');
+  const [branchSearchValue, setBranchSearchValue] = React.useState('');
+
+  // Theme values - called at top level
+  const errorBg = useColorModeValue('red.50', 'red.900');
+  const repoCardBg = useColorModeValue('gray.50', 'gray.700');
+
+  // Load repos and config on mount
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoadingRepos(true);
+      try {
+        await Promise.all([
+          loadRepos(),
+          getConfig()
+        ]);
+      } catch (error) {
+        console.error('Failed to load data:', error);
+      } finally {
+        setIsLoadingRepos(false);
+      }
+    };
+    loadData();
+  }, [loadRepos, getConfig]);
+
+  const handleAddRepoConfig = async () => {
     if (!selectedRepo) return;
 
     const repoInfo = availableRepos.find(r => r.full_name === selectedRepo);
     if (!repoInfo) return;
 
-    const repoConfig = {
-      id: '', // Blank for new record
-      repo_name: repoInfo.name,
-      repo_url: repoInfo.clone_url,
-      base_branch: repoInfo.default_branch,
-      current_branch: ''
-    };
+    setIsSaving(true);
+    try {
+      const repoConfig = {
+        id: '', // Blank for new record
+        repo_name: repoInfo.full_name, // Use full_name for consistency
+        repo_url: repoInfo.clone_url,
+        base_branch: selectedBranch || repoInfo.default_branch,
+        current_branch: ''
+      };
 
-    addRepoConfig(repoConfig);
-    setSelectedRepo('');
+      // Add to local store
+      addRepoConfig(repoConfig);
+
+      // Update backend
+      const updatedConfig = {
+        ...config,
+        repo_configs: [...(config.repo_configs || []), repoConfig]
+      };
+      await updateConfig(updatedConfig);
+
+      // Reset selections
+      setSelectedRepo('');
+      setSelectedBranch('');
+      setRepoSearchValue('');
+      setBranchSearchValue('');
+    } catch (error) {
+      console.error('Failed to add repository:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleRemoveRepoConfig = (repoId: string) => {
-    removeRepoConfig(repoId);
+  const handleRemoveRepoConfig = async (index: number) => {
+    setIsSaving(true);
+    try {
+      // Remove from local store
+      removeRepoConfig(index);
+
+      // Update backend
+      const updatedRepoConfigs = [...(config.repo_configs || [])];
+      updatedRepoConfigs.splice(index, 1);
+      const updatedConfig = {
+        ...config,
+        repo_configs: updatedRepoConfigs
+      };
+      await updateConfig(updatedConfig);
+    } catch (error) {
+      console.error('Failed to remove repository:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const getAvailableReposForSelection = (): RepoInfo[] => {
     const configuredRepos = config.repo_configs?.map(r => r.repo_name) || [];
-    return availableRepos.filter(r => !configuredRepos.includes(r.name));
+    return availableRepos.filter(r => !configuredRepos.includes(r.full_name));
   };
+
+  const availableForSelection = getAvailableReposForSelection();
+  
+  // Filter repositories based on search
+  const filteredRepos = availableForSelection.filter(repo =>
+    repo.name.toLowerCase().includes(repoSearchValue.toLowerCase()) ||
+    repo.full_name.toLowerCase().includes(repoSearchValue.toLowerCase())
+  );
+  
+  // Get current repo for branch selection
+  const currentRepo = availableRepos.find(r => r.full_name === selectedRepo);
+  // For now, we'll use a simple branch list - this should be extended when the API supports branch listing
+  const availableBranches = currentRepo ? [currentRepo.default_branch] : [];
+  const filteredBranches = availableBranches.filter(branch =>
+    branch.toLowerCase().includes(branchSearchValue.toLowerCase())
+  );
 
   return (
     <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.emphasized">
       <VStack gap={6} align="stretch">
-        <Text fontSize="xl" fontWeight="bold">Repository Configuration</Text>
-        <Text fontSize="sm" opacity={0.7}>
-          Select repositories to include in your prompt library
-        </Text>
+        <Text fontSize="lg" fontWeight="bold">Repository Configuration</Text>
+        <Box fontSize="sm" opacity={0.7}>
+          Configure repositories containing prompts to access them in the application.
+        </Box>
 
-        {/* Existing Configurations */}
-        {config.repo_configs && config.repo_configs.length > 0 && (
-          <VStack gap={3} align="stretch">
-            <Text fontSize="md" fontWeight="semibold">Configured Repositories</Text>
-            {config.repo_configs.map((repoConfig, index) => (
-              <HStack 
-                key={repoConfig.id || index}
-                p={3}
-                bg="gray.50"
-                borderRadius="md"
-                justify="space-between"
-              >
-                <VStack align="flex-start" gap={1}>
-                  <HStack>
-                    <Text fontWeight="medium">
-                      {repoConfig.repo_name}
-                    </Text>
-                    <Badge colorScheme="green">
-                      Enabled
-                    </Badge>
-                  </HStack>
-                  <Text fontSize="sm" opacity={0.7}>
-                    Branch: {repoConfig.base_branch}
-                  </Text>
-                  <Text fontSize="sm" opacity={0.7}>
-                    Current: {repoConfig.current_branch || 'Not set'}
-                  </Text>
-                </VStack>
-                <IconButton
-                  aria-label={`Remove ${repoConfig.repo_name}`}
-                  onClick={() => handleRemoveRepoConfig(repoConfig.id || index.toString())}
-                  disabled={disabled}
-                  size="sm"
-                  variant="ghost"
-                  colorScheme="red"
-                >
-                  <LuTrash2 />
-                </IconButton>
-              </HStack>
-            ))}
-          </VStack>
+        {/* Error display */}
+        {error && (
+          <Box
+            p={4}
+            borderWidth="1px"
+            borderRadius="md"
+            borderColor="red.500"
+            bg={errorBg}
+          >
+            <HStack gap={2}>
+              <Text fontSize="sm" fontWeight="bold" color="red.500">
+                Error:
+              </Text>
+              <Text fontSize="sm">{error}</Text>
+            </HStack>
+          </Box>
         )}
 
-        {/* Add New Configuration */}
-        <VStack gap={4} align="stretch">
-          <Text fontSize="md" fontWeight="semibold">Add Repository</Text>
-          
-          {getAvailableReposForSelection().length === 0 ? (
-            <Text fontSize="sm" color="gray.500">
-              {availableRepos.length === 0 
-                ? 'No repositories available. Please check your authentication.'
-                : 'All available repositories have been configured'
-              }
-            </Text>
-          ) : (
-            <>
-              <select
-                value={selectedRepo}
-                onChange={(e) => setSelectedRepo(e.target.value)}
-                disabled={disabled}
-                style={{
-                  padding: '8px 12px',
-                  borderRadius: '6px',
-                  border: '1px solid #e2e8f0',
-                  backgroundColor: 'white'
-                }}
-              >
-                <option value="">Select a repository</option>
-                {getAvailableReposForSelection().map((repo) => (
-                  <option key={repo.full_name} value={repo.full_name}>
-                    {repo.full_name} ({repo.private ? 'Private' : 'Public'})
-                  </option>
-                ))}
-              </select>
+        {/* Loading state */}
+        {isLoadingRepos ? (
+          <Center py={8}>
+            <VStack gap={3}>
+              <Spinner size="lg" color="blue.500" />
+              <Text opacity={0.7}>Loading repositories...</Text>
+            </VStack>
+          </Center>
+        ) : (
+          <VStack gap={4}>
+            {/* Add Repository Section */}
+            <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.muted" width="100%">
+              <VStack gap={4}>
+                <HStack gap={4} width="100%" align="end">
+                  {/* Repository Combobox */}
+                  <Box flex={1}>
+                    <Text mb={2} fontWeight="medium">Repository</Text>
+                    <Combobox.Root
+                      collection={createListCollection({
+                        items: filteredRepos.map(r => ({ label: r.name, value: r.full_name }))
+                      })}
+                      value={[selectedRepo]}
+                      onValueChange={(e) => {
+                        setSelectedRepo(e.value?.[0] || '');
+                        if (selectedRepo !== e.value?.[0]) {
+                          setSelectedBranch('');
+                          setBranchSearchValue('');
+                        }
+                      }}
+                      inputValue={repoSearchValue}
+                      onInputValueChange={(e) => setRepoSearchValue(e.inputValue)}
+                      openOnClick
+                      disabled={isLoadingRepos || disabled || isSaving}
+                    >
+                      <Combobox.Control position="relative">
+                        <Combobox.Input
+                          placeholder={isLoadingRepos ? "Loading repositories..." : "Select or search repository"}
+                          paddingRight="2rem"
+                        />
+                        <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
+                          <FaChevronDown size={16} />
+                        </Combobox.Trigger>
+                      </Combobox.Control>
+                      <Combobox.Positioner>
+                        <Combobox.Content>
+                          {isLoadingRepos ? (
+                            <Box p={2} textAlign="center" opacity={0.7}>
+                              Loading repositories...
+                            </Box>
+                          ) : filteredRepos.length === 0 ? (
+                            <Box p={2} textAlign="center" opacity={0.7}>
+                              {availableForSelection.length === 0
+                                ? 'All repositories configured or none available'
+                                : 'No matching repositories'}
+                            </Box>
+                          ) : (
+                            filteredRepos.map(repo => (
+                              <Combobox.Item key={repo.full_name} item={repo.full_name}>
+                                <Combobox.ItemText>{repo.name}</Combobox.ItemText>
+                                <Combobox.ItemIndicator />
+                              </Combobox.Item>
+                            ))
+                          )}
+                        </Combobox.Content>
+                      </Combobox.Positioner>
+                    </Combobox.Root>
+                  </Box>
+                  
+                  {/* Branch Combobox - only show when repo is selected */}
+                  {selectedRepo && (
+                    <Box flex={1}>
+                      <Text mb={2} fontWeight="medium">Branch</Text>
+                      <Combobox.Root
+                        collection={createListCollection({
+                          items: filteredBranches.map(b => ({ label: b, value: b }))
+                        })}
+                        value={[selectedBranch]}
+                        onValueChange={(e) => setSelectedBranch(e.value?.[0] || '')}
+                        inputValue={branchSearchValue}
+                        onInputValueChange={(e) => setBranchSearchValue(e.inputValue)}
+                        openOnClick
+                        disabled={isSaving}
+                      >
+                        <Combobox.Control position="relative">
+                          <Combobox.Input
+                            placeholder="Select or search branch"
+                            paddingRight="2rem"
+                          />
+                          <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
+                            <FaChevronDown size={16} />
+                          </Combobox.Trigger>
+                        </Combobox.Control>
+                        <Combobox.Positioner>
+                          <Combobox.Content>
+                            {filteredBranches.length === 0 ? (
+                              <Box p={2} textAlign="center" opacity={0.7}>
+                                No branches available
+                              </Box>
+                            ) : (
+                              filteredBranches.map(branch => (
+                                <Combobox.Item key={branch} item={branch}>
+                                  <Combobox.ItemText>{branch}</Combobox.ItemText>
+                                  <Combobox.ItemIndicator />
+                                </Combobox.Item>
+                              ))
+                            )}
+                          </Combobox.Content>
+                        </Combobox.Positioner>
+                      </Combobox.Root>
+                    </Box>
+                  )}
 
-              <Button
-                onClick={handleAddRepoConfig}
-                disabled={disabled || !selectedRepo}
-                colorScheme="blue"
-              >
-                <LuPlus style={{ marginRight: '8px' }} />
-                Add Repository
-              </Button>
-            </>
-          )}
-        </VStack>
+                  <Button
+                    onClick={handleAddRepoConfig}
+                    disabled={!selectedRepo || !selectedBranch || disabled || isSaving}
+                    alignSelf="end"
+                  >
+                    Add Repository
+                  </Button>
+                </HStack>
+              </VStack>
+            </Box>
+            
+            {/* Configured Repositories */}
+            {(config.repo_configs && config.repo_configs.length > 0) && (
+              <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.muted" width="100%">
+                <Text fontWeight="bold" mb={4}>Selected Repositories</Text>
+                <VStack gap={2}>
+                  {config.repo_configs.map((repoConfig, index) => {
+                    const repo = availableRepos.find(r => r.full_name === repoConfig.repo_name);
+                    return (
+                      <HStack key={index} justify="space-between" width="100%" p={2} bg="bg.subtle" borderRadius="md">
+                        <Text fontSize="sm" fontWeight="400">
+                          {repo?.name || repoConfig.repo_name} ({repoConfig.base_branch})
+                        </Text>
+                        <Button
+                          size="sm"
+                          onClick={() => handleRemoveRepoConfig(index)}
+                          disabled={disabled || isLoadingRepos || isSaving}
+                        >
+                          Remove
+                        </Button>
+                      </HStack>
+                    );
+                  })}
+                </VStack>
+              </Box>
+            )}
+          </VStack>
+        )}
       </VStack>
     </Box>
   );
