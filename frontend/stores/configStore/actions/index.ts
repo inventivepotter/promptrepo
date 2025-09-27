@@ -21,6 +21,7 @@ import { createRepoFormActions } from './repoFormActions';
 import { createLLMFormActions } from './llmFormActions';
 import { createSetLLMProviderWithSideEffectsAction } from './setLLMProviderWithSideEffects';
 import { createFetchModelsIfReadyAction } from './fetchModelsIfReady';
+import { createInitializeConfigAction } from './initializeConfig';
 import type { StateCreator } from '@/lib/zustand';
 import type { ConfigStore, ConfigActions } from '../types';
 
@@ -30,6 +31,7 @@ export const createConfigActions: StateCreator<ConfigStore, [], [], ConfigAction
   ...createGetConfigAction(set, get, api),
   ...createUpdateConfigAction(set, get, api),
   ...createGetHostingTypeAction(set, get, api),
+  ...createInitializeConfigAction(set, get, api),
   ...createLoadProvidersAction(set, get, api),
   ...createLoadReposAction(set, get, api),
 

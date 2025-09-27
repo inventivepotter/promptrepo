@@ -50,6 +50,7 @@ export interface ConfigActions {
   getConfig: () => Promise<void>;
   updateConfig: (config: AppConfigInput) => Promise<void>;
   getHostingType: () => Promise<void>;
+  initializeConfig: (autoLoad?: boolean) => Promise<void>;
   
   // LLM Config actions
   addLLMConfig: (config: LLMConfig) => void;

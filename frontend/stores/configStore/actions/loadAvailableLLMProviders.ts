@@ -22,12 +22,19 @@ export const createLoadProvidersAction: StateCreator<
       try {
         // Check if we already have providers data (from localStorage hydration)
         const currentState = get();
-        if (currentState.availableLLMProviders && currentState.availableLLMProviders.length > 0) {
+        const hasValidProviders = currentState.availableLLMProviders &&
+          currentState.availableLLMProviders.length > 0 &&
+          // Check if the providers have actual data, not just empty objects
+          currentState.availableLLMProviders.some(provider => provider.name && provider.name !== '');
+          
+        if (hasValidProviders) {
           // We have valid providers data, no need to call API
           logStoreAction('ConfigStore', 'loadAvailableLLMProviders/skip - data from localStorage');
           return;
         }
 
+        // If we get here, we don't have valid providers data in localStorage, so fetch from API
+        logStoreAction('ConfigStore', 'loadAvailableLLMProviders/fetching from API - no data in localStorage');
         const providersResponse = await LLMProviderService.getAvailableProviders();
         
         set((draft) => {

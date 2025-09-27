@@ -13,7 +13,7 @@ import {
 import { FaChevronDown } from 'react-icons/fa';
 import { useEffect } from 'react';
 import type { components } from '@/types/generated/api';
-import { useConfig, useConfigActions, useAvailableProviders, useLLMFormState, useLLMFormUIState } from '@/stores/configStore';
+import { useConfig, useConfigActions, useAvailableProviders, useLLMFormState, useLLMFormUIState, useConfigStore } from '@/stores/configStore';
 import { useLoadingStore } from '@/stores/loadingStore';
 
 type LLMConfig = components['schemas']['LLMConfig'];
@@ -119,17 +119,14 @@ export default function LLMConfigManager({
   const handleRemoveConfig = async (index: number) => {
     showLoading('Removing Configuration', 'Removing LLM configuration...');
     
-    const providerToRemove = llmConfigs[index]?.provider;
+    // removeLLMConfig already updates the state correctly.
+    // We just need to call updateConfig to persist the current state.
     removeLLMConfig(index);
     
-    // Update config to persist to backend
-    const updatedConfig = {
-      ...config,
-      llm_configs: config.llm_configs?.filter(c => c.provider !== providerToRemove) || []
-    };
-    
     try {
-      await updateConfig(updatedConfig);
+      // Get the latest state directly from the store after the removal
+      const currentState = useConfigStore.getState().config;
+      await updateConfig(currentState);
     } catch (error) {
       console.error('Error removing configuration:', error);
     } finally {

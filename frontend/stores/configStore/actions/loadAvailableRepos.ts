@@ -22,12 +22,19 @@ export const createLoadReposAction: StateCreator<
       try {
         // Check if we already have repos data (from localStorage hydration)
         const currentState = get();
-        if (currentState.availableRepos && currentState.availableRepos.length > 0) {
+        const hasValidRepos = currentState.availableRepos &&
+          currentState.availableRepos.length > 0 &&
+          // Check if the repos have actual data, not just empty objects
+          currentState.availableRepos.some(repo => repo.name && repo.name !== '' && repo.owner && repo.owner !== '');
+          
+        if (hasValidRepos) {
           // We have valid repos data, no need to call API
           logStoreAction('ConfigStore', 'loadAvailableRepos/skip - data from localStorage');
           return;
         }
 
+        // If we get here, we don't have valid repos data in localStorage, so fetch from API
+        logStoreAction('ConfigStore', 'loadAvailableRepos/fetching from API - no data in localStorage');
         const reposResponse = await ReposService.getAvailableRepos();
         
         set((draft) => {

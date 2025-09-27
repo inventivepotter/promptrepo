@@ -22,15 +22,20 @@ export const createGetConfigAction: StateCreator<
       try {
         // Check if we already have config data (from localStorage hydration)
         const currentState = get();
-        if (currentState.config &&
-            currentState.config.hosting_config &&
-            currentState.config.llm_configs !== undefined &&
-            currentState.config.repo_configs !== undefined) {
+        const hasValidConfig = currentState.config &&
+          currentState.config.hosting_config &&
+          currentState.config.hosting_config.type !== 'individual' && // Check if it's not just the default value
+          currentState.config.llm_configs !== undefined &&
+          currentState.config.repo_configs !== undefined;
+          
+        if (hasValidConfig) {
           // We have valid config data, no need to call API
           logStoreAction('ConfigStore', 'getConfig/skip - data from localStorage');
           return;
         }
 
+        // If we get here, we don't have valid config data in localStorage, so fetch from API
+        logStoreAction('ConfigStore', 'getConfig/fetching from API - no data in localStorage');
         const config = await ConfigService.getConfig();
         
         set((draft) => {

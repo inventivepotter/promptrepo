@@ -22,12 +22,18 @@ export const createGetHostingTypeAction: StateCreator<
       try {
         // Check if we already have hostingType data (from localStorage hydration)
         const currentState = get();
-        if (currentState.hostingType !== null && currentState.hostingType !== undefined) {
+        const hasValidHostingType = currentState.hostingType !== null &&
+          currentState.hostingType !== undefined &&
+          currentState.hostingType !== ''; // Check if it's not an empty string
+          
+        if (hasValidHostingType) {
           // We have valid hostingType data, no need to call API
           logStoreAction('ConfigStore', 'getHostingType/skip - data from localStorage');
           return;
         }
 
+        // If we get here, we don't have valid hostingType data in localStorage, so fetch from API
+        logStoreAction('ConfigStore', 'getHostingType/fetching from API - no data in localStorage');
         const hostingType = await ConfigService.getHostingType();
         
         set((draft) => {
