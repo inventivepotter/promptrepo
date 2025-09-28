@@ -157,7 +157,7 @@ const HomePage = () => {
                 <Text
                   fontSize={{ base: "4xl", md: "5xl", lg: "6xl" }}
                   fontWeight="bold"
-                  color="fg.muted"
+                  color={{ _light: "primary.600", _dark: "primary.300" }}
                   lineHeight="1.1"
                 >
                   Craft Better Prompts

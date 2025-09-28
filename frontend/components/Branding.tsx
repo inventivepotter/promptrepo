@@ -51,7 +51,7 @@ export const Branding = ({ collapsed = false, fontSize, ...props }: BrandingProp
           color="fg.muted"
           fontSize={finalFontSize}
           letterSpacing="tight"
-          fontWeight="1000" 
+          fontWeight="1000"
           {...props}
         >
           &nbsp;Repo

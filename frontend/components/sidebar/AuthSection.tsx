@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useIsAuthenticated, useAuthActions } from '@/stores/authStore';
 import { useHostingType, useConfigStore } from '@/stores/configStore';
 import { ConfigService } from '@/services/config/configService';
@@ -22,7 +23,9 @@ export const AuthSection = (props: AuthSectionProps) => {
   const config = useConfigStore((state) => state.config);
 
   // Initialize auth state when component mounts
-  initializeAuth();
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
 
   // Check if GitHub OAuth provider is configured
   const hasGitHubOAuth = config?.oauth_configs?.some(

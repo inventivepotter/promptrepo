@@ -11,7 +11,7 @@ interface SidebarToggleProps {
 
 export const SidebarToggle = ({
   hoverBg,
-  activeBg 
+  activeBg
 }: SidebarToggleProps) => {
   const isCollapsed = useSidebarCollapsed();
   const { toggleCollapsed } = useSidebarActions();
@@ -39,7 +39,7 @@ export const SidebarToggle = ({
       )}
       {!isCollapsed && (
         <span style={{ marginLeft: 12, fontSize: 14, fontWeight: 500 }}>
-          Collapse sidebar
+          Collapse
         </span>
       )}
     </Button>

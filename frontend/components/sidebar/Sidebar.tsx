@@ -12,7 +12,7 @@ import {
   LuSettings,
   LuFileText,
 } from 'react-icons/lu'
-import { useSidebarCollapsed } from '@/stores/sidebarStore'
+import { useSidebarCollapsed, useSidebarHasHydrated } from '@/stores/sidebarStore'
 import { Branding } from '../Branding'
 import { AuthSection } from './AuthSection'
 import { ThemeToggle } from './ThemeToggle'
@@ -23,15 +23,20 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
-  // Sidebar state from store (auto-initializes)
-  const isCollapsed = useSidebarCollapsed()
+  const hasHydrated = useSidebarHasHydrated();
+  const isCollapsed = useSidebarCollapsed();
+
+  // Show placeholder with correct width while hydrating
+  if (!hasHydrated) {
+    return
+  }
 
   // Theme-aware semantic colors
   const hoverBg = "bg.emphasized"
   const activeBg = "bg.emphasized"
   const userProfileBg = "bg.emphasized"
 
-  const sidebarWidth = isCollapsed ? '60px' : '240px'
+  const sidebarWidth = isCollapsed ? '60px' : '180px'
 
   return (
     <Box

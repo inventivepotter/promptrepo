@@ -36,7 +36,7 @@ export const LoginButton = ({
       <LuGithub size={16} />
       {!isCollapsed && (
         <span style={{ marginLeft: 12, fontSize: 14, fontWeight: 500 }}>
-          Login with GitHub
+          GitHub Login
         </span>
       )}
     </Button>

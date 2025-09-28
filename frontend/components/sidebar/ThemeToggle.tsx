@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@chakra-ui/react';
+import { Button, ClientOnly, Skeleton } from '@chakra-ui/react';
 import { LuMoon, LuSun } from 'react-icons/lu';
 import { useColorMode } from '../ui/color-mode';
 
@@ -33,15 +33,19 @@ export const ThemeToggle = ({
       transition="all 0.15s ease"
       onClick={toggleColorMode}
     >
-      {colorMode === 'dark' ? (
-        <LuSun size={16} />
-      ) : (
-        <LuMoon size={16} />
-      )}
+      <ClientOnly fallback={<Skeleton boxSize="4" />}>
+        {colorMode === 'dark' ? (
+          <LuSun size={16} />
+        ) : (
+          <LuMoon size={16} />
+        )}
+      </ClientOnly>
       {!isCollapsed && (
-        <span style={{ marginLeft: 12, fontSize: 14, fontWeight: 500 }}>
-          {colorMode === 'dark' ? 'Light mode' : 'Dark mode'}
-        </span>
+        <ClientOnly fallback={<Skeleton height="20px" width="80px" />}>
+          <span style={{ marginLeft: 12, fontSize: 14, fontWeight: 500 }}>
+            {colorMode === 'dark' ? 'Light mode' : 'Dark mode'}
+          </span>
+        </ClientOnly>
       )}
     </Button>
   );
