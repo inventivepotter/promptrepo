@@ -4,48 +4,48 @@ import React from 'react';
 import {
   Box,
   Text,
+  VStack,
   HStack,
 } from '@chakra-ui/react';
 
-interface UnauthorizedScreenProps {
-  title?: string;
-  message?: string;
-  showLoginButton?: boolean;
-}
-
-export function UnauthorizedScreen({
-}: UnauthorizedScreenProps) {
+export function UnauthorizedScreen() {
 
   return (
-    <Box
-      minH="100vh"
-      display="flex"
-      alignItems="center"
-      justifyContent="center"
-    >
-      <HStack gap={6} textAlign="center" maxW="400px" px={4}>
-        {/* Large error code */}
-        <Text
-          fontSize="2xl"
-          fontWeight={600}
-          lineHeight="1"
-        >
-          401
-        </Text>
-        
-        {/* Divider line */}
-        <Box
-          width="1px"
-          height="50px"
-          bg="gray.300"
-          _dark={{ bg: "gray.600" }}
-          display={{ base: "none", md: "block" }}
-        />
-        
-          <Text fontSize="sm">
-            Unauthorized access.
+      <Box
+        minH="100vh"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+      >
+        <HStack gap={6} textAlign="center" maxW="400px" px={4}>
+          {/* Large error code */}
+          <Text
+            fontSize="2xl"
+            fontWeight={600}
+            lineHeight="1"
+          >
+            401
           </Text>
-      </HStack>
-    </Box>
+          
+          <Box
+            width="1px"
+            height="50px"
+            bg="gray.300"
+            _dark={{ bg: "gray.600" }}
+          />
+          
+          <VStack
+            align={"start"}
+          >
+            <Text fontSize="sm" fontWeight={500}>
+              Unauthorized access.
+            </Text>
+
+            <Text fontSize="xs">
+              Please log in to access this page.
+            </Text>
+          </VStack>
+        </HStack>
+      </Box>
   );
 }

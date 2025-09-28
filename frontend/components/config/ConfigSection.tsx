@@ -20,7 +20,7 @@ export const ConfigSection = ({
   // Initialize config data when component mounts
   useEffect(() => {
     if (autoLoad) {
-      initializeConfig();
+      initializeConfig(true, true);
     }
   }, [autoLoad, initializeConfig]);
 

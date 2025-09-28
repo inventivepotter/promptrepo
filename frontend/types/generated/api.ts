@@ -233,7 +233,7 @@ export interface paths {
         };
         /**
          * Get configuration
-         * @description Retrieve current application configuration
+         * @description Retrieve current application configuration. Returns public config when unauthenticated.
          */
         get: operations["get_config_api_v0_config__get"];
         put?: never;
@@ -246,26 +246,6 @@ export interface paths {
          * @description Update application configuration including LLM and repository configurations (partial update).
          */
         patch: operations["update_config_api_v0_config__patch"];
-        trace?: never;
-    };
-    "/api/v0/config/hosting-type": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get hosting type
-         * @description Get current hosting type without authentication (publicly accessible)
-         */
-        get: operations["get_hosting_type_api_v0_config_hosting_type_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/api/v0/llm/chat/providers/configured": {
@@ -477,7 +457,8 @@ export interface components {
          * @description Main application configuration
          */
         "AppConfig-Input": {
-            hosting_config: components["schemas"]["HostingConfig"];
+            /** @description Hosting-specific configuration settings */
+            hosting_config?: components["schemas"]["HostingConfig"] | null;
             /**
              * Oauth Configs
              * @description List of OAuth provider configurations
@@ -499,7 +480,8 @@ export interface components {
          * @description Main application configuration
          */
         "AppConfig-Output": {
-            hosting_config: components["schemas"]["HostingConfig"];
+            /** @description Hosting-specific configuration settings */
+            hosting_config?: components["schemas"]["HostingConfig"] | null;
             /**
              * Oauth Configs
              * @description List of OAuth provider configurations
@@ -1215,44 +1197,6 @@ export interface components {
             status_code: number;
             /** @description Response payload */
             data?: components["schemas"]["ConfiguredReposResponse"] | null;
-            /**
-             * Message
-             * @description Human-readable message about the response
-             */
-            message?: string | null;
-            /** @description Response metadata */
-            meta?: components["schemas"]["ResponseMeta"];
-        };
-        /**
-         * StandardResponse[HostingConfig]
-         * @example {
-         *       "data": {
-         *         "id": 1,
-         *         "name": "Example"
-         *       },
-         *       "message": "Operation completed successfully",
-         *       "meta": {
-         *         "request_id": "req_123",
-         *         "timestamp": "2024-01-01T00:00:00Z",
-         *         "version": "1.0.0"
-         *       },
-         *       "status": "success"
-         *     }
-         */
-        StandardResponse_HostingConfig_: {
-            /**
-             * @description Response status indicator
-             * @default success
-             */
-            status: components["schemas"]["ResponseStatus"];
-            /**
-             * Status Code
-             * @description HTTP status code
-             * @default 200
-             */
-            status_code: number;
-            /** @description Response payload */
-            data?: components["schemas"]["HostingConfig"] | null;
             /**
              * Message
              * @description Human-readable message about the response
@@ -2272,41 +2216,6 @@ export interface operations {
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
                      *       "detail": "Failed to update configuration"
-                     *     } */
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    get_hosting_type_api_v0_config_hosting_type_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StandardResponse_HostingConfig_"];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /** @example {
-                     *       "status": "error",
-                     *       "type": "/errors/internal-server-error",
-                     *       "title": "Internal Server Error",
-                     *       "detail": "Failed to retrieve hosting type"
                      *     } */
                     "application/json": unknown;
                 };

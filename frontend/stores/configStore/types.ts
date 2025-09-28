@@ -15,7 +15,6 @@ export type BranchInfo = components['schemas']['BranchInfo'];
 export interface ConfigState {
   config: AppConfigOutput;
   error: string | null;
-  hostingType: string | null;
   availableLLMProviders: BasicProviderInfo[];
   availableRepos: RepoInfo[];
   
@@ -47,10 +46,10 @@ export interface ConfigState {
 
 export interface ConfigActions {
   // Public actions
-  getConfig: () => Promise<void>;
+  getConfig: (all?: boolean) => Promise<void>;
   updateConfig: (config: AppConfigInput) => Promise<void>;
-  getHostingType: () => Promise<void>;
-  initializeConfig: (autoLoad?: boolean) => Promise<void>;
+  initializeConfig: (autoLoad?: boolean, all?: boolean) => Promise<void>;
+  logout: () => void;
   
   // LLM Config actions
   addLLMConfig: (config: LLMConfig) => void;
@@ -91,7 +90,6 @@ export interface ConfigActions {
   // Internal actions
   setError: (error: string | null) => void;
   setConfig: (config: AppConfigOutput) => void;
-  setHostingType: (hostingType: string) => void;
   setAvailableProviders: (providers: BasicProviderInfo[]) => void;
   setAvailableRepos: (repos: RepoInfo[]) => void;
 

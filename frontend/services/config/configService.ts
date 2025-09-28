@@ -2,7 +2,6 @@ import ConfigApi from './api';
 import { errorNotification } from '@/lib/notifications';
 import { isStandardResponse, isErrorResponse } from '@/types/OpenApiResponse';
 import type { components } from '@/types/generated/api';
-import { globalCache } from '@/lib/cache';
 
 type AppConfigInput = components['schemas']['AppConfig-Input'];
 type AppConfigOutput = components['schemas']['AppConfig-Output'];
@@ -80,62 +79,6 @@ export class ConfigService {
     }
   }
 
-  /**
-   * Get the resolved hosting type string with caching and fallback logic.
-   * @returns Promise<string> - The hosting type (e.g., 'individual', 'organization')
-   */
-  static async getHostingType(): Promise<string> {
-    const cacheKey = 'hosting-type';
-    
-    // Return cached value if it exists
-    const cachedValue = globalCache.get<string>(cacheKey);
-    if (cachedValue) {
-      return cachedValue;
-    }
-
-    // Return existing promise if one is already in flight
-    const existingPromise = globalCache.getPromise<string>(cacheKey);
-    if (existingPromise) {
-      return existingPromise;
-    }
-
-    // Create new promise
-    const promise = ConfigService.fetchAndResolveHostingType();
-    globalCache.setPromise(cacheKey, promise);
-
-    try {
-      const type = await promise;
-      globalCache.set(cacheKey, type);
-      return type;
-    } catch (error) {
-      // Return cached value if available, otherwise default to individual
-      return cachedValue || 'individual';
-    }
-  }
-
-  private static async fetchAndResolveHostingType(): Promise<string> {
-    try {
-      const result = await ConfigApi.getHostingType();
-
-      // Handle error responses
-      if (isErrorResponse(result)) {
-        console.warn('Failed to fetch hosting type:', result.detail || result.title);
-        return 'individual';
-      }
-
-      
-      if (!isStandardResponse(result) || !result.data) {
-        console.warn('Failed to fetch hosting type, defaulting to individual:');
-        return 'individual';
-      }
-
-      return result.data.type || 'individual';
-    } catch (error) {
-      console.warn('Failed to fetch hosting type, defaulting to individual:', error);
-      return 'individual';
-    }
-  }
-
   static isIndividualHosting(hostingType?: string): boolean {
     return !hostingType || hostingType === 'individual';
   }
@@ -143,9 +86,5 @@ export class ConfigService {
 
   static shouldSkipAuth(hostingType?: string): boolean {
     return ConfigService.isIndividualHosting(hostingType);
-  }
-
-  static clearHostingTypeCache(): void {
-    globalCache.clear('hosting-type');
   }
 }

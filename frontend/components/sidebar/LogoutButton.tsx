@@ -6,16 +6,12 @@ import { useAuthActions } from '@/stores/authStore';
 
 interface LogoutButtonProps {
   isCollapsed?: boolean;
-  textColor?: string;
-  mutedTextColor?: string;
   hoverBg?: string;
   activeBg?: string;
 }
 
 export const LogoutButton = ({ 
   isCollapsed = false,
-  textColor,
-  mutedTextColor,
   hoverBg,
   activeBg 
 }: LogoutButtonProps) => {
@@ -37,9 +33,9 @@ export const LogoutButton = ({
       transition="all 0.15s ease"
       onClick={() => logout()}
     >
-      <LuLogOut size={16} color={mutedTextColor} />
+      <LuLogOut size={16} />
       {!isCollapsed && (
-        <span style={{ marginLeft: 12, fontSize: 14, color: textColor, fontWeight: 500 }}>
+        <span style={{ marginLeft: 12, fontSize: 14, fontWeight: 500 }}>
           Logout
         </span>
       )}

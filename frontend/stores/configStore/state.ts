@@ -3,14 +3,12 @@ import type { ConfigState } from './types';
 
 export const initialConfigState: ConfigState = {
   config: {
-    hosting_config: {
-      type: 'individual',
-    },
-    llm_configs: [],
-    repo_configs: [],
+    hosting_config: null,
+    oauth_configs: null,
+    llm_configs: null,
+    repo_configs: null,
   },
   error: null,
-  hostingType: null,
   availableLLMProviders: [],
   availableRepos: [],
   

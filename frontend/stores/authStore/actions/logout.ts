@@ -3,6 +3,7 @@ import type { StateCreator } from '@/lib/zustand';
 import type { AuthStore } from '../types';
 import { authService } from '@/services/auth/authService';
 import { logStoreAction } from '@/lib/zustand';
+import { useConfigStore } from '@/stores/configStore';
 
 export const createLogoutAction: StateCreator<
   AuthStore,
@@ -24,6 +25,9 @@ export const createLogoutAction: StateCreator<
       // Clear session storage
       sessionStorage.removeItem('auth-store');
       
+      // Clear config store
+      useConfigStore.getState().logout();
+
       // Reset state to initial values
       set((draft) => {
         draft.user = null;

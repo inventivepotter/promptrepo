@@ -1,7 +1,6 @@
 // Combined config store actions
 import { createGetConfigAction } from './getConfig';
 import { createUpdateConfigAction } from './updateConfig';
-import { createGetHostingTypeAction } from './getHostingType';
 import { createAddLLMConfigAction } from './addLLMConfig';
 import { createRemoveLLMConfigAction } from './removeLLMConfig';
 import { createLoadProvidersAction } from './loadAvailableLLMProviders';
@@ -11,7 +10,6 @@ import { createLoadReposAction } from './loadAvailableRepos';
 import { createUpdateConfiguredReposAction } from './updateConfiguredRepos';
 import { createSetErrorAction } from './setError';
 import { createSetConfigAction } from './setConfig';
-import { createSetHostingTypeAction } from './setHostingType';
 import { createSetAvailableProvidersAction } from './setAvailableProviders';
 import { createSetAvailableReposAction } from './setAvailableRepos';
 import { createGetModelsAction } from './getModels';
@@ -22,6 +20,7 @@ import { createLLMFormActions } from './llmFormActions';
 import { createSetLLMProviderWithSideEffectsAction } from './setLLMProviderWithSideEffects';
 import { createFetchModelsIfReadyAction } from './fetchModelsIfReady';
 import { createInitializeConfigAction } from './initializeConfig';
+import { createLogoutAction } from './logout';
 import type { StateCreator } from '@/lib/zustand';
 import type { ConfigStore, ConfigActions } from '../types';
 
@@ -30,8 +29,8 @@ export const createConfigActions: StateCreator<ConfigStore, [], [], ConfigAction
   // Public actions
   ...createGetConfigAction(set, get, api),
   ...createUpdateConfigAction(set, get, api),
-  ...createGetHostingTypeAction(set, get, api),
   ...createInitializeConfigAction(set, get, api),
+  ...createLogoutAction(set, get, api),
   ...createLoadProvidersAction(set, get, api),
   ...createLoadReposAction(set, get, api),
 
@@ -60,7 +59,6 @@ export const createConfigActions: StateCreator<ConfigStore, [], [], ConfigAction
   // Internal actions
   ...createSetErrorAction(set, get, api),
   ...createSetConfigAction(set, get, api),
-  ...createSetHostingTypeAction(set, get, api),
   ...createSetAvailableProvidersAction(set, get, api),
   ...createSetAvailableReposAction(set, get, api),
 });

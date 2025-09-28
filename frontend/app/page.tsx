@@ -5,39 +5,36 @@ import {
   useUser,
   useIsAuthenticated,
   useAuthLoading,
-  useAuthActions
+  useAuthActions,
 } from '@/stores/authStore';
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { PromptQuotes } from "@/components/home/PromptQuotes";
 import { Branding } from "@/components/Branding";
 import { ConfigService } from "@/services/config/configService";
+import { useConfigStore, useConfig } from '@/stores/configStore';
+
+// Initialize stores on module load
+// This ensures data is loaded from localStorage or API once
+const initApp = () => {
+  const { initializeConfig } = useConfigStore.getState();
+  
+  // Only fetch config if it's not already loaded
+  // The store will be hydrated from localStorage automatically by zustand persist
+  initializeConfig(true, false);
+
+};
+
+// Run initialization once when the module loads
+if (typeof window !== 'undefined') {
+  initApp();
+}
 
 const AuthButton = () => {
   const isAuthenticated = useIsAuthenticated();
   const isLoading = useAuthLoading();
   const user = useUser();
-  const { login, logout, initializeAuth } = useAuthActions();
-  const [hostingType, setHostingType] = useState<string>('');
-
-  useEffect(() => {
-    // Initialize authentication on component mount
-    initializeAuth();
-  }, [initializeAuth]);
-
-  useEffect(() => {
-    const loadHostingType = async () => {
-      try {
-        const type = await ConfigService.getHostingType();
-        setHostingType(type);
-      } catch (error) {
-        console.warn('Failed to load hosting type:', error);
-        setHostingType('individual');
-      }
-    };
-    
-    loadHostingType();
-  }, []);
+  const { login, logout } = useAuthActions();
+  const config = useConfig();
+  const hostingType = config?.hosting_config?.type;
 
   if (isLoading) {
     return (
@@ -52,12 +49,27 @@ const AuthButton = () => {
     return (
       <HStack gap={3}>
         <Box>
-          <Image
-            src={user.oauth_avatar_url || ''}
-            alt={user.oauth_name || ''}
-            borderRadius="full"
-            boxSize="32px"
-          />
+          {user.oauth_avatar_url ? (
+            <Image
+              src={user.oauth_avatar_url}
+              alt={user.oauth_name || ''}
+              borderRadius="full"
+              boxSize="32px"
+            />
+          ) : (
+            <Box
+              bg="gray.200"
+              borderRadius="full"
+              boxSize="32px"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <Text fontSize="sm" fontWeight="bold" color="gray.600">
+                {user.oauth_name?.[0]?.toUpperCase() || 'U'}
+              </Text>
+            </Box>
+          )}
         </Box>
         <VStack gap={0} alignItems="flex-start">
           <Text fontSize="sm" fontWeight="medium">{user.oauth_name}</Text>
@@ -71,7 +83,7 @@ const AuthButton = () => {
   }
 
   // Don't show GitHub login for individual hosting
-  if (ConfigService.shouldSkipAuth(hostingType)) {
+  if (ConfigService.shouldSkipAuth(hostingType || undefined)) {
     return null;
   }
 
@@ -83,19 +95,6 @@ const AuthButton = () => {
 };
 
 const HomePage = () => {
-  const isAuthenticated = useIsAuthenticated();
-  const isLoading = useAuthLoading();
-  const router = useRouter();
-
-
-  // useEffect(() => {
-  //   // Redirect authenticated users to prompts page
-  //   if (isAuthenticated && !isLoading) {
-  //     router.push('/prompts');
-  //   }
-  // }, [isAuthenticated, isLoading, router]);
-
-
   return (
     <>
       {/* Top Navigation Bar - Sticky */}
@@ -111,7 +110,7 @@ const HomePage = () => {
         mx="auto"
         py={8}
       >
-        <Branding color="gray.900" _dark={{ color: "gray.100" }} fontSize="3xl" />
+        <Branding fontSize="3xl" />
         <AuthButton />
       </Flex>
 
@@ -128,10 +127,9 @@ const HomePage = () => {
                 left="-60px"
                 transform="translateY(-50%)"
                 fontSize="200px"
-                color="gray.200"
-                _dark={{ color: "gray.800" }}
+                color="fg.muted"
                 zIndex={0}
-                opacity={0.9}
+                opacity={0.3}
                 pointerEvents="none"
                 fontWeight={100}
                 lineHeight="1"
@@ -145,10 +143,9 @@ const HomePage = () => {
                 right="-60px"
                 transform="translateY(-50%)"
                 fontSize="200px"
-                color="gray.200"
-                _dark={{ color: "gray.800" }}
+                color="fg.muted"
                 zIndex={0}
-                opacity={0.7}
+                opacity={0.3}
                 pointerEvents="none"
                 fontWeight={100}
                 lineHeight="1"
@@ -160,16 +157,15 @@ const HomePage = () => {
                 <Text
                   fontSize={{ base: "4xl", md: "5xl", lg: "6xl" }}
                   fontWeight="bold"
-                  color="gray.900"
-                  _dark={{ color: "gray.100" }}
+                  color="fg.muted"
                   lineHeight="1.1"
                 >
                   Craft Better Prompts
                 </Text>
                 <Text
                   fontSize={{ base: "lg", md: "xl" }}
-                  color="gray.600"
-                  _dark={{ color: "gray.400" }}
+                  color="fg.subtle"
+                  opacity={0.8}
                   maxW="2xl"
                   lineHeight="1.6"
                 >
@@ -189,14 +185,6 @@ const HomePage = () => {
               <Button
                 size="lg"
                 variant="solid"
-                bg="gray.900"
-                color="white"
-                _hover={{ bg: "gray.800" }}
-                _dark={{
-                  bg: "gray.100",
-                  color: "gray.900",
-                  _hover: { bg: "gray.200" }
-                }}
                 px={8}
                 py={6}
                 fontSize="md"
@@ -207,20 +195,6 @@ const HomePage = () => {
               <Button
                 size="lg"
                 variant="outline"
-                borderColor="gray.300"
-                color="gray.700"
-                _hover={{
-                  borderColor: "gray.400",
-                  bg: "gray.50"
-                }}
-                _dark={{
-                  borderColor: "gray.600",
-                  color: "gray.300",
-                  _hover: {
-                    borderColor: "gray.500",
-                    bg: "gray.800"
-                  }
-                }}
                 px={8}
                 py={6}
                 fontSize="md"

@@ -16,7 +16,6 @@ export const configPersistConfig = {
   partialize: (state: ConfigStore) => ({
     availableProviders: state.availableLLMProviders,
     availableRepos: state.availableRepos,
-    hostingType: state.hostingType,
     config: state.config,
   }),
   // Set to true if you want to manually hydrate

@@ -14,30 +14,49 @@ export const Branding = ({ collapsed = false, fontSize, ...props }: BrandingProp
   if (collapsed) {
     return (
       <Link href="/">
+        <HStack gap={0}>
         <Text
           fontSize={finalFontSize}
-          fontWeight="300"
-          letterSpacing="tight"
+          fontWeight="500"
+          color={{ _light: "primary.400", _dark: "primary.500" }} 
           {...props}
         >
-          {'{'}P<Text as="span" fontWeight="700">R</Text>{'}'}
+          {'{'}P{'}'}
         </Text>
+        <Text
+          fontWeight="1000"
+          fontSize={finalFontSize}
+          color="fg.muted"
+          >
+          R
+        </Text>
+        </HStack>
       </Link>
     )
   }
 
   return (
     <Link href="/">
-      <Text
-        fontSize={finalFontSize}
-        letterSpacing="tight"
-        {...props}
-      >
-        <HStack>
-          <Text color={{ _light: "{colors.primary.400}", _dark: "{colors.primary.500}" }} fontWeight="500">{'{'}Prompt{'}'}</Text>
-          <Text as="span" fontWeight="1000" color="fg.muted" ml="-1"> Repo</Text>
-        </HStack>
-      </Text>
+      <HStack gap={0}>
+        <Text 
+          color={{ _light: "primary.400", _dark: "primary.500" }} 
+          fontSize={finalFontSize}
+          letterSpacing="tight"
+          fontWeight="500"
+          {...props}
+        >
+          {'{'}Prompt{'}'}
+        </Text>
+        <Text 
+          color="fg.muted"
+          fontSize={finalFontSize}
+          letterSpacing="tight"
+          fontWeight="1000" 
+          {...props}
+        >
+          &nbsp;Repo
+        </Text>
+      </HStack>
     </Link>
   )
 }

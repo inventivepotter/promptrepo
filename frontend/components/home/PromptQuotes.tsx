@@ -119,22 +119,17 @@ export const PromptQuotes = () => {
     >
       <Text
         fontSize="xl"
-        color="gray.700"
         lineHeight="1.7"
+        color="fg.subtle"
         mb={4}
-        _dark={{
-          color: "gray.300"
-        }}
       >
         &ldquo;{renderTextWithStyledPrompts(quote.text)}&rdquo;
       </Text>
       <Text
         fontSize="sm"
-        color="gray.500"
         fontWeight="medium"
-        _dark={{
-          color: "gray.400"
-        }}
+        color="fg.emphasized"
+        opacity={0.4}
       >
         — {quote.author}
       </Text>

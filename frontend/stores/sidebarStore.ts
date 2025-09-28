@@ -5,7 +5,7 @@
 
 import { create } from 'zustand';
 import { persist, createLocalStorage } from '@/lib/zustand';
-import { ConfigService } from '@/services/config/configService';
+import { useConfigStore } from '@/stores/configStore';
 
 interface SidebarState {
   isCollapsed: boolean;
@@ -30,14 +30,23 @@ export const useSidebarStore = create<SidebarState>()(
       toggleCollapsed: () => set((state) => ({ isCollapsed: !state.isCollapsed })),
       setHostingType: (type) => set({ hostingType: type }),
       
-      // Initialize hosting type from server
+      // Initialize hosting type from configStore
       initializeHostingType: async () => {
         // Only initialize once
         if (get().hasInitialized) return;
         
         try {
-          const type = await ConfigService.getHostingType();
-          set({ hostingType: type, hasInitialized: true });
+          const configStore = useConfigStore.getState();
+          // First check if config already exists in configStore
+          let type = configStore.config?.hosting_config?.type;
+          
+          // Only call getConfig if it's not already loaded
+          if (!type) {
+            await configStore.getConfig();
+            type = configStore.config?.hosting_config?.type;
+          }
+          
+          set({ hostingType: type || 'individual', hasInitialized: true });
         } catch (error) {
           console.warn('Failed to load hosting type:', error);
           set({ hostingType: 'individual', hasInitialized: true });

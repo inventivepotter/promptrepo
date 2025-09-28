@@ -5,15 +5,11 @@ import { LuChevronLeft, LuChevronRight } from 'react-icons/lu';
 import { useSidebarCollapsed, useSidebarActions } from '@/stores/sidebarStore';
 
 interface SidebarToggleProps {
-  textColor?: string;
-  mutedTextColor?: string;
   hoverBg?: string;
   activeBg?: string;
 }
 
-export const SidebarToggle = ({ 
-  textColor,
-  mutedTextColor,
+export const SidebarToggle = ({
   hoverBg,
   activeBg 
 }: SidebarToggleProps) => {
@@ -37,12 +33,12 @@ export const SidebarToggle = ({
       onClick={toggleCollapsed}
     >
       {isCollapsed ? (
-        <LuChevronRight size={16} color={mutedTextColor} />
+        <LuChevronRight size={16} />
       ) : (
-        <LuChevronLeft size={16} color={mutedTextColor} />
+        <LuChevronLeft size={16} />
       )}
       {!isCollapsed && (
-        <span style={{ marginLeft: 12, fontSize: 14, color: textColor, fontWeight: 500 }}>
+        <span style={{ marginLeft: 12, fontSize: 14, fontWeight: 500 }}>
           Collapse sidebar
         </span>
       )}

@@ -5,7 +5,7 @@ import { useConfigStore } from './configStore';
 export const useConfig = () => useConfigStore((state) => state.config);
 
 // Hook for hosting type
-export const useHostingType = () => useConfigStore((state) => state.hostingType);
+export const useHostingType = () => useConfigStore((state) => state.config.hosting_config?.type ?? null);
 
 // Hook for available providers
 export const useAvailableProviders = () => useConfigStore((state) => state.availableLLMProviders);
@@ -81,7 +81,6 @@ export const useConfigActions = () => {
   const {
     getConfig,
     updateConfig,
-    getHostingType,
     initializeConfig,
     addLLMConfig,
     removeLLMConfig,
@@ -116,7 +115,6 @@ export const useConfigActions = () => {
   return {
     getConfig,
     updateConfig,
-    getHostingType,
     initializeConfig,
     addLLMConfig,
     removeLLMConfig,
@@ -152,14 +150,12 @@ export const useConfigActions = () => {
 // Hook for complete config state
 export const useConfigState = () => {
   const config = useConfig();
-  const hostingType = useHostingType();
   const availableProviders = useAvailableProviders();
   const availableRepos = useAvailableRepos();
   const error = useConfigError();
 
   return {
     config,
-    hostingType,
     availableProviders,
     availableRepos,
     error,

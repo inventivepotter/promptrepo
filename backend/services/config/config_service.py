@@ -68,47 +68,50 @@ class ConfigService:
         """Get list of all supported hosting types."""
         return ConfigStrategyFactory.get_supported_types()
     
+    def get_configs_for_public_api(self) -> AppConfig:
+        hosting_config = self.get_hosting_config()
+        oauth_configs = None
+        if hosting_config.type == HostingType.ORGANIZATION:
+            raw_oauth_configs = self.get_oauth_configs()
+            if raw_oauth_configs:
+                oauth_configs = [OAuthConfig(provider=config.provider) for config in raw_oauth_configs]
+        
+        return AppConfig(
+            hosting_config=hosting_config,
+            oauth_configs=oauth_configs,  # Include OAuth configs in API response
+            llm_configs=None,
+            repo_configs=None
+        )
+    
     def get_configs_for_api(self, user_id: str) -> AppConfig:
         """
         Get configuration tailored for API response based on hosting type.
         This method applies business logic to determine which configs are relevant.
         Strips api_key and api_base_url from organization-scoped LLM configs.
         """
-        hosting_config = self.get_hosting_config()
-        hosting_type = hosting_config.type
+        configs = self.get_configs_for_public_api()
         
-        # Get LLM configs and sanitize organization-scoped configs
-        llm_configs = None
         raw_llm_configs = self.get_llm_configs(user_id)
         if raw_llm_configs:
-            llm_configs = []
+            configs.llm_configs = []
             for config in raw_llm_configs:
-                if config.scope == LLMConfigScope.ORGANIZATION:
-                    # Strip sensitive info from organization-scoped configs
-                    sanitized_config = LLMConfig(
-                        id=config.id,
-                        provider=config.provider,
-                        model=config.model,
-                        api_key="",  # Strip api_key
-                        api_base_url="",  # Strip api_base_url
-                        scope=config.scope
-                    )
-                    llm_configs.append(sanitized_config)
-                else:
-                    # Keep user-scoped configs as-is
-                    llm_configs.append(config)
+                # Strip sensitive info from oauth configs
+                sanitized_config = LLMConfig(
+                    id=config.id,
+                    provider=config.provider,
+                    model=config.model,
+                    api_key="",  # Strip api_key
+                    api_base_url="",  # Strip api_base_url
+                    scope=config.scope
+                )
+                configs.llm_configs.append(sanitized_config)
         
         # Apply business rules: individual hosting doesn't need repo configs
-        repo_configs = None
-        if hosting_type != HostingType.INDIVIDUAL:
-            repo_configs = self.get_repo_configs(user_id)
+        if configs.hosting_config and configs.hosting_config.type == HostingType.ORGANIZATION:
+            # Get repo configs
+            configs.repo_configs = self.get_repo_configs(user_id)
         
-        return AppConfig(
-            hosting_config=hosting_config,
-            oauth_configs=None,  # OAuth configs are not exposed in API response
-            llm_configs=llm_configs,
-            repo_configs=repo_configs
-        )
+        return configs
 
     def save_configs_for_api(self, user_id: str, llm_configs: List[LLMConfig] | None, repo_configs: List[RepoConfig] | None) -> AppConfig:
         """

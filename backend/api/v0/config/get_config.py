@@ -1,11 +1,12 @@
 """
 Get configuration endpoint with standardized responses.
+Handles both authenticated and unauthenticated requests.
 """
 import logging
 from fastapi import APIRouter, Request, status
 
 from services.config.models import AppConfig
-from api.deps import ConfigServiceDep, CurrentUserDep
+from api.deps import ConfigServiceDep, OptionalUserDep
 from middlewares.rest import (
     StandardResponse,
     success_response,
@@ -36,15 +37,16 @@ router = APIRouter()
         }
     },
     summary="Get configuration",
-    description="Retrieve current application configuration",
+    description="Retrieve current application configuration. Returns public config when unauthenticated.",
 )
 async def get_config(
     request: Request,
     config_service: ConfigServiceDep,
-    user_id: CurrentUserDep
+    user_id: OptionalUserDep
 ) -> StandardResponse[AppConfig]:
     """
     Get current application configuration.
+    Returns public configuration when unauthenticated, full configuration when authenticated.
     
     Returns:
         StandardResponse[AppConfig]: Standardized response containing the configuration
@@ -60,7 +62,13 @@ async def get_config(
             extra={"request_id": request_id, "user_id": user_id}
         )
         
-        config_data = config_service.get_configs_for_api(user_id=user_id)
+        # Return public config for unauthenticated users, full config for authenticated users
+        if user_id:
+            config_data = config_service.get_configs_for_api(user_id=user_id)
+            message = "Configuration retrieved successfully"
+        else:
+            config_data = config_service.get_configs_for_public_api()
+            message = "Public configuration retrieved successfully"
         
         logger.info(
             "Configuration retrieved successfully",
@@ -69,7 +77,7 @@ async def get_config(
         
         return success_response(
             data=config_data,
-            message="Configuration retrieved successfully",
+            message=message,
             meta={"request_id": request_id}
         )
         

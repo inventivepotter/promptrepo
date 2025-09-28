@@ -6,16 +6,12 @@ import { useUser } from '@/stores/authStore';
 
 interface UserProfileProps {
   isCollapsed?: boolean;
-  textColor?: string;
-  mutedTextColor?: string;
   userProfileBg?: string;
   borderColor?: string;
 }
 
 export const UserProfile = ({ 
   isCollapsed = false,
-  textColor,
-  mutedTextColor,
   userProfileBg,
   borderColor
 }: UserProfileProps) => {
@@ -25,33 +21,23 @@ export const UserProfile = ({
 
   if (isCollapsed) {
     return (
-      <Box
-        p={2}
-        bg={userProfileBg}
-        borderRadius="8px"
-        border="1px solid"
-        borderColor={borderColor}
-        mb={2}
-      >
-        <HStack justify="center">
-          <Box
-            width="32px"
-            height="32px"
-            borderRadius="full"
-            bg={mutedTextColor}
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            backgroundImage={user.oauth_avatar_url ? `url(${user.oauth_avatar_url})` : undefined}
-            backgroundSize="cover"
-            backgroundPosition="center"
-          >
-            {!user.oauth_avatar_url && (
-              <LuUser size={16} color="white" />
-            )}
-          </Box>
-        </HStack>
-      </Box>
+      <HStack justify="center">
+        <Box
+          width="32px"
+          height="32px"
+          borderRadius="full"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          backgroundImage={user.oauth_avatar_url ? `url(${user.oauth_avatar_url})` : undefined}
+          backgroundSize="cover"
+          backgroundPosition="center"
+        >
+          {!user.oauth_avatar_url && (
+            <LuUser size={16} color="white" />
+          )}
+        </Box>
+      </HStack>
     );
   }
 
@@ -59,7 +45,7 @@ export const UserProfile = ({
     <Box
       p={3}
       bg={userProfileBg}
-      borderRadius="8px"
+      borderRadius="2px"
       border="1px solid"
       borderColor={borderColor}
       mb={2}
@@ -70,7 +56,6 @@ export const UserProfile = ({
             width="32px"
             height="32px"
             borderRadius="full"
-            bg={mutedTextColor}
             display="flex"
             alignItems="center"
             justifyContent="center"
@@ -86,7 +71,6 @@ export const UserProfile = ({
             <Text
               fontSize="13px"
               fontWeight="600"
-              color={textColor}
               width="100%"
               overflow="hidden"
               textOverflow="ellipsis"
@@ -96,7 +80,6 @@ export const UserProfile = ({
             </Text>
             <Text
               fontSize="12px"
-              color={mutedTextColor}
               width="100%"
               overflow="hidden"
               textOverflow="ellipsis"
