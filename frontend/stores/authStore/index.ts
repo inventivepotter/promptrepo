@@ -47,6 +47,7 @@ export {
   useAuthState,
   useIsInitialized,
   useGithubCallbackStatus,
+  useShouldTriggerProtectedRouteEffect,
 } from './hooks';
 
 // Utilities

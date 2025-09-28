@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthState } from '@/stores/authStore/hooks';
+import { useAuthState, useShouldTriggerProtectedRouteEffect } from '@/stores/authStore/hooks';
 import { UnauthorizedScreen } from '@/components/UnauthorizedScreen';
 import { Box } from '@chakra-ui/react';
 import { toaster } from '@/components/ui/toaster';
@@ -19,21 +18,22 @@ export function ProtectedRoute({
   showUnauthorizedScreen = true,
 }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, isInitialized } = useAuthState();
+  const shouldTriggerEffect = useShouldTriggerProtectedRouteEffect();
   const router = useRouter();
 
-  useEffect(() => {
-    // Only redirect if auth is initialized, user is not authenticated, and we're not showing unauthorized screen
-    if (isInitialized && !isAuthenticated && !isLoading && !showUnauthorizedScreen) {
-      // Show toast notification before redirecting
-      toaster.create({
-        title: "Authentication Required",
-        description: "Please log in to access this page.",
-        type: "warning",
-        duration: 5000,
-      });
-      router.push(redirectTo);
-    }
-  }, [isAuthenticated, isLoading, isInitialized, router, redirectTo, showUnauthorizedScreen]);
+
+  // Only redirect if the effect should trigger and we're not showing unauthorized screen
+  if (shouldTriggerEffect && !showUnauthorizedScreen) {
+    // Show toast notification before redirecting
+    toaster.create({
+      title: "Authentication Required",
+      description: "Please log in to access this page.",
+      type: "warning",
+      duration: 5000,
+    });
+    router.push(redirectTo);
+  }
+
 
   // Show loading spinner while checking authentication
   if (!isInitialized || isLoading) {
@@ -56,7 +56,7 @@ export function ProtectedRoute({
         <UnauthorizedScreen />
       );
     }
-    return null; // Will redirect due to the useEffect
+    return null;
   }
 
   // User is authenticated, render the protected content

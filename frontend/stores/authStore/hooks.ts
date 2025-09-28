@@ -61,3 +61,10 @@ export const useGithubCallbackStatus = () => {
     }))
   );
 };
+
+// Hook for determining if the protected route effect should trigger
+export const useShouldTriggerProtectedRouteEffect = () => {
+  return useAuthStore(
+    (state) => state.isInitialized && !state.isAuthenticated && !state.isLoading
+  );
+};
