@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Text, TextProps } from "@chakra-ui/react"
+import { HStack, Text, TextProps } from "@chakra-ui/react"
 
 interface BrandingProps extends Omit<TextProps, 'children'> {
   collapsed?: boolean
@@ -30,11 +30,13 @@ export const Branding = ({ collapsed = false, fontSize, ...props }: BrandingProp
     <Link href="/">
       <Text
         fontSize={finalFontSize}
-        fontWeight="300"
         letterSpacing="tight"
         {...props}
       >
-        {'{'}Prompt{'}'}<Text as="span" fontWeight="700"> Repo</Text>
+        <HStack>
+          <Text color={{ _light: "{colors.primary.400}", _dark: "{colors.primary.500}" }} fontWeight="500">{'{'}Prompt{'}'}</Text>
+          <Text as="span" fontWeight="1000" color="fg.muted" ml="-1"> Repo</Text>
+        </HStack>
       </Text>
     </Link>
   )

@@ -12,12 +12,17 @@ export interface AuthState {
   isLoading: boolean;
   error: string | null;
   promptrepoRedirectUrl: string;
+  githubCallbackProcessed: boolean;
+  isInitialized: boolean;
+  isInitializing: boolean;
 }
 
 export interface AuthActions {
   login: (customRedirectUrl?: string) => void; // Initial GitHub OAuth redirect
   logout: () => Promise<void>;
   oauthCallbackGithub: (code: string, stateParam?: string) => Promise<void>; // Handle GitHub OAuth callback
+  processGithubCallback: (searchParams: URLSearchParams) => Promise<void>; // Process GitHub callback with search params and redirect
+  handleGithubCallback: () => Promise<void>; // Handle GitHub callback by getting search params from current URL
   refreshSession: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
   initializeAuth: () => Promise<void>;

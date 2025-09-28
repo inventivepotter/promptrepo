@@ -7,4 +7,7 @@ export const initialAuthState: AuthState = {
   isLoading: false,
   error: null,
   promptrepoRedirectUrl: '/',
+  githubCallbackProcessed: false,
+  isInitialized: false,
+  isInitializing: false,
 };

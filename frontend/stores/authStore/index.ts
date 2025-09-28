@@ -45,6 +45,8 @@ export {
   useAuthError,
   useAuthActions,
   useAuthState,
+  useIsInitialized,
+  useGithubCallbackStatus,
 } from './hooks';
 
 // Utilities
