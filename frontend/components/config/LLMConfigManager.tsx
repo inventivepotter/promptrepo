@@ -10,6 +10,7 @@ import {
   createListCollection,
   HStack,
   Field,
+  Card,
 } from '@chakra-ui/react'
 import { FaChevronDown } from 'react-icons/fa';
 import { useEffect } from 'react';
@@ -48,7 +49,7 @@ export default function LLMConfigManager({
   const { isLoading, showLoading, hideLoading } = useLoadingStore();
   
   const llmConfigs = config.llm_configs || [];
-
+  const borderColor = "border.elevated";
   // Find the current provider to check if it requires custom API base
   const currentProvider = availableProviders.find(p => p.id === llmProvider);
   const requiresApiBase = currentProvider?.custom_api_base || false;
@@ -136,14 +137,32 @@ export default function LLMConfigManager({
   };
 
   return (
-    <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.emphasized">
-      <VStack gap={6} align="stretch">
-        <Text fontSize="lg" fontWeight="bold">LLM Provider Configuration</Text>
-        <Text fontSize="sm" opacity={0.7} mb={2}>
-          Setup your AI provider and API key first, then select from available models.
-        </Text>
+    <Card.Root
+      bg={{ _light: 'primary.100', _dark: 'primary.900' }}
+      borderWidth="1px"
+      borderColor={borderColor}
+      overflow="hidden"
+      position="relative"
+      transition="all 0.3s"
+      _hover={{
+        transform: 'translateY(-4px)',
+        shadow: 'xl',
+        borderColor: 'primary.400'
+      }}
+    >
+      <Card.Body p={8}>
+        <VStack gap={6} align="stretch">
+          <Text fontSize="lg" fontWeight="bold">LLM Provider Configuration</Text>
+          <Text fontSize="sm" opacity={0.7} mb={2}>
+            Setup your AI provider and API key first, then select from available models.
+          </Text>
         {/* Add new LLM configuration */}
-        <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.muted">
+        <Card.Root
+          bg="transparent"
+          borderWidth="1px"
+          borderColor={borderColor}
+        >
+          <Card.Body p={8}>
           <VStack gap={4} width="100%">
             {/* Step 1: Provider and API Key on same line */}
             <Box width="100%">
@@ -178,7 +197,7 @@ export default function LLMConfigManager({
                         </Combobox.Trigger>
                       </Combobox.IndicatorGroup>
                     </Combobox.Control>
-                    <Combobox.Positioner>
+                    <Combobox.Positioner style={{ zIndex: 40 }}>
                       <Combobox.Content>
                         {filteredProviders.map((provider: BasicProviderInfo) => (
                           <Combobox.Item key={provider.id} item={provider.id}>
@@ -236,11 +255,6 @@ export default function LLMConfigManager({
                     disabled={disabled || !llmProvider || !requiresApiBase}
                     width="100%"
                   />
-                  {requiresApiBase && (
-                    <Text fontSize="sm" opacity={0.7} mt={1}>
-                      Custom API endpoint for {currentProvider?.name}
-                    </Text>
-                    )}
                   </Field.Root>
                 </Box>
                 <Box flex={2.4}>
@@ -270,7 +284,7 @@ export default function LLMConfigManager({
                         </Combobox.Trigger>
                       </Combobox.IndicatorGroup>
                     </Combobox.Control>
-                    <Combobox.Positioner>
+                    <Combobox.Positioner style={{ zIndex: 40 }}>
                       <Combobox.Content>
                         {filteredModels.map((model: ModelInfo) => (
                           <Combobox.Item key={model.id} item={model.id}>
@@ -298,16 +312,22 @@ export default function LLMConfigManager({
               </HStack>
             </Box>
           </VStack>
-        </Box>
+          </Card.Body>
+        </Card.Root>
         {/* Display configured LLMs */}
         {llmConfigs.length > 0 && (
-          <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.muted">
+          <Card.Root
+            borderWidth="1px"
+            borderColor={borderColor}
+            bg="transparent"
+          >
+            <Card.Body p={8}>
             <Text fontWeight="bold" mb={4}>Configured LLM Providers</Text>
             <VStack gap={2}>
               {llmConfigs.map((config, index) => {
                 const isOrgScope = config.scope === 'organization';
                 return (
-                  <HStack key={index} justify="space-between" width="100%" p={2} bg="bg.subtle" borderRadius="md">
+                  <HStack key={index} justify="space-between" width="100%" p={2} bg={{ _light: "primary.50", _dark: "primary.950" }} borderRadius="md">
                     <Text fontSize="sm" fontWeight="400">
                       Provider: <Text as="span" fontWeight="bold">{config.provider}</Text> | Model: <Text as="span" fontWeight="bold">{config.model}</Text>
                       {!isOrgScope && config.api_base_url && (
@@ -328,9 +348,11 @@ export default function LLMConfigManager({
                 );
               })}
             </VStack>
-          </Box>
+            </Card.Body>
+          </Card.Root>
         )}
       </VStack>
-    </Box>
+      </Card.Body>
+    </Card.Root>
   )
 }

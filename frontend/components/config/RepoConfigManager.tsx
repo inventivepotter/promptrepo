@@ -9,9 +9,9 @@ import {
   Combobox,
   createListCollection,
   Field,
+  Card,
 } from '@chakra-ui/react';
 import { FaChevronDown } from 'react-icons/fa';
-import { useColorModeValue } from '@/components/ui/color-mode';
 import {
   useConfig,
   useAvailableRepos,
@@ -57,7 +57,8 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
   } = useRepoFormState();
 
   // Theme values - called at top level
-  const errorBg = useColorModeValue('red.50', 'red.900');
+  const borderColor = "border.elevated";
+  const errorBg = { _light: 'red.50', _dark: 'red.900' };
 
 
 
@@ -137,12 +138,25 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
   );
 
   return (
-    <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.emphasized">
-      <VStack gap={6} align="stretch">
-        <Text fontSize="lg" fontWeight="bold">Repository Configuration</Text>
-        <Box fontSize="sm" opacity={0.7}>
-          Configure repositories containing prompts to access them in the application.
-        </Box>
+    <Card.Root
+      bg={{ _light: 'primary.100', _dark: 'primary.900' }}
+      borderWidth="1px"
+      borderColor={borderColor}
+      overflow="hidden"
+      position="relative"
+      transition="all 0.3s"
+      _hover={{
+        transform: 'translateY(-4px)',
+        shadow: 'xl',
+        borderColor: 'primary.400'
+      }}
+    >
+      <Card.Body p={8}>
+        <VStack gap={6} align="stretch">
+          <Text fontSize="lg" fontWeight="bold">Repository Configuration</Text>
+          <Box fontSize="sm" opacity={0.7}>
+            Configure repositories containing prompts to access them in the application.
+          </Box>
 
         {/* Error display */}
         {error && (
@@ -166,8 +180,14 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
         {(
           <VStack gap={4}>
             {/* Add Repository Section */}
-            <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.muted" width="100%">
-              <VStack gap={4}>
+            <Card.Root
+              bg="transparent"
+              borderWidth="1px"
+              borderColor={borderColor}
+              width="100%"
+            >
+              <Card.Body p={8}>
+                <VStack gap={4}>
                 <HStack gap={4} width="100%" align="end">
                   {/* Repository Combobox */}
                   <Box flex={1}>
@@ -198,7 +218,7 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                           <FaChevronDown size={16} />
                         </Combobox.Trigger>
                       </Combobox.Control>
-                      <Combobox.Positioner>
+                      <Combobox.Positioner style={{ zIndex: 50 }}>
                         <Combobox.Content>
                           {filteredRepos.length === 0 ? (
                             <Box p={2} textAlign="center" opacity={0.7}>
@@ -251,7 +271,7 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                           <FaChevronDown size={16} />
                         </Combobox.Trigger>
                       </Combobox.Control>
-                      <Combobox.Positioner>
+                      <Combobox.Positioner style={{ zIndex: 50 }}>
                         <Combobox.Content>
                           {isLoadingBranches ? (
                             <Box p={2} textAlign="center" opacity={0.7}>
@@ -288,17 +308,24 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                   </Button>
                 </HStack>
               </VStack>
-            </Box>
+              </Card.Body>
+            </Card.Root>
             
             {/* Configured Repositories */}
             {(config.repo_configs && config.repo_configs.length > 0) && (
-              <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.muted" width="100%">
-                <Text fontWeight="bold" mb={4}>Selected Repositories</Text>
+              <Card.Root
+                borderWidth="1px"
+                borderColor={borderColor}
+                width="100%"
+            bg="transparent"
+              >
+                <Card.Body p={8}>
+                  <Text fontWeight="bold" mb={4}>Selected Repositories</Text>
                 <VStack gap={2}>
                   {config.repo_configs.map((repoConfig, index) => {
                     const repo = availableRepos.find(r => r.full_name === repoConfig.repo_name);
                     return (
-                      <HStack key={index} justify="space-between" width="100%" p={2} bg="bg.subtle" borderRadius="md">
+                      <HStack key={index} justify="space-between" width="100%" p={2} bg={{ _light: "primary.50", _dark: "primary.950" }} borderRadius="md">
                         <Text fontSize="sm" fontWeight="400">
                           {repo?.name || repoConfig.repo_name} ({repoConfig.base_branch})
                         </Text>
@@ -313,11 +340,13 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                     );
                   })}
                 </VStack>
-              </Box>
+              </Card.Body>
+            </Card.Root>
             )}
           </VStack>
         )}
       </VStack>
-    </Box>
+      </Card.Body>
+    </Card.Root>
   );
 };

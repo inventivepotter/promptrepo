@@ -26,7 +26,7 @@ export function ConfigHeader() {
           <HStack gap={4}>
             <VStack align="start" gap={1}>
               <Text fontSize="2xl" fontWeight="bold">
-                Setup{' '} 
+                Setup{' '}
                 <Text as="span" color="primary.500">
                   Registry
                 </Text>

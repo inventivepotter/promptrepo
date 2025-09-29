@@ -95,7 +95,7 @@ const config = defineConfig({
           600: { value: "#3F5F57" }, // medium
           700: { value: "#354F52" }, // secondary
           800: { value: "#2F3E46" }, // primary dark
-          900: { value: "#1E2A30" }, // primary dark
+          900: { value: "#12181C" }, // primary dark - closer to 950
           950: { value: "#0A0F13" }, // darker shade for accents - made even darker
         },
       },
