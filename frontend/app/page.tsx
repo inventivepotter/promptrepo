@@ -1,5 +1,7 @@
 'use client';
 
+import React from 'react';
+
 import {
   Button,
   HStack,
@@ -13,7 +15,9 @@ import {
   Heading,
   SimpleGrid,
   Card,
-  Icon
+  Icon,
+  Link as ChakraLink,
+  ScrollArea
 } from "@chakra-ui/react";
 import {
   useUser,
@@ -21,7 +25,6 @@ import {
   useAuthLoading,
   useAuthActions,
 } from '@/stores/authStore';
-import { PromptQuotes } from "@/components/home/PromptQuotes";
 import { Branding } from "@/components/Branding";
 import { ConfigService } from "@/services/config/configService";
 import { useConfigStore, useConfig } from '@/stores/configStore';
@@ -38,7 +41,13 @@ import {
   FaCogs,
   FaDatabase,
   FaExchangeAlt,
-  FaSlidersH
+  FaSlidersH,
+  FaGithub,
+  FaTwitter,
+  FaLinkedin,
+  FaEnvelope,
+  FaHeart,
+  FaCodeBranch
 } from 'react-icons/fa';
 import Link from 'next/link';
 
@@ -58,7 +67,8 @@ if (typeof window !== 'undefined') {
 }
 
 const MotionBox = motion(Box);
-const MotionVStack = motion(VStack);
+const MotionText = motion(Text);
+
 
 const AuthButton = () => {
   const isAuthenticated = useIsAuthenticated();
@@ -126,15 +136,8 @@ const AuthButton = () => {
   );
 };
 
-interface FeatureCardProps {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-  delay?: number;
-}
-
 // Helper function to render text with highlighted {words}
-const renderHighlightedText = (text: string, isTitle: boolean = false) => {
+const renderHighlightedText = (text: string) => {
   const parts = text.split(/(\{[^}]+\})/);
   
   return parts.map((part, index) => {
@@ -144,10 +147,10 @@ const renderHighlightedText = (text: string, isTitle: boolean = false) => {
         <Text
           key={index}
           as="span"
-          fontWeight="500"
-          color="gray.500"
+          fontWeight="600"
+          color="primary.500"
           _dark={{
-            color: "gray.400"
+            color: "primary.400"
           }}
         >
           {`{${content}}`}
@@ -158,84 +161,57 @@ const renderHighlightedText = (text: string, isTitle: boolean = false) => {
   });
 };
 
-const FeatureCard = ({ icon, title, description, delay = 0 }: FeatureCardProps) => {
-  const bgColor = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
-  const iconBg = useColorModeValue('primary.50', 'primary.900');
-  const iconColor = useColorModeValue('primary.600', 'primary.300');
-
-  return (
-    <MotionBox
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.3 }}
-      transition={{ duration: 0.6, delay, ease: "easeOut" }}
-      whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-    >
-      <Card.Root
-        bg={bgColor}
-        borderColor={borderColor}
-        borderWidth="1px"
-        h="full"
-        transition="all 0.3s"
-        _hover={{
-          shadow: 'lg',
-          borderColor: 'primary.400'
-        }}
-      >
-        <Card.Body p={4}>
-          <VStack align="start" gap={3}>
-            <Box
-              bg={iconBg}
-              p={3}
-              borderRadius="lg"
-              display="inline-flex"
-            >
-              <Icon as={icon} boxSize={6} color={iconColor} />
-            </Box>
-            <Heading size="md">{title}</Heading>
-            <Text color="fg.subtle" lineHeight="tall">
-              {renderHighlightedText(description)}
-            </Text>
-          </VStack>
-        </Card.Body>
-      </Card.Root>
-    </MotionBox>
-  );
-};
-
 const HomePage = () => {
-  const sectionBg = useColorModeValue('gray.50', 'gray.900');
-  const highlightBg = useColorModeValue('primary.50', 'primary.900');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const featureIconBg = useColorModeValue('primary.50', 'primary.900');
+  const featureIconColor = useColorModeValue('primary.600', 'primary.300');
+  const footerBg = useColorModeValue('gray.50', 'gray.900');
 
   const { scrollY } = useScroll();
   const heroY = useTransform(scrollY, [0, 300], [0, -50]);
 
   return (
-    <>
-      {/* Top Navigation Bar - Sticky */}
+    <Box height="100vh" width="100%" display="flex" flexDirection="column">
+      {/* Top Navigation Bar - Outside ScrollArea */}
       <Flex
         as="header"
         justify="space-between"
         align="center"
-        p={4}
+        px={4}
+        py={4}
         position="sticky"
         top={0}
-        zIndex={10}
+        zIndex={30}
         maxW="6xl"
+        width="100%"
         mx="auto"
-        py={8}
       >
         <Branding fontSize="3xl" />
         <AuthButton />
       </Flex>
 
-      <Box position="relative">
-        {/* Main content */}
-        <Box position="relative" zIndex={1}>
-          <Container maxW="6xl" py={16}>
-            <VStack gap={24} alignItems="center">
+      <ScrollArea.Root flex="1" width="100%">
+        <ScrollArea.Viewport
+          css={{
+            "--scroll-shadow-size": "5rem",
+            maskImage:
+              "linear-gradient(#000,#000,transparent 0,#000 var(--scroll-shadow-size),#000 calc(100% - var(--scroll-shadow-size)),transparent)",
+            "&[data-at-top]": {
+              maskImage:
+                "linear-gradient(180deg,#000 calc(100% - var(--scroll-shadow-size)),transparent)",
+            },
+            "&[data-at-bottom]": {
+              maskImage:
+                "linear-gradient(0deg,#000 calc(100% - var(--scroll-shadow-size)),transparent)",
+            },
+          }}
+        >
+          <ScrollArea.Content>
+            <Box position="relative">
+              {/* Main content */}
+              <Box position="relative" zIndex={1}>
+                <Container maxW="6xl" py={16}>
+                  <VStack gap={24} alignItems="center">
               
               {/* Hero Section - This stays immediately visible */}
               <MotionBox
@@ -306,50 +282,14 @@ const HomePage = () => {
                 w="full"
                 style={{ y: heroY }}
               >
-                <VStack gap={6} textAlign="center">
-                  <MotionBox
-                    initial={{ opacity: 0, y: -20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.5 }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
-                  >
-                    <Heading
-                      as="h1"
-                      fontSize={{ base: "4xl", md: "5xl", lg: "6xl" }}
-                      fontWeight="bold"
-                      bgGradient="linear(to-r, primary.600, primary.300)"
-                      bgClip="text"
-                      lineHeight="1.1"
-                    >
-                      Welcome to Prompt Repo
-                    </Heading>
-                  </MotionBox>
-                  
-                  <MotionBox
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true, amount: 0.5 }}
-                    transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-                    maxW="3xl"
-                    mx="auto"
-                  >
-                    <Text
-                      fontSize={{ base: "lg", md: "xl" }}
-                      color="fg.subtle"
-                      lineHeight="1.6"
-                    >
-                      The intelligent prompt management system that keeps your prompts in your source control 
-                      while providing powerful testing and optimization capabilities.
-                    </Text>
-                  </MotionBox>
-
+                <VStack textAlign="center">
                   <MotionBox
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, amount: 0.5 }}
                     transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
                   >
-                    <HStack gap={4} flexWrap="wrap" justify="center" mt={8}>
+                    <HStack gapX={6} flexWrap="wrap" justify="center">
                       <Link href="/prompts" passHref>
                         <Button
                           size="lg"
@@ -370,7 +310,7 @@ const HomePage = () => {
                         fontSize="md"
                         fontWeight="semibold"
                       >
-                        Learn More
+                        View Demo
                       </Button>
                     </HStack>
                   </MotionBox>
@@ -378,7 +318,7 @@ const HomePage = () => {
               </MotionBox>
 
               {/* Yet Another Prompt Registry Section */}
-              <Box w="full" py={16} px={{ base: 4, md: 0 }}>
+              <Box w="full" px={{ base: 4, md: 0 }}>
                 <VStack gap={16}>
                   <MotionBox
                     initial={{ opacity: 0, y: 20 }}
@@ -641,6 +581,138 @@ const HomePage = () => {
                     </MotionBox>
                   </SimpleGrid>
 
+                  {/* Open Source Card - Full width below */}
+                  <MotionBox
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.2 }}
+                    transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
+                    w="full"
+                    maxW="5xl"
+                    mx="auto"
+                  >
+                    <Card.Root
+                      bg={useColorModeValue('white', 'gray.800')}
+                      borderWidth="1px"
+                      borderColor={borderColor}
+                      overflow="hidden"
+                      position="relative"
+                      transition="all 0.3s"
+                      _hover={{
+                        transform: 'translateY(-4px)',
+                        shadow: 'xl',
+                        borderColor: 'primary.400'
+                      }}
+                    >
+                      <Box
+                        position="absolute"
+                        top="-40px"
+                        right="-40px"
+                        boxSize="160px"
+                        bg="primary.500"
+                        borderRadius="full"
+                        opacity={0.05}
+                      />
+                      <Box
+                        position="absolute"
+                        bottom="-40px"
+                        left="-40px"
+                        boxSize="160px"
+                        bg="primary.500"
+                        borderRadius="full"
+                        opacity={0.05}
+                      />
+                      <Card.Body p={{ base: 6, md: 8 }}>
+                        <VStack align="start" gap={5}>
+                          <Box>
+                            <Box
+                              bg={useColorModeValue('primary.50', 'primary.900')}
+                              p={3}
+                              borderRadius="xl"
+                              display="inline-flex"
+                              mb={4}
+                            >
+                              <Icon
+                                as={FaCodeBranch}
+                                boxSize={7}
+                                color={useColorModeValue('primary.600', 'primary.300')}
+                              />
+                            </Box>
+                            <Heading size="lg" mb={2}>
+                              100% Open Source
+                            </Heading>
+                            <Text
+                              fontSize="sm"
+                              color="primary.500"
+                              fontWeight="semibold"
+                              textTransform="uppercase"
+                              letterSpacing="wider"
+                            >
+                              Community-Driven Development
+                            </Text>
+                          </Box>
+                          
+                          <VStack align="start" gap={3}>
+                            <Text color="fg.subtle" lineHeight="tall" fontSize="md">
+                              Built in the open, for the community. <Text as="span" fontWeight="semibold">MIT licensed</Text>,
+                              transparent development, and community contributions welcomed. Fork it, improve it, make it yours.
+                            </Text>
+                            <HStack gap={2} flexWrap="wrap">
+                              <Text
+                                as="span"
+                                px={2}
+                                py={1}
+                                bg={useColorModeValue('cyan.50', 'cyan.900')}
+                                color={useColorModeValue('cyan.700', 'cyan.200')}
+                                borderRadius="md"
+                                fontSize="xs"
+                                fontWeight="semibold"
+                              >
+                                ✓ MIT License
+                              </Text>
+                              <Text
+                                as="span"
+                                px={2}
+                                py={1}
+                                bg={useColorModeValue('indigo.50', 'indigo.900')}
+                                color={useColorModeValue('indigo.700', 'indigo.200')}
+                                borderRadius="md"
+                                fontSize="xs"
+                                fontWeight="semibold"
+                              >
+                                ✓ Community PRs welcome
+                              </Text>
+                              <Text
+                                as="span"
+                                px={2}
+                                py={1}
+                                bg={useColorModeValue('green.50', 'green.900')}
+                                color={useColorModeValue('green.700', 'green.200')}
+                                borderRadius="md"
+                                fontSize="xs"
+                                fontWeight="semibold"
+                              >
+                                ✓ Self-hostable
+                              </Text>
+                              <Text
+                                as="span"
+                                px={2}
+                                py={1}
+                                bg={useColorModeValue('purple.50', 'purple.900')}
+                                color={useColorModeValue('purple.700', 'purple.200')}
+                                borderRadius="md"
+                                fontSize="xs"
+                                fontWeight="semibold"
+                              >
+                                ✓ No telemetry
+                              </Text>
+                            </HStack>
+                          </VStack>
+                        </VStack>
+                      </Card.Body>
+                    </Card.Root>
+                  </MotionBox>
+
                   {/* Bottom highlight message */}
                   <MotionBox
                     initial={{ opacity: 0, y: 20 }}
@@ -653,13 +725,18 @@ const HomePage = () => {
                   >
                     <Box
                       p={6}
-                      bg={useColorModeValue('primary.50', 'primary.900')}
+                      bg={useColorModeValue('primary.50', 'gray.900/30')}
                       borderRadius="xl"
                       borderWidth="1px"
-                      borderColor={useColorModeValue('primary.100', 'primary.800')}
+                      borderColor={useColorModeValue('primary.100', 'gray.800/50')}
                       textAlign="center"
                       position="relative"
                       overflow="hidden"
+                      backdropFilter="blur(10px)"
+                      _dark={{
+                        bg: 'blackAlpha.200',
+                        borderColor: 'whiteAlpha.100'
+                      }}
                     >
                       <Box
                         position="absolute"
@@ -667,10 +744,10 @@ const HomePage = () => {
                         left="50%"
                         transform="translate(-50%, -50%)"
                         boxSize="200px"
-                        bg="primary.500"
+                        bg={useColorModeValue('primary.500', 'primary.400')}
                         borderRadius="full"
-                        opacity={0.05}
-                        filter="blur(40px)"
+                        opacity={useColorModeValue(0.1, 0.08)}
+                        filter="blur(60px)"
                       />
                       <VStack gap={2} position="relative">
                         <Icon
@@ -681,11 +758,14 @@ const HomePage = () => {
                         <Text
                           fontSize={{ base: "md", md: "lg" }}
                           fontWeight="semibold"
-                          color={useColorModeValue('primary.700', 'primary.200')}
+                          color={useColorModeValue('primary.700', 'primary.300')}
                         >
                           Simple premise. Powerful results.
                         </Text>
-                        <Text fontSize="sm" color="fg.subtle">
+                        <Text
+                          fontSize="sm"
+                          color={useColorModeValue('gray.600', 'gray.400')}
+                        >
                           Your prompts, your control, your workflow - supercharged.
                         </Text>
                       </VStack>
@@ -695,7 +775,11 @@ const HomePage = () => {
               </Box>
 
               {/* Features Section */}
-              <Box w="full" py={16} px={{ base: 4, md: 0 }} borderRadius="2xl">
+              <Box
+                w="full"
+                py={16}
+                px={{ base: 4, md: 0 }}
+              >
                 <VStack gap={12}>
                   <MotionBox
                     initial={{ opacity: 0, y: 20 }}
@@ -703,75 +787,209 @@ const HomePage = () => {
                     viewport={{ once: true, amount: 0.3 }}
                     transition={{ duration: 0.6, ease: "easeOut" }}
                     textAlign="center"
+                    maxW="3xl"
+                    mx="auto"
                   >
+                    <Text
+                      fontSize="sm"
+                      fontWeight="semibold"
+                      textTransform="uppercase"
+                      letterSpacing="wider"
+                      color="primary.500"
+                      mb={3}
+                    >
+                      Complete Platform
+                    </Text>
                     <Heading
                       as="h2"
-                      fontSize={{ base: "3xl", md: "4xl" }}
+                      fontSize={{ base: "3xl", md: "4xl", lg: "5xl" }}
+                      fontWeight="600"
                       mb={4}
+                      lineHeight="1.2"
                     >
-                      Features That Matter
+                      Features That{" "}
+                      <Text as="span" color="primary.500">
+                        Actually Matter
+                      </Text>
                     </Heading>
-                    <Text fontSize="xl" color="fg.subtle">
-                      Everything you need for production-ready prompt management
+                    <Text
+                      fontSize={{ base: "lg", md: "xl" }}
+                      color="fg.subtle"
+                      lineHeight="1.6"
+                    >
+                      Everything you need for production-ready prompt management,
+                      nothing you don&apos;t
                     </Text>
                   </MotionBox>
 
-                  <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={6} w="full">
-                    <FeatureCard
-                      icon={FaShieldAlt}
-                      title="Take Control of Your Prompts"
-                      description="Keep your prompts in {your own} source control. {No vendor lock-in}, no data silos. Your prompts, {your rules}."
-                      delay={0.1}
+                  <Box position="relative" w="full">
+                    {/* Vertical dividers - solid color */}
+                    <Box
+                      position="absolute"
+                      left="33.33%"
+                      top="0"
+                      bottom="0"
+                      width="1px"
+                      bg="gray.300"
+                      _dark={{
+                        bg: "gray.600"
+                      }}
+                      display={{ base: "none", lg: "block" }}
+                      zIndex={1}
+                      pointerEvents="none"
                     />
-                    <FeatureCard
-                      icon={FaFlask}
-                      title="Test & Evaluate Prompts"
-                      description="Test prompts for different scenarios and ensure you won't introduce {regressions} when updating prompts."
-                      delay={0.2}
+                    <Box
+                      position="absolute"
+                      left="66.66%"
+                      top="0"
+                      bottom="0"
+                      width="1px"
+                      bg="gray.300"
+                      _dark={{
+                        bg: "gray.600"
+                      }}
+                      display={{ base: "none", lg: "block" }}
+                      zIndex={1}
+                      pointerEvents="none"
                     />
-                    <FeatureCard
-                      icon={FaBolt}
-                      title='No more "Works in my machine!"'
-                      description="Marry prompts with specific models and parameters for {consistent}, {predictable} results in production environments."
-                      delay={0.3}
+                    
+                    {/* Horizontal dividers - solid color */}
+                    <Box
+                      position="absolute"
+                      left="0"
+                      right="0"
+                      top="33.33%"
+                      height="1px"
+                      bg="gray.300"
+                      _dark={{
+                        bg: "gray.600"
+                      }}
+                      display={{ base: "none", lg: "block" }}
+                      zIndex={1}
+                      pointerEvents="none"
                     />
-                    <FeatureCard
-                      icon={FaMagic}
-                      title="AI-Enhanced Prompts"
-                      description="Leverage AI to {enhance} and {optimize} your prompts, making them more {effective} and {efficient}."
-                      delay={0.4}
+                    <Box
+                      position="absolute"
+                      left="0"
+                      right="0"
+                      top="66.66%"
+                      height="1px"
+                      bg="gray.300"
+                      _dark={{
+                        bg: "gray.600"
+                      }}
+                      display={{ base: "none", lg: "block" }}
+                      zIndex={1}
+                      pointerEvents="none"
                     />
-                    <FeatureCard
-                      icon={FaUsers}
-                      title="Collaborative Chat Experience"
-                      description="Integrated chat for manual evaluations with {shareable} conversations for {team collaboration}."
-                      delay={0.5}
-                    />
-                    <FeatureCard
-                      icon={FaChartLine}
-                      title="Cost & Performance Insights"
-                      description="Track input/output {tokens} and approximate pricing to make {informed decisions} about quality vs. cost - {best bang} for the buck."
-                      delay={0.6}
-                    />
-                    <FeatureCard
-                      icon={FaExchangeAlt}
-                      title="Easy Migration"
-                      description="{Effortlessly} migrate your existing codebase using prompts scattered throughout to an {organized} prompt management repository."
-                      delay={0.7}
-                    />
-                    <FeatureCard
-                      icon={FaSlidersH}
-                      title="Parameters in Prompts"
-                      description="Full support for {dynamic parameters} in prompts for both Chat interactions and {Evaluation workflows}."
-                      delay={0.8}
-                    />
-                    <FeatureCard
-                      icon={FaCogs}
-                      title="CI/CD Ready"
-                      description="{Version-controlled} prompts integrate with CI/CD. Share across repos as {modules}. {Zero} additional infrastructure required."
-                      delay={0.8}
-                    />
-                  </SimpleGrid>
+
+                    <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={0} position="relative">
+                      {[
+                        {
+                          icon: FaShieldAlt,
+                          title: "Take Control of Your Prompts",
+                          description: "Keep your prompts in {your own} source control. {No vendor lock-in}, no data silos. Your prompts, {your rules}."
+                        },
+                        {
+                          icon: FaFlask,
+                          title: "Test & Evaluate Prompts",
+                          description: "Test prompts for different scenarios and ensure you won't introduce {regressions} when updating prompts."
+                        },
+                        {
+                          icon: FaBolt,
+                          title: 'No more "Works in my machine!"',
+                          description: "Marry prompts with specific models and parameters for {consistent}, {predictable} results in production environments."
+                        },
+                        {
+                          icon: FaMagic,
+                          title: "AI-Enhanced Prompts",
+                          description: "Leverage AI to {enhance} and {optimize} your prompts, making them more {effective} and {efficient}."
+                        },
+                        {
+                          icon: FaUsers,
+                          title: "Collaborative Chat Experience",
+                          description: "Integrated chat for manual evaluations with {shareable} conversations for {team collaboration}."
+                        },
+                        {
+                          icon: FaChartLine,
+                          title: "Cost & Performance Insights",
+                          description: "Track input/output {tokens} and approximate pricing to make {informed decisions} about quality vs. cost - {best bang} for the buck."
+                        },
+                        {
+                          icon: FaExchangeAlt,
+                          title: "Easy Migration",
+                          description: "{Effortlessly} migrate your existing codebase using prompts scattered throughout to an {organized} prompt management repository."
+                        },
+                        {
+                          icon: FaSlidersH,
+                          title: "Parameters in Prompts",
+                          description: "Full support for {dynamic parameters} in prompts for both Chat interactions and {Evaluation workflows}."
+                        },
+                        {
+                          icon: FaCogs,
+                          title: "CI/CD Ready",
+                          description: "{Version-controlled} prompts integrate with CI/CD. Share across repos as {modules}. {Zero} additional infrastructure required."
+                        }
+                      ].map((feature, index) => (
+                        <Box
+                          key={index}
+                          p={8}
+                          position="relative"
+                          overflow="hidden"
+                          transition="transform 0.3s ease, z-index 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease"
+                          _hover={{
+                            transform: "scale(1.08)",
+                            zIndex: 10,
+                            boxShadow: "0 10px 40px rgba(0,0,0,0.15)",
+                            bg: "white",
+                            _dark: {
+                              bg: "gray.800",
+                              boxShadow: "0 10px 40px rgba(0,0,0,0.5)"
+                            }
+                          }}
+                          _after={{
+                            content: '""',
+                            position: "absolute",
+                            bottom: 0,
+                            left: "20px",
+                            right: "20px",
+                            height: "1px",
+                            bg: "gray.300",
+                            _dark: {
+                              bg: "gray.600"
+                            },
+                            display: { base: index < 8 ? "block" : "none", lg: "none" }
+                          }}
+                        >
+                          {/* Icon as background - left side, vertically centered */}
+                          <Box
+                            position="absolute"
+                            left="-30px"
+                            top="50%"
+                            transform="translateY(-50%)"
+                            opacity={0.05}
+                            _dark={{
+                              opacity: 0.08
+                            }}
+                            pointerEvents="none"
+                          >
+                            <Icon
+                              as={feature.icon}
+                              boxSize="140px"
+                              color={featureIconColor}
+                            />
+                          </Box>
+                          
+                          <VStack align="start" gap={4} position="relative" zIndex={1}>
+                            <Heading size="md">{feature.title}</Heading>
+                            <Text color="fg.subtle" lineHeight="tall">
+                              {renderHighlightedText(feature.description)}
+                            </Text>
+                          </VStack>
+                        </Box>
+                      ))}
+                    </SimpleGrid>
+                  </Box>
                 </VStack>
               </Box>
 
@@ -791,7 +1009,7 @@ const HomePage = () => {
                       Ready to Take Control of Your Prompts?
                     </Heading>
                     <Text fontSize="lg" color="fg.subtle" maxW="2xl" mx="auto">
-                      Start managing your prompts the right way - in your source control, 
+                      Start managing your prompts the right way - in your source control,
                       with powerful testing and optimization.
                     </Text>
                     <Link href="/prompts" passHref>
@@ -811,9 +1029,196 @@ const HomePage = () => {
               </Box>
             </VStack>
           </Container>
-        </Box>
-      </Box>
-    </>
+
+          {/* Footer */}
+          <Box
+            as="footer"
+            w="full"
+            bg={footerBg}
+            borderTopWidth="1px"
+            borderTopColor={borderColor}
+            mt={20}
+          >
+            <Container maxW="6xl" py={12}>
+              <VStack gap={8}>
+                {/* Top Footer Content */}
+                <SimpleGrid
+                  columns={{ base: 1, md: 3 }}
+                  gap={8}
+                  w="full"
+                  textAlign={{ base: "center", md: "left" }}
+                >
+                  {/* Brand Column */}
+                  <VStack align={{ base: "center", md: "start" }} gap={4}>
+                    <Branding fontSize="2xl" />
+                    <Text fontSize="sm" color="fg.subtle" maxW="250px">
+                      Open-source prompt management that puts you in control.
+                    </Text>
+                    <HStack gap={3}>
+                      <ChakraLink
+                        href="https://github.com/promptrepo"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        _hover={{ color: "primary.500" }}
+                      >
+                        <Icon as={FaGithub} boxSize={5} />
+                      </ChakraLink>
+                      <ChakraLink
+                        href="https://twitter.com/promptrepo"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        _hover={{ color: "primary.500" }}
+                      >
+                        <Icon as={FaTwitter} boxSize={5} />
+                      </ChakraLink>
+                      <ChakraLink
+                        href="https://linkedin.com/company/promptrepo"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        _hover={{ color: "primary.500" }}
+                      >
+                        <Icon as={FaLinkedin} boxSize={5} />
+                      </ChakraLink>
+                    </HStack>
+                  </VStack>
+
+                  {/* Quick Links */}
+                  <VStack align={{ base: "center", md: "start" }} gap={3}>
+                    <Text fontWeight="semibold" fontSize="sm" textTransform="uppercase" letterSpacing="wider">
+                      Resources
+                    </Text>
+                    <VStack align={{ base: "center", md: "start" }} gap={2}>
+                      <ChakraLink
+                        href="/docs"
+                        fontSize="sm"
+                        color="fg.subtle"
+                        _hover={{ color: "primary.500" }}
+                      >
+                        Documentation
+                      </ChakraLink>
+                      <ChakraLink
+                        href="/prompts"
+                        fontSize="sm"
+                        color="fg.subtle"
+                        _hover={{ color: "primary.500" }}
+                      >
+                        Browse Prompts
+                      </ChakraLink>
+                      <ChakraLink
+                        href="https://github.com/promptrepo/promptrepo"
+                        fontSize="sm"
+                        color="fg.subtle"
+                        _hover={{ color: "primary.500" }}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        GitHub Repository
+                      </ChakraLink>
+                      <ChakraLink
+                        href="/api"
+                        fontSize="sm"
+                        color="fg.subtle"
+                        _hover={{ color: "primary.500" }}
+                      >
+                        API Reference
+                      </ChakraLink>
+                    </VStack>
+                  </VStack>
+
+                  {/* Contact */}
+                  <VStack align={{ base: "center", md: "start" }} gap={3}>
+                    <Text fontWeight="semibold" fontSize="sm" textTransform="uppercase" letterSpacing="wider">
+                      Connect
+                    </Text>
+                    <VStack align={{ base: "center", md: "start" }} gap={2}>
+                      <HStack gap={2}>
+                        <Icon as={FaEnvelope} boxSize={4} color="fg.subtle" />
+                        <ChakraLink
+                          href="mailto:hello@promptrepo.dev"
+                          fontSize="sm"
+                          color="fg.subtle"
+                          _hover={{ color: "primary.500" }}
+                        >
+                          hello@promptrepo.dev
+                        </ChakraLink>
+                      </HStack>
+                      <ChakraLink
+                        href="/support"
+                        fontSize="sm"
+                        color="fg.subtle"
+                        _hover={{ color: "primary.500" }}
+                      >
+                        Support Center
+                      </ChakraLink>
+                      <ChakraLink
+                        href="/community"
+                        fontSize="sm"
+                        color="fg.subtle"
+                        _hover={{ color: "primary.500" }}
+                      >
+                        Community Forum
+                      </ChakraLink>
+                      <ChakraLink
+                        href="/changelog"
+                        fontSize="sm"
+                        color="fg.subtle"
+                        _hover={{ color: "primary.500" }}
+                      >
+                        Changelog
+                      </ChakraLink>
+                    </VStack>
+                  </VStack>
+                </SimpleGrid>
+
+                <Box
+                  w="full"
+                  h="1px"
+                  bg={borderColor}
+                  my={4}
+                />
+
+                {/* Bottom Footer */}
+                <Box w="full" textAlign="center">
+                  <VStack gap={2}>
+                    <HStack gap={1} fontSize="sm" color="fg.subtle">
+                      <Text>Made with</Text>
+                      <Icon as={FaHeart} boxSize={3} color="red.500" />
+                      <Text>in open source</Text>
+                    </HStack>
+                    <HStack gap={4} fontSize="xs" color="fg.muted" flexWrap="wrap" justify="center">
+                      <Text>© {new Date().getFullYear()} Prompt Repo</Text>
+                      <Text>•</Text>
+                      <ChakraLink href="/privacy" _hover={{ color: "primary.500" }}>
+                        Privacy Policy
+                      </ChakraLink>
+                      <Text>•</Text>
+                      <ChakraLink href="/terms" _hover={{ color: "primary.500" }}>
+                        Terms of Service
+                      </ChakraLink>
+                      <Text>•</Text>
+                      <ChakraLink
+                        href="https://github.com/promptrepo/promptrepo/blob/main/LICENSE"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        _hover={{ color: "primary.500" }}
+                      >
+                        MIT License
+                      </ChakraLink>
+                    </HStack>
+                  </VStack>
+                </Box>
+              </VStack>
+                  </Container>
+                </Box>
+              </Box>
+            </Box>
+          </ScrollArea.Content>
+        </ScrollArea.Viewport>
+        <ScrollArea.Scrollbar orientation="vertical">
+          <ScrollArea.Thumb />
+        </ScrollArea.Scrollbar>
+      </ScrollArea.Root>
+    </Box>
   );
 }
 
