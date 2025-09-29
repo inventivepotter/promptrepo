@@ -34,7 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   // Theme-aware semantic colors
   const hoverBg = "bg.muted"
   const activeBg = "bg.emphasized"
-  const userProfileBg = "bg.emphasized"
+  const userProfileBg = "bg.muted"
 
   const sidebarWidth = isCollapsed ? '60px' : '180px'
 
@@ -51,8 +51,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       zIndex={10}
     >
       {/* Header with branding */}
-      <Box p={isCollapsed ? 2 : 4}>
-        <HStack justify="space-between" align="center" minH="40px">
+      <Box px={isCollapsed ? 2 : 4} py={4}>
+        <HStack justify="space-between" align="center" minH="46px">
           <Branding collapsed={isCollapsed} />
         </HStack>
       </Box>

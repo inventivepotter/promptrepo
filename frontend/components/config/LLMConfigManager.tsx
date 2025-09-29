@@ -8,7 +8,8 @@ import {
   Input,
   Combobox,
   createListCollection,
-  HStack
+  HStack,
+  Field,
 } from '@chakra-ui/react'
 import { FaChevronDown } from 'react-icons/fa';
 import { useEffect } from 'react';
@@ -143,13 +144,14 @@ export default function LLMConfigManager({
         </Text>
         {/* Add new LLM configuration */}
         <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.muted">
-          <VStack gap={4}>
+          <VStack gap={4} width="100%">
             {/* Step 1: Provider and API Key on same line */}
             <Box width="100%">
-              <Text mb={2} fontWeight="medium">1. LLM Provider & API Key</Text>
-              <HStack gap={4}>
-                <Box flex={1}>
-                  <Combobox.Root
+              <HStack gap={4} width="100%" align="end">
+                <Box flex={2}>
+                  <Field.Root required>
+                    <Field.Label>LLM Provider <Field.RequiredIndicator /></Field.Label>
+                    <Combobox.Root
                     collection={createListCollection({
                       items: filteredProviders.map((p: BasicProviderInfo) => ({ label: p.name, value: p.id }))
                     })}
@@ -162,6 +164,7 @@ export default function LLMConfigManager({
                     onInputValueChange={(e) => setProviderSearchValue(e.inputValue)}
                     openOnClick
                     disabled={disabled || isLoading}
+                    width="100%"
                   >
                     <Combobox.Control position="relative">
                       <Combobox.Input
@@ -185,103 +188,115 @@ export default function LLMConfigManager({
                         ))}
                       </Combobox.Content>
                     </Combobox.Positioner>
-                  </Combobox.Root>
+                    </Combobox.Root>
+                  </Field.Root>
                 </Box>
-                <Box flex={1}>
-                  <Input
+                <Box flex={2}>
+                  <Field.Root required>
+                    <Field.Label>API Key <Field.RequiredIndicator /></Field.Label>
+                    <Input
                     type="password"
                     placeholder="Enter your API key"
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
                     disabled={disabled || !llmProvider}
-                  />
+                    width="100%"
+                    />
+                  </Field.Root>
+                </Box>
+                <Box display="flex" verticalAlign={"bottom"}>
+                  <Button
+                    onClick={handleAddConfiguration}
+                    disabled={
+                      !llmProvider ||
+                      !llmModel ||
+                      !apiKey ||
+                      (requiresApiBase && !apiBaseUrl) ||
+                      disabled
+                    }
+                    alignSelf="end"
+                    verticalAlign={"bottom"}
+                  >
+                    Add Configuration
+                  </Button>
                 </Box>
               </HStack>
-              <Text fontSize="sm" opacity={0.7} mt={2}>
-                Both provider and API key are required to fetch available models.
-              </Text>
             </Box>
 
-            {/* Step 1.5: API Base URL (conditional) */}
-            {llmProvider && requiresApiBase && (
-              <Box width="100%">
-                <Text mb={2} fontWeight="medium">API Base URL</Text>
-                <Input
-                  placeholder="Enter API base URL (e.g., http://localhost:1234/v1, http://host.docker.internal:1234/v1)"
-                  value={apiBaseUrl}
-                  onChange={(e) => setApiBaseUrl(e.target.value)}
-                  disabled={disabled}
-                />
-                <Text fontSize="sm" opacity={0.7} mt={1}>
-                  Custom API endpoint for {currentProvider?.name}
-                </Text>
-              </Box>
-            )}
-
-            {/* Step 2: Select Model (after provider, API key, and API base URL if required are entered) */}
-            {llmProvider && apiKey && apiKey.length >= 3 && (!requiresApiBase || (apiBaseUrl && apiBaseUrl.length >= 3)) && (
-              <Box width="100%">
-                <Text mb={2} fontWeight="medium">2. Model</Text>
-                <Combobox.Root
-                  collection={createListCollection({
-                    items: filteredModels.map((m: ModelInfo) => ({ label: m.name, value: m.id }))
-                  })}
-                  value={[llmModel]}
-                  onValueChange={(e) => setLLMModel(e.value[0] || '')}
-                  inputValue={modelSearchValue}
-                  onInputValueChange={(e) => setModelSearchValue(e.inputValue)}
-                  openOnClick
-                  disabled={disabled || isLoadingModels}
-                >
-                  <Combobox.Control position="relative">
-                    <Combobox.Input
-                      placeholder={isLoadingModels ? "Fetching models..." : "Select model"}
-                      paddingRight="2rem"
-                      disabled={disabled || isLoadingModels}
-                    />
-                    <Combobox.IndicatorGroup position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
-                      <Combobox.Trigger>
-                        <FaChevronDown size={16} />
-                      </Combobox.Trigger>
-                    </Combobox.IndicatorGroup>
-                  </Combobox.Control>
-                  <Combobox.Positioner>
-                    <Combobox.Content>
-                      {filteredModels.map((model: ModelInfo) => (
-                        <Combobox.Item key={model.id} item={model.id}>
-                          <Combobox.ItemText>{model.name}</Combobox.ItemText>
-                          <Combobox.ItemIndicator />
-                        </Combobox.Item>
-                      ))}
-                    </Combobox.Content>
-                  </Combobox.Positioner>
-                </Combobox.Root>
-                {isLoadingModels && (
-                  <Text fontSize="sm" opacity={0.7} mt={1}>
-                    Fetching available models for {(Array.isArray(availableProviders) ? availableProviders : []).find((p: BasicProviderInfo) => p.id === llmProvider)?.name}...
-                  </Text>
-                )}
-                {!isLoadingModels && availableModels.length === 0 && apiKey && apiKey.length >= 3 && (!requiresApiBase || (apiBaseUrl && apiBaseUrl.length >= 3)) && (
-                  <Text fontSize="sm" color="red.500" mt={1}>
-                    Unable to fetch models. Please check your API key{requiresApiBase ? ' and API base URL' : ''}.
-                  </Text>
-                )}
-              </Box>
-            )}
-            
-            <Button
-              onClick={handleAddConfiguration}
-              disabled={
-                !llmProvider ||
-                !llmModel ||
-                !apiKey ||
-                (requiresApiBase && !apiBaseUrl) ||
-                disabled
-              }
-              mt={4}
-            >
-              Add Configuration
-            </Button>
+            {/* Step 1.5: API Base URL, Model, and other fields */}
+            <Box width="100%">
+              <HStack gap={4} width="100%" align="end">
+                <Box flex={2.4}>
+                  <Field.Root required={requiresApiBase}>
+                    <Field.Label>API Base URL {requiresApiBase && <Field.RequiredIndicator />}</Field.Label>
+                    <Input
+                    placeholder="Enter API base URL (e.g., http://localhost:1234/v1)"
+                    value={apiBaseUrl}
+                    onChange={(e) => setApiBaseUrl(e.target.value)}
+                    disabled={disabled || !llmProvider || !requiresApiBase}
+                    width="100%"
+                  />
+                  {requiresApiBase && (
+                    <Text fontSize="sm" opacity={0.7} mt={1}>
+                      Custom API endpoint for {currentProvider?.name}
+                    </Text>
+                    )}
+                  </Field.Root>
+                </Box>
+                <Box flex={2.4}>
+                  <Field.Root required>
+                    <Field.Label>Model <Field.RequiredIndicator /></Field.Label>
+                    <Combobox.Root
+                    collection={createListCollection({
+                      items: filteredModels.map((m: ModelInfo) => ({ label: m.name, value: m.id }))
+                    })}
+                    value={[llmModel]}
+                    onValueChange={(e) => setLLMModel(e.value[0] || '')}
+                    inputValue={modelSearchValue}
+                    onInputValueChange={(e) => setModelSearchValue(e.inputValue)}
+                    openOnClick
+                    disabled={disabled || !llmProvider || !apiKey || apiKey.length < 3 || (requiresApiBase && (!apiBaseUrl || apiBaseUrl.length < 3)) || isLoadingModels}
+                    width="100%"
+                  >
+                    <Combobox.Control position="relative">
+                      <Combobox.Input
+                        placeholder={isLoadingModels ? "Fetching models..." : "Select model"}
+                        paddingRight="2rem"
+                        disabled={disabled || !llmProvider || !apiKey || apiKey.length < 3 || (requiresApiBase && (!apiBaseUrl || apiBaseUrl.length < 3)) || isLoadingModels}
+                      />
+                      <Combobox.IndicatorGroup position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
+                        <Combobox.Trigger>
+                          <FaChevronDown size={16} />
+                        </Combobox.Trigger>
+                      </Combobox.IndicatorGroup>
+                    </Combobox.Control>
+                    <Combobox.Positioner>
+                      <Combobox.Content>
+                        {filteredModels.map((model: ModelInfo) => (
+                          <Combobox.Item key={model.id} item={model.id}>
+                            <Combobox.ItemText>{model.name}</Combobox.ItemText>
+                            <Combobox.ItemIndicator />
+                          </Combobox.Item>
+                        ))}
+                      </Combobox.Content>
+                    </Combobox.Positioner>
+                    </Combobox.Root>
+                  </Field.Root>
+                  {isLoadingModels && (
+                    <Text fontSize="sm" opacity={0.7} mt={1}>
+                      Fetching available models for {currentProvider?.name}...
+                    </Text>
+                  )}
+                  {!isLoadingModels && llmProvider && apiKey && apiKey.length >= 3 && (!requiresApiBase || (apiBaseUrl && apiBaseUrl.length >= 3)) && availableModels.length === 0 && (
+                    <Text fontSize="sm" color="red.500" mt={1}>
+                      Unable to fetch models. Please check your API key{requiresApiBase ? ' and API base URL' : ''}.
+                    </Text>
+                  )}
+                </Box>
+                  {/* Dummy button for layout consistency */}
+                <Box><Button visibility="hidden">Add Configuration</Button></Box>
+              </HStack>
+            </Box>
           </VStack>
         </Box>
         {/* Display configured LLMs */}

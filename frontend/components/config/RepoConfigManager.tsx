@@ -8,6 +8,7 @@ import {
   Text,
   Combobox,
   createListCollection,
+  Field,
 } from '@chakra-ui/react';
 import { FaChevronDown } from 'react-icons/fa';
 import { useColorModeValue } from '@/components/ui/color-mode';
@@ -170,8 +171,11 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                 <HStack gap={4} width="100%" align="end">
                   {/* Repository Combobox */}
                   <Box flex={1}>
-                    <Text mb={2} fontWeight="medium">Repository</Text>
-                    <Combobox.Root
+                    <Field.Root required>
+                      <Field.Label>
+                        Repository <Field.RequiredIndicator />
+                      </Field.Label>
+                      <Combobox.Root
                       collection={createListCollection({
                         items: filteredRepos.map(r => ({ label: r.name, value: r.full_name }))
                       })}
@@ -182,7 +186,8 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                       inputValue={repoSearchValue}
                       onInputValueChange={(e) => setRepoSearchValue(e.inputValue)}
                       openOnClick
-                      disabled={ disabled || isSaving}
+                      disabled={disabled || isSaving}
+                      width="100%"
                     >
                       <Combobox.Control position="relative">
                         <Combobox.Input
@@ -211,63 +216,68 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                           )}
                         </Combobox.Content>
                       </Combobox.Positioner>
-                    </Combobox.Root>
-                  </Box>
-                  
-                  {/* Branch Combobox - only show when repo is selected */}
-                  {selectedRepo && (
-                    <Box flex={1}>
-                      <Text mb={2} fontWeight="medium">Branch</Text>
-                      <Combobox.Root
-                        collection={createListCollection({
-                          items: filteredBranches.map(b => ({
-                            label: b.is_default ? `${b.name} (default)` : b.name,
-                            value: b.name
-                          }))
-                        })}
-                        value={[selectedBranch]}
-                        onValueChange={(e) => setSelectedBranch(e.value?.[0] || '')}
-                        inputValue={branchSearchValue}
-                        onInputValueChange={(e) => setBranchSearchValue(e.inputValue)}
-                        openOnClick
-                        disabled={isSaving || isLoadingBranches}
-                      >
-                        <Combobox.Control position="relative">
-                          <Combobox.Input
-                            placeholder={isLoadingBranches ? "Loading branches..." : "Select or search branch"}
-                            paddingRight="2rem"
-                          />
-                          <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
-                            <FaChevronDown size={16} />
-                          </Combobox.Trigger>
-                        </Combobox.Control>
-                        <Combobox.Positioner>
-                          <Combobox.Content>
-                            {isLoadingBranches ? (
-                              <Box p={2} textAlign="center" opacity={0.7}>
-                                Loading branches...
-                              </Box>
-                            ) : filteredBranches.length === 0 ? (
-                              <Box p={2} textAlign="center" opacity={0.7}>
-                                {availableBranches.length === 0
-                                  ? 'No branches available'
-                                  : 'No matching branches'}
-                              </Box>
-                            ) : (
-                              filteredBranches.map(branch => (
-                                <Combobox.Item key={branch.name} item={branch.name}>
-                                  <Combobox.ItemText>
-                                    {branch.is_default ? `${branch.name} (default)` : branch.name}
-                                  </Combobox.ItemText>
-                                  <Combobox.ItemIndicator />
-                                </Combobox.Item>
-                              ))
-                            )}
-                          </Combobox.Content>
-                        </Combobox.Positioner>
-                      </Combobox.Root>
+                        </Combobox.Root>
+                      </Field.Root>
                     </Box>
-                  )}
+                  
+                  {/* Branch Combobox - always shown */}
+                  <Box flex={1}>
+                    <Field.Root required>
+                      <Field.Label>
+                        Branch <Field.RequiredIndicator />
+                      </Field.Label>
+                      <Combobox.Root
+                      collection={createListCollection({
+                        items: filteredBranches.map(b => ({
+                          label: b.is_default ? `${b.name} (default)` : b.name,
+                          value: b.name
+                        }))
+                      })}
+                      value={[selectedBranch]}
+                      onValueChange={(e) => setSelectedBranch(e.value?.[0] || '')}
+                      inputValue={branchSearchValue}
+                      onInputValueChange={(e) => setBranchSearchValue(e.inputValue)}
+                      openOnClick
+                      disabled={disabled || isSaving || isLoadingBranches || !selectedRepo}
+                      width="100%"
+                    >
+                      <Combobox.Control position="relative">
+                        <Combobox.Input
+                          placeholder={!selectedRepo ? "Select a repository first" : (isLoadingBranches ? "Loading branches..." : "Select or search branch")}
+                          paddingRight="2rem"
+                          disabled={disabled || isSaving || isLoadingBranches || !selectedRepo}
+                        />
+                        <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
+                          <FaChevronDown size={16} />
+                        </Combobox.Trigger>
+                      </Combobox.Control>
+                      <Combobox.Positioner>
+                        <Combobox.Content>
+                          {isLoadingBranches ? (
+                            <Box p={2} textAlign="center" opacity={0.7}>
+                              Loading branches...
+                            </Box>
+                          ) : filteredBranches.length === 0 ? (
+                            <Box p={2} textAlign="center" opacity={0.7}>
+                              {availableBranches.length === 0
+                                ? 'No branches available'
+                                : 'No matching branches'}
+                            </Box>
+                          ) : (
+                            filteredBranches.map(branch => (
+                              <Combobox.Item key={branch.name} item={branch.name}>
+                                <Combobox.ItemText>
+                                  {branch.is_default ? `${branch.name} (default)` : branch.name}
+                                </Combobox.ItemText>
+                                <Combobox.ItemIndicator />
+                              </Combobox.Item>
+                            ))
+                          )}
+                        </Combobox.Content>
+                      </Combobox.Positioner>
+                      </Combobox.Root>
+                    </Field.Root>
+                  </Box>
 
                   <Button
                     onClick={handleAddRepoConfig}

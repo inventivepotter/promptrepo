@@ -34,7 +34,7 @@ export const UserProfile = ({
           backgroundPosition="center"
         >
           {!user.oauth_avatar_url && (
-            <LuUser size={16} color="white" />
+            <LuUser size={16} />
           )}
         </Box>
       </HStack>
@@ -64,7 +64,7 @@ export const UserProfile = ({
             backgroundPosition="center"
           >
             {!user.oauth_avatar_url && (
-              <LuUser size={16} color="white" />
+              <LuUser size={16} />
             )}
           </Box>
           <VStack gap={0} align="flex-start" flex={1} minW={0}>
@@ -75,15 +75,17 @@ export const UserProfile = ({
               overflow="hidden"
               textOverflow="ellipsis"
               whiteSpace="nowrap"
+              color="fg.muted"
             >
               {user.oauth_name || user.oauth_username}
             </Text>
             <Text
-              fontSize="12px"
+              fontSize="xx-small"
               width="100%"
               overflow="hidden"
               textOverflow="ellipsis"
               whiteSpace="nowrap"
+              color="fg.muted"
             >
               @{user.oauth_username}
             </Text>
