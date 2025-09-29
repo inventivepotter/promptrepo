@@ -32,7 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   }
 
   // Theme-aware semantic colors
-  const hoverBg = "bg.emphasized"
+  const hoverBg = "bg.muted"
   const activeBg = "bg.emphasized"
   const userProfileBg = "bg.emphasized"
 
@@ -43,20 +43,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       className={className}
       width={sidebarWidth}
       minHeight="100vh"
-      bg="bg.muted"
+      bg="bg.subtle"
       borderRight="1px solid"
-      borderColor="bg.emphasized"
+      borderColor="bg.muted"
       transition="all 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
       position="relative"
       zIndex={10}
     >
       {/* Header with branding */}
-      <Box p={isCollapsed ? 2 : 4} borderBottom="1px solid" borderColor="bg.emphasized">
+      <Box p={isCollapsed ? 2 : 4}>
         <HStack justify="space-between" align="center" minH="40px">
           <Branding collapsed={isCollapsed} />
         </HStack>
       </Box>
-
+      <Separator borderColor="bg.muted" />
       {/* Navigation Menu */}
       <Stack gap={1} p={2} pt={3}>
         {/* Setup */}
@@ -121,10 +121,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
             hoverBg={hoverBg}
             activeBg={activeBg}
             userProfileBg={userProfileBg}
-            borderColor="bg.emphasized"
+            borderColor="bg.muted"
           />
           
-          <Separator borderColor="bg.emphasized" />
+          <Separator borderColor="bg.muted" />
 
           {/* Theme Toggle */}
           <ThemeToggle

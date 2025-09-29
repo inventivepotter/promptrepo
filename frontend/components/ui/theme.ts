@@ -120,13 +120,13 @@ const config = defineConfig({
             value: { _light: "{colors.primary.50}", _dark: "{colors.primary.950}" },
           },
           subtle: {
-            value: { _light: "{colors.primary.50}", _dark: "{colors.primary.950}" },
-          },
-          muted: {
             value: { _light: "{colors.primary.100}", _dark: "{colors.primary.900}" },
           },
+          muted: {
+            value: { _light: "{colors.primary.200}", _dark: "{colors.primary.800}" },
+          },
           emphasized: {
-            value: { _light: "{colors.primary.200}", _dark: "{colors.primary.700}" },
+            value: { _light: "{colors.primary.300}", _dark: "{colors.primary.600}" },
           },
           inverted: {
             value: { _light: "{colors.primary.950}", _dark: "{colors.primary.50}" },

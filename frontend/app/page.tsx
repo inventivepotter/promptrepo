@@ -1,6 +1,20 @@
 'use client';
 
-import { Button, HStack, VStack, Text, Box, Spinner, Image, Container, Flex } from "@chakra-ui/react";
+import {
+  Button,
+  HStack,
+  VStack,
+  Text,
+  Box,
+  Spinner,
+  Image,
+  Container,
+  Flex,
+  Heading,
+  SimpleGrid,
+  Card,
+  Icon
+} from "@chakra-ui/react";
 import {
   useUser,
   useIsAuthenticated,
@@ -11,6 +25,22 @@ import { PromptQuotes } from "@/components/home/PromptQuotes";
 import { Branding } from "@/components/Branding";
 import { ConfigService } from "@/services/config/configService";
 import { useConfigStore, useConfig } from '@/stores/configStore';
+import { useColorModeValue } from '@/components/ui/color-mode';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import {
+  FaGitAlt,
+  FaShieldAlt,
+  FaFlask,
+  FaBolt,
+  FaMagic,
+  FaUsers,
+  FaChartLine,
+  FaCogs,
+  FaDatabase,
+  FaExchangeAlt,
+  FaSlidersH
+} from 'react-icons/fa';
+import Link from 'next/link';
 
 // Initialize stores on module load
 // This ensures data is loaded from localStorage or API once
@@ -20,13 +50,15 @@ const initApp = () => {
   // Only fetch config if it's not already loaded
   // The store will be hydrated from localStorage automatically by zustand persist
   initializeConfig(true, false);
-
 };
 
 // Run initialization once when the module loads
 if (typeof window !== 'undefined') {
   initApp();
 }
+
+const MotionBox = motion(Box);
+const MotionVStack = motion(VStack);
 
 const AuthButton = () => {
   const isAuthenticated = useIsAuthenticated();
@@ -94,7 +126,92 @@ const AuthButton = () => {
   );
 };
 
+interface FeatureCardProps {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  delay?: number;
+}
+
+// Helper function to render text with highlighted {words}
+const renderHighlightedText = (text: string, isTitle: boolean = false) => {
+  const parts = text.split(/(\{[^}]+\})/);
+  
+  return parts.map((part, index) => {
+    if (part.startsWith('{') && part.endsWith('}')) {
+      const content = part.slice(1, -1).toLowerCase();
+      return (
+        <Text
+          key={index}
+          as="span"
+          fontWeight="500"
+          color="gray.500"
+          _dark={{
+            color: "gray.400"
+          }}
+        >
+          {`{${content}}`}
+        </Text>
+      );
+    }
+    return <Text as="span" key={index}>{part}</Text>;
+  });
+};
+
+const FeatureCard = ({ icon, title, description, delay = 0 }: FeatureCardProps) => {
+  const bgColor = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const iconBg = useColorModeValue('primary.50', 'primary.900');
+  const iconColor = useColorModeValue('primary.600', 'primary.300');
+
+  return (
+    <MotionBox
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 0.6, delay, ease: "easeOut" }}
+      whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+    >
+      <Card.Root
+        bg={bgColor}
+        borderColor={borderColor}
+        borderWidth="1px"
+        h="full"
+        transition="all 0.3s"
+        _hover={{
+          shadow: 'lg',
+          borderColor: 'primary.400'
+        }}
+      >
+        <Card.Body p={4}>
+          <VStack align="start" gap={3}>
+            <Box
+              bg={iconBg}
+              p={3}
+              borderRadius="lg"
+              display="inline-flex"
+            >
+              <Icon as={icon} boxSize={6} color={iconColor} />
+            </Box>
+            <Heading size="md">{title}</Heading>
+            <Text color="fg.subtle" lineHeight="tall">
+              {renderHighlightedText(description)}
+            </Text>
+          </VStack>
+        </Card.Body>
+      </Card.Root>
+    </MotionBox>
+  );
+};
+
 const HomePage = () => {
+  const sectionBg = useColorModeValue('gray.50', 'gray.900');
+  const highlightBg = useColorModeValue('primary.50', 'primary.900');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+
+  const { scrollY } = useScroll();
+  const heroY = useTransform(scrollY, [0, 300], [0, -50]);
+
   return (
     <>
       {/* Top Navigation Bar - Sticky */}
@@ -117,94 +234,583 @@ const HomePage = () => {
       <Box position="relative">
         {/* Main content */}
         <Box position="relative" zIndex={1}>
-        <Container maxW="4xl" py={16}>
-          <VStack gap={16} alignItems="center" textAlign="center">
-            {/* Hero Section */}
-            <Box position="relative" maxW="3xl">
-              <Box
-                position="absolute"
-                top="50%"
-                left="-60px"
-                transform="translateY(-50%)"
-                fontSize="200px"
-                color="fg.muted"
-                zIndex={0}
-                opacity={0.3}
-                pointerEvents="none"
-                fontWeight={100}
-                lineHeight="1"
-                fontFamily="'Palatino Linotype', 'Book Antiqua', Palatino, serif"
+          <Container maxW="6xl" py={16}>
+            <VStack gap={24} alignItems="center">
+              
+              {/* Hero Section - This stays immediately visible */}
+              <MotionBox
+                position="relative"
+                maxW="3xl"
+                textAlign="center"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
               >
-                {"{"}
-              </Box>
-              <Box
-                position="absolute"
-                top="50%"
-                right="-60px"
-                transform="translateY(-50%)"
-                fontSize="200px"
-                color="fg.muted"
-                zIndex={0}
-                opacity={0.3}
-                pointerEvents="none"
-                fontWeight={100}
-                lineHeight="1"
-                fontFamily="'Palatino Linotype', 'Book Antiqua', Palatino, serif"
-              >
-                {"}"}
-              </Box>
-              <VStack gap={6} position="relative" zIndex={1}>
-                <Text
-                  fontSize={{ base: "4xl", md: "5xl", lg: "6xl" }}
-                  fontWeight="bold"
-                  color={{ _light: "primary.600", _dark: "primary.300" }}
-                  lineHeight="1.1"
+                <Box
+                  position="absolute"
+                  top="50%"
+                  left="-60px"
+                  transform="translateY(-50%)"
+                  fontSize="200px"
+                  color="fg.muted"
+                  zIndex={0}
+                  opacity={0.3}
+                  pointerEvents="none"
+                  fontWeight={100}
+                  lineHeight="1"
+                  fontFamily="'Palatino Linotype', 'Book Antiqua', Palatino, serif"
                 >
-                  Craft Better Prompts
-                </Text>
-                <Text
-                  fontSize={{ base: "lg", md: "xl" }}
-                  color="fg.subtle"
-                  opacity={0.8}
-                  maxW="2xl"
-                  lineHeight="1.6"
+                  {"{"}
+                </Box>
+                <Box
+                  position="absolute"
+                  top="50%"
+                  right="-60px"
+                  transform="translateY(-50%)"
+                  fontSize="200px"
+                  color="fg.muted"
+                  zIndex={0}
+                  opacity={0.3}
+                  pointerEvents="none"
+                  fontWeight={100}
+                  lineHeight="1"
+                  fontFamily="'Palatino Linotype', 'Book Antiqua', Palatino, serif"
                 >
-                  Evaluate, test, and optimize your prompts to make informed
-                  decisions and build AI agents that work better for you.
-                </Text>
-              </VStack>
-            </Box>
-
-            {/* Quote Section */}
-            <Box w="full" maxW="4xl">
-              <PromptQuotes />
-            </Box>
-
-            {/* Action Buttons */}
-            <HStack gap={4} flexWrap="wrap" justify="center" mt={8}>
-              <Button
-                size="lg"
-                variant="solid"
-                px={8}
-                py={6}
-                fontSize="md"
-                fontWeight="semibold"
+                  {"}"}
+                </Box>
+                <VStack gap={6} position="relative" zIndex={1}>
+                  <Text
+                    fontSize={{ base: "4xl", md: "5xl", lg: "6xl" }}
+                    fontWeight="extrabold"
+                    color={{ _light: "primary.600", _dark: "primary.300" }}
+                    lineHeight="1.1"
+                  >
+                    Craft Better Prompts
+                  </Text>
+                  <Text
+                    fontSize={{ base: "lg", md: "xl" }}
+                    color="fg.subtle"
+                    opacity={0.8}
+                    maxW="2xl"
+                    lineHeight="1.6"
+                  >
+                    Evaluate, test, and optimize your prompts to make informed
+                    decisions and build AI agents that work better for you.
+                  </Text>
+                </VStack>
+              </MotionBox>
+              
+              {/* Welcome Section */}
+              <MotionBox
+                position="relative"
+                w="full"
+                style={{ y: heroY }}
               >
-                Explore Prompts
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                px={8}
-                py={6}
-                fontSize="md"
-                fontWeight="semibold"
-              >
-                Learn More
-              </Button>
-            </HStack>
-          </VStack>
-        </Container>
+                <VStack gap={6} textAlign="center">
+                  <MotionBox
+                    initial={{ opacity: 0, y: -20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.5 }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                  >
+                    <Heading
+                      as="h1"
+                      fontSize={{ base: "4xl", md: "5xl", lg: "6xl" }}
+                      fontWeight="bold"
+                      bgGradient="linear(to-r, primary.600, primary.300)"
+                      bgClip="text"
+                      lineHeight="1.1"
+                    >
+                      Welcome to Prompt Repo
+                    </Heading>
+                  </MotionBox>
+                  
+                  <MotionBox
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true, amount: 0.5 }}
+                    transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+                    maxW="3xl"
+                    mx="auto"
+                  >
+                    <Text
+                      fontSize={{ base: "lg", md: "xl" }}
+                      color="fg.subtle"
+                      lineHeight="1.6"
+                    >
+                      The intelligent prompt management system that keeps your prompts in your source control 
+                      while providing powerful testing and optimization capabilities.
+                    </Text>
+                  </MotionBox>
+
+                  <MotionBox
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.5 }}
+                    transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+                  >
+                    <HStack gap={4} flexWrap="wrap" justify="center" mt={8}>
+                      <Link href="/prompts" passHref>
+                        <Button
+                          size="lg"
+                          colorScheme="primary"
+                          px={8}
+                          py={6}
+                          fontSize="md"
+                          fontWeight="semibold"
+                        >
+                          Get Started
+                        </Button>
+                      </Link>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        px={8}
+                        py={6}
+                        fontSize="md"
+                        fontWeight="semibold"
+                      >
+                        Learn More
+                      </Button>
+                    </HStack>
+                  </MotionBox>
+                </VStack>
+              </MotionBox>
+
+              {/* Yet Another Prompt Registry Section */}
+              <Box w="full" py={16} px={{ base: 4, md: 0 }}>
+                <VStack gap={16}>
+                  <MotionBox
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.3 }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    textAlign="center"
+                  >
+                    <Text
+                      fontSize="sm"
+                      fontWeight="semibold"
+                      textTransform="uppercase"
+                      letterSpacing="wider"
+                      color="primary.500"
+                      mb={2}
+                    >
+                      The Difference
+                    </Text>
+                    <Heading
+                      as="h2"
+                      fontSize={{ base: "3xl", md: "4xl", lg: "5xl" }}
+                      fontWeight="600"
+                      mb={4}
+                      lineHeight="1.2"
+                    >
+                      Not Just Another{" "}
+                      <Text as="span" color="primary.500">
+                        Registry
+                      </Text>
+                    </Heading>
+                    <Text
+                      fontSize={{ base: "lg", md: "xl" }}
+                      color="fg.subtle"
+                      maxW="3xl"
+                      mx="auto"
+                    >
+                      Built on principles that matter for real-world prompt engineering
+                    </Text>
+                  </MotionBox>
+
+                  <SimpleGrid columns={{ base: 1, lg: 2 }} gap={8} w="full" maxW="5xl" mx="auto">
+                    {/* Source Control First Card */}
+                    <MotionBox
+                      initial={{ opacity: 0, x: -30 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true, amount: 0.2 }}
+                      transition={{ duration: 0.7, delay: 0.1, ease: "easeOut" }}
+                      h="full"
+                    >
+                      <Card.Root
+                        h="full"
+                        bg={useColorModeValue('white', 'gray.800')}
+                        borderWidth="1px"
+                        borderColor={borderColor}
+                        overflow="hidden"
+                        position="relative"
+                        transition="all 0.3s"
+                        _hover={{
+                          transform: 'translateY(-4px)',
+                          shadow: 'xl',
+                          borderColor: 'primary.400'
+                        }}
+                      >
+                        <Box
+                          position="absolute"
+                          top="-20px"
+                          right="-20px"
+                          boxSize="120px"
+                          bg="primary.500"
+                          borderRadius="full"
+                          opacity={0.05}
+                        />
+                        <Card.Body p={{ base: 6, md: 8 }}>
+                          <VStack align="start" gap={5}>
+                            <Box>
+                              <Box
+                                bg={useColorModeValue('primary.50', 'primary.900')}
+                                p={3}
+                                borderRadius="xl"
+                                display="inline-flex"
+                                mb={4}
+                              >
+                                <Icon
+                                  as={FaGitAlt}
+                                  boxSize={7}
+                                  color={useColorModeValue('primary.600', 'primary.300')}
+                                />
+                              </Box>
+                              <Heading size="lg" mb={2}>
+                                Own Your Code
+                              </Heading>
+                              <Text
+                                fontSize="sm"
+                                color="primary.500"
+                                fontWeight="semibold"
+                                textTransform="uppercase"
+                                letterSpacing="wider"
+                              >
+                                Git-Native Architecture
+                              </Text>
+                            </Box>
+                            
+                            <VStack align="start" gap={3}>
+                              <Text color="fg.subtle" lineHeight="tall" fontSize="md">
+                                Your prompts live where they belong - in <Text as="span" fontWeight="semibold">your repository</Text>.
+                                No external databases, no vendor lock-in.
+                              </Text>
+                              <HStack gap={2} flexWrap="wrap">
+                                <Text
+                                  as="span"
+                                  px={2}
+                                  py={1}
+                                  bg={useColorModeValue('green.50', 'green.900')}
+                                  color={useColorModeValue('green.700', 'green.200')}
+                                  borderRadius="md"
+                                  fontSize="xs"
+                                  fontWeight="semibold"
+                                >
+                                  ✓ Full version control
+                                </Text>
+                                <Text
+                                  as="span"
+                                  px={2}
+                                  py={1}
+                                  bg={useColorModeValue('blue.50', 'blue.900')}
+                                  color={useColorModeValue('blue.700', 'blue.200')}
+                                  borderRadius="md"
+                                  fontSize="xs"
+                                  fontWeight="semibold"
+                                >
+                                  ✓ Branch & merge
+                                </Text>
+                                <Text
+                                  as="span"
+                                  px={2}
+                                  py={1}
+                                  bg={useColorModeValue('purple.50', 'purple.900')}
+                                  color={useColorModeValue('purple.700', 'purple.200')}
+                                  borderRadius="md"
+                                  fontSize="xs"
+                                  fontWeight="semibold"
+                                >
+                                  ✓ Code reviews
+                                </Text>
+                              </HStack>
+                            </VStack>
+                          </VStack>
+                        </Card.Body>
+                      </Card.Root>
+                    </MotionBox>
+
+                    {/* Prompts + Models Together Card */}
+                    <MotionBox
+                      initial={{ opacity: 0, x: 30 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true, amount: 0.2 }}
+                      transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
+                      h="full"
+                    >
+                      <Card.Root
+                        h="full"
+                        bg={useColorModeValue('white', 'gray.800')}
+                        borderWidth="1px"
+                        borderColor={borderColor}
+                        overflow="hidden"
+                        position="relative"
+                        transition="all 0.3s"
+                        _hover={{
+                          transform: 'translateY(-4px)',
+                          shadow: 'xl',
+                          borderColor: 'primary.400'
+                        }}
+                      >
+                        <Box
+                          position="absolute"
+                          bottom="-30px"
+                          left="-30px"
+                          boxSize="140px"
+                          bg="primary.500"
+                          borderRadius="full"
+                          opacity={0.05}
+                        />
+                        <Card.Body p={{ base: 6, md: 8 }}>
+                          <VStack align="start" gap={5}>
+                            <Box>
+                              <Box
+                                bg={useColorModeValue('primary.50', 'primary.900')}
+                                p={3}
+                                borderRadius="xl"
+                                display="inline-flex"
+                                mb={4}
+                              >
+                                <Icon
+                                  as={FaDatabase}
+                                  boxSize={7}
+                                  color={useColorModeValue('primary.600', 'primary.300')}
+                                />
+                              </Box>
+                              <Heading size="lg" mb={2}>
+                                Complete Context
+                              </Heading>
+                              <Text
+                                fontSize="sm"
+                                color="primary.500"
+                                fontWeight="semibold"
+                                textTransform="uppercase"
+                                letterSpacing="wider"
+                              >
+                                Unified Configuration
+                              </Text>
+                            </Box>
+                            
+                            <VStack align="start" gap={3}>
+                              <Text color="fg.subtle" lineHeight="tall" fontSize="md">
+                                Prompts paired with their <Text as="span" fontWeight="semibold">exact models & parameters</Text>.
+                                Reproduce results perfectly, every time.
+                              </Text>
+                              <HStack gap={2} flexWrap="wrap">
+                                <Text
+                                  as="span"
+                                  px={2}
+                                  py={1}
+                                  bg={useColorModeValue('orange.50', 'orange.900')}
+                                  color={useColorModeValue('orange.700', 'orange.200')}
+                                  borderRadius="md"
+                                  fontSize="xs"
+                                  fontWeight="semibold"
+                                >
+                                  ✓ Model settings
+                                </Text>
+                                <Text
+                                  as="span"
+                                  px={2}
+                                  py={1}
+                                  bg={useColorModeValue('teal.50', 'teal.900')}
+                                  color={useColorModeValue('teal.700', 'teal.200')}
+                                  borderRadius="md"
+                                  fontSize="xs"
+                                  fontWeight="semibold"
+                                >
+                                  ✓ Temperature
+                                </Text>
+                                <Text
+                                  as="span"
+                                  px={2}
+                                  py={1}
+                                  bg={useColorModeValue('pink.50', 'pink.900')}
+                                  color={useColorModeValue('pink.700', 'pink.200')}
+                                  borderRadius="md"
+                                  fontSize="xs"
+                                  fontWeight="semibold"
+                                >
+                                  ✓ All parameters
+                                </Text>
+                              </HStack>
+                            </VStack>
+                          </VStack>
+                        </Card.Body>
+                      </Card.Root>
+                    </MotionBox>
+                  </SimpleGrid>
+
+                  {/* Bottom highlight message */}
+                  <MotionBox
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.5 }}
+                    transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
+                    w="full"
+                    maxW="4xl"
+                    mx="auto"
+                  >
+                    <Box
+                      p={6}
+                      bg={useColorModeValue('primary.50', 'primary.900')}
+                      borderRadius="xl"
+                      borderWidth="1px"
+                      borderColor={useColorModeValue('primary.100', 'primary.800')}
+                      textAlign="center"
+                      position="relative"
+                      overflow="hidden"
+                    >
+                      <Box
+                        position="absolute"
+                        top="50%"
+                        left="50%"
+                        transform="translate(-50%, -50%)"
+                        boxSize="200px"
+                        bg="primary.500"
+                        borderRadius="full"
+                        opacity={0.05}
+                        filter="blur(40px)"
+                      />
+                      <VStack gap={2} position="relative">
+                        <Icon
+                          as={FaBolt}
+                          boxSize={5}
+                          color="primary.500"
+                        />
+                        <Text
+                          fontSize={{ base: "md", md: "lg" }}
+                          fontWeight="semibold"
+                          color={useColorModeValue('primary.700', 'primary.200')}
+                        >
+                          Simple premise. Powerful results.
+                        </Text>
+                        <Text fontSize="sm" color="fg.subtle">
+                          Your prompts, your control, your workflow - supercharged.
+                        </Text>
+                      </VStack>
+                    </Box>
+                  </MotionBox>
+                </VStack>
+              </Box>
+
+              {/* Features Section */}
+              <Box w="full" py={16} px={{ base: 4, md: 0 }} borderRadius="2xl">
+                <VStack gap={12}>
+                  <MotionBox
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.3 }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    textAlign="center"
+                  >
+                    <Heading
+                      as="h2"
+                      fontSize={{ base: "3xl", md: "4xl" }}
+                      mb={4}
+                    >
+                      Features That Matter
+                    </Heading>
+                    <Text fontSize="xl" color="fg.subtle">
+                      Everything you need for production-ready prompt management
+                    </Text>
+                  </MotionBox>
+
+                  <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={6} w="full">
+                    <FeatureCard
+                      icon={FaShieldAlt}
+                      title="Take Control of Your Prompts"
+                      description="Keep your prompts in {your own} source control. {No vendor lock-in}, no data silos. Your prompts, {your rules}."
+                      delay={0.1}
+                    />
+                    <FeatureCard
+                      icon={FaFlask}
+                      title="Test & Evaluate Prompts"
+                      description="Test prompts for different scenarios and ensure you won't introduce {regressions} when updating prompts."
+                      delay={0.2}
+                    />
+                    <FeatureCard
+                      icon={FaBolt}
+                      title='No more "Works in my machine!"'
+                      description="Marry prompts with specific models and parameters for {consistent}, {predictable} results in production environments."
+                      delay={0.3}
+                    />
+                    <FeatureCard
+                      icon={FaMagic}
+                      title="AI-Enhanced Prompts"
+                      description="Leverage AI to {enhance} and {optimize} your prompts, making them more {effective} and {efficient}."
+                      delay={0.4}
+                    />
+                    <FeatureCard
+                      icon={FaUsers}
+                      title="Collaborative Chat Experience"
+                      description="Integrated chat for manual evaluations with {shareable} conversations for {team collaboration}."
+                      delay={0.5}
+                    />
+                    <FeatureCard
+                      icon={FaChartLine}
+                      title="Cost & Performance Insights"
+                      description="Track input/output {tokens} and approximate pricing to make {informed decisions} about quality vs. cost - {best bang} for the buck."
+                      delay={0.6}
+                    />
+                    <FeatureCard
+                      icon={FaExchangeAlt}
+                      title="Easy Migration"
+                      description="{Effortlessly} migrate your existing codebase using prompts scattered throughout to an {organized} prompt management repository."
+                      delay={0.7}
+                    />
+                    <FeatureCard
+                      icon={FaSlidersH}
+                      title="Parameters in Prompts"
+                      description="Full support for {dynamic parameters} in prompts for both Chat interactions and {Evaluation workflows}."
+                      delay={0.8}
+                    />
+                    <FeatureCard
+                      icon={FaCogs}
+                      title="CI/CD Ready"
+                      description="{Version-controlled} prompts integrate with CI/CD. Share across repos as {modules}. {Zero} additional infrastructure required."
+                      delay={0.8}
+                    />
+                  </SimpleGrid>
+                </VStack>
+              </Box>
+
+              {/* Call to Action Section */}
+              <Box w="full" py={16} textAlign="center">
+                <MotionBox
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true, amount: 0.3 }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                >
+                  <VStack gap={6}>
+                    <Heading
+                      as="h3"
+                      fontSize={{ base: "2xl", md: "3xl", lg: "4xl" }}
+                    >
+                      Ready to Take Control of Your Prompts?
+                    </Heading>
+                    <Text fontSize="lg" color="fg.subtle" maxW="2xl" mx="auto">
+                      Start managing your prompts the right way - in your source control, 
+                      with powerful testing and optimization.
+                    </Text>
+                    <Link href="/prompts" passHref>
+                      <Button
+                        size="lg"
+                        colorScheme="primary"
+                        px={8}
+                        py={6}
+                        fontSize="md"
+                        fontWeight="semibold"
+                      >
+                        Start Now
+                      </Button>
+                    </Link>
+                  </VStack>
+                </MotionBox>
+              </Box>
+            </VStack>
+          </Container>
         </Box>
       </Box>
     </>

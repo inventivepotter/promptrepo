@@ -18,6 +18,7 @@ export const Branding = ({ collapsed = false, fontSize, ...props }: BrandingProp
         <Text
           fontSize={finalFontSize}
           fontWeight="500"
+          letterSpacing="tight"
           color={{ _light: "primary.400", _dark: "primary.500" }} 
           {...props}
         >
