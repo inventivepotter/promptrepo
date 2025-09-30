@@ -1,0 +1,28 @@
+name: "Code Review Assistant"
+description: "Helps review code for best practices, bugs, and improvements"
+category: "code-quality"
+tags:
+  - code-review
+  - best-practices
+  - quality-assurance
+model: "lmstudio/gemma-3-270m-it-mlx"
+failover_model: "anthropic/claude-3.5-sonnet"
+temperature: 0.3
+top_p: 0.9
+max_tokens: 2048
+thinking_enabled: true
+thinking_budget: 15000
+
+system_prompt: |
+  You are an experienced code reviewer. Analyze the following code and provide feedback on:
+  
+  1. Code quality and best practices
+  2. Potential bugs or security issues
+  3. Performance optimizations
+  4. Code readability and maintainability
+  5. Suggestions for improvement
+
+user_prompt: |
+  Code to review:
+  
+  {{code}}

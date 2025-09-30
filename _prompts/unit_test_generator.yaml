@@ -1,0 +1,35 @@
+name: "Unit Test Generator"
+description: "Generates unit tests for given code snippets"
+category: "testing"
+tags:
+  - testing
+  - unit-tests
+  - quality-assurance
+  - automation
+model: "anthropic/claude-3.5-sonnet"
+failover_model: "openai/gpt-4o"
+temperature: 0.2
+top_p: 0.85
+max_tokens: 1024
+thinking_enabled: false
+thinking_budget: 8000
+
+system_prompt: |
+  You are a testing expert. Write unit tests for the following code:
+  
+  {code}
+  
+  Use best practices for the specified framework: {framework}.
+  
+  Include:
+  - Test cases for normal scenarios
+  - Edge cases
+  - Error handling tests
+  - Mock dependencies where needed
+  - Clear test descriptions
+
+user_prompt: |
+  Generate unit tests for:
+  {{code}}
+  
+  Framework: {{framework}}
