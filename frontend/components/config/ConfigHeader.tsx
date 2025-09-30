@@ -13,23 +13,23 @@ export function ConfigHeader() {
 
   return (
     <Box
-      borderBottom="1px solid"
-      borderColor="border.muted"
-      py={2}
+      py={4}
       position="sticky"
       top={0}
       zIndex={10}
-      shadow="sm"
+      bg="bg.subtle"
     >
       <Container maxW="7xl">
         <HStack justify="space-between" align="center">
           <HStack gap={4}>
             <VStack align="start" gap={1}>
-              <Text fontSize="2xl" fontWeight="bold">
-                Setup{' '}
-                <Text as="span" color="primary.500">
-                  Registry
-                </Text>
+              <Text 
+                color="fg.muted"
+                fontSize="2xl"
+                letterSpacing="tight"
+                fontWeight="1000"
+              >
+                Configuration
               </Text>
               <Text fontSize="sm" opacity={0.7}>
                 Configure your application settings

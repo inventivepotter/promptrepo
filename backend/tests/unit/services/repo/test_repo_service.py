@@ -12,8 +12,8 @@ from unittest.mock import Mock, patch, mock_open, MagicMock
 from pathlib import Path
 from datetime import datetime
 
-from services.repo.repo_service import RepoService, IRepoService
-from services.repo.models import PromptFile, CommitInfo, UserCredentials
+from services.remote_repo.repo_service import RepoService, IRepoService
+from services.remote_repo.models import PromptFile, CommitInfo, UserCredentials
 from services.git.git_service import GitOperationResult
 
 

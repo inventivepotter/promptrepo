@@ -10,7 +10,7 @@ from unittest.mock import Mock, AsyncMock, patch
 from pathlib import Path
 from typing import Dict
 
-from services.repo.repo_locator_service import RepoLocatorService, LocalRepoLocator, RepoInfo
+from services.remote_repo.remote_repo_service import RemoteRepoService, LocalRepoLocator, RepoInfo
 from schemas.hosting_type_enum import HostingType
 from services.config.models import HostingConfig
 from services.config.config_interface import IConfig
@@ -102,7 +102,7 @@ class TestRepoLocatorService:
         """Set up test fixtures"""
         self.mock_config_service = Mock(spec=IConfig)
         self.mock_git_provider_service = AsyncMock()
-        self.service = RepoLocatorService(
+        self.service = RemoteRepoService(
             config_service=self.mock_config_service,
             git_provider_service=self.mock_git_provider_service
         )

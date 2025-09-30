@@ -4,85 +4,34 @@ const buttonRecipe = defineRecipe({
   variants: {
     variant: {
       solid: {
-        bg: "{colors.primary.solid}",
-        color: "{colors.bg}",
-        _hover: {
-          color: "{colors.bg.inverted}",
-          bg: "{colors.primary.emphasized}",
-        },
-        _active: {
-          bg: "{colors.primary.fg}",
-        },
+        bg: "fg.muted",
       },
       outline: {
-        borderWidth: "1px",
-        borderColor: "{colors.primary.solid}",
-        color: "{colors.primary.solid}",
-        bg: "transparent",
         _hover: {
-          bg: "{colors.bg.subtle}",
-          borderColor: "{colors.primary.emphasized}",
-          color: "{colors.primary.emphasized}",
-        },
-        _active: {
-          bg: "{colors.bg.muted}",
-          borderColor: "{colors.primary.fg}",
-        },
-      },
-      ghost: {
-        color: "{colors.primary.solid}",
-        bg: "transparent",
-        _hover: {
-          bg: "{colors.bg.subtle}",
-        },
-        _active: {
-          bg: "{colors.bg.muted}",
-        },
-      },
-      link: {
-        color: "{colors.link.DEFAULT}",
-        bg: "transparent",
-        fontWeight: "medium",
-        padding: 0,
-        height: "auto",
-        textDecoration: "underline",
-        _hover: {
-          color: "{colors.link.hover}",
-          textDecoration: "underline",
-        },
-        _active: {
-          color: "{colors.link.visited}",
+          bg: "bg.muted",
         },
       },
     },
-    textColor: {
-      primary: { color: "{colors.text.primary}" },
-      secondary: { color: "{colors.text.secondary}" },
-      tertiary: { color: "{colors.text.tertiary}" },
-      disabled: { color: "{colors.text.disabled}" },
-      inverse: { color: "{colors.text.inverse}" },
-      success: { color: "{colors.text.success}" },
-    },
+  },
+})
+
+const textRecipe = defineRecipe({
+  base: {
+    color: "fg",
   },
 })
 
 const config = defineConfig({
   globalCss: {
-    "body, :root": {
-      color: "{colors.fg.DEFAULT}",
-      bg: "{colors.bg.DEFAULT}",
+    "html, body": {
+      color: "fg",
+      bg: "bg",
     },
-    // Add a more specific rule to ensure it overrides
-    "body &, :root &": {
-      color: "{colors.fg.DEFAULT}",
+    "*": {
+      colorPalette: "primary",
     },
   },
   theme: {
-    textStyles: {
-      DEFAULT: {
-        color: "{colors.fg.DEFAULT}",
-      },
-    },
     tokens: {
       colors: {
         primary: {
@@ -102,6 +51,7 @@ const config = defineConfig({
     },
     recipes: {
       button: buttonRecipe,
+      text: textRecipe,
     },
     semanticTokens: {
       colors: {
@@ -128,6 +78,9 @@ const config = defineConfig({
           emphasized: {
             value: { _light: "{colors.primary.300}", _dark: "{colors.primary.600}" },
           },
+          neutral: {
+            value: { _light: "{colors.primary.500}", _dark: "{colors.primary.500}" },
+          },
           inverted: {
             value: { _light: "{colors.primary.950}", _dark: "{colors.primary.50}" },
           },
@@ -146,6 +99,9 @@ const config = defineConfig({
           emphasized: {
             value: { _light: "{colors.primary.900}", _dark: "{colors.primary.100}" },
           },
+          neutral: {
+            value: { _light: "{colors.primary.500}", _dark: "{colors.primary.500}" },
+          },
           inverted: {
             value: { _light: "{colors.primary.50}", _dark: "{colors.primary.950}" },
           },
@@ -153,7 +109,7 @@ const config = defineConfig({
         // Text-specific color tokens
         text: {
           primary: {
-            value: { _light: "{colors.primary.950}", _dark: "{colors.primary.50}" },
+            value: { _light: "{colors.primary.900}", _dark: "{colors.primary.100}" },
           },
           secondary: {
             value: { _light: "{colors.primary.800}", _dark: "{colors.primary.200}" },

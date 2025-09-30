@@ -466,6 +466,59 @@ class GitService:
                 message=f"Failed to pull latest changes: {e}"
             )
 
+    def clone_repository(
+            self,
+            clone_url: str,
+            branch: Optional[str] = None,
+            oauth_token: Optional[str] = None
+    ) -> GitOperationResult:
+        """
+        Clone a repository from a remote URL.
+
+        Args:
+            clone_url: Git clone URL
+            branch: Optional branch to checkout (default: main/master)
+            oauth_token: Optional OAuth token for authentication
+
+        Returns:
+            GitOperationResult: Result of the operation
+        """
+        try:
+            logger.info(f"🔄 Cloning repository from {clone_url}")
+
+            # Add OAuth token to URL if provided
+            authenticated_url = clone_url
+            if oauth_token:
+                authenticated_url = self._add_token_to_url(clone_url, oauth_token)
+
+            # Ensure parent directory exists
+            self.repo_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Clone the repository
+            repo = Repo.clone_from(authenticated_url, self.repo_path)
+
+            # Checkout specific branch if provided
+            if branch and branch != repo.active_branch.name:
+                try:
+                    repo.git.checkout(branch)
+                    logger.info(f"✅ Checked out branch: {branch}")
+                except Exception as e:
+                    logger.warning(f"Could not checkout branch {branch}: {e}")
+
+            logger.info(f"✅ Successfully cloned repository to {self.repo_path}")
+            return GitOperationResult(
+                success=True,
+                message=f"Successfully cloned repository to {self.repo_path}",
+                data={"repo_path": str(self.repo_path)}
+            )
+
+        except Exception as e:
+            logger.error(f"❌ Failed to clone repository: {e}")
+            return GitOperationResult(
+                success=False,
+                message=f"Failed to clone repository: {e}"
+            )
+
     # Private helper methods
 
     def _add_token_to_url(self, url: str, oauth_token: str) -> str:

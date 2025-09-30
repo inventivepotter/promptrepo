@@ -117,7 +117,7 @@ const AuthButton = () => {
           <Text fontSize="sm" fontWeight="medium">{user.oauth_name}</Text>
           <Text fontSize="xs" color="gray.500">@{user.oauth_username}</Text>
         </VStack>
-        <Button size="sm" colorScheme="red" variant="outline" onClick={() => logout()}>
+        <Button size="sm" variant="outline" onClick={() => logout()}>
           Logout
         </Button>
       </HStack>

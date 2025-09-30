@@ -11,14 +11,10 @@ import { Prompt } from '@/types/Prompt';
 import { Repo } from '@/types/Repo';
 import { PromptEditorHeader } from './PromptEditorHeader';
 import { PromptFieldGroup } from './PromptFieldGroup';
-import { ModelFieldGroup } from './ModelFieldGroup';
-import { ParametersFieldGroup } from './ParametersFieldGroup';
-import { EnableThinkingFieldGroup } from './EnableThinkingFieldGroup';
 import { Chat } from './Chat';
 import { PromptTimeline } from './PromptTimeline';
-import { LLMProvider } from '@/types/LLMProvider';
 import { promptsService } from '@/services/prompts';
-import { useAuth } from '../../(auth)/_components/AuthProvider';
+import { useUser } from '@/stores/authStore';
 
 
 interface PromptEditorProps {
@@ -26,22 +22,18 @@ interface PromptEditorProps {
   onSave: (updates: Partial<Prompt>) => void;
   onBack: () => void;
   configuredRepos?: Array<Repo>;
-  configuredModels?: Array<LLMProvider>;
   isSaving?: boolean;
 }
 
-export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], configuredModels = [], isSaving = false }: PromptEditorProps) {
+export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], isSaving = false }: PromptEditorProps) {
   const [formData, setFormData] = React.useState<Partial<Prompt>>({
     name: '',
     description: '',
-    prompt: '',
-    model: '',
-    failover_model: '',
-    temperature: 0.7,
-    top_p: 1.0,
-    max_tokens: 2048,
-    thinking_enabled: false,
-    thinking_budget: 20000,
+    content: '',
+    system_prompt: '',
+    user_prompt: '',
+    category: '',
+    tags: [],
   });
   const [originalData, setOriginalData] = React.useState<Partial<Prompt>>({});
   const [hasUnsavedChanges, setHasUnsavedChanges] = React.useState(false);
@@ -56,28 +48,22 @@ export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], con
   React.useEffect(() => {
     const initialData = prompt ? {
       name: prompt.name,
-      description: prompt.description,
-      prompt: prompt.prompt,
-      model: prompt.model,
-      failover_model: prompt.failover_model,
-      temperature: prompt.temperature,
-      top_p: prompt.top_p,
-      max_tokens: prompt.max_tokens,
-      thinking_enabled: prompt.thinking_enabled,
-      thinking_budget: prompt.thinking_budget,
+      description: prompt.description || '',
+      content: prompt.content,
+      system_prompt: prompt.system_prompt || '',
+      user_prompt: prompt.user_prompt || '',
+      category: prompt.category || '',
+      tags: prompt.tags || [],
       repo: prompt.repo,
     } : {
       // Initialize with default values for new prompts
       name: '',
       description: '',
-      prompt: '',
-      model: '',
-      failover_model: '',
-      temperature: 0.7,
-      top_p: 1.0,
-      max_tokens: 2048,
-      thinking_enabled: false,
-      thinking_budget: 20000,
+      content: '',
+      system_prompt: '',
+      user_prompt: '',
+      category: '',
+      tags: [],
       repo: undefined,
     };
 
@@ -113,35 +99,21 @@ export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], con
     setShowRepoError(false); // Clear error when repository is selected
   };
 
-  const handleTemperatureChange = (value: string) => {
-    const num = parseFloat(value);
-    if (!isNaN(num) && num >= 0 && num <= 2) {
-      updateField('temperature', Math.round(num * 100) / 100);
-    }
-  };
-
-  const handleTopPChange = (value: string) => {
-    const num = parseFloat(value);
-    if (!isNaN(num) && num >= 0 && num <= 1) {
-      updateField('top_p', Math.round(num * 100) / 100);
-    }
-  };
-
   // Create a default prompt if none is provided (for new prompts)
   const displayPrompt = prompt || {
     id: 'new',
     name: '',
     description: '',
-    prompt: '',
-    model: '',
-    failover_model: '',
-    temperature: 0.7,
-    top_p: 1.0,
-    max_tokens: 2048,
-    thinking_enabled: false,
-    thinking_budget: 20000,
-    created_at: new Date(),
-    updated_at: new Date(),
+    content: '',
+    repo_name: '',
+    file_path: '',
+    category: null,
+    tags: [],
+    system_prompt: null,
+    user_prompt: null,
+    owner: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   };
 
   const handleSave = () => {
@@ -158,7 +130,7 @@ export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], con
   const handleChatMessage = (message: string, tools: string[]) => {
     // Here you would typically send the message to your AI agent
     // along with the current prompt configuration and selected tools
-    console.log('Chat message:', { message, tools, promptConfig: formData });
+    // This will be implemented when the chat functionality is integrated
   };
 
   const handleCommitPush = async () => {
@@ -178,14 +150,14 @@ export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], con
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const bgColor = useColorModeValue('gray.50', 'gray.900');
 
-  const { user } = useAuth();
+  const user = useUser();
 
   // Get commits from prompt data with 0th commit for latest changes
   const commits = React.useMemo(() => {
     const draftCommit = {
       id: '0',
       message: '',
-      author: user?.name || user?.username || 'Unknown User',
+      author: user?.oauth_name || user?.oauth_username || 'Unknown User',
       date: new Date().toISOString(),
       hash: 'draft',
       isLatest: true
@@ -205,7 +177,7 @@ export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], con
     
     // Return just the draft commit if no API commits available
     return [draftCommit];
-  }, [prompt?.recent_commits, user?.name, user?.username]);
+  }, [prompt?.recent_commits, user?.oauth_name, user?.oauth_username]);
 
   return (
     <Box>
@@ -252,29 +224,6 @@ export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], con
                 updateField={updateField}
                 updateRepoField={updateRepoField}
               />
-
-              {/* Model Configuration */}
-              <ModelFieldGroup
-                formData={formData}
-                configuredModels={configuredModels}
-                updateField={updateField}
-              />
-
-              {/* Parameters */}
-              <ParametersFieldGroup
-                formData={formData}
-                updateField={updateField}
-                handleTemperatureChange={handleTemperatureChange}
-                handleTopPChange={handleTopPChange}
-              />
-
-              {/* Thinking Configuration */}
-              <Box opacity={!formData.repo ? 0.5 : 1}>
-                <EnableThinkingFieldGroup
-                  formData={formData}
-                  updateField={updateField}
-                />
-              </Box>
             </VStack>
           </Box>
 
@@ -295,13 +244,6 @@ export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], con
             <Chat
               height="700px"
               onMessageSend={handleChatMessage}
-              promptData={{
-                prompt: formData.prompt || '',
-                model: formData.model || '',
-                temperature: formData.temperature || 0.7,
-                max_tokens: formData.max_tokens || 2048,
-                top_p: formData.top_p || 1.0,
-              }}
             />
           </Box>
         </HStack>

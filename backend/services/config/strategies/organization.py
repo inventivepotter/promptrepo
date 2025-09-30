@@ -9,13 +9,16 @@ Requirements:
 
 import json
 import os
-from typing import List, Optional
+import logging
+from typing import List
 
 from sqlmodel import Session
 from services.config.models import HostingConfig, HostingType, LLMConfig, LLMConfigScope, OAuthConfig, RepoConfig
 from database.daos.user.user_repos_dao import UserReposDAO
 from database.daos.user import UserLLMDAO
 from services.config.config_interface import IConfig
+
+logger = logging.getLogger(__name__)
 
 
 class OrganizationConfig(IConfig):
@@ -100,11 +103,17 @@ class OrganizationConfig(IConfig):
         
         return user_configs
     
-    def set_repo_configs(self, db: Session, user_id: str, repo_configs: List[RepoConfig]) -> List[RepoConfig] | None:
+    def set_repo_configs(self, db: Session, user_id: str, repo_configs: List[RepoConfig], remote_repo_service=None) -> List[RepoConfig] | None:
         """
-        Set repository configuration for a user.
+        Set repository configuration for a user and initiate cloning.
         For organization hosting, repo configs are managed per-user in database.
-        This method uses UserReposService to store configurations.
+        This method stores configurations and initiates cloning via RepoLocatorService.
+        
+        Args:
+            db: Database session
+            user_id: User ID
+            repo_configs: List of repository configurations
+            remote_repo_service: Optional RepoLocatorService instance for cloning
         """
         user_repos_dao = UserReposDAO(db)
         if not repo_configs:
@@ -119,6 +128,7 @@ class OrganizationConfig(IConfig):
                     # If it exists, we can optionally update it or just acknowledge it.
                     # For now, we'll consider it as successfully "set" and add to the return list.
                     saved_repos.append(config)
+                    logger.info(f"Repository {config.repo_name} already exists for user {user_id}")
                     continue
                 
                 # Ensure repo_name is provided, otherwise derive from repo_url as a fallback
@@ -130,19 +140,36 @@ class OrganizationConfig(IConfig):
                         repo_name_to_use = f"{parts[-2]}/{parts[-1]}"
                 
                 if not repo_name_to_use:
-                    print(f"Warning: repo_name is missing and cannot be derived from repo_url: {config.repo_url}. Skipping.")
+                    logger.warning(f"repo_name is missing and cannot be derived from repo_url: {config.repo_url}. Skipping.")
                     continue
 
-                user_repos_dao.add_repository(
+                # Add repository to database with PENDING status
+                new_repo = user_repos_dao.add_repository(
                     user_id=user_id,
                     repo_clone_url=config.repo_url,
                     repo_name=repo_name_to_use,
-                    branch=config.base_branch or "main" # Use base_branch or default to "main"
+                    branch=config.base_branch or "main"
                 )
+                
+                # Initiate cloning if remote_repo_service is provided
+                if remote_repo_service:
+                    oauth_token = getattr(config, 'access_token', None)
+                    clone_success = remote_repo_service.clone_user_repository(
+                        user_id=user_id,
+                        repo_id=new_repo.id,
+                        oauth_token=oauth_token
+                    )
+                    if clone_success:
+                        logger.info(f"Successfully cloned {repo_name_to_use} for user {user_id}")
+                    else:
+                        logger.warning(f"Failed to clone {repo_name_to_use} for user {user_id}")
+                else:
+                    logger.info(f"Repository {repo_name_to_use} added with PENDING status (no clone service provided)")
+                
                 saved_repos.append(config)
             except Exception as e:
                 # Log error and continue with other configs
-                print(f"Error saving repository config for {config.repo_url or config.repo_name}: {e}")
+                logger.error(f"Error saving repository config for {config.repo_url or config.repo_name}: {e}", exc_info=True)
         
         return saved_repos if saved_repos else None
     

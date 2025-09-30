@@ -1,12 +1,19 @@
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 from sqlmodel import Session
 from services.config.config_factory import ConfigStrategyFactory
 from schemas.hosting_type_enum import HostingType
 from services.config.models import OAuthConfig, LLMConfig, LLMConfigScope, RepoConfig, HostingConfig, AppConfig
 from services.config.config_interface import IConfig
 
+if TYPE_CHECKING:
+    from services.remote_repo.remote_repo_service import RemoteRepoService
+
 class ConfigService:
-    def __init__(self, db: Optional[Session] = None, config_strategy: Optional[IConfig] = None):
+    def __init__(
+        self,
+        db: Optional[Session] = None,
+        config_strategy: Optional[IConfig] = None
+    ):
         """
         Initialize ConfigService with dependencies.
         
@@ -58,10 +65,10 @@ class ConfigService:
             raise ValueError("Database session required for LLM configs")
         return self.config.set_llm_configs(self.db, user_id, llm_configs)
     
-    def set_repo_configs(self, user_id: str, repo_configs: List[RepoConfig]) -> List[RepoConfig] | None:
+    def set_repo_configs(self, user_id: str, repo_configs: List[RepoConfig], remote_repo_service: Optional['RemoteRepoService'] = None) -> List[RepoConfig] | None:
         if not self.db:
             raise ValueError("Database session required for repo configs")
-        return self.config.set_repo_configs(self.db, user_id, repo_configs)
+        return self.config.set_repo_configs(self.db, user_id, repo_configs, remote_repo_service)
     
     @classmethod
     def get_supported_types(cls) -> List[str]:
@@ -113,7 +120,13 @@ class ConfigService:
         
         return configs
 
-    def save_configs_for_api(self, user_id: str, llm_configs: List[LLMConfig] | None, repo_configs: List[RepoConfig] | None) -> AppConfig:
+    def save_configs_for_api(
+        self,
+        user_id: str,
+        llm_configs: List[LLMConfig] | None,
+        repo_configs: List[RepoConfig] | None,
+        remote_repo_service: Optional['RemoteRepoService'] = None
+    ) -> AppConfig:
         """
         Save configurations based on hosting type with validation.
         
@@ -121,6 +134,7 @@ class ConfigService:
             user_id: The user ID to save configurations for
             llm_configs: LLM configurations to save (optional)
             repo_configs: Repository configurations to save (optional)
+            remote_repo_service: Optional RemoteRepoService for cloning repositories
             
         Returns:
             AppConfig: Updated configuration after saving
@@ -138,7 +152,7 @@ class ConfigService:
         # Validate and save repo configs only for appropriate hosting types
         if repo_configs is not None and hosting_type != HostingType.INDIVIDUAL:
             self._validate_repo_configs(repo_configs)
-            self.set_repo_configs(user_id=user_id, repo_configs=repo_configs)
+            self.set_repo_configs(user_id=user_id, repo_configs=repo_configs, remote_repo_service=remote_repo_service)
 
         return self.get_configs_for_api(user_id=user_id)
     

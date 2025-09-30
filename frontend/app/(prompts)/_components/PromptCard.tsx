@@ -93,34 +93,39 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
 
           <HStack justify="space-between" align="center" flexWrap="wrap" gap={2}>
             <HStack gap={2} flexWrap="wrap">
-              {prompt.repo?.name && (
+              {prompt.repo_name && (
                 <Badge size="sm" variant="subtle" colorPalette="green">
-                  {prompt.repo.name}
+                  {prompt.repo_name}
                 </Badge>
               )}
-              <Badge size="sm" variant="subtle" colorPalette="blue">
-                {prompt.model || 'No model'}
-              </Badge>
-              {prompt.thinking_enabled && (
-                <Badge size="sm" variant="subtle" colorPalette="purple">
-                  Thinking
+              {prompt.category && (
+                <Badge size="sm" variant="subtle" colorPalette="blue">
+                  {prompt.category}
                 </Badge>
               )}
-              <Badge size="sm" variant="subtle" colorPalette="gray">
-                T: {prompt.temperature}
-              </Badge>
-              <Badge size="sm" variant="subtle" colorPalette="gray">
-                {prompt.max_tokens} tokens
-              </Badge>
+              {prompt.tags && prompt.tags.length > 0 && (
+                <>
+                  {prompt.tags.slice(0, 3).map((tag, index) => (
+                    <Badge key={index} size="sm" variant="subtle" colorPalette="purple">
+                      {tag}
+                    </Badge>
+                  ))}
+                  {prompt.tags.length > 3 && (
+                    <Badge size="sm" variant="subtle" colorPalette="gray">
+                      +{prompt.tags.length - 3}
+                    </Badge>
+                  )}
+                </>
+              )}
             </HStack>
 
             <HStack gap={1} fontSize="xs" color={mutedTextColor}>
               <LuClock size={12} />
-              <Text>{formatDate(prompt.updated_at)}</Text>
+              <Text>{formatDate(new Date(prompt.updated_at))}</Text>
             </HStack>
           </HStack>
 
-          {prompt.prompt && (
+          {prompt.content && (
             <Box
               p={3}
               bg={promptPreviewBg}
@@ -129,7 +134,7 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
               borderColor={promptBorderColor}
             >
               <Text fontSize="sm" color={mutedTextColor} lineClamp={3}>
-                {truncateText(prompt.prompt, 150)}
+                {truncateText(prompt.content, 150)}
               </Text>
             </Box>
           )}

@@ -56,7 +56,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
           <Branding collapsed={isCollapsed} />
         </HStack>
       </Box>
-      <Separator borderColor="bg.muted" />
+      <Separator borderColor="bg.muted" mx={2} />
       {/* Navigation Menu */}
       <Stack gap={1} p={2} pt={3}>
         {/* Setup */}

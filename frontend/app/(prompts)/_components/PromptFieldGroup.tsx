@@ -66,11 +66,7 @@ export function PromptFieldGroup({
             const id = e.value[0] || '0';
             const selectedRepo = configuredRepos.find(r => r.id === id);
             if (selectedRepo) {
-              updateRepoField({
-                id: selectedRepo.id,
-                base_branch: selectedRepo.base_branch,
-                name: selectedRepo.name
-              });
+              updateRepoField(selectedRepo);
             } else {
               updateRepoField(undefined);
             }
@@ -112,14 +108,81 @@ export function PromptFieldGroup({
         </Box>
 
         <Box opacity={!formData.repo ? 0.5 : 1}>
-          <Text mb={2} fontWeight={formData.repo ? "medium" : "normal"} color={!formData.repo ? "gray.400" : undefined} fontSize="lg">Prompt Template</Text>
+          <Text mb={2} fontWeight={formData.repo ? "medium" : "normal"} color={!formData.repo ? "gray.400" : undefined}>Description</Text>
+          <Textarea
+            value={formData.description || ''}
+            onChange={(e) => updateField('description', e.target.value)}
+            placeholder="Enter prompt description (optional)"
+            rows={2}
+            resize="vertical"
+          />
+        </Box>
+
+        <Box opacity={!formData.repo ? 0.5 : 1}>
+          <Text mb={2} fontWeight={formData.repo ? "medium" : "normal"} color={!formData.repo ? "gray.400" : undefined}>Category</Text>
+          <Input
+            value={formData.category || ''}
+            onChange={(e) => updateField('category', e.target.value)}
+            placeholder="Enter category (optional)"
+          />
+        </Box>
+
+        <Box opacity={!formData.repo ? 0.5 : 1}>
+          <Text mb={2} fontWeight={formData.repo ? "medium" : "normal"} color={!formData.repo ? "gray.400" : undefined}>Tags</Text>
+          <Text mb={2} fontSize="sm" color={mutedTextColor}>
+            Enter tags separated by commas
+          </Text>
+          <Input
+            value={Array.isArray(formData.tags) ? formData.tags.join(', ') : ''}
+            onChange={(e) => {
+              const tagsArray = e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag);
+              updateField('tags' as keyof Prompt, tagsArray as unknown as string);
+            }}
+            placeholder="e.g., coding, debugging, refactoring"
+          />
+        </Box>
+
+        <Box opacity={!formData.repo ? 0.5 : 1}>
+          <Text mb={2} fontWeight={formData.repo ? "medium" : "normal"} color={!formData.repo ? "gray.400" : undefined} fontSize="lg">System Prompt</Text>
           <Text mb={3} fontSize="sm" color={mutedTextColor}>
-            This is the core of your prompt. Write your instructions, context, and any variables here.
+            The system prompt sets the behavior and context for the AI assistant.
           </Text>
           <Textarea
-            value={formData.prompt || ''}
-            onChange={(e) => updateField('prompt', e.target.value)}
-            placeholder="Enter your prompt template here..."
+            value={formData.system_prompt || ''}
+            onChange={(e) => updateField('system_prompt', e.target.value)}
+            placeholder="Enter system prompt (optional)..."
+            rows={8}
+            minH="200px"
+            lineHeight="1.6"
+            resize="vertical"
+          />
+        </Box>
+
+        <Box opacity={!formData.repo ? 0.5 : 1}>
+          <Text mb={2} fontWeight={formData.repo ? "medium" : "normal"} color={!formData.repo ? "gray.400" : undefined} fontSize="lg">User Prompt</Text>
+          <Text mb={3} fontSize="sm" color={mutedTextColor}>
+            The user prompt is the main instruction or query to the AI.
+          </Text>
+          <Textarea
+            value={formData.user_prompt || ''}
+            onChange={(e) => updateField('user_prompt', e.target.value)}
+            placeholder="Enter user prompt (optional)..."
+            rows={8}
+            minH="200px"
+            lineHeight="1.6"
+            resize="vertical"
+          />
+        </Box>
+
+        <Box opacity={!formData.repo ? 0.5 : 1}>
+          <Text mb={2} fontWeight={formData.repo ? "medium" : "normal"} color={!formData.repo ? "gray.400" : undefined} fontSize="lg">Full Content (Combined)</Text>
+          <Text mb={3} fontSize="sm" color={mutedTextColor}>
+            This is the complete prompt content that will be stored. Edit system and user prompts above, or edit this directly.
+          </Text>
+          <Textarea
+            value={formData.content || ''}
+            onChange={(e) => updateField('content', e.target.value)}
+            placeholder="Full prompt content..."
             rows={15}
             minH="400px"
             lineHeight="1.6"

@@ -4,10 +4,13 @@ Implements the Strategy Pattern for hosting type configurations.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 from sqlmodel import Session
 from services.config.models import AppConfig
 from services.config.models import HostingConfig, OAuthConfig, LLMConfig, RepoConfig
+
+if TYPE_CHECKING:
+    from services.remote_repo.remote_repo_service import RemoteRepoService
 
 
 class IConfig(ABC):
@@ -43,7 +46,7 @@ class IConfig(ABC):
         pass
 
     @abstractmethod
-    def set_repo_configs(self, db: Session, user_id: str, repo_configs: List[RepoConfig]) -> List[RepoConfig] | None:
+    def set_repo_configs(self, db: Session, user_id: str, repo_configs: List[RepoConfig], remote_repo_service: Optional['RemoteRepoService'] = None) -> List[RepoConfig] | None:
         """
         Set repository configuration for a user.
 
@@ -51,6 +54,7 @@ class IConfig(ABC):
             db: Database session
             user_id: The ID of the user to set the configuration for.
             repo_configs: Repository configuration as a list of RepoConfig objects
+            remote_repo_service: Optional RepoLocatorService for cloning
 
         Returns:
             List[RepoConfig]: Updated repository configuration

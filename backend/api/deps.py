@@ -24,9 +24,9 @@ from services.config.config_service import ConfigService
 from schemas.hosting_type_enum import HostingType
 from services.llm.completion_service import ChatCompletionService
 from services.llm.llm_provider_service import LLMProviderService
-from services.repo.repo_service import RepoService
 from services.git.git_service import GitService
-from services.repo.repo_locator_service import RepoLocatorService
+from services.remote_repo.remote_repo_service import RemoteRepoService
+from services.prompt.prompt_service import PromptService
 
 
 # ==============================================================================
@@ -163,29 +163,6 @@ ChatCompletionServiceDep = Annotated[ChatCompletionService, Depends(get_chat_com
 
 
 # ==============================================================================
-# Repository Service
-# ==============================================================================
-
-def get_repo_service(
-    config_service: ConfigServiceDep,
-    repo_path: Path = Path("/tmp/repos")  # Default path
-) -> RepoService:
-    """
-    Repository service dependency.
-    
-    Creates a RepoService for managing repository operations.
-    The repo_path can be overridden per request if needed.
-    
-    TODO: Get default repo_path from ConfigService.
-    """
-    # In the future: repo_path = config_service.get_repo_config().default_path
-    return RepoService(repo_path=repo_path)
-
-
-RepoServiceDep = Annotated[RepoService, Depends(get_repo_service)]
-
-
-# ==============================================================================
 # Git Service
 # ==============================================================================
 
@@ -230,25 +207,48 @@ ProviderServiceDep = Annotated[LLMProviderService, Depends(get_provider_service)
 # Repository Locator Service
 # ==============================================================================
 
-def get_repo_locator_service(
+def get_remote_repo_service(
     db: DBSession,
-    config_service: ConfigServiceDep,
     session_service: SessionServiceDep
-) -> RepoLocatorService:
+) -> RemoteRepoService:
     """
-    Repository locator service dependency.
+    Remote repository service dependency.
     
-    Creates a RepoLocatorService with database session, config, and session service injection.
+    Creates a RemoteRepoService with database session, config, and session service injection.
     This service can handle both individual and organization hosting types
     dynamically based on the configuration and user context.
     """
-    return RepoLocatorService(db=db, config_service=config_service.config, session_service=session_service)
+    return RemoteRepoService(db=db, session_service=session_service)
 
 
-RepoLocatorServiceDep = Annotated[RepoLocatorService, Depends(get_repo_locator_service)]
+RemoteRepoServiceDep = Annotated[RemoteRepoService, Depends(get_remote_repo_service)]
 
 
-# Note: For RepoLocatorService, it's often better to create it dynamically
+# ==============================================================================
+# Prompt Service
+# ==============================================================================
+
+def get_prompt_service(
+    config_service: ConfigServiceDep,
+    session_service: SessionServiceDep
+) -> PromptService:
+    """
+    Prompt service dependency.
+    
+    Creates a PromptService with all required dependencies injected.
+    The service handles both individual and organization hosting types.
+    """
+    
+    return PromptService(
+        config_service=config_service.config,
+        session_service=session_service
+    )
+
+
+PromptServiceDep = Annotated[PromptService, Depends(get_prompt_service)]
+
+
+# Note: For RemoteRepoService, it's often better to create it dynamically
 # in the controller based on the hosting type.
 
 # ==============================================================================

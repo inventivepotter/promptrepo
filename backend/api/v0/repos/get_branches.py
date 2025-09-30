@@ -11,7 +11,7 @@ from middlewares.rest import (
     success_response,
     AppException
 )
-from api.deps import SessionServiceDep, RepoLocatorServiceDep, CurrentUserDep
+from api.deps import SessionServiceDep, RemoteRepoServiceDep, CurrentUserDep
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -79,7 +79,7 @@ class RepositoryBranchesResponse(BaseModel):
 )
 async def get_repository_branches(
     request: Request,
-    repo_locator_service: RepoLocatorServiceDep,
+    remote_repo_service: RemoteRepoServiceDep,
     user_id: CurrentUserDep,
     owner: str = Query(..., description="Repository owner/organization"),
     repo: str = Query(..., description="Repository name")
@@ -109,7 +109,7 @@ async def get_repository_branches(
             }
         )
         
-        branches_data = await repo_locator_service.get_repository_branches(
+        branches_data = await remote_repo_service.get_repository_branches(
             user_id=user_id,
             owner=owner,
             repo=repo

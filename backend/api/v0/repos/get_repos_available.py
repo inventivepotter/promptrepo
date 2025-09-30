@@ -9,8 +9,8 @@ from middlewares.rest import (
     success_response,
     AppException
 )
-from api.deps import SessionServiceDep, RepoLocatorServiceDep, CurrentUserDep, BearerTokenDep
-from services.repo.models import RepositoryList
+from api.deps import SessionServiceDep, RemoteRepoServiceDep, CurrentUserDep, BearerTokenDep
+from services.remote_repo.models import RepositoryList
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -54,7 +54,7 @@ router = APIRouter()
 async def get_available_repositories(
     request: Request,
     session_service: SessionServiceDep,
-    repo_locator_service: RepoLocatorServiceDep,
+    remote_repo_service: RemoteRepoServiceDep,
     user_id: CurrentUserDep,
 ) -> StandardResponse[RepositoryList]:
     """
@@ -77,7 +77,7 @@ async def get_available_repositories(
             }
         )
         
-        repo_list: RepositoryList = await repo_locator_service.get_repositories(
+        repo_list: RepositoryList = await remote_repo_service.get_repositories(
             user_id=user_id,
         )
         
