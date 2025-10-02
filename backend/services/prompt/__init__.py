@@ -6,21 +6,13 @@ in repositories across both individual and organization hosting types.
 """
 
 from .models import (
-    Prompt,
-    PromptCreate,
-    PromptUpdate,
-    PromptFile
+    PromptMeta,
 )
 from .prompt_interface import IPromptService
 from .prompt_service import PromptService
-from .prompt_discovery_service import PromptDiscoveryService
 
 __all__ = [
-    "Prompt",
-    "PromptCreate",
-    "PromptUpdate",
-    "PromptFile",
+    "PromptMeta",
     "IPromptService",
-    "PromptService",
-    "PromptDiscoveryService"
+    "PromptService"
 ]

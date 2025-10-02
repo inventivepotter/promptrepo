@@ -1,6 +1,12 @@
 import httpClient from '@/lib/httpClient';
-import type { OpenApiResponse, PaginatedResponse } from '@/types/OpenApiResponse';
-import type { Prompt, PromptCreate, PromptUpdate } from '@/types/Prompt';
+import type { OpenApiResponse } from '@/types/OpenApiResponse';
+import type { components } from '@/types/generated/api';
+
+// Type aliases for better readability
+type PromptMeta = components['schemas']['PromptMeta'];
+type PromptData = components['schemas']['PromptData'];
+type PromptDataUpdate = components['schemas']['PromptDataUpdate'];
+type DiscoverRepositoriesRequest = components['schemas']['DiscoverRepositoriesRequest'];
 
 /**
  * Prompts API client matching backend endpoints
@@ -8,130 +14,79 @@ import type { Prompt, PromptCreate, PromptUpdate } from '@/types/Prompt';
  */
 export const promptsApi = {
   /**
-   * Get all prompts with pagination and filtering
-   * GET /api/v0/prompts
+   * Get individual prompt by repository name and file path
+   * GET /api/v0/prompts?repo_name=...&file_path=...
    */
-  getPrompts: async (params?: {
-    query?: string;
-    repo_name?: string;
-    category?: string;
-    tags?: string[];
-    owner?: string;
-    page?: number;
-    page_size?: number;
-  }): Promise<OpenApiResponse<Prompt[]>> => {
+  getPrompt: async (repoName: string, filePath: string): Promise<OpenApiResponse<PromptMeta>> => {
     const searchParams = new URLSearchParams();
+    searchParams.append('repo_name', repoName);
+    searchParams.append('file_path', filePath);
     
-    if (params?.query) searchParams.append('query', params.query);
-    if (params?.repo_name) searchParams.append('repo_name', params.repo_name);
-    if (params?.category) searchParams.append('category', params.category);
-    if (params?.tags) {
-      params.tags.forEach(tag => searchParams.append('tags', tag));
-    }
-    if (params?.owner) searchParams.append('owner', params.owner);
-    if (params?.page) searchParams.append('page', params.page.toString());
-    if (params?.page_size) searchParams.append('page_size', params.page_size.toString());
-
-    const queryString = searchParams.toString();
-    const url = queryString ? `/api/v0/prompts?${queryString}` : '/api/v0/prompts';
-    
-    return await httpClient.get<Prompt[]>(url);
-  },
-
-  /**
-   * Get individual prompt by ID
-   * GET /api/v0/prompts/{id}
-   */
-  getPrompt: async (id: string): Promise<OpenApiResponse<Prompt>> => {
-    return await httpClient.get<Prompt>(`/api/v0/prompts/${id}`);
+    return await httpClient.get<PromptMeta>(`/api/v0/prompts/?${searchParams.toString()}`);
   },
 
   /**
    * Create a new prompt
-   * POST /api/v0/prompts
+   * POST /api/v0/prompts?repo_name=...&file_path=...
    */
-  createPrompt: async (prompt: PromptCreate): Promise<OpenApiResponse<Prompt>> => {
-    return await httpClient.post<Prompt>(
-      '/api/v0/prompts',
-      prompt
+  createPrompt: async (
+    repoName: string,
+    filePath: string,
+    promptData: PromptData
+  ): Promise<OpenApiResponse<PromptMeta>> => {
+    const searchParams = new URLSearchParams();
+    searchParams.append('repo_name', repoName);
+    searchParams.append('file_path', filePath);
+    
+    return await httpClient.post<PromptMeta>(
+      `/api/v0/prompts/?${searchParams.toString()}`,
+      promptData
     );
   },
 
   /**
    * Update a prompt
-   * PUT /api/v0/prompts/{id}
+   * PUT /api/v0/prompts?repo_name=...&file_path=...
    */
-  updatePrompt: async (id: string, updates: PromptUpdate): Promise<OpenApiResponse<Prompt>> => {
-    return await httpClient.put<Prompt>(
-      `/api/v0/prompts/${id}`,
+  updatePrompt: async (
+    repoName: string,
+    filePath: string,
+    updates: PromptDataUpdate
+  ): Promise<OpenApiResponse<PromptMeta>> => {
+    const searchParams = new URLSearchParams();
+    searchParams.append('repo_name', repoName);
+    searchParams.append('file_path', filePath);
+    
+    return await httpClient.put<PromptMeta>(
+      `/api/v0/prompts/?${searchParams.toString()}`,
       updates
     );
   },
 
   /**
    * Delete a prompt
-   * DELETE /api/v0/prompts/{id}
+   * DELETE /api/v0/prompts?repo_name=...&file_path=...
    */
-  deletePrompt: async (id: string): Promise<OpenApiResponse<void>> => {
-    return await httpClient.delete<void>(`/api/v0/prompts/${id}`);
+  deletePrompt: async (repoName: string, filePath: string): Promise<OpenApiResponse<null>> => {
+    const searchParams = new URLSearchParams();
+    searchParams.append('repo_name', repoName);
+    searchParams.append('file_path', filePath);
+    
+    return await httpClient.delete<null>(`/api/v0/prompts/?${searchParams.toString()}`);
   },
 
   /**
-   * Sync prompts from a repository
-   * POST /api/v0/prompts/sync/{repo_name}
+   * Discover prompts from one or more repositories
+   * POST /api/v0/prompts/discover
    */
-  syncRepository: async (repoName: string): Promise<OpenApiResponse<{ synced_count: number; repository: string }>> => {
-    return await httpClient.post<{ synced_count: number; repository: string }>(
-      `/api/v0/prompts/sync/${repoName}`,
-      {}
-    );
+  discoverAllPromptsFromRepos: async (repoNames: string[]): Promise<OpenApiResponse<PromptMeta[]>> => {
+    return await httpClient.post<PromptMeta[]>('/api/v0/prompts/discover', {
+      repo_names: repoNames
+    });
   },
-
-  /**
-   * List available repositories
-   * GET /api/v0/prompts/repositories/list
-   */
-  listRepositories: async (): Promise<OpenApiResponse<Array<{
-    name: string;
-    path: string;
-    type: string;
-    has_git: boolean;
-  }>>> => {
-    return await httpClient.get<Array<{
-      name: string;
-      path: string;
-      type: string;
-      has_git: boolean;
-    }>>('/api/v0/prompts/repositories/list');
-  },
-
-  /**
-   * List prompts in a specific repository
-   * GET /api/v0/prompts/repositories/{repo_name}/prompts
-   */
-  listRepositoryPrompts: async (repoName: string): Promise<OpenApiResponse<Prompt[]>> => {
-    return await httpClient.get<Prompt[]>(`/api/v0/prompts/repositories/${repoName}/prompts`);
-  },
-
-  /**
-   * Discover prompt files in a repository
-   * GET /api/v0/prompts/repositories/{repo_name}/discover
-   */
-  discoverRepositoryPrompts: async (repoName: string): Promise<OpenApiResponse<Array<{
-    path: string;
-    name: string;
-    system_prompt: string | null;
-    user_prompt: string | null;
-    metadata: Record<string, unknown> | null;
-  }>>> => {
-    return await httpClient.get<Array<{
-      path: string;
-      name: string;
-      system_prompt: string | null;
-      user_prompt: string | null;
-      metadata: Record<string, unknown> | null;
-    }>>(`/api/v0/prompts/repositories/${repoName}/discover`);
-  }
 };
+
+// Re-export types for convenience
+export type { PromptMeta, PromptData, PromptDataUpdate, DiscoverRepositoriesRequest };
 
 export default promptsApi;

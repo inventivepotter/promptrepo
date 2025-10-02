@@ -2,7 +2,7 @@
 
 import React, { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Box } from '@chakra-ui/react';
+import { Box, ScrollArea } from '@chakra-ui/react';
 import { Prompt } from '@/types/Prompt';
 import {
   useCurrentPrompt,
@@ -22,8 +22,7 @@ function EditorPageContent() {
   const isUpdating = useIsUpdating();
   const {
     fetchPromptById,
-    updatePrompt,
-    setCurrentPrompt,
+    saveCurrentPrompt,
     clearCurrentPrompt,
   } = usePromptActions();
   
@@ -46,10 +45,8 @@ function EditorPageContent() {
     };
   }, [promptId]);
 
-  const handleSave = async (updates: Partial<Prompt>) => {
-    if (currentPrompt) {
-      await updatePrompt(currentPrompt.id, updates);
-    }
+  const handleSave = (updates: Partial<Prompt>) => {
+    saveCurrentPrompt(updates);
   };
 
   const handleBack = () => {
@@ -83,15 +80,13 @@ function EditorPageContent() {
         title="Saving Prompt..."
         subtitle="Please wait while we save your changes"
       />
-      <Box minH="100vh">
-        <PromptEditor
-          prompt={currentPrompt}
-          onSave={handleSave}
-          onBack={handleBack}
-          configuredRepos={transformedRepos}
-          isSaving={isUpdating}
-        />
-      </Box>
+      <PromptEditor
+        prompt={currentPrompt}
+        onSave={handleSave}
+        onBack={handleBack}
+        configuredRepos={transformedRepos}
+        isSaving={isUpdating}
+      />
     </>
   );
 }

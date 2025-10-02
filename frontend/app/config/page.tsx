@@ -1,8 +1,7 @@
 'use client'
 
 import { Box, Container, ScrollArea } from '@chakra-ui/react'
-import { ConfigSection, LLMConfigManager, RepoConfigManager } from '@/components/config'
-import { ConfigHeader } from '../../../components/config/ConfigHeader'
+import { ConfigSection, ConfigHeader, LLMConfigManager, RepoConfigManager } from '@/components/config'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
 export default function ConfigPage() {

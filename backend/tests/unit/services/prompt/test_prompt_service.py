@@ -13,7 +13,7 @@ from unittest.mock import Mock, AsyncMock, patch, MagicMock
 from services.prompt.prompt_service import PromptService
 from services.prompt.prompt_discovery_service import PromptDiscoveryService
 from services.prompt.models import (
-    Prompt,
+    PromptMeta,
     PromptCreate,
     PromptUpdate,
     PromptList,
@@ -134,7 +134,7 @@ class TestPromptService:
         result = await prompt_service_individual.create_prompt("user1", sample_prompt_data)
         
         # Assert
-        assert isinstance(result, Prompt)
+        assert isinstance(result, PromptMeta)
         assert result.name == "Test Prompt"
         assert result.repo_name == "test-repo"
         assert result.owner is None  # No owner in individual mode
@@ -209,7 +209,7 @@ class TestPromptService:
     async def test_get_prompt_success(self, prompt_service_individual):
         """Test retrieving an existing prompt."""
         # Create a prompt first
-        prompt = Prompt(
+        prompt = PromptMeta(
             id="test-id",
             name="Test",
             content="{}",
@@ -238,7 +238,7 @@ class TestPromptService:
     async def test_get_prompt_no_access_organization(self, prompt_service_organization):
         """Test user cannot access another user's prompt in organization mode."""
         # Create prompt owned by user1
-        prompt = Prompt(
+        prompt = PromptMeta(
             id="test-id",
             name="Test",
             content="{}",
@@ -273,7 +273,7 @@ class TestPromptService:
         repo_path.mkdir()
         
         # Create existing prompt
-        prompt = Prompt(
+        prompt = PromptMeta(
             id="test-id",
             name="Original Name",
             description="Original desc",
@@ -328,7 +328,7 @@ class TestPromptService:
         repo_path.mkdir()
         
         # Create prompt
-        prompt = Prompt(
+        prompt = PromptMeta(
             id="test-id",
             name="Original",
             description="Keep this",
@@ -370,7 +370,7 @@ class TestPromptService:
         file_path.write_text("test")
         
         # Create prompt
-        prompt = Prompt(
+        prompt = PromptMeta(
             id="test-id",
             name="Test",
             content="{}",
@@ -401,7 +401,7 @@ class TestPromptService:
         """Test listing all accessible prompts."""
         # Create multiple prompts
         for i in range(5):
-            prompt = Prompt(
+            prompt = PromptMeta(
                 id=f"prompt-{i}",
                 name=f"Prompt {i}",
                 content="{}",
@@ -429,7 +429,7 @@ class TestPromptService:
         ]
         
         for pid, name, desc in prompts_data:
-            prompt = Prompt(
+            prompt = PromptMeta(
                 id=pid,
                 name=name,
                 description=desc,
@@ -455,7 +455,7 @@ class TestPromptService:
         """Test listing prompts filtered by repository."""
         # Create prompts in different repos
         for i in range(3):
-            prompt = Prompt(
+            prompt = PromptMeta(
                 id=f"prompt-{i}",
                 name=f"Prompt {i}",
                 content="{}",
@@ -478,7 +478,7 @@ class TestPromptService:
         """Test listing prompts with pagination."""
         # Create 25 prompts
         for i in range(25):
-            prompt = Prompt(
+            prompt = PromptMeta(
                 id=f"prompt-{i}",
                 name=f"Prompt {i}",
                 content="{}",
@@ -514,7 +514,7 @@ class TestPromptService:
         """Test that organization mode only shows user's own prompts."""
         # Create prompts for different users
         for i, user in enumerate(["user1", "user1", "user2"]):
-            prompt = Prompt(
+            prompt = PromptMeta(
                 id=f"prompt-{i}",
                 name=f"Prompt {i}",
                 content="{}",

@@ -38,12 +38,12 @@ class Settings(BaseSettings):
 
     # Core Repository Paths
     local_repo_path: str = Field(
-        default="persistence/repos/",
+        default="/persistence/repos/",
         description="Path for individual local repositories"
     )
 
     multi_user_repo_path: str = Field(
-        default="persistence/repos/workspaces/",
+        default="/persistence/repos/workspaces/",
         description="Path for multi-user repository workspaces"
     )
     

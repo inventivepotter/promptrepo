@@ -1,8 +1,15 @@
-import { NotificationOptions } from '@/types/ApiResponse';
 import { toaster } from '@/components/ui/toaster';
 
 // This utility works with Chakra UI's toaster system
 // It creates and immediately displays notifications
+
+interface NotificationOptions {
+  title: string;
+  description?: string;
+  status: 'success' | 'error' | 'warning' | 'info';
+  duration?: number;
+  isClosable?: boolean;
+}
 
 export const createNotification = (options: NotificationOptions): void => {
   const notificationConfig = {

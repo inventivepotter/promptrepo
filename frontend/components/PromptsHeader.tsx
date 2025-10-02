@@ -13,10 +13,9 @@ import { LuPlus, LuGitBranch } from 'react-icons/lu';
 
 interface PromptsHeaderProps {
   onCreateNew: () => void;
-  onCommitPush?: () => void;
 }
 
-export function PromptsHeader({ onCreateNew, onCommitPush }: PromptsHeaderProps) {
+export function PromptsHeader({ onCreateNew }: PromptsHeaderProps) {
   const headerBg = "bg.subtle"
 
   return (
@@ -48,9 +47,6 @@ export function PromptsHeader({ onCreateNew, onCommitPush }: PromptsHeaderProps)
           <HStack gap={3}>
             <Button variant="solid" onClick={onCreateNew}>
               <LuPlus /> New Prompt
-            </Button>
-            <Button variant="outline" onClick={onCommitPush}>
-              <LuGitBranch /> Commit & Push
             </Button>
           </HStack>
         </HStack>

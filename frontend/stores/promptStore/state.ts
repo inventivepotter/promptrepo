@@ -2,8 +2,11 @@
 import type { PromptState } from './types';
 
 export const initialPromptState: PromptState = {
-  // Data
-  prompts: [],
+  // Data - stored as Map for efficient lookups
+  // Key format: "repo_name:file_path"
+  prompts: new Map(),
+  
+  // Currently selected/editing prompt (serves as form data)
   currentPrompt: null,
   
   // UI State
@@ -13,7 +16,7 @@ export const initialPromptState: PromptState = {
   isDeleting: false,
   error: null,
   
-  // Filters and Pagination
+  // Filters and Pagination (frontend-only)
   filters: {
     search: '',
     repository: '',
@@ -27,6 +30,6 @@ export const initialPromptState: PromptState = {
     totalPages: 0,
   },
   
-  // Optimistic update tracking
-  optimisticUpdates: new Map(),
+  // Cache management
+  lastSyncTimestamp: null,
 };

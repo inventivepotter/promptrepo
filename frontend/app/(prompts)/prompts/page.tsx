@@ -4,7 +4,6 @@ import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   VStack,
-  HStack,
   Text,
   Button,
   Grid,
@@ -31,7 +30,7 @@ import { PromptSearch } from '../_components/PromptSearch';
 import { PromptCard } from '../_components/PromptCard';
 import { Pagination } from '../_components/Pagination';
 import { PromptsHeader } from '@/components/PromptsHeader';
-import { promptsService } from '@/services/prompts';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 export default function PromptsPage() {
   const router = useRouter();
@@ -59,9 +58,12 @@ export default function PromptsPage() {
     setRepository,
   } = usePromptActions();
 
-  // Fetch prompts on mount
+  // Manually hydrate the store on client side and fetch prompts
   useEffect(() => {
-    fetchPrompts();
+    // Only run on client side
+    if (typeof window !== 'undefined') {
+      fetchPrompts();
+    }
   }, []);
 
 
@@ -94,10 +96,6 @@ export default function PromptsPage() {
     }
   };
 
-  const handleCommitPushAll = async () => {
-    await promptsService.commitPushAll();
-  };
-
   const handleSortChange = (newSortBy: 'name' | 'updated_at') => {
     if (newSortBy === sortBy) {
       // Toggle order if same field
@@ -109,14 +107,14 @@ export default function PromptsPage() {
   };
 
   return (
-    <Box height="100vh" width="100%" display="flex" flexDirection="column">
-      {/* Prompts Header - Outside ScrollArea */}
-      <PromptsHeader
-        onCreateNew={handleCreateNew}
-        onCommitPush={handleCommitPushAll}
-      />
+    <ProtectedRoute>
+      <Box height="100vh" width="100%" display="flex" flexDirection="column">
+        {/* Prompts Header - Outside ScrollArea */}
+        <PromptsHeader
+          onCreateNew={handleCreateNew}
+        />
 
-      <ScrollArea.Root flex="1" width="100%">
+        <ScrollArea.Root flex="1" width="100%">
         <ScrollArea.Viewport
           css={{
             "--scroll-shadow-size": "5rem",
@@ -204,7 +202,8 @@ export default function PromptsPage() {
         <ScrollArea.Scrollbar orientation="vertical">
           <ScrollArea.Thumb />
         </ScrollArea.Scrollbar>
-      </ScrollArea.Root>
-    </Box>
+        </ScrollArea.Root>
+      </Box>
+    </ProtectedRoute>
   );
 }

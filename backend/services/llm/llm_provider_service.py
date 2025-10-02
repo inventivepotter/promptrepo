@@ -4,7 +4,7 @@ Handles provider information, configured providers, and model fetching.
 """
 from typing import Dict, List, Any
 import logging
-from any_llm import LLMProvider
+from any_llm.constants import LLMProvider
 from any_llm.api import list_models, alist_models
 
 from services.config.config_service import ConfigService

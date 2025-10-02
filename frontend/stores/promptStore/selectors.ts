@@ -1,9 +1,11 @@
 import { PromptStore } from './types';
-import { Prompt } from '@/types/Prompt';
+import type { PromptMeta } from '@/services/prompts/api';
 
-// Data Selectors
-export const selectPrompts = (state: PromptStore): Prompt[] => state.prompts;
-export const selectCurrentPrompt = (state: PromptStore): Prompt | null => state.currentPrompt;
+// Data Selectors - Convert Map to Array
+export const selectPrompts = (state: PromptStore): PromptMeta[] =>
+  Array.from(state.prompts.values());
+
+export const selectCurrentPrompt = (state: PromptStore): PromptMeta | null => state.currentPrompt;
 
 // Loading State Selectors
 export const selectIsLoading = (state: PromptStore): boolean => state.isLoading;
@@ -34,15 +36,14 @@ export const selectHasNextPage = (state: PromptStore): boolean =>
 export const selectHasPreviousPage = (state: PromptStore): boolean =>
   state.pagination.page > 1;
 
-// Computed Selectors
-export const selectPromptById = (id: string) => (state: PromptStore): Prompt | undefined =>
-  state.prompts.find(prompt => prompt.id === id);
+// Computed Selectors - Use Map.get() for efficient lookups
+export const selectPromptByKey = (repoName: string, filePath: string) => (state: PromptStore): PromptMeta | undefined =>
+  state.prompts.get(`${repoName}:${filePath}`);
 
-export const selectPromptsByRepository = (repository: string) => (state: PromptStore): Prompt[] =>
-  state.prompts.filter(prompt => prompt.repo?.name === repository);
+export const selectPromptsByRepository = (repository: string) => (state: PromptStore): PromptMeta[] =>
+  Array.from(state.prompts.values()).filter(promptMeta => promptMeta.repo_name === repository);
 
 // Create a selector that returns both the filtered prompts and the dependencies
-// This allows Zustand to properly memoize based on the actual dependencies
 export const selectFilteredPromptsData = (state: PromptStore) => ({
   prompts: state.prompts,
   search: state.filters.search,
@@ -52,24 +53,27 @@ export const selectFilteredPromptsData = (state: PromptStore) => ({
 });
 
 // The actual filtering function that processes the data
-export const filterPrompts = (data: ReturnType<typeof selectFilteredPromptsData>): Prompt[] => {
-  let filtered = [...data.prompts];
+export const filterPrompts = (data: ReturnType<typeof selectFilteredPromptsData>): PromptMeta[] => {
+  let filtered = Array.from(data.prompts.values());
   
   // Apply search filter
   if (data.search) {
     const searchLower = data.search.toLowerCase();
-    filtered = filtered.filter(prompt =>
-      prompt.name.toLowerCase().includes(searchLower) ||
-      prompt.content.toLowerCase().includes(searchLower) ||
-      prompt.description?.toLowerCase().includes(searchLower) ||
-      prompt.system_prompt?.toLowerCase().includes(searchLower) ||
-      prompt.user_prompt?.toLowerCase().includes(searchLower)
-    );
+    filtered = filtered.filter(promptMeta => {
+      const prompt = promptMeta.prompt;
+      return (
+        prompt.name.toLowerCase().includes(searchLower) ||
+        prompt.content.toLowerCase().includes(searchLower) ||
+        prompt.description?.toLowerCase().includes(searchLower) ||
+        prompt.system_prompt?.toLowerCase().includes(searchLower) ||
+        prompt.user_prompt?.toLowerCase().includes(searchLower)
+      );
+    });
   }
   
   // Apply repository filter
   if (data.repository) {
-    filtered = filtered.filter(prompt => prompt.repo?.name === data.repository);
+    filtered = filtered.filter(promptMeta => promptMeta.repo_name === data.repository);
   }
   
   // Apply sorting
@@ -79,9 +83,9 @@ export const filterPrompts = (data: ReturnType<typeof selectFilteredPromptsData>
     
     let comparison = 0;
     if (sortBy === 'name') {
-      comparison = a.name.localeCompare(b.name);
+      comparison = a.prompt.name.localeCompare(b.prompt.name);
     } else if (sortBy === 'updated_at') {
-      comparison = new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
+      comparison = new Date(a.prompt.updated_at).getTime() - new Date(b.prompt.updated_at).getTime();
     }
     
     return sortOrder === 'asc' ? comparison : -comparison;
@@ -91,18 +95,31 @@ export const filterPrompts = (data: ReturnType<typeof selectFilteredPromptsData>
 };
 
 // Backward compatibility selector
-export const selectFilteredPrompts = (state: PromptStore): Prompt[] => {
+export const selectFilteredPrompts = (state: PromptStore): PromptMeta[] => {
   return filterPrompts(selectFilteredPromptsData(state));
 };
 
-export const selectPromptCount = (state: PromptStore): number => state.prompts.length;
+export const selectPromptCount = (state: PromptStore): number => state.prompts.size;
 
-export const selectIsEmpty = (state: PromptStore): boolean => 
-  state.prompts.length === 0 && !state.isLoading;
+export const selectIsEmpty = (state: PromptStore): boolean =>
+  state.prompts.size === 0 && !state.isLoading;
+
+// Frontend-only pagination selector that operates on filtered results
+export const selectPaginatedPrompts = (state: PromptStore): PromptMeta[] => {
+  const filtered = selectFilteredPrompts(state);
+  const { page, pageSize } = state.pagination;
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize;
+  return filtered.slice(start, end);
+};
 
 export const selectPageInfo = (state: PromptStore) => {
-  const { page, pageSize, total, totalPages } = state.pagination;
-  const start = (page - 1) * pageSize + 1;
+  // Calculate pagination info based on filtered prompts
+  const filtered = selectFilteredPrompts(state);
+  const { page, pageSize } = state.pagination;
+  const total = filtered.length;
+  const totalPages = Math.ceil(total / pageSize);
+  const start = total > 0 ? (page - 1) * pageSize + 1 : 0;
   const end = Math.min(page * pageSize, total);
   
   return {
@@ -113,4 +130,15 @@ export const selectPageInfo = (state: PromptStore) => {
     totalPages,
     pageSize,
   };
+};
+
+// Selector for unique repositories from loaded prompts
+export const selectUniqueRepositories = (state: PromptStore): string[] => {
+  const repos = new Set<string>();
+  state.prompts.forEach(promptMeta => {
+    if (promptMeta.repo_name) {
+      repos.add(promptMeta.repo_name);
+    }
+  });
+  return Array.from(repos).sort();
 };

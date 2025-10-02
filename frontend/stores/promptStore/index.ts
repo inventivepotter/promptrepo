@@ -36,6 +36,7 @@ export {
   selectPromptsByRepository,
   selectFilteredPrompts,
   selectFilteredPromptsData,
+  selectPaginatedPrompts,
   filterPrompts,
   selectUniqueRepositories,
   selectPromptCount,

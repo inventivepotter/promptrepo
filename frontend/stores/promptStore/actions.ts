@@ -1,55 +1,97 @@
 // Combined prompt store actions
 import type { StateCreator } from '@/lib/zustand';
 import { promptsService } from '@/services/prompts/promptsService';
-import type { Prompt, PromptCreate, PromptUpdate } from '@/types/Prompt';
+import { ConfigService } from '@/services/config/configService';
 import type { PromptStore, PromptActions, PromptFilters } from './types';
+import type { PromptMeta, PromptDataUpdate } from '@/services/prompts/api';
+
+// Helper function to create consistent Map keys
+const createPromptKey = (repoName: string, filePath: string): string =>
+  `${repoName}:${filePath}`;
+
+const CACHE_DURATION = 1000 * 60 * 60; // 1 hour in milliseconds
 
 // Create all prompt actions as a single StateCreator
 export const createPromptActions: StateCreator<PromptStore, [], [], PromptActions> = (set, get, api) => ({
-  // CRUD Operations
-  fetchPrompts: async (filters?: PromptFilters, page = 1, pageSize = 20) => {
+  // Initialize store - check cache and auto-sync if needed
+  initializeStore: async () => {
+    const state = get();
+    
+    // If we have cached data and it's not stale, we're done
+    if (state.prompts.size > 0 && state.lastSyncTimestamp) {
+      const age = Date.now() - state.lastSyncTimestamp;
+      if (age < CACHE_DURATION) {
+        console.log('Using cached prompts, age:', Math.round(age / 1000), 'seconds');
+        return;
+      }
+    }
+    
+    // Otherwise, trigger auto-sync
+    console.log('Cache empty or stale, triggering auto-sync');
+    await get().discoverAllPromptsFromRepos();
+  },
+
+  // Discover prompts from all configured repositories
+  discoverAllPromptsFromRepos: async () => {
     set((draft) => {
       draft.isLoading = true;
       draft.error = null;
     // @ts-expect-error - Immer middleware supports 3 params
-    }, false, 'prompts/fetch-start');
+    }, false, 'prompts/discover-all-start');
 
     try {
-      // Call the service with backend-compatible parameters
-      const result = await promptsService.getPrompts({
-        query: filters?.search || get().filters.search || undefined,
-        repo_name: filters?.repository || get().filters.repository || undefined,
-        page,
-        page_size: pageSize
-      });
+      // Get configured repositories from config
+      const config = await ConfigService.getConfig();
+      const repoConfigs = config.repo_configs || [];
       
-      // Handle the response from the service
-      const { prompts, pagination } = result;
+      if (repoConfigs.length === 0) {
+        console.warn('No repositories configured for discovery');
+        set((draft) => {
+          draft.isLoading = false;
+          draft.lastSyncTimestamp = Date.now();
+        // @ts-expect-error - Immer middleware supports 3 params
+        }, false, 'prompts/discover-all-no-repos');
+        return;
+      }
+
+      // Extract repo names from config
+      const repoNames = repoConfigs.map(rc => rc.repo_name);
       
+      // Discover prompts from all repositories
+      const allPrompts = await promptsService.discoverAllPromptsFromRepos(repoNames);
+
       set((draft) => {
-        draft.prompts = prompts;
-        draft.pagination = {
-          page: pagination?.page || page,
-          pageSize: pagination?.page_size || pageSize,
-          total: pagination?.total_items || prompts.length,
-          totalPages: pagination?.total_pages || Math.ceil(prompts.length / pageSize),
-        };
-        if (filters) {
-          draft.filters = { ...draft.filters, ...filters };
-        }
+        // Convert array to Map
+        draft.prompts.clear();
+        allPrompts.forEach((promptMeta: PromptMeta) => {
+          const key = createPromptKey(promptMeta.repo_name, promptMeta.file_path);
+          draft.prompts.set(key, promptMeta);
+        });
+        draft.lastSyncTimestamp = Date.now();
         draft.isLoading = false;
       // @ts-expect-error - Immer middleware supports 3 params
-      }, false, 'prompts/fetch-success');
+      }, false, 'prompts/discover-all-success');
     } catch (error) {
       set((draft) => {
-        draft.error = error instanceof Error ? error.message : 'Failed to fetch prompts';
+        draft.error = error instanceof Error ? error.message : 'Failed to discover repositories';
         draft.isLoading = false;
       // @ts-expect-error - Immer middleware supports 3 params
-      }, false, 'prompts/fetch-error');
+      }, false, 'prompts/discover-all-error');
     }
   },
 
-  fetchPromptById: async (id: string) => {
+  // CRUD Operations - updated to work with cached data
+  fetchPrompts: async (filters?: PromptFilters, page = 1, pageSize = 20) => {
+    // Check if we need to initialize
+    const state = get();
+    if (state.prompts.size === 0) {
+      await get().initializeStore();
+    }
+    
+    // No backend call needed - filtering and pagination are done via selectors
+  },
+
+  fetchPromptById: async (repoName: string, filePath: string) => {
     set((draft) => {
       draft.isLoading = true;
       draft.error = null;
@@ -57,32 +99,30 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
     }, false, 'prompts/fetch-by-id-start');
 
     try {
-      const prompt = await promptsService.getPrompt(id);
+      const promptMeta = await promptsService.getPrompt(repoName, filePath);
       
-      if (prompt) {
-        set((draft) => {
-          draft.currentPrompt = prompt;
-          // Update in the list if exists
-          const index = draft.prompts.findIndex(p => p.id === id);
-          if (index !== -1) {
-            draft.prompts[index] = prompt;
-          }
-          draft.isLoading = false;
-        // @ts-expect-error - Immer middleware supports 3 params
-        }, false, 'prompts/fetch-by-id-success');
-      } else {
+      if (!promptMeta) {
         throw new Error('Prompt not found');
       }
+
+      const key = createPromptKey(repoName, filePath);
+      set((draft) => {
+        draft.currentPrompt = promptMeta;
+        draft.prompts.set(key, promptMeta);
+        draft.isLoading = false;
+      // @ts-expect-error - Immer middleware supports 3 params
+      }, false, 'prompts/fetch-by-id-success');
     } catch (error) {
       set((draft) => {
         draft.error = error instanceof Error ? error.message : 'Failed to fetch prompt';
         draft.isLoading = false;
       // @ts-expect-error - Immer middleware supports 3 params
       }, false, 'prompts/fetch-by-id-error');
+      throw error;
     }
   },
 
-  createPrompt: async (promptData: PromptCreate) => {
+  createPrompt: async (promptMeta: PromptMeta) => {
     set((draft) => {
       draft.isCreating = true;
       draft.error = null;
@@ -90,17 +130,17 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
     }, false, 'prompts/create-start');
 
     try {
-      const newPrompt = await promptsService.createPrompt(promptData);
+      const newPromptMeta = await promptsService.createPrompt(promptMeta);
       
+      const key = createPromptKey(newPromptMeta.repo_name, newPromptMeta.file_path);
       set((draft) => {
-        draft.prompts.unshift(newPrompt);
-        draft.currentPrompt = newPrompt;
+        draft.prompts.set(key, newPromptMeta);
+        draft.currentPrompt = newPromptMeta;
         draft.isCreating = false;
-        draft.pagination.total += 1;
       // @ts-expect-error - Immer middleware supports 3 params
       }, false, 'prompts/create-success');
       
-      return newPrompt;
+      return newPromptMeta;
     } catch (error) {
       set((draft) => {
         draft.error = error instanceof Error ? error.message : 'Failed to create prompt';
@@ -111,57 +151,27 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
     }
   },
 
-  updatePrompt: async (id: string, updates: PromptUpdate) => {
-    const originalPrompt = get().prompts.find(p => p.id === id);
-    
-    // Optimistic update
+  updatePrompt: async (repoName: string, filePath: string, updates: PromptDataUpdate) => {
     set((draft) => {
       draft.isUpdating = true;
       draft.error = null;
-      
-      if (originalPrompt) {
-        draft.optimisticUpdates.set(id, originalPrompt);
-        const index = draft.prompts.findIndex(p => p.id === id);
-        if (index !== -1) {
-          draft.prompts[index] = { ...draft.prompts[index], ...updates };
-        }
-        if (draft.currentPrompt?.id === id) {
-          draft.currentPrompt = { ...draft.currentPrompt, ...updates };
-        }
-      }
     // @ts-expect-error - Immer middleware supports 3 params
     }, false, 'prompts/update-start');
 
     try {
-      // Call the service with the correct parameters
-      const updatedPrompt = await promptsService.updatePrompt(id, updates);
+      const updatedPromptMeta = await promptsService.updatePrompt(repoName, filePath, updates);
       
+      const promptKey = createPromptKey(repoName, filePath);
       set((draft) => {
-        const index = draft.prompts.findIndex(p => p.id === id);
-        if (index !== -1) {
-          draft.prompts[index] = updatedPrompt;
+        draft.prompts.set(promptKey, updatedPromptMeta);
+        if (draft.currentPrompt?.repo_name === repoName && draft.currentPrompt?.file_path === filePath) {
+          draft.currentPrompt = updatedPromptMeta;
         }
-        if (draft.currentPrompt?.id === id) {
-          draft.currentPrompt = updatedPrompt;
-        }
-        draft.optimisticUpdates.delete(id);
         draft.isUpdating = false;
       // @ts-expect-error - Immer middleware supports 3 params
       }, false, 'prompts/update-success');
     } catch (error) {
-      // Rollback optimistic update
       set((draft) => {
-        const original = draft.optimisticUpdates.get(id);
-        if (original) {
-          const index = draft.prompts.findIndex(p => p.id === id);
-          if (index !== -1) {
-            draft.prompts[index] = original;
-          }
-          if (draft.currentPrompt?.id === id) {
-            draft.currentPrompt = original;
-          }
-          draft.optimisticUpdates.delete(id);
-        }
         draft.error = error instanceof Error ? error.message : 'Failed to update prompt';
         draft.isUpdating = false;
       // @ts-expect-error - Immer middleware supports 3 params
@@ -170,43 +180,27 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
     }
   },
 
-  deletePrompt: async (id: string) => {
-    const originalIndex = get().prompts.findIndex(p => p.id === id);
-    const originalPrompt = get().prompts[originalIndex];
-    
-    // Optimistic delete
+  deletePrompt: async (repoName: string, filePath: string) => {
     set((draft) => {
       draft.isDeleting = true;
       draft.error = null;
-      
-      if (originalPrompt) {
-        draft.optimisticUpdates.set(id, originalPrompt);
-        draft.prompts.splice(originalIndex, 1);
-        if (draft.currentPrompt?.id === id) {
-          draft.currentPrompt = null;
-        }
-        draft.pagination.total -= 1;
-      }
     // @ts-expect-error - Immer middleware supports 3 params
     }, false, 'prompts/delete-start');
 
     try {
-      await promptsService.deletePrompt(id);
+      await promptsService.deletePrompt(repoName, filePath);
       
+      const promptKey = createPromptKey(repoName, filePath);
       set((draft) => {
-        draft.optimisticUpdates.delete(id);
+        draft.prompts.delete(promptKey);
+        if (draft.currentPrompt?.repo_name === repoName && draft.currentPrompt?.file_path === filePath) {
+          draft.currentPrompt = null;
+        }
         draft.isDeleting = false;
       // @ts-expect-error - Immer middleware supports 3 params
       }, false, 'prompts/delete-success');
     } catch (error) {
-      // Rollback optimistic delete
       set((draft) => {
-        const original = draft.optimisticUpdates.get(id);
-        if (original && originalIndex !== -1) {
-          draft.prompts.splice(originalIndex, 0, original);
-          draft.pagination.total += 1;
-          draft.optimisticUpdates.delete(id);
-        }
         draft.error = error instanceof Error ? error.message : 'Failed to delete prompt';
         draft.isDeleting = false;
       // @ts-expect-error - Immer middleware supports 3 params
@@ -216,7 +210,7 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
   },
 
   // State Management
-  setCurrentPrompt: (prompt: Prompt | null) => {
+  setCurrentPrompt: (prompt: PromptMeta | null) => {
     set((draft) => {
       draft.currentPrompt = prompt;
     // @ts-expect-error - Immer middleware supports 3 params
@@ -230,15 +224,13 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
     }, false, 'prompts/clear-current');
   },
 
-  // Filters and Search
+  // Filters and Search - frontend-only, no backend calls
   setFilters: (filters: PromptFilters) => {
     set((draft) => {
       draft.filters = { ...draft.filters, ...filters };
       draft.pagination.page = 1; // Reset to first page when filters change
     // @ts-expect-error - Immer middleware supports 3 params
     }, false, 'prompts/set-filters');
-    // Trigger fetch with new filters
-    get().fetchPrompts(filters);
   },
 
   setSearch: (search: string) => {
@@ -247,7 +239,6 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
       draft.pagination.page = 1;
     // @ts-expect-error - Immer middleware supports 3 params
     }, false, 'prompts/set-search');
-    get().fetchPrompts();
   },
 
   setRepository: (repository: string) => {
@@ -256,7 +247,6 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
       draft.pagination.page = 1;
     // @ts-expect-error - Immer middleware supports 3 params
     }, false, 'prompts/set-repository');
-    get().fetchPrompts();
   },
 
   setSortBy: (sortBy: 'name' | 'updated_at') => {
@@ -264,7 +254,6 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
       draft.filters.sortBy = sortBy;
     // @ts-expect-error - Immer middleware supports 3 params
     }, false, 'prompts/set-sort-by');
-    get().fetchPrompts();
   },
 
   setSortOrder: (sortOrder: 'asc' | 'desc') => {
@@ -272,7 +261,6 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
       draft.filters.sortOrder = sortOrder;
     // @ts-expect-error - Immer middleware supports 3 params
     }, false, 'prompts/set-sort-order');
-    get().fetchPrompts();
   },
 
   clearFilters: () => {
@@ -286,16 +274,14 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
       draft.pagination.page = 1;
     // @ts-expect-error - Immer middleware supports 3 params
     }, false, 'prompts/clear-filters');
-    get().fetchPrompts();
   },
 
-  // Pagination
+  // Pagination - frontend-only
   setPage: (page: number) => {
     set((draft) => {
       draft.pagination.page = page;
     // @ts-expect-error - Immer middleware supports 3 params
     }, false, 'prompts/set-page');
-    get().fetchPrompts(undefined, page);
   },
 
   setPageSize: (pageSize: number) => {
@@ -304,11 +290,12 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
       draft.pagination.page = 1; // Reset to first page when page size changes
     // @ts-expect-error - Immer middleware supports 3 params
     }, false, 'prompts/set-page-size');
-    get().fetchPrompts(undefined, 1, pageSize);
   },
 
   nextPage: () => {
-    const { page, totalPages } = get().pagination;
+    const state = get();
+    // Use selectPageInfo to get correct totalPages from filtered results
+    const { totalPages, page } = state.pagination;
     if (page < totalPages) {
       get().setPage(page + 1);
     }
@@ -329,30 +316,4 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
     }, false, 'prompts/clear-error');
   },
 
-  // Reset
-  reset: () => {
-    set((draft) => {
-      draft.prompts = [];
-      draft.currentPrompt = null;
-      draft.isLoading = false;
-      draft.isCreating = false;
-      draft.isUpdating = false;
-      draft.isDeleting = false;
-      draft.error = null;
-      draft.filters = {
-        search: '',
-        repository: '',
-        sortBy: 'updated_at',
-        sortOrder: 'desc',
-      };
-      draft.pagination = {
-        page: 1,
-        pageSize: 20,
-        total: 0,
-        totalPages: 0,
-      };
-      draft.optimisticUpdates.clear();
-    // @ts-expect-error - Immer middleware supports 3 params
-    }, false, 'prompts/reset');
-  },
 });

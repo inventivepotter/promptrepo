@@ -1,6 +1,6 @@
-// Storage configuration for prompt store
+// Storage configuration for pricing store
 import { createIndexedDBStorage } from '@/lib/zustand';
-import type { PromptStore } from './types';
+import type { PricingStore } from './types';
 
 /**
  * Storage configuration using IndexedDB for better performance with larger datasets
@@ -10,16 +10,12 @@ import type { PromptStore } from './types';
  * - Asynchronous operations don't block the main thread
  * - Built-in error handling and SSR support
  */
-export const promptPersistConfig = {
-  ...createIndexedDBStorage('prompt-store'),
-  // Only persist essential prompt data and cache metadata
-  partialize: (state: PromptStore) => ({
-    prompts: state.prompts,
-    filters: state.filters,
-    pagination: state.pagination,
-    currentPrompt: state.currentPrompt,
-    lastSyncTimestamp: state.lastSyncTimestamp,
-    cacheStale: state.cacheStale,
+export const pricingPersistConfig = {
+  ...createIndexedDBStorage('pricing-store'),
+  // Only persist essential pricing data and cache metadata
+  partialize: (state: PricingStore) => ({
+    pricingData: state.pricingData,
+    lastFetched: state.lastFetched,
   }),
   // Set to true if you want to manually hydrate
   skipHydration: false,

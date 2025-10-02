@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { usePromptStore } from './store';
+import { Prompt } from '@/types/Prompt';
 import {
   selectPrompts,
   selectCurrentPrompt,
@@ -103,6 +104,26 @@ export const useUniqueRepositories = () => {
 export const usePromptCount = () => usePromptStore(selectPromptCount);
 export const useIsPromptsEmpty = () => usePromptStore(selectIsEmpty);
 
+// Form State Hooks
+export const useFormData = () => usePromptStore(state => state.formData);
+export const useOriginalFormData = () => usePromptStore(state => state.originalFormData);
+export const useShowRepoError = () => usePromptStore(state => state.showRepoError);
+export const useHasUnsavedChanges = () => usePromptStore(state => state.hasUnsavedChanges());
+
+// Form Actions Hook
+export const useFormActions = () => {
+  const store = usePromptStore();
+  
+  return {
+    initializeForm: store.initializeForm,
+    updateFormField: store.updateFormField,
+    updateFormRepo: store.updateFormRepo,
+    hasUnsavedChanges: store.hasUnsavedChanges,
+    resetForm: store.resetForm,
+    setShowRepoError: store.setShowRepoError,
+  };
+};
+
 // Action Hooks
 export const usePromptActions = () => {
   const store = usePromptStore();
@@ -118,6 +139,14 @@ export const usePromptActions = () => {
     // State Management
     setCurrentPrompt: store.setCurrentPrompt,
     clearCurrentPrompt: store.clearCurrentPrompt,
+    
+    // Convenience handlers
+    saveCurrentPrompt: async (updates: Partial<Prompt>) => {
+      const currentPrompt = store.currentPrompt;
+      if (currentPrompt) {
+        await store.updatePrompt(currentPrompt.id, updates);
+      }
+    },
     
     // Filters and Search
     setFilters: store.setFilters,

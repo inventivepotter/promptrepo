@@ -1,73 +1,21 @@
 import { promptsApi } from './api';
 import { errorNotification, successNotification } from '@/lib/notifications';
-import { isStandardResponse, isErrorResponse, isPaginatedResponse } from '@/types/OpenApiResponse';
-import type { Prompt, PromptCreate, PromptUpdate } from '@/types/Prompt';
+import { isStandardResponse, isErrorResponse } from '@/types/OpenApiResponse';
+import type { PromptMeta, PromptDataUpdate } from './api';
 
 /**
  * Prompts service that handles all prompt-related operations.
- * This includes CRUD operations, repository sync, and listing operations.
+ * Works directly with PromptMeta from the backend API.
  * Following single responsibility principle - only handles prompt concerns.
  */
 export class PromptsService {
   /**
-   * Get all prompts with pagination and filtering
+   * Get individual prompt by repository name and file path
    * Handles error notifications
    */
-  async getPrompts(params?: {
-    query?: string;
-    repo_name?: string;
-    category?: string;
-    tags?: string[];
-    owner?: string;
-    page?: number;
-    page_size?: number;
-  }): Promise<{ prompts: Prompt[]; pagination?: { page: number; page_size: number; total_items: number; total_pages: number } }> {
+  async getPrompt(repoName: string, filePath: string): Promise<PromptMeta | null> {
     try {
-      const result = await promptsApi.getPrompts(params);
-      
-      if (isErrorResponse(result)) {
-        errorNotification(
-          result.title || 'Failed to Load Prompts',
-          result.detail || 'Unable to load prompts from server.'
-        );
-        
-        // Handle authentication errors
-        if (result.status_code === 401) {
-          return { prompts: [] };
-        }
-        return { prompts: [] };
-      }
-
-      // Check if it's a paginated response
-      if (isPaginatedResponse(result)) {
-        return {
-          prompts: result.data,
-          pagination: result.pagination
-        };
-      }
-
-      // Standard response with data array
-      if (isStandardResponse(result) && Array.isArray(result.data)) {
-        return { prompts: result.data };
-      }
-
-      return { prompts: [] };
-    } catch (error: unknown) {
-      errorNotification(
-        'Connection Error',
-        'Unable to connect to prompt service.'
-      );
-      return { prompts: [] };
-    }
-  }
-
-  /**
-   * Get individual prompt by ID
-   * Handles error notifications
-   */
-  async getPrompt(id: string): Promise<Prompt | null> {
-    try {
-      const result = await promptsApi.getPrompt(id);
+      const result = await promptsApi.getPrompt(repoName, filePath);
       
       if (isErrorResponse(result)) {
         errorNotification(
@@ -104,9 +52,13 @@ export class PromptsService {
   /**
    * Create a new prompt
    */
-  async createPrompt(promptData: PromptCreate): Promise<Prompt> {
+  async createPrompt(promptMeta: PromptMeta): Promise<PromptMeta> {
     try {
-      const result = await promptsApi.createPrompt(promptData);
+      const result = await promptsApi.createPrompt(
+        promptMeta.repo_name,
+        promptMeta.file_path,
+        promptMeta.prompt
+      );
 
       if (isErrorResponse(result)) {
         errorNotification(
@@ -143,9 +95,9 @@ export class PromptsService {
    * Update a prompt
    * Handles error notifications and validation
    */
-  async updatePrompt(id: string, updates: PromptUpdate): Promise<Prompt> {
+  async updatePrompt(repoName: string, filePath: string, updates: PromptDataUpdate): Promise<PromptMeta> {
     try {
-      const result = await promptsApi.updatePrompt(id, updates);
+      const result = await promptsApi.updatePrompt(repoName, filePath, updates);
 
       if (isErrorResponse(result)) {
         errorNotification(
@@ -181,9 +133,9 @@ export class PromptsService {
   /**
    * Delete a prompt
    */
-  async deletePrompt(id: string): Promise<void> {
+  async deletePrompt(repoName: string, filePath: string): Promise<void> {
     try {
-      const result = await promptsApi.deletePrompt(id);
+      const result = await promptsApi.deletePrompt(repoName, filePath);
 
       if (isErrorResponse(result)) {
         errorNotification(
@@ -207,18 +159,18 @@ export class PromptsService {
   }
 
   /**
-   * Sync prompts from a repository
+   * Discover prompts from a repository
    */
-  async syncRepository(repoName: string): Promise<{ synced_count: number; repository: string } | null> {
+  async discoverAllPromptsFromRepos(repoNames: string[]): Promise<PromptMeta[]> {
     try {
-      const result = await promptsApi.syncRepository(repoName);
+      const result = await promptsApi.discoverAllPromptsFromRepos(repoNames);
       
       if (isErrorResponse(result)) {
         errorNotification(
-          result.title || 'Sync Failed',
-          result.detail || `Failed to sync repository ${repoName}`
+          result.title || 'Discovery Failed',
+          result.detail || `Failed to discover prompts from repository ${repoNames}`
         );
-        return null;
+        return [];
       }
 
       if (!isStandardResponse(result) || !result.data) {
@@ -226,151 +178,25 @@ export class PromptsService {
           'Unexpected Response',
           'Received an unexpected response from the server.'
         );
-        return null;
+        return [];
       }
+
+      const promptMetas = result.data;
 
       successNotification(
-        'Repository Synced',
-        `Successfully synchronized ${result.data.synced_count} prompts from ${repoName}`
+        'Repository Discovered',
+        `Successfully discovered ${promptMetas.length} prompts from ${repoNames}`
       );
-      return result.data;
-    } catch (error: unknown) {
-      console.error('Error syncing repository:', error);
-      errorNotification(
-        'Sync Error',
-        'An unexpected error occurred while syncing the repository'
-      );
-      return null;
-    }
-  }
-
-  /**
-   * List available repositories
-   */
-  async listRepositories(): Promise<Array<{
-    name: string;
-    path: string;
-    type: string;
-    has_git: boolean;
-  }>> {
-    try {
-      const result = await promptsApi.listRepositories();
       
-      if (isErrorResponse(result)) {
-        errorNotification(
-          result.title || 'Failed to List Repositories',
-          result.detail || 'Unable to load repositories from server.'
-        );
-        return [];
-      }
-
-      if (!isStandardResponse(result) || !result.data) {
-        return [];
-      }
-
-      return result.data;
+      return promptMetas;
     } catch (error: unknown) {
-      console.error('Error listing repositories:', error);
+      console.error('Error discovering repository:', error);
       errorNotification(
-        'Connection Error',
-        'Unable to connect to prompt service.'
+        'Discovery Error',
+        'An unexpected error occurred while discovering the repository'
       );
       return [];
     }
-  }
-
-  /**
-   * List prompts in a specific repository
-   */
-  async listRepositoryPrompts(repoName: string): Promise<Prompt[]> {
-    try {
-      const result = await promptsApi.listRepositoryPrompts(repoName);
-      
-      if (isErrorResponse(result)) {
-        errorNotification(
-          result.title || 'Failed to List Repository Prompts',
-          result.detail || `Unable to load prompts from repository ${repoName}.`
-        );
-        return [];
-      }
-
-      if (!isStandardResponse(result) || !result.data) {
-        return [];
-      }
-
-      return result.data;
-    } catch (error: unknown) {
-      console.error('Error listing repository prompts:', error);
-      errorNotification(
-        'Connection Error',
-        'Unable to connect to prompt service.'
-      );
-      return [];
-    }
-  }
-
-  /**
-   * Discover prompt files in a repository
-   */
-  async discoverRepositoryPrompts(repoName: string): Promise<Array<{
-    path: string;
-    name: string;
-    system_prompt: string | null;
-    user_prompt: string | null;
-    metadata: Record<string, unknown> | null;
-  }>> {
-    try {
-      const result = await promptsApi.discoverRepositoryPrompts(repoName);
-      
-      if (isErrorResponse(result)) {
-        errorNotification(
-          result.title || 'Failed to Discover Prompts',
-          result.detail || `Unable to discover prompts in repository ${repoName}.`
-        );
-        return [];
-      }
-
-      if (!isStandardResponse(result) || !result.data) {
-        return [];
-      }
-
-      return result.data;
-    } catch (error: unknown) {
-      console.error('Error discovering repository prompts:', error);
-      errorNotification(
-        'Connection Error',
-        'Unable to connect to prompt service.'
-      );
-      return [];
-    }
-  }
-
-  /**
-   * Legacy method for backward compatibility
-   * @deprecated Use syncRepository instead
-   */
-  async commitPushPrompt(promptId: string): Promise<boolean> {
-    // This is a placeholder since the backend doesn't have individual commit/push
-    // You might want to call syncRepository with the prompt's repo_name instead
-    errorNotification(
-      'Operation Not Supported',
-      'Individual prompt commit/push is not supported. Please sync the entire repository.'
-    );
-    return false;
-  }
-
-  /**
-   * Legacy method for backward compatibility
-   * @deprecated Use syncRepository instead
-   */
-  async commitPushAll(): Promise<boolean> {
-    // This is a placeholder since the backend doesn't have this operation
-    // You might want to sync all repositories instead
-    errorNotification(
-      'Operation Not Supported',
-      'Bulk commit/push is not supported. Please sync individual repositories.'
-    );
-    return false;
   }
 }
 

@@ -45,3 +45,9 @@ class CommitInfo(BaseModel):
     message: str
     author: str
     timestamp: datetime
+    
+    model_config = {
+        "json_encoders": {
+            datetime: lambda v: v.isoformat()
+        }
+    }

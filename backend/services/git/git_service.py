@@ -552,3 +552,42 @@ class GitService:
             return str(value) if value is not None else None
         except:
             return None
+
+    def get_file_commit_history(self, file_path: str, limit: int = 5) -> List[CommitInfo]:
+        """
+        Get commit history for a specific file.
+        
+        Args:
+            file_path: Path to the file relative to repository root
+            limit: Maximum number of commits to retrieve (default: 5)
+            
+        Returns:
+            List[CommitInfo]: List of commit information for the file
+        """
+        try:
+            repo = Repo(self.repo_path)
+            commits = list(repo.iter_commits(paths=file_path, max_count=limit))
+            
+            commit_info_list = []
+            for commit in commits:
+                # Handle message - ensure it's a string
+                message = commit.message
+                if isinstance(message, bytes):
+                    message = message.decode('utf-8', errors='replace')
+                elif not isinstance(message, str):
+                    message = str(message)
+                
+                commit_info = CommitInfo(
+                    commit_id=commit.hexsha,
+                    message=message.strip(),
+                    author=str(commit.author),
+                    timestamp=commit.committed_datetime
+                )
+                commit_info_list.append(commit_info)
+            
+            logger.info(f"✅ Retrieved {len(commit_info_list)} commits for file: {file_path}")
+            return commit_info_list
+            
+        except Exception as e:
+            logger.warning(f"⚠️  Failed to get commit history for {file_path}: {e}")
+            return []

@@ -1,10 +1,10 @@
 import { Repo } from "./Repo";
 
 export interface CommitInfo {
-  hash: string;
+  commit_id: string;
   message: string;
   author: string;
-  date: string;
+  timestamp: string;
 }
 
 // Backend Prompt model fields
@@ -38,7 +38,7 @@ export interface PromptCreate {
   tags?: string[];
   system_prompt?: string | null;
   user_prompt?: string | null;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface PromptUpdate {
@@ -48,7 +48,7 @@ export interface PromptUpdate {
   tags?: string[];
   system_prompt?: string | null;
   user_prompt?: string | null;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // Response models for list operations

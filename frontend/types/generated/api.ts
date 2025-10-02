@@ -428,6 +428,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v0/prompts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get prompt
+         * @description Get a specific prompt by repository name and file path. Checks user permissions based on hosting type.
+         */
+        get: operations["get_prompt_api_v0_prompts__get"];
+        /**
+         * Update prompt
+         * @description Update an existing prompt. All fields in the update are optional.
+         */
+        put: operations["update_prompt_api_v0_prompts__put"];
+        /**
+         * Create prompt
+         * @description Create a new prompt. The prompt will be saved to the specified repository and file path.
+         */
+        post: operations["create_prompt_api_v0_prompts__post"];
+        /**
+         * Delete prompt
+         * @description Delete a prompt. Removes the prompt file from the repository.
+         */
+        delete: operations["delete_prompt_api_v0_prompts__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v0/prompts/discover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Discover repository prompts
+         * @description Discover prompts from one or more repositories. Scans and retrieves all prompt YAML/YML files from the specified repositories.
+         */
+        post: operations["discover_repository_prompts_api_v0_prompts_discover_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -655,6 +707,23 @@ export interface components {
             }[] | null;
         };
         /**
+         * CommitInfo
+         * @description Represents information about a commit.
+         */
+        CommitInfo: {
+            /** Commit Id */
+            commit_id: string;
+            /** Message */
+            message: string;
+            /** Author */
+            author: string;
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
+        };
+        /**
          * CompletionTokensDetails
          * @description Breakdown of tokens used in a completion
          */
@@ -678,6 +747,17 @@ export interface components {
              * @description List of configured repositories
              */
             repositories: components["schemas"]["RepoConfig"][];
+        };
+        /**
+         * DiscoverRepositoriesRequest
+         * @description Request model for discovering prompts from repositories.
+         */
+        DiscoverRepositoriesRequest: {
+            /**
+             * Repo Names
+             * @description List of repository names to discover prompts from (supports 'owner/repo' or 'repo' format)
+             */
+            repo_names: string[];
         };
         /**
          * FetchModelsRequest
@@ -820,6 +900,378 @@ export interface components {
          * @enum {string}
          */
         OAuthProvider: "github" | "gitlab" | "bitbucket";
+        /**
+         * PromptData
+         * @description Core prompt data model with all fields that get saved to YAML files.
+         *     This model represents the complete prompt configuration including LLM parameters.
+         */
+        PromptData: {
+            /**
+             * Id
+             * @description Unique identifier for the prompt
+             */
+            id: string;
+            /**
+             * Name
+             * @description Prompt name
+             */
+            name: string;
+            /**
+             * Description
+             * @description Prompt description
+             */
+            description?: string | null;
+            /**
+             * Category
+             * @description Prompt category for organization
+             */
+            category?: string | null;
+            /**
+             * Provider
+             * @description LLM provider (e.g., openai, anthropic)
+             */
+            provider: string;
+            /**
+             * Model
+             * @description Model name (e.g., gpt-4, claude-3)
+             */
+            model: string;
+            /**
+             * Prompt
+             * @description Combined prompt content
+             */
+            prompt: string;
+            /**
+             * Tool Choice
+             * @description Tool choice configuration
+             */
+            tool_choice?: string | {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Temperature
+             * @description Sampling temperature
+             * @default 0
+             */
+            temperature: number;
+            /**
+             * Top P
+             * @description Top-p sampling parameter
+             */
+            top_p?: number | null;
+            /**
+             * Max Tokens
+             * @description Maximum tokens to generate
+             */
+            max_tokens?: number | null;
+            /**
+             * Response Format
+             * @description Response format configuration
+             */
+            response_format?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Stream
+             * @description Whether to stream the response
+             */
+            stream?: boolean | null;
+            /**
+             * N Completions
+             * @description Number of completions to generate
+             */
+            n_completions?: number | null;
+            /**
+             * Stop
+             * @description Stop sequences
+             */
+            stop?: string | string[] | null;
+            /**
+             * Presence Penalty
+             * @description Presence penalty
+             */
+            presence_penalty?: number | null;
+            /**
+             * Frequency Penalty
+             * @description Frequency penalty
+             */
+            frequency_penalty?: number | null;
+            /**
+             * Seed
+             * @description Random seed for reproducibility
+             */
+            seed?: number | null;
+            /**
+             * Api Key
+             * @description API key override
+             */
+            api_key?: string | null;
+            /**
+             * Api Base
+             * @description API base URL override
+             */
+            api_base?: string | null;
+            /**
+             * User
+             * @description User identifier for tracking
+             */
+            user?: string | null;
+            /**
+             * Parallel Tool Calls
+             * @description Enable parallel tool calls
+             */
+            parallel_tool_calls?: boolean | null;
+            /**
+             * Logprobs
+             * @description Return log probabilities
+             */
+            logprobs?: boolean | null;
+            /**
+             * Top Logprobs
+             * @description Number of top log probabilities
+             */
+            top_logprobs?: number | null;
+            /**
+             * Logit Bias
+             * @description Logit bias adjustments
+             */
+            logit_bias?: {
+                [key: string]: number;
+            } | null;
+            /**
+             * Stream Options
+             * @description Streaming options
+             */
+            stream_options?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Max Completion Tokens
+             * @description Maximum completion tokens
+             */
+            max_completion_tokens?: number | null;
+            /**
+             * Reasoning Effort
+             * @description Reasoning effort level
+             * @default auto
+             */
+            reasoning_effort: ("minimal" | "low" | "medium" | "high" | "auto") | null;
+            /**
+             * Extra Args
+             * @description Additional provider-specific arguments
+             */
+            extra_args?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Tags
+             * @description Tags for prompt categorization
+             */
+            tags?: string[];
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp
+             */
+            created_at?: string;
+            /**
+             * Updated At
+             * Format: date-time
+             * @description Last update timestamp
+             */
+            updated_at?: string;
+        };
+        /**
+         * PromptDataUpdate
+         * @description Partial model for updating prompt data.
+         *     All fields from PromptData are optional to allow partial updates.
+         *     This is essentially Partial<PromptData> for update operations.
+         */
+        PromptDataUpdate: {
+            /**
+             * Id
+             * @description Unique identifier for the prompt
+             */
+            id?: string | null;
+            /**
+             * Name
+             * @description Prompt name
+             */
+            name?: string | null;
+            /**
+             * Description
+             * @description Prompt description
+             */
+            description?: string | null;
+            /**
+             * Category
+             * @description Prompt category for organization
+             */
+            category?: string | null;
+            /**
+             * Provider
+             * @description LLM provider (e.g., openai, anthropic)
+             */
+            provider?: string | null;
+            /**
+             * Model
+             * @description Model name (e.g., gpt-4, claude-3)
+             */
+            model?: string | null;
+            /**
+             * Prompt
+             * @description Combined prompt content
+             */
+            prompt?: string | null;
+            /**
+             * Tool Choice
+             * @description Tool choice configuration
+             */
+            tool_choice?: string | {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Temperature
+             * @description Sampling temperature
+             */
+            temperature?: number | null;
+            /**
+             * Top P
+             * @description Top-p sampling parameter
+             */
+            top_p?: number | null;
+            /**
+             * Max Tokens
+             * @description Maximum tokens to generate
+             */
+            max_tokens?: number | null;
+            /**
+             * Response Format
+             * @description Response format configuration
+             */
+            response_format?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Stream
+             * @description Whether to stream the response
+             */
+            stream?: boolean | null;
+            /**
+             * N Completions
+             * @description Number of completions to generate
+             */
+            n_completions?: number | null;
+            /**
+             * Stop
+             * @description Stop sequences
+             */
+            stop?: string | string[] | null;
+            /**
+             * Presence Penalty
+             * @description Presence penalty
+             */
+            presence_penalty?: number | null;
+            /**
+             * Frequency Penalty
+             * @description Frequency penalty
+             */
+            frequency_penalty?: number | null;
+            /**
+             * Seed
+             * @description Random seed for reproducibility
+             */
+            seed?: number | null;
+            /**
+             * Api Key
+             * @description API key override
+             */
+            api_key?: string | null;
+            /**
+             * Api Base
+             * @description API base URL override
+             */
+            api_base?: string | null;
+            /**
+             * User
+             * @description User identifier for tracking
+             */
+            user?: string | null;
+            /**
+             * Parallel Tool Calls
+             * @description Enable parallel tool calls
+             */
+            parallel_tool_calls?: boolean | null;
+            /**
+             * Logprobs
+             * @description Return log probabilities
+             */
+            logprobs?: boolean | null;
+            /**
+             * Top Logprobs
+             * @description Number of top log probabilities
+             */
+            top_logprobs?: number | null;
+            /**
+             * Logit Bias
+             * @description Logit bias adjustments
+             */
+            logit_bias?: {
+                [key: string]: number;
+            } | null;
+            /**
+             * Stream Options
+             * @description Streaming options
+             */
+            stream_options?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Max Completion Tokens
+             * @description Maximum completion tokens
+             */
+            max_completion_tokens?: number | null;
+            /**
+             * Reasoning Effort
+             * @description Reasoning effort level
+             */
+            reasoning_effort?: ("minimal" | "low" | "medium" | "high" | "auto") | null;
+            /**
+             * Extra Args
+             * @description Additional provider-specific arguments
+             */
+            extra_args?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Tags
+             * @description Tags for prompt categorization
+             */
+            tags?: string[] | null;
+        };
+        /**
+         * PromptMeta
+         * @description Prompt metadata model that wraps PromptData with repository information.
+         */
+        PromptMeta: {
+            /** @description Complete prompt data */
+            prompt: components["schemas"]["PromptData"];
+            /**
+             * Recent Commits
+             * @description Recent 5 commits for this prompt file
+             */
+            recent_commits?: components["schemas"]["CommitInfo"][] | null;
+            /**
+             * Repo Name
+             * @description Repository name where prompt is stored
+             */
+            repo_name: string;
+            /**
+             * File Path
+             * @description File path within the repository
+             */
+            file_path: string;
+        };
         /**
          * PromptTokensDetails
          * @description Breakdown of tokens used in the prompt
@@ -1206,6 +1658,47 @@ export interface components {
             meta?: components["schemas"]["ResponseMeta"];
         };
         /**
+         * StandardResponse[List[PromptMeta]]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_List_PromptMeta__: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /**
+             * Data
+             * @description Response payload
+             */
+            data?: components["schemas"]["PromptMeta"][] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
          * StandardResponse[LoginResponseData]
          * @example {
          *       "data": {
@@ -1314,6 +1807,44 @@ export interface components {
              * @description Response payload
              */
             data?: null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
+         * StandardResponse[PromptMeta]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_PromptMeta_: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /** @description Response payload */
+            data?: components["schemas"]["PromptMeta"] | null;
             /**
              * Message
              * @description Human-readable message about the response
@@ -2635,6 +3166,340 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StandardResponse_APIInfo_"];
+                };
+            };
+        };
+    };
+    get_prompt_api_v0_prompts__get: {
+        parameters: {
+            query: {
+                repo_name: string;
+                file_path: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_PromptMeta_"];
+                };
+            };
+            /** @description Prompt not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /** @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Prompt Not Found",
+                     *       "detail": "Prompt with ID 'xxx' not found or access denied"
+                     *     } */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /** @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to retrieve prompt"
+                     *     } */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    update_prompt_api_v0_prompts__put: {
+        parameters: {
+            query: {
+                repo_name: string;
+                file_path: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PromptDataUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_PromptMeta_"];
+                };
+            };
+            /** @description Invalid prompt data */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /** @example {
+                     *       "status": "error",
+                     *       "type": "/errors/validation-failed",
+                     *       "title": "Validation Error",
+                     *       "detail": "Invalid prompt data"
+                     *     } */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Prompt not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /** @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Prompt Not Found",
+                     *       "detail": "Prompt with ID 'xxx' not found or access denied"
+                     *     } */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /** @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to update prompt"
+                     *     } */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    create_prompt_api_v0_prompts__post: {
+        parameters: {
+            query: {
+                repo_name: string;
+                file_path: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PromptData"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_PromptMeta_"];
+                };
+            };
+            /** @description Invalid prompt data */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /** @example {
+                     *       "status": "error",
+                     *       "type": "/errors/validation-failed",
+                     *       "title": "Validation Error",
+                     *       "detail": "Invalid prompt data"
+                     *     } */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /** @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to create prompt"
+                     *     } */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    delete_prompt_api_v0_prompts__delete: {
+        parameters: {
+            query: {
+                repo_name: string;
+                file_path: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_NoneType_"];
+                };
+            };
+            /** @description Prompt not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /** @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Prompt Not Found",
+                     *       "detail": "Prompt with ID 'xxx' not found or access denied"
+                     *     } */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /** @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to delete prompt"
+                     *     } */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    discover_repository_prompts_api_v0_prompts_discover_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscoverRepositoriesRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_List_PromptMeta__"];
+                };
+            };
+            /** @description Bad request or all repositories failed to discover prompts */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /** @example {
+                     *       "status": "error",
+                     *       "type": "/errors/bad-request",
+                     *       "title": "Bad Request",
+                     *       "detail": "Failed to discover prompts from all repositories"
+                     *     } */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /** @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to discover prompts"
+                     *     } */
+                    "application/json": unknown;
                 };
             };
         };

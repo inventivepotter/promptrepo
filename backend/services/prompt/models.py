@@ -6,38 +6,45 @@ across both individual and organization hosting types.
 """
 
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Literal, Union
 from pydantic import BaseModel, Field
+from services.git.models import CommitInfo
 
-
-class PromptFile(BaseModel):
+class PromptData(BaseModel):
     """
-    Model representing a prompt file discovered in a repository.
-    Used by PromptDiscoveryService to represent YAML/YML prompt files.
-    """
-    path: str = Field(..., description="Full file path relative to repository")
-    name: str = Field(..., description="File name")
-    content: Optional[str] = Field(None, description="Full content of the file as JSON string")
-    system_prompt: Optional[str] = Field(None, description="System prompt content")
-    user_prompt: Optional[str] = Field(None, description="User prompt content")
-    metadata: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Additional metadata from YAML")
-
-
-class Prompt(BaseModel):
-    """
-    Core prompt model with all fields for database and API operations.
+    Core prompt data model with all fields that get saved to YAML files.
+    This model represents the complete prompt configuration including LLM parameters.
     """
     id: str = Field(..., description="Unique identifier for the prompt")
     name: str = Field(..., description="Prompt name")
     description: Optional[str] = Field(None, description="Prompt description")
-    content: str = Field(..., description="Full prompt content (JSON format)")
-    repo_name: str = Field(..., description="Repository name where prompt is stored")
-    file_path: str = Field(..., description="File path within the repository")
     category: Optional[str] = Field(None, description="Prompt category for organization")
+    provider: str = Field(..., description="LLM provider (e.g., openai, anthropic)")
+    model: str = Field(..., description="Model name (e.g., gpt-4, claude-3)")
+    prompt: str = Field(..., description="Combined prompt content")
+    tool_choice: Optional[Union[str, Dict[str, Any]]] = Field(None, description="Tool choice configuration")
+    temperature: float = Field(default=0.0, ge=0.0, le=2.0, description="Sampling temperature")
+    top_p: Optional[float] = Field(None, ge=0.0, le=1.0, description="Top-p sampling parameter")
+    max_tokens: Optional[int] = Field(None, gt=0, description="Maximum tokens to generate")
+    response_format: Optional[Dict[str, Any]] = Field(None, description="Response format configuration")
+    stream: Optional[bool] = Field(None, description="Whether to stream the response")
+    n_completions: Optional[int] = Field(None, gt=0, description="Number of completions to generate")
+    stop: Optional[Union[str, List[str]]] = Field(None, description="Stop sequences")
+    presence_penalty: Optional[float] = Field(None, ge=-2.0, le=2.0, description="Presence penalty")
+    frequency_penalty: Optional[float] = Field(None, ge=-2.0, le=2.0, description="Frequency penalty")
+    seed: Optional[int] = Field(None, description="Random seed for reproducibility")
+    api_key: Optional[str] = Field(None, description="API key override")
+    api_base: Optional[str] = Field(None, description="API base URL override")
+    user: Optional[str] = Field(None, description="User identifier for tracking")
+    parallel_tool_calls: Optional[bool] = Field(None, description="Enable parallel tool calls")
+    logprobs: Optional[bool] = Field(None, description="Return log probabilities")
+    top_logprobs: Optional[int] = Field(None, ge=0, le=20, description="Number of top log probabilities")
+    logit_bias: Optional[Dict[str, float]] = Field(None, description="Logit bias adjustments")
+    stream_options: Optional[Dict[str, Any]] = Field(None, description="Streaming options")
+    max_completion_tokens: Optional[int] = Field(None, gt=0, description="Maximum completion tokens")
+    reasoning_effort: Optional[Literal["minimal", "low", "medium", "high", "auto"]] = Field("auto", description="Reasoning effort level")
+    extra_args: Optional[Dict[str, Any]] = Field(None, description="Additional provider-specific arguments")
     tags: List[str] = Field(default_factory=list, description="Tags for prompt categorization")
-    system_prompt: Optional[str] = Field(None, description="System prompt content")
-    user_prompt: Optional[str] = Field(None, description="User prompt content")
-    owner: Optional[str] = Field(None, description="Owner username (for organization mode)")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
     updated_at: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")
     
@@ -48,53 +55,55 @@ class Prompt(BaseModel):
     }
 
 
-class PromptCreate(BaseModel):
+class PromptMeta(BaseModel):
     """
-    Model for creating a new prompt.
+    Prompt metadata model that wraps PromptData with repository information.
     """
-    name: str = Field(..., description="Prompt name")
-    description: Optional[str] = Field(None, description="Prompt description")
-    repo_name: str = Field(..., description="Repository name where prompt will be stored")
+    prompt: PromptData = Field(..., description="Complete prompt data")
+    recent_commits: Optional[List[CommitInfo]] = Field(None, description="Recent 5 commits for this prompt file")
+    repo_name: str = Field(..., description="Repository name where prompt is stored")
     file_path: str = Field(..., description="File path within the repository")
-    category: Optional[str] = Field(None, description="Prompt category")
-    tags: List[str] = Field(default_factory=list, description="Tags for prompt")
-    system_prompt: Optional[str] = Field(None, description="System prompt content")
-    user_prompt: Optional[str] = Field(None, description="User prompt content")
-    metadata: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Additional metadata")
+    
+    model_config = {
+        "json_encoders": {
+            datetime: lambda v: v.isoformat()
+        }
+    }
 
 
-class PromptUpdate(BaseModel):
+class PromptDataUpdate(BaseModel):
     """
-    Model for updating an existing prompt.
-    All fields are optional to allow partial updates.
+    Partial model for updating prompt data.
+    All fields from PromptData are optional to allow partial updates.
+    This is essentially Partial<PromptData> for update operations.
     """
-    name: Optional[str] = Field(None, description="Updated prompt name")
-    description: Optional[str] = Field(None, description="Updated prompt description")
-    category: Optional[str] = Field(None, description="Updated category")
-    tags: Optional[List[str]] = Field(None, description="Updated tags")
-    system_prompt: Optional[str] = Field(None, description="Updated system prompt")
-    user_prompt: Optional[str] = Field(None, description="Updated user prompt")
-    metadata: Optional[Dict[str, Any]] = Field(None, description="Updated metadata")
-
-
-class PromptList(BaseModel):
-    """
-    Response model for listing prompts.
-    """
-    prompts: List[Prompt] = Field(default_factory=list, description="List of prompts")
-    total: int = Field(0, description="Total number of prompts")
-    page: int = Field(1, description="Current page number")
-    page_size: int = Field(20, description="Number of items per page")
-
-
-class PromptSearchParams(BaseModel):
-    """
-    Parameters for searching/filtering prompts.
-    """
-    query: Optional[str] = Field(default=None, description="Search query string")
-    repo_name: Optional[str] = Field(default=None, description="Filter by repository name")
-    category: Optional[str] = Field(default=None, description="Filter by category")
-    tags: Optional[List[str]] = Field(default=None, description="Filter by tags")
-    owner: Optional[str] = Field(default=None, description="Filter by owner (organization mode)")
-    page: int = Field(default=1, ge=1, description="Page number")
-    page_size: int = Field(default=20, ge=1, le=100, description="Items per page")
+    id: Optional[str] = Field(None, description="Unique identifier for the prompt")
+    name: Optional[str] = Field(None, description="Prompt name")
+    description: Optional[str] = Field(None, description="Prompt description")
+    category: Optional[str] = Field(None, description="Prompt category for organization")
+    provider: Optional[str] = Field(None, description="LLM provider (e.g., openai, anthropic)")
+    model: Optional[str] = Field(None, description="Model name (e.g., gpt-4, claude-3)")
+    prompt: Optional[str] = Field(None, description="Combined prompt content")
+    tool_choice: Optional[Union[str, Dict[str, Any]]] = Field(None, description="Tool choice configuration")
+    temperature: Optional[float] = Field(None, ge=0.0, le=2.0, description="Sampling temperature")
+    top_p: Optional[float] = Field(None, ge=0.0, le=1.0, description="Top-p sampling parameter")
+    max_tokens: Optional[int] = Field(None, gt=0, description="Maximum tokens to generate")
+    response_format: Optional[Dict[str, Any]] = Field(None, description="Response format configuration")
+    stream: Optional[bool] = Field(None, description="Whether to stream the response")
+    n_completions: Optional[int] = Field(None, gt=0, description="Number of completions to generate")
+    stop: Optional[Union[str, List[str]]] = Field(None, description="Stop sequences")
+    presence_penalty: Optional[float] = Field(None, ge=-2.0, le=2.0, description="Presence penalty")
+    frequency_penalty: Optional[float] = Field(None, ge=-2.0, le=2.0, description="Frequency penalty")
+    seed: Optional[int] = Field(None, description="Random seed for reproducibility")
+    api_key: Optional[str] = Field(None, description="API key override")
+    api_base: Optional[str] = Field(None, description="API base URL override")
+    user: Optional[str] = Field(None, description="User identifier for tracking")
+    parallel_tool_calls: Optional[bool] = Field(None, description="Enable parallel tool calls")
+    logprobs: Optional[bool] = Field(None, description="Return log probabilities")
+    top_logprobs: Optional[int] = Field(None, ge=0, le=20, description="Number of top log probabilities")
+    logit_bias: Optional[Dict[str, float]] = Field(None, description="Logit bias adjustments")
+    stream_options: Optional[Dict[str, Any]] = Field(None, description="Streaming options")
+    max_completion_tokens: Optional[int] = Field(None, gt=0, description="Maximum completion tokens")
+    reasoning_effort: Optional[Literal["minimal", "low", "medium", "high", "auto"]] = Field(None, description="Reasoning effort level")
+    extra_args: Optional[Dict[str, Any]] = Field(None, description="Additional provider-specific arguments")
+    tags: Optional[List[str]] = Field(None, description="Tags for prompt categorization")

@@ -5,8 +5,6 @@ Handles prompt operations across both individual and organization hosting types,
 using constructor injection for all dependencies following SOLID principles.
 """
 
-import json
-import uuid
 import yaml
 import logging
 from datetime import datetime
@@ -18,17 +16,15 @@ from services.config.config_interface import IConfig
 from services.auth.session_service import SessionService
 from services.git.git_service import GitService
 from settings import settings
+from middlewares.rest.exceptions import NotFoundException, AppException
 
 from .prompt_interface import IPromptService
-from .prompt_discovery_service import PromptDiscoveryService
 from .models import (
-    Prompt,
-    PromptCreate,
-    PromptUpdate,
-    PromptList,
-    PromptSearchParams,
-    PromptFile
+    PromptMeta,
+    PromptData,
+    PromptDataUpdate
 )
+from services.git.models import CommitInfo
 
 logger = logging.getLogger(__name__)
 
@@ -54,15 +50,10 @@ class PromptService(IPromptService):
         
         Args:
             config_service: Configuration service for hosting type
-            remote_repo_service: Service for discovering repositories
             session_service: Session service for user context
         """
         self.config_service = config_service
         self.session_service = session_service
-        self.discovery_service = PromptDiscoveryService()
-        
-        # In-memory storage for prompts (would be database in production)
-        self._prompts: Dict[str, Prompt] = {}
         
     def _get_repo_base_path(self, user_id: str) -> Path:
         """
@@ -111,424 +102,292 @@ class PromptService(IPromptService):
             return None
     
     def _generate_prompt_id(self, repo_name: str, file_path: str) -> str:
-        """Generate a unique prompt ID based on repo and file path."""
-        return f"{repo_name}:{file_path}:{uuid.uuid4().hex[:8]}"
+        """Generate a deterministic prompt ID based on repo and file path."""
+        # Use a deterministic ID based on repo and file path
+        return f"{repo_name}:{file_path}"
     
-    def _user_has_access(self, user_id: str, prompt: Prompt) -> bool:
+    def _get_file_commit_history(self, repo_path: Path, file_path: str, limit: int = 5) -> list[CommitInfo]:
+        """Get commit history for a specific file using GitService."""
+        try:
+            git_service = GitService(repo_path)
+            return git_service.get_file_commit_history(file_path, limit)
+        except Exception as e:
+            logger.warning(f"Failed to get commit history for {file_path}: {e}")
+            return []
+    
+    def _user_has_access(self, user_id: str, prompt_meta: PromptMeta) -> bool:
         """
         Check if user has access to a prompt.
         
         In individual mode: all users have access
-        In organization mode: only the owner has access
+        In organization mode: only the owner has access (stored in prompt data user field)
         """
         hosting_config = self.config_service.get_hosting_config()
         
         if hosting_config.type == HostingType.INDIVIDUAL:
             return True
         
-        return prompt.owner == user_id
+        # In organization mode, check the user field in PromptData
+        return prompt_meta.prompt.user == user_id
     
     async def create_prompt(
         self,
         user_id: str,
-        prompt_data: PromptCreate
-    ) -> Prompt:
+        repo_name: str,
+        file_path: str,
+        prompt_data: PromptData
+    ) -> PromptMeta:
         """Create a new prompt in the specified repository."""
-        # Get repository base path
-        repo_base_path = self._get_repo_base_path(user_id)
-        repo_path = repo_base_path / prompt_data.repo_name
-        
-        if not repo_path.exists():
-            raise ValueError(f"Repository {prompt_data.repo_name} not found")
-        
-        # Create prompt file content
-        prompt_content = {
-            "name": prompt_data.name,
-            "description": prompt_data.description,
-            "category": prompt_data.category,
-            "tags": prompt_data.tags,
-            "system_prompt": prompt_data.system_prompt,
-            "user_prompt": prompt_data.user_prompt
-        }
-        
-        # Add metadata if present
-        if prompt_data.metadata:
-            prompt_content.update(prompt_data.metadata)
-        
-        # Save to file
-        file_path = repo_path / prompt_data.file_path
-        
-        # Save prompt file
-        success = self._save_prompt_file(file_path, prompt_content)
-        
-        if not success:
-            raise ValueError(f"Failed to save prompt to {prompt_data.file_path}")
-        
-        # Create Prompt object
-        prompt = Prompt(
-            id=self._generate_prompt_id(prompt_data.repo_name, prompt_data.file_path),
-            name=prompt_data.name,
-            description=prompt_data.description,
-            content=json.dumps(prompt_content),
-            repo_name=prompt_data.repo_name,
-            file_path=prompt_data.file_path,
-            category=prompt_data.category,
-            tags=prompt_data.tags,
-            system_prompt=prompt_data.system_prompt,
-            user_prompt=prompt_data.user_prompt,
-            owner=user_id if self.config_service.get_hosting_config().type == HostingType.ORGANIZATION else None,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
-        )
-        
-        # Store in memory
-        self._prompts[prompt.id] = prompt
-        
-        logger.info(f"Created prompt {prompt.id} for user {user_id}")
-        return prompt
-    
-    async def get_prompt(
-        self,
-        user_id: str,
-        prompt_id: str
-    ) -> Optional[Prompt]:
-        """Get a single prompt by ID."""
-        prompt = self._prompts.get(prompt_id)
-        
-        if not prompt:
-            return None
-        
-        if not self._user_has_access(user_id, prompt):
-            logger.warning(f"User {user_id} attempted to access prompt {prompt_id} without permission")
-            return None
-        
-        return prompt
-    
-    async def update_prompt(
-        self,
-        user_id: str,
-        prompt_id: str,
-        prompt_data: PromptUpdate
-    ) -> Optional[Prompt]:
-        """Update an existing prompt."""
-        prompt = await self.get_prompt(user_id, prompt_id)
-        
-        if not prompt:
-            return None
-        
-        # Get repository base path
-        repo_base_path = self._get_repo_base_path(user_id)
-        repo_path = repo_base_path / prompt.repo_name
-        file_path = repo_path / prompt.file_path
-        
-        # Load existing content
-        existing_data = self._load_prompt_file(file_path)
-        
-        if not existing_data:
-            logger.error(f"Could not load existing prompt file at {file_path}")
-            return None
-        
-        # Update fields
-        if prompt_data.name is not None:
-            prompt.name = prompt_data.name
-            existing_data["name"] = prompt_data.name
-        
-        if prompt_data.description is not None:
-            prompt.description = prompt_data.description
-            existing_data["description"] = prompt_data.description
-        
-        if prompt_data.category is not None:
-            prompt.category = prompt_data.category
-            existing_data["category"] = prompt_data.category
-        
-        if prompt_data.tags is not None:
-            prompt.tags = prompt_data.tags
-            existing_data["tags"] = prompt_data.tags
-        
-        if prompt_data.system_prompt is not None:
-            prompt.system_prompt = prompt_data.system_prompt
-            existing_data["system_prompt"] = prompt_data.system_prompt
-        
-        if prompt_data.user_prompt is not None:
-            prompt.user_prompt = prompt_data.user_prompt
-            existing_data["user_prompt"] = prompt_data.user_prompt
-        
-        if prompt_data.metadata:
-            existing_data.update(prompt_data.metadata)
-        
-        # Save updated content
-        success = self._save_prompt_file(file_path, existing_data)
-        
-        if not success:
-            logger.error(f"Failed to save updated prompt to {file_path}")
-            return None
-        
-        # Update prompt object
-        prompt.content = json.dumps(existing_data)
-        prompt.updated_at = datetime.utcnow()
-        
-        logger.info(f"Updated prompt {prompt_id} for user {user_id}")
-        return prompt
-    
-    async def delete_prompt(
-        self,
-        user_id: str,
-        prompt_id: str
-    ) -> bool:
-        """Delete a prompt."""
-        prompt = await self.get_prompt(user_id, prompt_id)
-        
-        if not prompt:
-            return False
-        
-        # Get repository base path
-        repo_base_path = self._get_repo_base_path(user_id)
-        repo_path = repo_base_path / prompt.repo_name
-        file_path = repo_path / prompt.file_path
-        
-        # Delete the file
-        try:
-            if file_path.exists():
-                file_path.unlink()
-            
-            # Remove from memory
-            del self._prompts[prompt_id]
-            
-            logger.info(f"Deleted prompt {prompt_id} for user {user_id}")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to delete prompt {prompt_id}: {e}")
-            return False
-    
-    async def list_prompts(
-        self,
-        user_id: str,
-        search_params: Optional[PromptSearchParams] = None
-    ) -> PromptList:
-        """List prompts accessible to the user with optional filtering."""
-        if not search_params:
-            # Use default values from the model
-            search_params = PromptSearchParams()
-        
-        # Filter prompts based on access
-        accessible_prompts = [
-            prompt for prompt in self._prompts.values()
-            if self._user_has_access(user_id, prompt)
-        ]
-        
-        # Apply filters
-        filtered_prompts = accessible_prompts
-        
-        if search_params.repo_name:
-            filtered_prompts = [
-                p for p in filtered_prompts
-                if p.repo_name == search_params.repo_name
-            ]
-        
-        if search_params.category:
-            filtered_prompts = [
-                p for p in filtered_prompts
-                if p.category == search_params.category
-            ]
-        
-        if search_params.tags:
-            filtered_prompts = [
-                p for p in filtered_prompts
-                if any(tag in p.tags for tag in search_params.tags)
-            ]
-        
-        if search_params.owner:
-            filtered_prompts = [
-                p for p in filtered_prompts
-                if p.owner == search_params.owner
-            ]
-        
-        if search_params.query:
-            query = search_params.query.lower()
-            filtered_prompts = [
-                p for p in filtered_prompts
-                if query in p.name.lower() or
-                (p.description and query in p.description.lower())
-            ]
-        
-        # Pagination
-        total = len(filtered_prompts)
-        start_idx = (search_params.page - 1) * search_params.page_size
-        end_idx = start_idx + search_params.page_size
-        paginated_prompts = filtered_prompts[start_idx:end_idx]
-        
-        return PromptList(
-            prompts=paginated_prompts,
-            total=total,
-            page=search_params.page,
-            page_size=search_params.page_size
-        )
-    
-    async def list_repository_prompts(
-        self,
-        user_id: str,
-        repo_name: str
-    ) -> List[Prompt]:
-        """List all prompts in a specific repository."""
         # Get repository base path
         repo_base_path = self._get_repo_base_path(user_id)
         repo_path = repo_base_path / repo_name
         
         if not repo_path.exists():
-            raise ValueError(f"Repository {repo_name} not found")
+            raise NotFoundException(
+                resource="Repository",
+                identifier=repo_name
+            )
         
-        # Filter prompts by repository
-        repo_prompts = [
-            prompt for prompt in self._prompts.values()
-            if prompt.repo_name == repo_name and self._user_has_access(user_id, prompt)
-        ]
+        # Set user field in organization mode
+        if self.config_service.get_hosting_config().type == HostingType.ORGANIZATION:
+            prompt_data.user = user_id
         
-        return repo_prompts
+        # Set timestamps
+        prompt_data.created_at = datetime.utcnow()
+        prompt_data.updated_at = datetime.utcnow()
+        
+        # Generate ID based on repo and file path
+        prompt_data.id = self._generate_prompt_id(repo_name, file_path)
+        
+        # Convert PromptData to dict for YAML serialization
+        prompt_content = prompt_data.model_dump(exclude_none=True, by_alias=False)
+        
+        # Convert datetime objects to ISO strings for YAML
+        if isinstance(prompt_content.get("created_at"), datetime):
+            prompt_content["created_at"] = prompt_content["created_at"].isoformat()
+        if isinstance(prompt_content.get("updated_at"), datetime):
+            prompt_content["updated_at"] = prompt_content["updated_at"].isoformat()
+        
+        # Save to file
+        full_file_path = repo_path / file_path
+        success = self._save_prompt_file(full_file_path, prompt_content)
+        
+        if not success:
+            raise AppException(
+                message=f"Failed to save prompt to {file_path}"
+            )
+        
+        recent_commits = self._get_file_commit_history(repo_path, file_path)
+
+        # Create PromptMeta object
+        prompt_meta = PromptMeta(
+            prompt=prompt_data,
+            repo_name=repo_name,
+            file_path=file_path,
+            recent_commits=recent_commits
+        )
+        
+        logger.info(f"Created prompt {prompt_data.id} for user {user_id}")
+        return prompt_meta
+    
+    async def get_prompt(
+        self,
+        user_id: str,
+        repo_name: str,
+        file_path: str
+    ) -> Optional[PromptMeta]:
+        """Get a single prompt by repo_name and file_path."""
+        try:
+            # Get repository base path
+            repo_base_path = self._get_repo_base_path(user_id)
+            repo_path = repo_base_path / repo_name
+            full_file_path = repo_path / file_path
+            
+            if not full_file_path.exists():
+                return None
+            
+            # Load the prompt file
+            yaml_data = self._load_prompt_file(full_file_path)
+            if not yaml_data:
+                return None
+            
+            # Get commit history for this file
+            recent_commits = self._get_file_commit_history(repo_path, file_path)
+            
+            # Parse datetime fields
+            created_at = yaml_data.get("created_at")
+            if isinstance(created_at, str):
+                created_at = datetime.fromisoformat(created_at)
+            elif created_at is None:
+                created_at = datetime.utcnow()
+                
+            updated_at = yaml_data.get("updated_at")
+            if isinstance(updated_at, str):
+                updated_at = datetime.fromisoformat(updated_at)
+            elif updated_at is None:
+                updated_at = datetime.utcnow()
+            
+            # Create PromptData from YAML
+            prompt_data = PromptData(
+                id=self._generate_prompt_id(repo_name, file_path),
+                name=yaml_data.get("name", file_path),
+                description=yaml_data.get("description"),
+                category=yaml_data.get("category"),
+                provider=yaml_data.get("provider", ""),
+                model=yaml_data.get("model", ""),
+                prompt=yaml_data.get("prompt", ""),
+                tool_choice=yaml_data.get("tool_choice"),
+                temperature=yaml_data.get("temperature", 0.0),
+                top_p=yaml_data.get("top_p"),
+                max_tokens=yaml_data.get("max_tokens"),
+                response_format=yaml_data.get("response_format"),
+                stream=yaml_data.get("stream"),
+                n_completions=yaml_data.get("n_completions"),
+                stop=yaml_data.get("stop"),
+                presence_penalty=yaml_data.get("presence_penalty"),
+                frequency_penalty=yaml_data.get("frequency_penalty"),
+                seed=yaml_data.get("seed"),
+                api_key=yaml_data.get("api_key"),
+                api_base=yaml_data.get("api_base"),
+                user=yaml_data.get("user"),
+                parallel_tool_calls=yaml_data.get("parallel_tool_calls"),
+                logprobs=yaml_data.get("logprobs"),
+                top_logprobs=yaml_data.get("top_logprobs"),
+                logit_bias=yaml_data.get("logit_bias"),
+                stream_options=yaml_data.get("stream_options"),
+                max_completion_tokens=yaml_data.get("max_completion_tokens"),
+                reasoning_effort=yaml_data.get("reasoning_effort", "auto"),
+                extra_args=yaml_data.get("extra_args"),
+                tags=yaml_data.get("tags", []) if isinstance(yaml_data.get("tags"), list) else [],
+                created_at=created_at,
+                updated_at=updated_at
+            )
+            
+            # Create PromptMeta
+            prompt_meta = PromptMeta(
+                prompt=prompt_data,
+                recent_commits=recent_commits,
+                repo_name=repo_name,
+                file_path=file_path
+            )
+            
+            if not self._user_has_access(user_id, prompt_meta):
+                logger.warning(f"User {user_id} attempted to access prompt {repo_name}:{file_path} without permission")
+                return None
+            
+            return prompt_meta
+        except Exception as e:
+            logger.error(f"Failed to get prompt {repo_name}:{file_path}: {e}")
+            return None
+    
+    async def update_prompt(
+        self,
+        user_id: str,
+        repo_name: str,
+        file_path: str,
+        prompt_data: PromptDataUpdate
+    ) -> Optional[PromptMeta]:
+        """Update an existing prompt."""
+        # Get existing prompt
+        prompt_meta = await self.get_prompt(user_id, repo_name, file_path)
+        
+        if not prompt_meta:
+            return None
+        
+        # Get repository base path
+        repo_base_path = self._get_repo_base_path(user_id)
+        repo_path = repo_base_path / repo_name
+        full_file_path = repo_path / file_path
+        
+        # Load existing content
+        existing_data = self._load_prompt_file(full_file_path)
+        
+        if not existing_data:
+            logger.error(f"Could not load existing prompt file at {full_file_path}")
+            return None
+        
+        # Update existing data with non-None values from prompt_data
+        update_dict = prompt_data.model_dump(exclude_none=True, by_alias=False)
+        existing_data.update(update_dict)
+        
+        # Update timestamp
+        existing_data["updated_at"] = datetime.utcnow().isoformat()
+        
+        # Save updated content
+        success = self._save_prompt_file(full_file_path, existing_data)
+        
+        if not success:
+            logger.error(f"Failed to save updated prompt to {full_file_path}")
+            return None
+        
+        # Return updated prompt
+        logger.info(f"Updated prompt {repo_name}:{file_path} for user {user_id}")
+        return await self.get_prompt(user_id, repo_name, file_path)
+    
+    async def delete_prompt(
+        self,
+        user_id: str,
+        repo_name: str,
+        file_path: str
+    ) -> bool:
+        """Delete a prompt."""
+        prompt_meta = await self.get_prompt(user_id, repo_name, file_path)
+        
+        if not prompt_meta:
+            return False
+        
+        # Get repository base path
+        repo_base_path = self._get_repo_base_path(user_id)
+        repo_path = repo_base_path / repo_name
+        full_file_path = repo_path / file_path
+        
+        # Delete the file
+        try:
+            if full_file_path.exists():
+                full_file_path.unlink()
+            
+            logger.info(f"Deleted prompt {repo_name}:{file_path} for user {user_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to delete prompt {repo_name}:{file_path}: {e}")
+            return False
     
     async def discover_prompts(
         self,
         user_id: str,
         repo_name: str
-    ) -> List[PromptFile]:
-        """Discover prompt files in a repository by scanning for YAML/YML files."""
+    ) -> List[PromptMeta]:
+        """Discover prompt files in a repository by scanning for YAML/YML files and converting them to PromptMeta."""
         # Get repository base path
         repo_base_path = self._get_repo_base_path(user_id)
         repo_path = repo_base_path / repo_name
         
         if not repo_path.exists():
-            raise ValueError(f"Repository {repo_name} not found")
+            raise NotFoundException(
+                resource="Repository",
+                identifier=f"{repo_name} at {repo_path}"
+            )
         
-        # Use discovery service to scan for prompts
-        prompt_files = self.discovery_service.scan_repository(repo_path)
-        
-        logger.info(f"Discovered {len(prompt_files)} prompts in {repo_name} for user {user_id}")
-        return prompt_files
-    
-    async def clone_repository_for_user(
-        self,
-        user_id: str,
-        repo_name: str,
-        clone_url: str,
-        branch: Optional[str] = None
-    ) -> Path:
-        """Clone a repository to the appropriate path based on hosting type."""
-        # Get repository base path
-        repo_base_path = self._get_repo_base_path(user_id)
-        
-        # Ensure base path exists
-        repo_base_path.mkdir(parents=True, exist_ok=True)
-        
-        # Target repository path
-        repo_path = repo_base_path / repo_name
-        
-        # If repository already exists, pull latest changes
-        if repo_path.exists():
-            try:
-                git_service = GitService(repo_path)
-                # Get OAuth token from session if in organization mode
-                oauth_token = None
-                if self.config_service.get_hosting_config().type == HostingType.ORGANIZATION:
-                    session = self.session_service.get_active_session(user_id)
-                    if session:
-                        oauth_token = session.oauth_token
+        # Scan for all YAML/YML files
+        prompt_metas = []
+        for ext in ['.yaml', '.yml']:
+            pattern = f"**/*{ext}"
+            for file_path in repo_path.glob(pattern):
+                # Skip hidden files and directories
+                if any(part.startswith('.') for part in file_path.parts):
+                    continue
                 
-                pull_result = git_service.pull_latest(oauth_token=oauth_token)
-                if pull_result.success:
-                    logger.info(f"Updated existing repository {repo_name} for user {user_id}")
-                    return repo_path
-            except Exception as e:
-                logger.warning(f"Failed to pull latest changes for {repo_name}: {e}")
+                try:
+                    # Get relative path
+                    relative_path = str(file_path.relative_to(repo_path))
+                    
+                    # Get the prompt using the existing get_prompt method
+                    prompt_meta = await self.get_prompt(user_id, repo_name, relative_path)
+                    if prompt_meta and self._user_has_access(user_id, prompt_meta):
+                        prompt_metas.append(prompt_meta)
+                except Exception as e:
+                    logger.warning(f"Failed to load prompt {file_path}: {e}")
+                    continue
         
-        # For now, if repo doesn't exist, raise an error (cloning not implemented in GitService)
-        # In production, you would use gitpython or subprocess to clone the repository
-        if not repo_path.exists():
-            logger.error(f"Repository {repo_name} does not exist at {repo_path}")
-            raise ValueError(f"Repository {repo_name} does not exist. Manual cloning required.")
-        
-        logger.info(f"Using existing repository {repo_name} for user {user_id} at {repo_path}")
-        return repo_path
-    
-    async def sync_repository_prompts(
-        self,
-        user_id: str,
-        repo_name: str
-    ) -> int:
-        """Sync prompts from a repository by discovering and storing them."""
-        # Discover prompts in the repository
-        prompt_files = await self.discover_prompts(user_id, repo_name)
-        
-        # Track synchronized prompts
-        synced_count = 0
-        existing_prompt_ids = set()
-        
-        for prompt_file in prompt_files:
-            # Create a unique ID for the prompt
-            prompt_id = self._generate_prompt_id(repo_name, prompt_file.path)
-            
-            # Check if prompt already exists
-            existing_prompt = None
-            for pid, prompt in self._prompts.items():
-                if prompt.repo_name == repo_name and prompt.file_path == prompt_file.path:
-                    existing_prompt = prompt
-                    existing_prompt_ids.add(pid)
-                    break
-            
-            # Parse metadata from content if available
-            metadata = prompt_file.metadata or {}
-            
-            # Create or update prompt
-            if existing_prompt:
-                # Update existing prompt
-                existing_prompt.name = prompt_file.name
-                existing_prompt.content = prompt_file.content or json.dumps({
-                    "system_prompt": prompt_file.system_prompt,
-                    "user_prompt": prompt_file.user_prompt
-                })
-                existing_prompt.system_prompt = prompt_file.system_prompt
-                existing_prompt.user_prompt = prompt_file.user_prompt
-                existing_prompt.updated_at = datetime.utcnow()
-                
-                if "category" in metadata:
-                    existing_prompt.category = metadata["category"]
-                if "tags" in metadata:
-                    existing_prompt.tags = metadata["tags"] if isinstance(metadata["tags"], list) else []
-                
-            else:
-                # Create new prompt
-                prompt = Prompt(
-                    id=prompt_id,
-                    name=prompt_file.name,
-                    description=metadata.get("description"),
-                    content=prompt_file.content or json.dumps({
-                        "system_prompt": prompt_file.system_prompt,
-                        "user_prompt": prompt_file.user_prompt
-                    }),
-                    repo_name=repo_name,
-                    file_path=prompt_file.path,
-                    category=metadata.get("category"),
-                    tags=metadata.get("tags", []) if isinstance(metadata.get("tags"), list) else [],
-                    system_prompt=prompt_file.system_prompt,
-                    user_prompt=prompt_file.user_prompt,
-                    owner=user_id if self.config_service.get_hosting_config().type == HostingType.ORGANIZATION else None,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
-                )
-                
-                self._prompts[prompt.id] = prompt
-                existing_prompt_ids.add(prompt.id)
-            
-            synced_count += 1
-        
-        # Remove prompts that no longer exist in the repository
-        prompts_to_remove = []
-        for prompt_id, prompt in self._prompts.items():
-            if prompt.repo_name == repo_name and prompt_id not in existing_prompt_ids:
-                if self._user_has_access(user_id, prompt):
-                    prompts_to_remove.append(prompt_id)
-        
-        for prompt_id in prompts_to_remove:
-            del self._prompts[prompt_id]
-            logger.info(f"Removed prompt {prompt_id} (no longer in repository)")
-        
-        logger.info(f"Synchronized {synced_count} prompts from {repo_name} for user {user_id}")
-        return synced_count
+        logger.info(f"Discovered {len(prompt_metas)} prompts in {repo_name} for user {user_id}")
+        return prompt_metas

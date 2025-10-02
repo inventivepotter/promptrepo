@@ -23,7 +23,7 @@ const PUBLIC_ENDPOINTS = new Set([
   '/api/v0/llm/providers/configured',
   '/api/v0/prompts',
   '/api/v0/llm/chat/completions',
-  '/api/v0/prompts/commit-push'
+  '/api/v0/prompts/'
 ]);
 
 // Define public endpoint prefixes that should be matched with startsWith

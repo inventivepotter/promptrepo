@@ -1,4 +1,4 @@
-import { Prompt } from '@/types/Prompt';
+import type { PromptMeta, PromptDataUpdate } from '@/services/prompts/api';
 
 export interface PromptFilters {
   search?: string;
@@ -15,9 +15,12 @@ export interface PaginationState {
 }
 
 export interface PromptState {
-  // Data
-  prompts: Prompt[];
-  currentPrompt: Prompt | null;
+  // Data - stored as hashmap for efficient lookups
+  // Key format: "repo_name:file_path"
+  prompts: Map<string, PromptMeta>;
+  
+  // Currently selected/editing prompt (serves as form data)
+  currentPrompt: PromptMeta | null;
   
   // UI State
   isLoading: boolean;
@@ -26,27 +29,32 @@ export interface PromptState {
   isDeleting: boolean;
   error: string | null;
   
-  // Filters and Pagination
+  // Filters and Pagination (frontend-only)
   filters: PromptFilters;
   pagination: PaginationState;
   
-  // Optimistic update tracking
-  optimisticUpdates: Map<string, Prompt>;
+  // Cache management
+  lastSyncTimestamp: number | null;
 }
 
 export interface PromptActions {
+  // Discovery & Sync
+  discoverAllPromptsFromRepos: () => Promise<void>;
+  
   // CRUD Operations
   fetchPrompts: (filters?: PromptFilters, page?: number, pageSize?: number) => Promise<void>;
-  fetchPromptById: (id: string) => Promise<void>;
-  createPrompt: (prompt: Omit<Prompt, 'id' | 'created_at' | 'updated_at'>) => Promise<Prompt>;
-  updatePrompt: (id: string, updates: Partial<Prompt>) => Promise<void>;
-  deletePrompt: (id: string) => Promise<void>;
+  fetchPromptById: (repoName: string, filePath: string) => Promise<void>;
+  createPrompt: (promptMeta: PromptMeta) => Promise<PromptMeta>;
+  updatePrompt: (repoName: string, filePath: string, updates: PromptDataUpdate) => Promise<void>;
+  deletePrompt: (repoName: string, filePath: string) => Promise<void>;
+  
+  initializeStore: () => Promise<void>;
   
   // State Management
-  setCurrentPrompt: (prompt: Prompt | null) => void;
+  setCurrentPrompt: (prompt: PromptMeta | null) => void;
   clearCurrentPrompt: () => void;
   
-  // Filters and Search
+  // Filters and Search (frontend-only, no backend calls)
   setFilters: (filters: PromptFilters) => void;
   setSearch: (search: string) => void;
   setRepository: (repository: string) => void;
@@ -54,7 +62,7 @@ export interface PromptActions {
   setSortOrder: (sortOrder: 'asc' | 'desc') => void;
   clearFilters: () => void;
   
-  // Pagination
+  // Pagination (frontend-only)
   setPage: (page: number) => void;
   setPageSize: (pageSize: number) => void;
   nextPage: () => void;
@@ -62,9 +70,6 @@ export interface PromptActions {
   
   // Error Handling
   clearError: () => void;
-  
-  // Reset
-  reset: () => void;
 }
 
 export interface PromptStore extends PromptState, PromptActions {}
