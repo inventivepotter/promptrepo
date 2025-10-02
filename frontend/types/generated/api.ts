@@ -937,6 +937,11 @@ export interface components {
              */
             model: string;
             /**
+             * Failover Model
+             * @description Backup model if primary fails
+             */
+            failover_model?: string | null;
+            /**
              * Prompt
              * @description Combined prompt content
              */
@@ -1118,6 +1123,11 @@ export interface components {
              * @description Model name (e.g., gpt-4, claude-3)
              */
             model?: string | null;
+            /**
+             * Failover Model
+             * @description Backup model if primary fails
+             */
+            failover_model?: string | null;
             /**
              * Prompt
              * @description Combined prompt content

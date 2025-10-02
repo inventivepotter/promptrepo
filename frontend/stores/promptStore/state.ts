@@ -2,9 +2,9 @@
 import type { PromptState } from './types';
 
 export const initialPromptState: PromptState = {
-  // Data - stored as Map for efficient lookups
+  // Data - stored as Record for efficient lookups and JSON serialization
   // Key format: "repo_name:file_path"
-  prompts: new Map(),
+  prompts: {},
   
   // Currently selected/editing prompt (serves as form data)
   currentPrompt: null,

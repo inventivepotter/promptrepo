@@ -11,13 +11,13 @@ import {
   Card,
 } from '@chakra-ui/react';
 import { LuPencil, LuTrash, LuClock } from 'react-icons/lu';
-import { useColorModeValue } from '../../../components/ui/color-mode';
-import { Prompt } from '@/types/Prompt';
+import { useColorModeValue } from '@/components/ui/color-mode';
+import type { PromptMeta } from '@/services/prompts/api';
 
 interface PromptCardProps {
-  prompt: Prompt;
-  onEdit: (prompt: Prompt) => void;
-  onDelete: (id: string) => void;
+  prompt: PromptMeta;
+  onEdit: (prompt: PromptMeta) => void;
+  onDelete: (repoName: string, filePath: string) => void;
 }
 
 export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
@@ -58,10 +58,10 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
           <HStack justify="space-between" align="start">
             <VStack align="stretch" flex={1} gap={2}>
               <Text fontSize="lg" fontWeight="semibold" lineClamp={1}>
-                {prompt.name || 'Untitled Prompt'}
+                {prompt.prompt?.name || 'Untitled Prompt'}
               </Text>
               <Text fontSize="sm" color={mutedTextColor} lineClamp={2}>
-                {truncateText(prompt.description || 'No description provided', 120)}
+                {truncateText(prompt.prompt?.description || 'No description provided', 120)}
               </Text>
             </VStack>
             <HStack gap={1}>
@@ -82,7 +82,7 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
                 colorPalette="red"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onDelete(prompt.id);
+                  onDelete(prompt.repo_name, prompt.file_path);
                 }}
                 _hover={{ bg: 'red.50' }}
               >
@@ -98,21 +98,21 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
                   {prompt.repo_name}
                 </Badge>
               )}
-              {prompt.category && (
+              {prompt.prompt?.category && (
                 <Badge size="sm" variant="subtle" colorPalette="blue">
-                  {prompt.category}
+                  {prompt.prompt.category}
                 </Badge>
               )}
-              {prompt.tags && prompt.tags.length > 0 && (
+              {prompt.prompt?.tags && prompt.prompt.tags.length > 0 && (
                 <>
-                  {prompt.tags.slice(0, 3).map((tag, index) => (
+                  {prompt.prompt.tags.slice(0, 3).map((tag, index) => (
                     <Badge key={index} size="sm" variant="subtle" colorPalette="purple">
                       {tag}
                     </Badge>
                   ))}
-                  {prompt.tags.length > 3 && (
+                  {prompt.prompt.tags.length > 3 && (
                     <Badge size="sm" variant="subtle" colorPalette="gray">
-                      +{prompt.tags.length - 3}
+                      +{prompt.prompt.tags.length - 3}
                     </Badge>
                   )}
                 </>
@@ -121,11 +121,11 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
 
             <HStack gap={1} fontSize="xs" color={mutedTextColor}>
               <LuClock size={12} />
-              <Text>{formatDate(new Date(prompt.updated_at))}</Text>
+              <Text>{prompt.prompt?.updated_at ? formatDate(new Date(prompt.prompt.updated_at)) : 'N/A'}</Text>
             </HStack>
           </HStack>
 
-          {prompt.content && (
+          {prompt.prompt?.prompt && (
             <Box
               p={3}
               bg={promptPreviewBg}
@@ -134,7 +134,7 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
               borderColor={promptBorderColor}
             >
               <Text fontSize="sm" color={mutedTextColor} lineClamp={3}>
-                {truncateText(prompt.content, 150)}
+                {truncateText(prompt.prompt.prompt, 150)}
               </Text>
             </Box>
           )}

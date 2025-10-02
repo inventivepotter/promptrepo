@@ -12,7 +12,7 @@ import {
   ScrollArea,
 } from '@chakra-ui/react';
 import { LuPlus } from 'react-icons/lu';
-import { Prompt } from '@/types/Prompt';
+import type { PromptMeta } from '@/services/prompts/api';
 import {
   useFilteredPrompts,
   useTotalPrompts,
@@ -30,7 +30,6 @@ import { PromptSearch } from '../_components/PromptSearch';
 import { PromptCard } from '../_components/PromptCard';
 import { Pagination } from '../_components/Pagination';
 import { PromptsHeader } from '@/components/PromptsHeader';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 export default function PromptsPage() {
   const router = useRouter();
@@ -68,31 +67,38 @@ export default function PromptsPage() {
 
 
   const handleCreateNew = async () => {
+    // Generate a unique ID for the new prompt
+    const newId = `_prompts/prompt-${Date.now()}`;
     const newPrompt = await createPrompt({
-      name: 'New Prompt',
-      description: '',
-      content: '',
-      repo_name: '',
-      file_path: '',
-      category: null,
-      tags: [],
-      system_prompt: null,
-      user_prompt: null,
-      owner: null,
+      repo_name: 'default',
+      file_path: `${newId}.md`,
+      prompt: {
+        id: newId,
+        name: 'New Prompt',
+        description: '',
+        category: null,
+        provider: '',
+        model: '',
+        prompt: '',
+        tags: [],
+        temperature: 0.7,
+        reasoning_effort: 'auto',
+      },
     });
     if (newPrompt) {
-      router.push(`/editor?id=${newPrompt.id}`);
+      setCurrentPrompt(newPrompt);
+      router.push(`/editor?repo_name=${encodeURIComponent(newPrompt.repo_name)}&file_path=${encodeURIComponent(newPrompt.file_path)}`);
     }
   };
 
-  const handleEditPrompt = (prompt: Prompt) => {
+  const handleEditPrompt = (prompt: PromptMeta) => {
     setCurrentPrompt(prompt);
-    router.push(`/editor?id=${prompt.id}`);
+    router.push(`/editor?repo_name=${encodeURIComponent(prompt.repo_name)}&file_path=${encodeURIComponent(prompt.file_path)}`);
   };
 
-  const handleDeletePrompt = async (id: string) => {
+  const handleDeletePrompt = async (repoName: string, filePath: string) => {
     if (confirm('Are you sure you want to delete this prompt?')) {
-      await deletePrompt(id);
+      await deletePrompt(repoName, filePath);
     }
   };
 
@@ -107,8 +113,7 @@ export default function PromptsPage() {
   };
 
   return (
-    <ProtectedRoute>
-      <Box height="100vh" width="100%" display="flex" flexDirection="column">
+    <Box height="100vh" width="100%" display="flex" flexDirection="column">
         {/* Prompts Header - Outside ScrollArea */}
         <PromptsHeader
           onCreateNew={handleCreateNew}
@@ -175,7 +180,7 @@ export default function PromptsPage() {
             >
               {filteredPrompts.map((prompt) => (
                 <PromptCard
-                  key={prompt.id}
+                  key={`${prompt.repo_name}:${prompt.file_path}`}
                   prompt={prompt}
                   onEdit={handleEditPrompt}
                   onDelete={handleDeletePrompt}
@@ -204,6 +209,5 @@ export default function PromptsPage() {
         </ScrollArea.Scrollbar>
         </ScrollArea.Root>
       </Box>
-    </ProtectedRoute>
   );
 }

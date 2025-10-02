@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { usePromptStore } from './store';
-import { Prompt } from '@/types/Prompt';
+import { useConfigStore } from '@/stores/configStore';
 import {
   selectPrompts,
   selectCurrentPrompt,
@@ -22,7 +22,7 @@ import {
   selectTotalPages,
   selectHasNextPage,
   selectHasPreviousPage,
-  selectPromptById,
+  selectPromptByKey,
   selectPromptsByRepository,
   filterPrompts,
   selectPromptCount,
@@ -33,7 +33,8 @@ import {
 // Data Hooks
 export const usePrompts = () => usePromptStore(selectPrompts);
 export const useCurrentPrompt = () => usePromptStore(selectCurrentPrompt);
-export const usePromptById = (id: string) => usePromptStore(selectPromptById(id));
+export const usePromptByKey = (repoName: string, filePath: string) =>
+  usePromptStore(selectPromptByKey(repoName, filePath));
 export const usePromptsByRepository = (repository: string) =>
   usePromptStore(selectPromptsByRepository(repository));
 
@@ -92,9 +93,9 @@ export const useUniqueRepositories = () => {
   
   return useMemo(() => {
     const repositories = new Set<string>();
-    prompts.forEach(prompt => {
-      if (prompt.repo?.name) {
-        repositories.add(prompt.repo.name);
+    Object.values(prompts).forEach(promptMeta => {
+      if (promptMeta.repo_name) {
+        repositories.add(promptMeta.repo_name);
       }
     });
     return Array.from(repositories).sort();
@@ -104,24 +105,22 @@ export const useUniqueRepositories = () => {
 export const usePromptCount = () => usePromptStore(selectPromptCount);
 export const useIsPromptsEmpty = () => usePromptStore(selectIsEmpty);
 
-// Form State Hooks
-export const useFormData = () => usePromptStore(state => state.formData);
-export const useOriginalFormData = () => usePromptStore(state => state.originalFormData);
-export const useShowRepoError = () => usePromptStore(state => state.showRepoError);
-export const useHasUnsavedChanges = () => usePromptStore(state => state.hasUnsavedChanges());
-
-// Form Actions Hook
-export const useFormActions = () => {
-  const store = usePromptStore();
+/**
+ * Hook to get model options from config store
+ * This provides provider/model options for UI components
+ */
+export const useModelOptions = () => {
+  const config = useConfigStore(state => state.config);
   
-  return {
-    initializeForm: store.initializeForm,
-    updateFormField: store.updateFormField,
-    updateFormRepo: store.updateFormRepo,
-    hasUnsavedChanges: store.hasUnsavedChanges,
-    resetForm: store.resetForm,
-    setShowRepoError: store.setShowRepoError,
-  };
+  return useMemo(() => {
+    const llmConfigs = config.llm_configs || [];
+    return llmConfigs.map(llm => ({
+      label: `${llm.provider} / ${llm.model}`,
+      value: `${llm.provider}:${llm.model}`,
+      provider: llm.provider,
+      model: llm.model,
+    }));
+  }, [config.llm_configs]);
 };
 
 // Action Hooks
@@ -129,6 +128,10 @@ export const usePromptActions = () => {
   const store = usePromptStore();
   
   return {
+    // Discovery & Sync
+    discoverAllPromptsFromRepos: store.discoverAllPromptsFromRepos,
+    initializeStore: store.initializeStore,
+    
     // CRUD Operations
     fetchPrompts: store.fetchPrompts,
     fetchPromptById: store.fetchPromptById,
@@ -141,10 +144,11 @@ export const usePromptActions = () => {
     clearCurrentPrompt: store.clearCurrentPrompt,
     
     // Convenience handlers
-    saveCurrentPrompt: async (updates: Partial<Prompt>) => {
+    saveCurrentPrompt: async () => {
       const currentPrompt = store.currentPrompt;
       if (currentPrompt) {
-        await store.updatePrompt(currentPrompt.id, updates);
+        // Use the entire currentPrompt.prompt as updates since it's already the modified state
+        await store.updatePrompt(currentPrompt.repo_name, currentPrompt.file_path, currentPrompt.prompt);
       }
     },
     
@@ -164,10 +168,32 @@ export const usePromptActions = () => {
     
     // Error Handling
     clearError: store.clearError,
-    
-    // Reset
-    reset: store.reset,
   };
+};
+
+/**
+ * Hook to update a single field in the current prompt
+ * This provides a reusable pattern for field updates across components
+ */
+export const useUpdateCurrentPromptField = () => {
+  const currentPrompt = useCurrentPrompt();
+  const setCurrentPrompt = usePromptStore(state => state.setCurrentPrompt);
+
+  return useMemo(() => {
+    return (field: string, value: string | number | boolean | string[] | null | Record<string, unknown>) => {
+      if (!currentPrompt) {
+        return;
+      }
+
+      setCurrentPrompt({
+        ...currentPrompt,
+        prompt: {
+          ...currentPrompt.prompt,
+          [field]: value,
+        },
+      });
+    };
+  }, [currentPrompt, setCurrentPrompt]);
 };
 
 // Convenience hook that returns everything

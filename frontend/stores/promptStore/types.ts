@@ -17,7 +17,8 @@ export interface PaginationState {
 export interface PromptState {
   // Data - stored as hashmap for efficient lookups
   // Key format: "repo_name:file_path"
-  prompts: Map<string, PromptMeta>;
+  // Using Record instead of Map for better JSON serialization
+  prompts: Record<string, PromptMeta>;
   
   // Currently selected/editing prompt (serves as form data)
   currentPrompt: PromptMeta | null;

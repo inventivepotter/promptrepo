@@ -115,21 +115,6 @@ class PromptService(IPromptService):
             logger.warning(f"Failed to get commit history for {file_path}: {e}")
             return []
     
-    def _user_has_access(self, user_id: str, prompt_meta: PromptMeta) -> bool:
-        """
-        Check if user has access to a prompt.
-        
-        In individual mode: all users have access
-        In organization mode: only the owner has access (stored in prompt data user field)
-        """
-        hosting_config = self.config_service.get_hosting_config()
-        
-        if hosting_config.type == HostingType.INDIVIDUAL:
-            return True
-        
-        # In organization mode, check the user field in PromptData
-        return prompt_meta.prompt.user == user_id
-    
     async def create_prompt(
         self,
         user_id: str,
@@ -235,6 +220,7 @@ class PromptService(IPromptService):
                 category=yaml_data.get("category"),
                 provider=yaml_data.get("provider", ""),
                 model=yaml_data.get("model", ""),
+                failover_model=yaml_data.get("failover_model"),
                 prompt=yaml_data.get("prompt", ""),
                 tool_choice=yaml_data.get("tool_choice"),
                 temperature=yaml_data.get("temperature", 0.0),
@@ -270,10 +256,6 @@ class PromptService(IPromptService):
                 repo_name=repo_name,
                 file_path=file_path
             )
-            
-            if not self._user_has_access(user_id, prompt_meta):
-                logger.warning(f"User {user_id} attempted to access prompt {repo_name}:{file_path} without permission")
-                return None
             
             return prompt_meta
         except Exception as e:
@@ -381,9 +363,22 @@ class PromptService(IPromptService):
                     # Get relative path
                     relative_path = str(file_path.relative_to(repo_path))
                     
+                    # Load YAML file to validate it has required prompt fields
+                    yaml_data = self._load_prompt_file(file_path)
+                    if not yaml_data:
+                        continue
+                    
+                    # Check for mandatory prompt fields
+                    required_fields = ['name', 'provider', 'model', 'prompt']
+                    has_required_fields = all(yaml_data.get(field) for field in required_fields)
+                    
+                    if not has_required_fields:
+                        logger.debug(f"Skipping {relative_path}: missing required prompt fields")
+                        continue
+                    
                     # Get the prompt using the existing get_prompt method
                     prompt_meta = await self.get_prompt(user_id, repo_name, relative_path)
-                    if prompt_meta and self._user_has_access(user_id, prompt_meta):
+                    if prompt_meta:
                         prompt_metas.append(prompt_meta)
                 except Exception as e:
                     logger.warning(f"Failed to load prompt {file_path}: {e}")

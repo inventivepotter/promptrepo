@@ -1,68 +1,35 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   Box,
   VStack,
   HStack,
   ScrollArea,
 } from '@chakra-ui/react';
-import { Prompt } from '@/types/Prompt';
-import { Repo } from '@/types/Repo';
+import { useRouter } from 'next/navigation';
 import { PromptEditorHeader } from './PromptEditorHeader';
 import { PromptFieldGroup } from './PromptFieldGroup';
+import { ModelFieldGroup } from './ModelFieldGroup';
+import { ParametersFieldGroup } from './ParametersFieldGroup';
+import { EnableThinkingFieldGroup } from './EnableThinkingFieldGroup';
 import { Chat } from './Chat';
 import { PromptTimeline } from './PromptTimeline';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { useUser } from '@/stores/authStore';
-import { usePromptActions, useFormData, useShowRepoError, useHasUnsavedChanges, useFormActions } from '@/stores/promptStore/hooks';
+import { useCurrentPrompt, usePromptActions, useIsUpdating, useIsLoading } from '@/stores/promptStore/hooks';
 
-
-interface PromptEditorProps {
-  prompt: Prompt | null;
-  onSave: (updates: Partial<Prompt>) => void;
-  onBack: () => void;
-  configuredRepos?: Array<Repo>;
-  isSaving?: boolean;
-}
-
-export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], isSaving = false }: PromptEditorProps) {
-  const { setCurrentPrompt } = usePromptActions();
-  const formData = useFormData();
-  const showRepoError = useShowRepoError();
-  const hasUnsavedChanges = useHasUnsavedChanges();
-  const { initializeForm, updateFormField, updateFormRepo, setShowRepoError } = useFormActions();
-
-  // Initialize form data when prompt changes
-  useEffect(() => {
-    initializeForm(prompt);
-    // Update store with current prompt
-    setCurrentPrompt(prompt);
-  }, [prompt, initializeForm, setCurrentPrompt]);
-
-  const updateField = (field: keyof Prompt, value: string | number | boolean) => {
-    // Check if repository is selected before allowing other field edits
-    if (!formData.repo && !showRepoError) {
-      setShowRepoError(true);
-      return;
-    }
-    
-    updateFormField(field as keyof typeof formData, value as string);
-  };
-
-  const updateRepoField = (repo: Repo | undefined) => {
-    updateFormRepo(repo);
-  };
-
-  const handleSave = () => {
-    if (!formData.repo) {
-      setShowRepoError(true);
-      return;
-    }
-    onSave(formData);
-    // Note: originalFormData is updated in the store after successful save
-  };
-
+export function PromptEditor() {
+  const router = useRouter();
+  const currentPrompt = useCurrentPrompt();
+  const isUpdating = useIsUpdating();
+  const isLoading = useIsLoading();
+  const { saveCurrentPrompt, setCurrentPrompt } = usePromptActions();
   const user = useUser();
+
+  const handleBack = () => {
+    router.push('/prompts');
+  };
 
   // Get commits from prompt data with 0th commit for latest changes
   const commits = useMemo(() => {
@@ -74,11 +41,11 @@ export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], isS
       isLatest: true
     };
 
-    if (prompt?.recent_commits && prompt.recent_commits.length > 0) {
+    if (currentPrompt?.recent_commits && currentPrompt.recent_commits.length > 0) {
       // Add the draft commit at position 0, then the API commits
       return [
         draftCommit,
-        ...prompt.recent_commits.map((commit) => ({
+        ...currentPrompt.recent_commits.map((commit) => ({
           ...commit,
           isLatest: false
         }))
@@ -87,16 +54,21 @@ export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], isS
     
     // Return just the draft commit if no API commits available
     return [draftCommit];
-  }, [prompt?.recent_commits, user?.oauth_name, user?.oauth_username]);
+  }, [currentPrompt?.recent_commits, user?.oauth_name, user?.oauth_username]);
+
+  // Show loading overlay while data is being fetched
+  if (isLoading || !currentPrompt || !currentPrompt.prompt) {
+    return <LoadingOverlay isVisible={true} title="Loading..." subtitle="Loading prompt data" />;
+  }
 
   return (
     <Box height="100vh" width="100%" display="flex" flexDirection="column">
       {/* Sticky Header - Outside ScrollArea */}
       <PromptEditorHeader
-        onBack={onBack}
-        onSave={handleSave}
-        canSave={!!formData.repo && hasUnsavedChanges}
-        isSaving={isSaving}
+        onBack={handleBack}
+        onSave={saveCurrentPrompt}
+        canSave={!!currentPrompt}
+        isSaving={isUpdating}
       />
 
       <ScrollArea.Root flex="1" width="100%">
@@ -130,13 +102,29 @@ export function PromptEditor({ prompt, onSave, onBack, configuredRepos = [], isS
                   >
                     <VStack gap={6} align="stretch">
                       {/* Basic Info */}
-                      <PromptFieldGroup
-                        formData={formData}
-                        configuredRepos={configuredRepos}
-                        showRepoError={showRepoError}
-                        updateField={updateField}
-                        updateRepoField={updateRepoField}
-                      />
+                      <PromptFieldGroup />
+                      
+                      {/* Model Configuration */}
+                      <ModelFieldGroup />
+                      
+                      {/* Parameters */}
+                      <ParametersFieldGroup />
+                      
+                      {/* Enable Thinking */}
+                      {currentPrompt && (
+                        <EnableThinkingFieldGroup
+                          formData={currentPrompt.prompt}
+                          updateField={(field, value) => {
+                            setCurrentPrompt({
+                              ...currentPrompt,
+                              prompt: {
+                                ...currentPrompt.prompt,
+                                [field]: value,
+                              },
+                            });
+                          }}
+                        />
+                      )}
                     </VStack>
                   </Box>
 

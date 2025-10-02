@@ -1,9 +1,9 @@
 import { PromptStore } from './types';
 import type { PromptMeta } from '@/services/prompts/api';
 
-// Data Selectors - Convert Map to Array
+// Data Selectors - Convert Record to Array
 export const selectPrompts = (state: PromptStore): PromptMeta[] =>
-  Array.from(state.prompts.values());
+  Object.values(state.prompts);
 
 export const selectCurrentPrompt = (state: PromptStore): PromptMeta | null => state.currentPrompt;
 
@@ -36,12 +36,12 @@ export const selectHasNextPage = (state: PromptStore): boolean =>
 export const selectHasPreviousPage = (state: PromptStore): boolean =>
   state.pagination.page > 1;
 
-// Computed Selectors - Use Map.get() for efficient lookups
+// Computed Selectors - Use object property access for efficient lookups
 export const selectPromptByKey = (repoName: string, filePath: string) => (state: PromptStore): PromptMeta | undefined =>
-  state.prompts.get(`${repoName}:${filePath}`);
+  state.prompts[`${repoName}:${filePath}`];
 
 export const selectPromptsByRepository = (repository: string) => (state: PromptStore): PromptMeta[] =>
-  Array.from(state.prompts.values()).filter(promptMeta => promptMeta.repo_name === repository);
+  Object.values(state.prompts).filter(promptMeta => promptMeta.repo_name === repository);
 
 // Create a selector that returns both the filtered prompts and the dependencies
 export const selectFilteredPromptsData = (state: PromptStore) => ({
@@ -54,7 +54,7 @@ export const selectFilteredPromptsData = (state: PromptStore) => ({
 
 // The actual filtering function that processes the data
 export const filterPrompts = (data: ReturnType<typeof selectFilteredPromptsData>): PromptMeta[] => {
-  let filtered = Array.from(data.prompts.values());
+  let filtered = Object.values(data.prompts);
   
   // Apply search filter
   if (data.search) {
@@ -63,10 +63,8 @@ export const filterPrompts = (data: ReturnType<typeof selectFilteredPromptsData>
       const prompt = promptMeta.prompt;
       return (
         prompt.name.toLowerCase().includes(searchLower) ||
-        prompt.content.toLowerCase().includes(searchLower) ||
-        prompt.description?.toLowerCase().includes(searchLower) ||
-        prompt.system_prompt?.toLowerCase().includes(searchLower) ||
-        prompt.user_prompt?.toLowerCase().includes(searchLower)
+        prompt.prompt.toLowerCase().includes(searchLower) ||
+        prompt.description?.toLowerCase().includes(searchLower)
       );
     });
   }
@@ -81,11 +79,18 @@ export const filterPrompts = (data: ReturnType<typeof selectFilteredPromptsData>
     const sortBy = data.sortBy || 'updated_at';
     const sortOrder = data.sortOrder || 'desc';
     
+    // Guard against missing prompt property
+    if (!a.prompt || !b.prompt) {
+      return 0;
+    }
+    
     let comparison = 0;
     if (sortBy === 'name') {
-      comparison = a.prompt.name.localeCompare(b.prompt.name);
+      comparison = (a.prompt.name || '').localeCompare(b.prompt.name || '');
     } else if (sortBy === 'updated_at') {
-      comparison = new Date(a.prompt.updated_at).getTime() - new Date(b.prompt.updated_at).getTime();
+      const aTime = a.prompt?.updated_at ? new Date(a.prompt.updated_at).getTime() : 0;
+      const bTime = b.prompt?.updated_at ? new Date(b.prompt.updated_at).getTime() : 0;
+      comparison = aTime - bTime;
     }
     
     return sortOrder === 'asc' ? comparison : -comparison;
@@ -99,10 +104,10 @@ export const selectFilteredPrompts = (state: PromptStore): PromptMeta[] => {
   return filterPrompts(selectFilteredPromptsData(state));
 };
 
-export const selectPromptCount = (state: PromptStore): number => state.prompts.size;
+export const selectPromptCount = (state: PromptStore): number => Object.keys(state.prompts).length;
 
 export const selectIsEmpty = (state: PromptStore): boolean =>
-  state.prompts.size === 0 && !state.isLoading;
+  Object.keys(state.prompts).length === 0 && !state.isLoading;
 
 // Frontend-only pagination selector that operates on filtered results
 export const selectPaginatedPrompts = (state: PromptStore): PromptMeta[] => {
@@ -135,7 +140,7 @@ export const selectPageInfo = (state: PromptStore) => {
 // Selector for unique repositories from loaded prompts
 export const selectUniqueRepositories = (state: PromptStore): string[] => {
   const repos = new Set<string>();
-  state.prompts.forEach(promptMeta => {
+  Object.values(state.prompts).forEach(promptMeta => {
     if (promptMeta.repo_name) {
       repos.add(promptMeta.repo_name);
     }

@@ -9,7 +9,7 @@ import {
   Box,
 } from '@chakra-ui/react';
 import { LuArrowLeft } from 'react-icons/lu';
-import { useFormData } from '@/stores/promptStore/hooks';
+import { useCurrentPrompt } from '@/stores/promptStore/hooks';
 
 interface PromptEditorHeaderProps {
   onBack: () => void;
@@ -19,7 +19,7 @@ interface PromptEditorHeaderProps {
 }
 
 export function PromptEditorHeader({ onBack, onSave, canSave, isSaving = false }: PromptEditorHeaderProps) {
-  const formData = useFormData();
+  const currentPrompt = useCurrentPrompt();
 
   return (
     <Box
@@ -49,7 +49,7 @@ export function PromptEditorHeader({ onBack, onSave, canSave, isSaving = false }
               letterSpacing="tight"
               fontWeight="1000"
             >
-              {formData.name || 'New Prompt'}
+              {currentPrompt?.prompt?.name || 'New Prompt'}
             </Text>
             <Text fontSize="sm" opacity={0.7}>
               Edit prompt settings and configuration. Click Save to persist changes.

@@ -2,40 +2,27 @@
 
 import React, { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Box, ScrollArea } from '@chakra-ui/react';
-import { Prompt } from '@/types/Prompt';
-import {
-  useCurrentPrompt,
-  usePromptActions,
-  useIsUpdating,
-} from '@/stores/promptStore';
-import { useConfigStore } from '@/stores/configStore';
+import { usePromptActions } from '@/stores/promptStore';
 import { PromptEditor } from '../_components/PromptEditor';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 
 function EditorPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const promptId = searchParams.get('id');
+  const repoName = searchParams.get('repo_name');
+  const filePath = searchParams.get('file_path');
   
-  const currentPrompt = useCurrentPrompt();
-  const isUpdating = useIsUpdating();
   const {
     fetchPromptById,
-    saveCurrentPrompt,
     clearCurrentPrompt,
   } = usePromptActions();
-  
-  // Get config data from configStore
-  const config = useConfigStore(state => state.config);
-  const configuredRepos = config.repo_configs || [];
 
-  // Fetch and set the current prompt based on the ID from URL
+  // Fetch and set the current prompt based on repo_name and file_path from URL
   useEffect(() => {
-    if (promptId) {
-      fetchPromptById(promptId);
+    if (repoName && filePath) {
+      fetchPromptById(repoName, filePath);
     } else {
-      // No ID provided, redirect to prompts list
+      // No repo/file provided, redirect to prompts list
       router.push('/prompts');
     }
     
@@ -43,52 +30,9 @@ function EditorPageContent() {
     return () => {
       clearCurrentPrompt();
     };
-  }, [promptId]);
+  }, [repoName, filePath, fetchPromptById, clearCurrentPrompt, router]);
 
-  const handleSave = (updates: Partial<Prompt>) => {
-    saveCurrentPrompt(updates);
-  };
-
-  const handleBack = () => {
-    router.push('/prompts');
-  };
-
-  // Transform repos to match the expected Repo type
-  const transformedRepos = React.useMemo(() => {
-    return configuredRepos.map(config => {
-      // Extract owner and repo name from repo_url
-      const urlParts = config.repo_url.split('/');
-      const repoName = config.repo_name;
-      const owner = urlParts[urlParts.length - 2] || 'unknown';
-      
-      return {
-        id: `${owner}/${repoName}`,
-        name: repoName,
-        full_name: `${owner}/${repoName}`,
-        owner: owner,
-        provider: 'github', // Default to github
-        branch: config.base_branch || config.current_branch || 'main',
-        is_public: false
-      };
-    });
-  }, [configuredRepos]);
-
-  return (
-    <>
-      <LoadingOverlay
-        isVisible={isUpdating}
-        title="Saving Prompt..."
-        subtitle="Please wait while we save your changes"
-      />
-      <PromptEditor
-        prompt={currentPrompt}
-        onSave={handleSave}
-        onBack={handleBack}
-        configuredRepos={transformedRepos}
-        isSaving={isUpdating}
-      />
-    </>
-  );
+  return <PromptEditor />;
 }
 
 export default function EditorPage() {

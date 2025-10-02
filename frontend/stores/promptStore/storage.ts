@@ -19,7 +19,6 @@ export const promptPersistConfig = {
     pagination: state.pagination,
     currentPrompt: state.currentPrompt,
     lastSyncTimestamp: state.lastSyncTimestamp,
-    cacheStale: state.cacheStale,
   }),
   // Set to true if you want to manually hydrate
   skipHydration: false,

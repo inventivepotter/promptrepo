@@ -18,7 +18,8 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
     const state = get();
     
     // If we have cached data and it's not stale, we're done
-    if (state.prompts.size > 0 && state.lastSyncTimestamp) {
+    const promptCount = Object.keys(state.prompts).length;
+    if (promptCount > 0 && state.lastSyncTimestamp) {
       const age = Date.now() - state.lastSyncTimestamp;
       if (age < CACHE_DURATION) {
         console.log('Using cached prompts, age:', Math.round(age / 1000), 'seconds');
@@ -61,11 +62,11 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
       const allPrompts = await promptsService.discoverAllPromptsFromRepos(repoNames);
 
       set((draft) => {
-        // Convert array to Map
-        draft.prompts.clear();
+        // Convert array to Record object
+        draft.prompts = {};
         allPrompts.forEach((promptMeta: PromptMeta) => {
           const key = createPromptKey(promptMeta.repo_name, promptMeta.file_path);
-          draft.prompts.set(key, promptMeta);
+          draft.prompts[key] = promptMeta;
         });
         draft.lastSyncTimestamp = Date.now();
         draft.isLoading = false;
@@ -81,10 +82,10 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
   },
 
   // CRUD Operations - updated to work with cached data
-  fetchPrompts: async (filters?: PromptFilters, page = 1, pageSize = 20) => {
+  fetchPrompts: async () => {
     // Check if we need to initialize
     const state = get();
-    if (state.prompts.size === 0) {
+    if (Object.keys(state.prompts).length === 0) {
       await get().initializeStore();
     }
     
@@ -108,7 +109,7 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
       const key = createPromptKey(repoName, filePath);
       set((draft) => {
         draft.currentPrompt = promptMeta;
-        draft.prompts.set(key, promptMeta);
+        draft.prompts[key] = promptMeta;
         draft.isLoading = false;
       // @ts-expect-error - Immer middleware supports 3 params
       }, false, 'prompts/fetch-by-id-success');
@@ -134,7 +135,7 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
       
       const key = createPromptKey(newPromptMeta.repo_name, newPromptMeta.file_path);
       set((draft) => {
-        draft.prompts.set(key, newPromptMeta);
+        draft.prompts[key] = newPromptMeta;
         draft.currentPrompt = newPromptMeta;
         draft.isCreating = false;
       // @ts-expect-error - Immer middleware supports 3 params
@@ -163,7 +164,7 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
       
       const promptKey = createPromptKey(repoName, filePath);
       set((draft) => {
-        draft.prompts.set(promptKey, updatedPromptMeta);
+        draft.prompts[promptKey] = updatedPromptMeta;
         if (draft.currentPrompt?.repo_name === repoName && draft.currentPrompt?.file_path === filePath) {
           draft.currentPrompt = updatedPromptMeta;
         }
@@ -192,7 +193,7 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
       
       const promptKey = createPromptKey(repoName, filePath);
       set((draft) => {
-        draft.prompts.delete(promptKey);
+        delete draft.prompts[promptKey];
         if (draft.currentPrompt?.repo_name === repoName && draft.currentPrompt?.file_path === filePath) {
           draft.currentPrompt = null;
         }
