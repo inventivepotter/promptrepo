@@ -1,64 +1,6 @@
-import { Repo } from "./Repo";
+import { components } from '@/types/generated/api';
 
-export interface CommitInfo {
-  commit_id: string;
-  message: string;
-  author: string;
-  timestamp: string;
-}
-
-// Backend Prompt model fields
-export interface Prompt {
-  id: string;
-  name: string;
-  description: string | null;
-  content: string; // Full prompt content (JSON format)
-  repo_name: string;
-  file_path: string;
-  category: string | null;
-  tags: string[];
-  system_prompt: string | null;
-  user_prompt: string | null;
-  owner: string | null;
-  created_at: string; // ISO date string from backend
-  updated_at: string; // ISO date string from backend
-  
-  // Optional frontend-specific fields
-  repo?: Repo;
-  recent_commits?: CommitInfo[];
-}
-
-// Request models matching backend
-export interface PromptCreate {
-  name: string;
-  description?: string | null;
-  repo_name: string;
-  file_path: string;
-  category?: string | null;
-  tags?: string[];
-  system_prompt?: string | null;
-  user_prompt?: string | null;
-  metadata?: Record<string, unknown>;
-}
-
-export interface PromptUpdate {
-  name?: string;
-  description?: string | null;
-  category?: string | null;
-  tags?: string[];
-  system_prompt?: string | null;
-  user_prompt?: string | null;
-  metadata?: Record<string, unknown>;
-}
-
-// Response models for list operations
-export interface PromptListResponse {
-  prompts: Prompt[];
-  total: number;
-  page: number;
-  page_size: number;
-}
-
+export type CommitInfo = components['schemas']['CommitInfo'];
 // Search parameters
 export interface PromptSearchParams {
   query?: string;

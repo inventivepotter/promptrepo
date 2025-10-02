@@ -12,7 +12,6 @@ import { PromptEditorHeader } from './PromptEditorHeader';
 import { PromptFieldGroup } from './PromptFieldGroup';
 import { ModelFieldGroup } from './ModelFieldGroup';
 import { ParametersFieldGroup } from './ParametersFieldGroup';
-import { EnableThinkingFieldGroup } from './EnableThinkingFieldGroup';
 import { Chat } from './Chat';
 import { PromptTimeline } from './PromptTimeline';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
@@ -109,22 +108,6 @@ export function PromptEditor() {
                       
                       {/* Parameters */}
                       <ParametersFieldGroup />
-                      
-                      {/* Enable Thinking */}
-                      {currentPrompt && (
-                        <EnableThinkingFieldGroup
-                          formData={currentPrompt.prompt}
-                          updateField={(field, value) => {
-                            setCurrentPrompt({
-                              ...currentPrompt,
-                              prompt: {
-                                ...currentPrompt.prompt,
-                                [field]: value,
-                              },
-                            });
-                          }}
-                        />
-                      )}
                     </VStack>
                   </Box>
 

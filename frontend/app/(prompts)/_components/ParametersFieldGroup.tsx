@@ -8,7 +8,7 @@ import {
   NumberInput,
   Switch,
   Field,
-  Input,
+  NativeSelect,
 } from '@chakra-ui/react';
 import { Tooltip } from '@/components/ui/tooltip';
 import { LuInfo } from 'react-icons/lu';
@@ -30,6 +30,75 @@ export function ParametersFieldGroup() {
         Parameters
       </Text>
       <VStack gap={4} align="stretch">
+        {/* Boolean Switches - First Row */}
+        <HStack gap={4} justify="space-between">
+          <Box flex={1}>
+            <Switch.Root
+              checked={prompt.stream ?? false}
+              onCheckedChange={(details: { checked: boolean }) => updateField('stream', details.checked)}
+            >
+              <Switch.HiddenInput />
+              <Switch.Control>
+                <Switch.Thumb />
+              </Switch.Control>
+              <Switch.Label>Enable Streaming</Switch.Label>
+            </Switch.Root>
+          </Box>
+
+          <Box flex={1}>
+            <Switch.Root
+              checked={prompt.parallel_tool_calls ?? false}
+              onCheckedChange={(details: { checked: boolean }) => updateField('parallel_tool_calls', details.checked)}
+            >
+              <Switch.HiddenInput />
+              <Switch.Control>
+                <Switch.Thumb />
+              </Switch.Control>
+              <Switch.Label>Parallel Tool Calls</Switch.Label>
+            </Switch.Root>
+          </Box>
+
+          <Box flex={1}>
+            <Switch.Root
+              checked={prompt.logprobs ?? false}
+              onCheckedChange={(details: { checked: boolean }) => updateField('logprobs', details.checked)}
+            >
+              <Switch.HiddenInput />
+              <Switch.Control>
+                <Switch.Thumb />
+              </Switch.Control>
+              <Switch.Label>Log Probabilities</Switch.Label>
+            </Switch.Root>
+          </Box>
+        </HStack>
+
+        {/* Reasoning Effort - 1/3 width */}
+        <HStack gap={4}>
+          <Field.Root width="33%">
+            <Field.Label display="flex" alignItems="center" gap={1}>
+              Reasoning Effort
+              <Tooltip content="Controls the amount of reasoning the model applies. Higher effort levels may improve response quality for complex tasks.">
+                <Box cursor="help">
+                  <LuInfo size={14} opacity={0.6} />
+                </Box>
+              </Tooltip>
+            </Field.Label>
+            <NativeSelect.Root size="sm">
+              <NativeSelect.Field
+                value={prompt.reasoning_effort || 'auto'}
+                onChange={(e) => updateField('reasoning_effort', e.target.value)}
+              >
+                <option value="auto">Auto</option>
+                <option value="minimal">Minimal</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </NativeSelect.Field>
+              <NativeSelect.Indicator />
+            </NativeSelect.Root>
+          </Field.Root>
+        </HStack>
+
         {/* Temperature, Top P, Max Tokens */}
         <HStack gap={4}>
           <Field.Root flex={1}>
@@ -173,76 +242,74 @@ export function ParametersFieldGroup() {
         <HStack gap={4}>
             {/* Max Completion Tokens */}
             <Field.Root flex={1}>
-              <Field.Label>Max Completion Tokens</Field.Label>
-              <Input
-                type="number"
-                value={prompt?.max_completion_tokens || ''}
-                onChange={(e) => updateField('max_completion_tokens', parseInt(e.target.value))}
-                placeholder="e.g., 500"
-              />
+              <Field.Label display="flex" alignItems="center" gap={1}>
+                Max Completion Tokens
+                <Tooltip content="Maximum number of tokens in the completion output.">
+                  <Box cursor="help">
+                    <LuInfo size={14} opacity={0.6} />
+                  </Box>
+                </Tooltip>
+              </Field.Label>
+              <NumberInput.Root
+                size="sm"
+                onValueChange={(e) => updateField('max_completion_tokens', parseInt(e.value))}
+                min={1}
+                max={100000}
+                step={1}
+                value={prompt?.max_completion_tokens?.toString() || ''}
+              >
+                <NumberInput.Input placeholder="e.g., 500" />
+                <NumberInput.Control />
+              </NumberInput.Root>
             </Field.Root>
     
             {/* N Completions */}
             <Field.Root flex={1}>
-              <Field.Label>Number of Completions</Field.Label>
-              <Input
-                type="number"
-                value={prompt?.n_completions ?? ''}
-                onChange={(e) => updateField('n_completions', parseInt(e.target.value))}
-                placeholder="e.g., 1"
+              <Field.Label display="flex" alignItems="center" gap={1}>
+                Number of Completions
+                <Tooltip content="How many completion choices to generate for each input.">
+                  <Box cursor="help">
+                    <LuInfo size={14} opacity={0.6} />
+                  </Box>
+                </Tooltip>
+              </Field.Label>
+              <NumberInput.Root
+                size="sm"
+                onValueChange={(e) => updateField('n_completions', parseInt(e.value))}
                 min={1}
-              />
+                max={10}
+                step={1}
+                value={prompt?.n_completions?.toString() || ''}
+              >
+                <NumberInput.Input placeholder="e.g., 1" />
+                <NumberInput.Control />
+              </NumberInput.Root>
             </Field.Root>
             
             {/* Top Logprobs */}
             {prompt?.logprobs && (
               <Field.Root flex={1}>
-                <Field.Label>Top Log Probabilities</Field.Label>
-                <Input
-                  type="number"
-                  value={prompt?.top_logprobs ?? ''}
-                  onChange={(e) => updateField('top_logprobs', parseInt(e.target.value))}
-                  placeholder="e.g., 5"
+                <Field.Label display="flex" alignItems="center" gap={1}>
+                  Top Log Probabilities
+                  <Tooltip content="Number of most likely tokens to return at each position with log probabilities.">
+                    <Box cursor="help">
+                      <LuInfo size={14} opacity={0.6} />
+                    </Box>
+                  </Tooltip>
+                </Field.Label>
+                <NumberInput.Root
+                  size="sm"
+                  onValueChange={(e) => updateField('top_logprobs', parseInt(e.value))}
                   min={0}
                   max={20}
-                />
+                  step={1}
+                  value={prompt?.top_logprobs?.toString() || ''}
+                >
+                  <NumberInput.Input placeholder="e.g., 5" />
+                  <NumberInput.Control />
+                </NumberInput.Root>
               </Field.Root>
             )}
-        </HStack>
-        {/* Boolean Switches */}
-        <HStack gap={4}>
-          <Switch.Root
-            checked={prompt.stream ?? false}
-            onCheckedChange={(details: { checked: boolean }) => updateField('stream', details.checked)}
-          >
-            <Switch.HiddenInput />
-            <Switch.Control>
-              <Switch.Thumb />
-            </Switch.Control>
-            <Switch.Label>Enable Streaming</Switch.Label>
-          </Switch.Root>
-
-          <Switch.Root
-            checked={prompt.parallel_tool_calls ?? false}
-            onCheckedChange={(details: { checked: boolean }) => updateField('parallel_tool_calls', details.checked)}
-          >
-            <Switch.HiddenInput />
-            <Switch.Control>
-              <Switch.Thumb />
-            </Switch.Control>
-            <Switch.Label>Parallel Tool Calls</Switch.Label>
-          </Switch.Root>
-
-          <Switch.Root
-            checked={prompt.logprobs ?? false}
-            onCheckedChange={(details: { checked: boolean }) => updateField('logprobs', details.checked)}
-          >
-            <Switch.HiddenInput />
-            <Switch.Control>
-              <Switch.Thumb />
-            </Switch.Control>
-            <Switch.Label>Log Probabilities</Switch.Label>
-          </Switch.Root>
         </HStack>
 
       </VStack>
