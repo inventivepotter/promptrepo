@@ -10,6 +10,8 @@ import {
   createListCollection,
   Field,
   Card,
+  Fieldset,
+  Stack,
 } from '@chakra-ui/react';
 import { FaChevronDown } from 'react-icons/fa';
 import {
@@ -139,24 +141,20 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
 
   return (
     <Card.Root
-      bg={{ _light: 'primary.100', _dark: 'primary.900' }}
       borderWidth="1px"
       borderColor={borderColor}
-      position="relative"
-      transition="all 0.3s"
-      _hover={{
-        transform: 'translateY(-4px)',
-        shadow: 'xl',
-        borderColor: 'primary.400'
-      }}
     >
       <Card.Body p={8}>
-        <VStack gap={6} align="stretch">
-          <Text fontSize="lg" fontWeight="bold">Repository Configuration</Text>
-          <Box fontSize="sm" opacity={0.7}>
-            Configure repositories containing prompts to access them in the application.
-          </Box>
+        <Fieldset.Root size="lg">
+          <Stack>
+            <Fieldset.Legend>Repository Configuration</Fieldset.Legend>
+            <Fieldset.HelperText>
+              Configure repositories containing prompts to access them in the application.
+            </Fieldset.HelperText>
+          </Stack>
 
+          <Fieldset.Content>
+            <VStack gap={6} align="stretch">
         {/* Error display */}
         {error && (
           <Box
@@ -324,7 +322,7 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                   {config.repo_configs.map((repoConfig, index) => {
                     const repo = availableRepos.find(r => r.full_name === repoConfig.repo_name);
                     return (
-                      <HStack key={index} justify="space-between" width="100%" p={2} bg={{ _light: "primary.50", _dark: "primary.950" }} borderRadius="md">
+                      <HStack key={index} justify="space-between" width="100%" p={2} bg="bg.subtle" borderRadius="md">
                         <Text fontSize="sm" fontWeight="400">
                           {repo?.name || repoConfig.repo_name} ({repoConfig.base_branch})
                         </Text>
@@ -344,7 +342,9 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
             )}
           </VStack>
         )}
-      </VStack>
+            </VStack>
+          </Fieldset.Content>
+        </Fieldset.Root>
       </Card.Body>
     </Card.Root>
   );

@@ -3,11 +3,13 @@
 import React, { useMemo } from 'react';
 import {
   Box,
-  VStack,
   HStack,
-  Text,
   Combobox,
   createListCollection,
+  Field,
+  Fieldset,
+  Stack,
+  Card,
 } from '@chakra-ui/react';
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaChevronDown } from 'react-icons/fa';
@@ -45,22 +47,28 @@ export function ModelFieldGroup() {
   );
 
   return (
-    <Box>
-      <Text fontSize="lg" fontWeight="semibold" mb={4}>
-        Model Configuration
-      </Text>
-      <VStack gap={4} align="stretch">
-        <HStack gap={4}>
+    <Card.Root>
+      <Card.Body>
+        <Fieldset.Root size="lg">
+          <Stack>
+            <Fieldset.Legend>Model Configuration</Fieldset.Legend>
+            <Fieldset.HelperText>
+              Select primary and failover models for prompt execution
+            </Fieldset.HelperText>
+          </Stack>
+
+          <Fieldset.Content>
+        <HStack gap={4} align="start">
           {/* Primary Model */}
-          <Box flex={1}>
-            <HStack mb={2}>
-              <Text fontWeight="medium">Primary Model</Text>
+          <Field.Root flex={1}>
+            <Field.Label display="flex" alignItems="center" gap={1}>
+              Primary Model
               <Tooltip content="Select the primary provider and model used for generating responses.">
                 <Box cursor="help">
                   <LuInfo size={14} opacity={0.6} />
                 </Box>
               </Tooltip>
-            </HStack>
+            </Field.Label>
             <Combobox.Root
               collection={createListCollection({
                 items: filteredModels.map(opt => ({
@@ -106,18 +114,18 @@ export function ModelFieldGroup() {
                 </Combobox.Content>
               </Combobox.Positioner>
             </Combobox.Root>
-          </Box>
+          </Field.Root>
 
           {/* Failover Model */}
-          <Box flex={1}>
-            <HStack mb={2}>
-              <Text fontWeight="medium">Failover Model</Text>
+          <Field.Root flex={1}>
+            <Field.Label display="flex" alignItems="center" gap={1}>
+              Failover Model
               <Tooltip content="Backup model used if the primary model fails or is unavailable.">
                 <Box cursor="help">
                   <LuInfo size={14} opacity={0.6} />
                 </Box>
               </Tooltip>
-            </HStack>
+            </Field.Label>
             <Combobox.Root
               collection={createListCollection({
                 items: filteredModels.map(opt => ({
@@ -159,9 +167,11 @@ export function ModelFieldGroup() {
                 </Combobox.Content>
               </Combobox.Positioner>
             </Combobox.Root>
-          </Box>
-        </HStack>
-      </VStack>
-    </Box>
+          </Field.Root>
+          </HStack>
+          </Fieldset.Content>
+        </Fieldset.Root>
+      </Card.Body>
+    </Card.Root>
   );
 }

@@ -11,6 +11,8 @@ import {
   HStack,
   Field,
   Card,
+  Fieldset,
+  Stack,
 } from '@chakra-ui/react'
 import { FaChevronDown } from 'react-icons/fa';
 import { useEffect } from 'react';
@@ -138,24 +140,20 @@ export default function LLMConfigManager({
 
   return (
     <Card.Root
-      bg={{ _light: 'primary.100', _dark: 'primary.900' }}
       borderWidth="1px"
       borderColor={borderColor}
-      overflow="hidden"
-      position="relative"
-      transition="all 0.3s"
-      _hover={{
-        transform: 'translateY(-4px)',
-        shadow: 'xl',
-        borderColor: 'primary.400'
-      }}
     >
       <Card.Body p={8}>
-        <VStack gap={6} align="stretch">
-          <Text fontSize="lg" fontWeight="bold">LLM Provider Configuration</Text>
-          <Text fontSize="sm" opacity={0.7} mb={2}>
-            Setup your AI provider and API key first, then select from available models.
-          </Text>
+        <Fieldset.Root size="lg">
+          <Stack>
+            <Fieldset.Legend>LLM Provider Configuration</Fieldset.Legend>
+            <Fieldset.HelperText>
+              Setup your AI provider and API key first, then select from available models.
+            </Fieldset.HelperText>
+          </Stack>
+
+          <Fieldset.Content>
+            <VStack gap={6} align="stretch">
         {/* Add new LLM configuration */}
         <Card.Root
           bg="transparent"
@@ -327,11 +325,11 @@ export default function LLMConfigManager({
               {llmConfigs.map((config, index) => {
                 const isOrgScope = config.scope === 'organization';
                 return (
-                  <HStack key={index} justify="space-between" width="100%" p={2} bg={{ _light: "primary.50", _dark: "primary.950" }} borderRadius="md">
-                    <Text fontSize="sm" fontWeight="400">
-                      Provider: <Text as="span" fontWeight="bold">{config.provider}</Text> | Model: <Text as="span" fontWeight="bold">{config.model}</Text>
+                  <HStack key={index} justify="space-between" width="100%" p={2} bg="bg.subtle" borderRadius="md">
+                    <Text fontSize="sm" fontWeight="300">
+                      Provider: <Text as="span" fontWeight="600">{config.provider}</Text> | Model: <Text as="span" fontWeight="bold">{config.model}</Text>
                       {!isOrgScope && config.api_base_url && (
-                        <> | API Base: <Text as="span" fontWeight="bold">{config.api_base_url}</Text></>
+                        <> | API Base: <Text as="span" fontWeight="600">{config.api_base_url}</Text></>
                       )}
                       {isOrgScope && (
                         <Text as="span" fontSize="xs" color="gray.500" ml={2}>(Organization Scoped)</Text>
@@ -351,7 +349,9 @@ export default function LLMConfigManager({
             </Card.Body>
           </Card.Root>
         )}
-      </VStack>
+            </VStack>
+          </Fieldset.Content>
+        </Fieldset.Root>
       </Card.Body>
     </Card.Root>
   )

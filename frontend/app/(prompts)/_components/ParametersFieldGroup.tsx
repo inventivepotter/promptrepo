@@ -4,11 +4,13 @@ import {
   Box,
   VStack,
   HStack,
-  Text,
   NumberInput,
   Switch,
   Field,
   NativeSelect,
+  Fieldset,
+  Stack,
+  Card,
 } from '@chakra-ui/react';
 import { Tooltip } from '@/components/ui/tooltip';
 import { LuInfo } from 'react-icons/lu';
@@ -25,11 +27,18 @@ export function ParametersFieldGroup() {
   const { prompt } = currentPrompt;
 
   return (
-    <Box>
-      <Text fontSize="lg" fontWeight="semibold" mb={4}>
-        Parameters
-      </Text>
-      <VStack gap={4} align="stretch">
+    <Card.Root>
+      <Card.Body>
+        <Fieldset.Root size="lg">
+          <Stack>
+            <Fieldset.Legend>Model Parameters</Fieldset.Legend>
+            <Fieldset.HelperText>
+              Fine-tune model behavior and output characteristics
+            </Fieldset.HelperText>
+          </Stack>
+
+          <Fieldset.Content>
+            <VStack gap={4} align="stretch">
         {/* Boolean Switches - First Row */}
         <HStack gap={4} justify="space-between">
           <Box flex={1}>
@@ -113,13 +122,17 @@ export function ParametersFieldGroup() {
             <NumberInput.Root
               size="sm"
               inputMode="decimal"
-              onValueChange={(e) => updateField('temperature', parseFloat(e.value))}
+              onValueChange={(e) => {
+                const value = e.value ? parseFloat(e.value) : null;
+                updateField('temperature', value);
+              }}
               min={0}
               max={2}
               step={0.01}
-              value={prompt.temperature?.toString() || '0.0'}
+              value={prompt.temperature?.toString() || ''}
+              invalid={false}
             >
-              <NumberInput.Input />
+              <NumberInput.Input placeholder="e.g., 1.0" />
               <NumberInput.Control />
             </NumberInput.Root>
           </Field.Root>
@@ -136,13 +149,17 @@ export function ParametersFieldGroup() {
             <NumberInput.Root
               size="sm"
               inputMode="decimal"
-              onValueChange={(e) => updateField('top_p', parseFloat(e.value))}
+              onValueChange={(e) => {
+                const value = e.value ? parseFloat(e.value) : null;
+                updateField('top_p', value);
+              }}
               min={0}
               max={1}
               step={0.01}
-              value={prompt.top_p?.toString() || '1.0'}
+              value={prompt.top_p?.toString() || ''}
+              invalid={false}
             >
-              <NumberInput.Input />
+              <NumberInput.Input placeholder="e.g., 1.0" />
               <NumberInput.Control />
             </NumberInput.Root>
           </Field.Root>
@@ -159,13 +176,17 @@ export function ParametersFieldGroup() {
             <NumberInput.Root
               size="sm"
               inputMode="decimal"
-              onValueChange={(e) => updateField('max_tokens', parseInt(e.value) || 2048)}
+              onValueChange={(e) => {
+                const value = e.value ? parseInt(e.value) : null;
+                updateField('max_tokens', value);
+              }}
               min={1}
               max={100000}
               step={1}
-              value={prompt.max_tokens?.toString() || '2048'}
+              value={prompt.max_tokens?.toString() || ''}
+              invalid={false}
             >
-              <NumberInput.Input />
+              <NumberInput.Input placeholder="e.g., 2048" />
               <NumberInput.Control />
             </NumberInput.Root>
           </Field.Root>
@@ -185,13 +206,17 @@ export function ParametersFieldGroup() {
             <NumberInput.Root
               size="sm"
               inputMode="decimal"
-              onValueChange={(e) => updateField('presence_penalty', parseFloat(e.value))}
+              onValueChange={(e) => {
+                const value = e.value ? parseFloat(e.value) : null;
+                updateField('presence_penalty', value);
+              }}
               min={-2}
               max={2}
               step={0.1}
-              value={prompt.presence_penalty?.toString() || '0.0'}
+              value={prompt.presence_penalty?.toString() || ''}
+              invalid={false}
             >
-              <NumberInput.Input />
+              <NumberInput.Input placeholder="e.g., 0.0" />
               <NumberInput.Control />
             </NumberInput.Root>
           </Field.Root>
@@ -208,13 +233,17 @@ export function ParametersFieldGroup() {
             <NumberInput.Root
               size="sm"
               inputMode="decimal"
-              onValueChange={(e) => updateField('frequency_penalty', parseFloat(e.value))}
+              onValueChange={(e) => {
+                const value = e.value ? parseFloat(e.value) : null;
+                updateField('frequency_penalty', value);
+              }}
               min={-2}
               max={2}
               step={0.1}
-              value={prompt.frequency_penalty?.toString() || '0.0'}
+              value={prompt.frequency_penalty?.toString() || ''}
+              invalid={false}
             >
-              <NumberInput.Input />
+              <NumberInput.Input placeholder="e.g., 0.0" />
               <NumberInput.Control />
             </NumberInput.Root>
           </Field.Root>
@@ -230,8 +259,12 @@ export function ParametersFieldGroup() {
             </Field.Label>
             <NumberInput.Root
               size="sm"
-              onValueChange={(e) => updateField('seed', parseInt(e.value))}
+              onValueChange={(e) => {
+                const value = e.value ? parseInt(e.value) : null;
+                updateField('seed', value);
+              }}
               value={prompt.seed?.toString() || ''}
+              invalid={false}
             >
               <NumberInput.Input placeholder="e.g., 12345" />
               <NumberInput.Control />
@@ -252,11 +285,16 @@ export function ParametersFieldGroup() {
               </Field.Label>
               <NumberInput.Root
                 size="sm"
-                onValueChange={(e) => updateField('max_completion_tokens', parseInt(e.value))}
+                onValueChange={(e) => {
+                  const value = e.value ? parseInt(e.value) : null;
+                  updateField('max_completion_tokens', value);
+                }}
                 min={1}
                 max={100000}
                 step={1}
                 value={prompt?.max_completion_tokens?.toString() || ''}
+                allowOverflow={false}
+                invalid={false}
               >
                 <NumberInput.Input placeholder="e.g., 500" />
                 <NumberInput.Control />
@@ -275,11 +313,16 @@ export function ParametersFieldGroup() {
               </Field.Label>
               <NumberInput.Root
                 size="sm"
-                onValueChange={(e) => updateField('n_completions', parseInt(e.value))}
+                onValueChange={(e) => {
+                  const value = e.value ? parseInt(e.value) : null;
+                  updateField('n_completions', value);
+                }}
                 min={1}
                 max={10}
                 step={1}
                 value={prompt?.n_completions?.toString() || ''}
+                allowOverflow={false}
+                invalid={false}
               >
                 <NumberInput.Input placeholder="e.g., 1" />
                 <NumberInput.Control />
@@ -299,20 +342,26 @@ export function ParametersFieldGroup() {
                 </Field.Label>
                 <NumberInput.Root
                   size="sm"
-                  onValueChange={(e) => updateField('top_logprobs', parseInt(e.value))}
+                  onValueChange={(e) => {
+                    const value = e.value ? parseInt(e.value) : null;
+                    updateField('top_logprobs', value);
+                  }}
                   min={0}
                   max={20}
                   step={1}
                   value={prompt?.top_logprobs?.toString() || ''}
+                  invalid={false}
                 >
                   <NumberInput.Input placeholder="e.g., 5" />
                   <NumberInput.Control />
                 </NumberInput.Root>
               </Field.Root>
             )}
-        </HStack>
-
-      </VStack>
-    </Box>
+            </HStack>
+            </VStack>
+          </Fieldset.Content>
+        </Fieldset.Root>
+      </Card.Body>
+    </Card.Root>
   );
 }

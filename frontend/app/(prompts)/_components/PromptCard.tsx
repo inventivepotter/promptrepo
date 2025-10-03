@@ -11,7 +11,6 @@ import {
   Card,
 } from '@chakra-ui/react';
 import { LuPencil, LuTrash, LuClock } from 'react-icons/lu';
-import { useColorModeValue } from '@/components/ui/color-mode';
 import type { PromptMeta } from '@/services/prompts/api';
 
 interface PromptCardProps {
@@ -21,13 +20,6 @@ interface PromptCardProps {
 }
 
 export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
-  // Theme-aware colors
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
-  const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
-  const hoverBg = useColorModeValue('gray.50', 'gray.700');
-  const cardBg = useColorModeValue('gray.50', 'gray.900');
-  const promptPreviewBg = useColorModeValue('gray.100', 'gray.800');
-  const promptBorderColor = useColorModeValue('blue.200', 'blue.200');
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
@@ -46,8 +38,6 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
 
   return (
     <Card.Root
-      bg={cardBg}
-      borderColor={borderColor}
       _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
       transition="all 0.2s ease"
       cursor="pointer"
@@ -60,7 +50,7 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
               <Text fontSize="lg" fontWeight="semibold" lineClamp={1}>
                 {prompt.prompt?.name || 'Untitled Prompt'}
               </Text>
-              <Text fontSize="sm" color={mutedTextColor} lineClamp={2}>
+              <Text fontSize="sm"opacity={0.6} lineClamp={2}>
                 {truncateText(prompt.prompt?.description || 'No description provided', 120)}
               </Text>
             </VStack>
@@ -72,7 +62,7 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
                   e.stopPropagation();
                   onEdit(prompt);
                 }}
-                _hover={{ bg: hoverBg }}
+                _hover={{ bg: 'bg.subtle' }}
               >
                 <LuPencil size={14} />
               </Button>
@@ -119,7 +109,7 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
               )}
             </HStack>
 
-            <HStack gap={1} fontSize="xs" color={mutedTextColor}>
+            <HStack gap={1} fontSize="xs"opacity={0.6}>
               <LuClock size={12} />
               <Text>{prompt.prompt?.updated_at ? formatDate(new Date(prompt.prompt.updated_at)) : 'N/A'}</Text>
             </HStack>
@@ -128,12 +118,12 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
           {prompt.prompt?.prompt && (
             <Box
               p={3}
-              bg={promptPreviewBg}
+              bg="primary.50"
               borderRadius="md"
               borderLeft="3px solid"
-              borderColor={promptBorderColor}
+              borderColor="bg.emphasized"
             >
-              <Text fontSize="sm" color={mutedTextColor} lineClamp={3}>
+              <Text fontSize="sm"opacity={0.6} lineClamp={3}>
                 {truncateText(prompt.prompt.prompt, 150)}
               </Text>
             </Box>
