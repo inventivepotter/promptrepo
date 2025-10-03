@@ -909,26 +909,31 @@ export interface components {
             /**
              * Id
              * @description Unique identifier for the prompt
+             * @default
              */
             id: string;
             /**
              * Name
              * @description Prompt name
+             * @default Untitled Prompt
              */
             name: string;
             /**
              * Description
              * @description Prompt description
+             * @default
              */
-            description?: string | null;
+            description: string | null;
             /**
              * Provider
              * @description LLM provider (e.g., openai, anthropic)
+             * @default openai
              */
             provider: string;
             /**
              * Model
              * @description Model name (e.g., gpt-4, claude-3)
+             * @default gpt-4
              */
             model: string;
             /**
@@ -939,6 +944,7 @@ export interface components {
             /**
              * Prompt
              * @description Combined prompt content
+             * @default
              */
             prompt: string;
             /**
@@ -3349,6 +3355,21 @@ export interface operations {
                      *       "type": "/errors/validation-failed",
                      *       "title": "Validation Error",
                      *       "detail": "Invalid prompt data"
+                     *     } */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Prompt file already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /** @example {
+                     *       "status": "error",
+                     *       "type": "/errors/conflict",
+                     *       "title": "Conflict",
+                     *       "detail": "Prompt file already exists at the specified path"
                      *     } */
                     "application/json": unknown;
                 };

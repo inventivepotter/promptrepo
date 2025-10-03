@@ -30,6 +30,12 @@ export interface PromptState {
   isDeleting: boolean;
   error: string | null;
   
+  // Delete dialog state
+  deleteDialog: {
+    isOpen: boolean;
+    promptToDelete: { repoName: string; filePath: string; name: string } | null;
+  };
+  
   // Filters and Pagination (frontend-only)
   filters: PromptFilters;
   pagination: PaginationState;
@@ -54,6 +60,11 @@ export interface PromptActions {
   // State Management
   setCurrentPrompt: (prompt: PromptMeta | null) => void;
   clearCurrentPrompt: () => void;
+  
+  // Delete Dialog Management
+  openDeleteDialog: (repoName: string, filePath: string, promptName: string) => void;
+  closeDeleteDialog: () => void;
+  confirmDelete: () => Promise<void>;
   
   // Filters and Search (frontend-only, no backend calls)
   setFilters: (filters: PromptFilters) => void;

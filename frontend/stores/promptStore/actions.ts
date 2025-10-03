@@ -62,12 +62,14 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
       const allPrompts = await promptsService.discoverAllPromptsFromRepos(repoNames);
 
       set((draft) => {
-        // Convert array to Record object
-        draft.prompts = {};
+        // Merge discovered prompts with existing ones instead of replacing
+        // This prevents losing prompts that were just created
+        const newPrompts: Record<string, PromptMeta> = { ...draft.prompts };
         allPrompts.forEach((promptMeta: PromptMeta) => {
           const key = createPromptKey(promptMeta.repo_name, promptMeta.file_path);
-          draft.prompts[key] = promptMeta;
+          newPrompts[key] = promptMeta;
         });
+        draft.prompts = newPrompts;
         draft.lastSyncTimestamp = Date.now();
         draft.isLoading = false;
       // @ts-expect-error - Immer middleware supports 3 params
@@ -223,6 +225,42 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
       draft.currentPrompt = null;
     // @ts-expect-error - Immer middleware supports 3 params
     }, false, 'prompts/clear-current');
+  },
+
+  // Delete Dialog Management
+  openDeleteDialog: (repoName: string, filePath: string, promptName: string) => {
+    set((draft) => {
+      draft.deleteDialog = {
+        isOpen: true,
+        promptToDelete: { repoName, filePath, name: promptName },
+      };
+    // @ts-expect-error - Immer middleware supports 3 params
+    }, false, 'prompts/open-delete-dialog');
+  },
+
+  closeDeleteDialog: () => {
+    set((draft) => {
+      draft.deleteDialog = {
+        isOpen: false,
+        promptToDelete: null,
+      };
+    // @ts-expect-error - Immer middleware supports 3 params
+    }, false, 'prompts/close-delete-dialog');
+  },
+
+  confirmDelete: async () => {
+    const { deleteDialog } = get();
+    const promptToDelete = deleteDialog.promptToDelete;
+    
+    if (!promptToDelete) return;
+
+    try {
+      await get().deletePrompt(promptToDelete.repoName, promptToDelete.filePath);
+      get().closeDeleteDialog();
+    } catch (error) {
+      // Error is already handled by deletePrompt
+      throw error;
+    }
   },
 
   // Filters and Search - frontend-only, no backend calls

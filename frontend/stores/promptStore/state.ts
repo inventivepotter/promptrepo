@@ -16,6 +16,12 @@ export const initialPromptState: PromptState = {
   isDeleting: false,
   error: null,
   
+  // Delete dialog state
+  deleteDialog: {
+    isOpen: false,
+    promptToDelete: null,
+  },
+  
   // Filters and Pagination (frontend-only)
   filters: {
     search: '',

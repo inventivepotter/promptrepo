@@ -32,7 +32,7 @@ export {
   selectTotalPages,
   selectHasNextPage,
   selectHasPreviousPage,
-  selectPromptById,
+  selectPromptByKey,
   selectPromptsByRepository,
   selectFilteredPrompts,
   selectFilteredPromptsData,
@@ -48,7 +48,7 @@ export {
 export {
   usePrompts,
   useCurrentPrompt,
-  usePromptById,
+  usePromptByKey,
   usePromptsByRepository,
   useFilteredPrompts,
   useIsLoading,
@@ -73,6 +73,10 @@ export {
   useUniqueRepositories,
   usePromptCount,
   useIsPromptsEmpty,
+  useDeleteDialog,
+  useDeleteDialogOpen,
+  usePromptToDelete,
   usePromptActions,
   usePromptStoreState,
+  useNewPromptForm,
 } from './hooks';

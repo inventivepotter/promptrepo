@@ -16,7 +16,7 @@ import type { PromptMeta } from '@/services/prompts/api';
 interface PromptCardProps {
   prompt: PromptMeta;
   onEdit: (prompt: PromptMeta) => void;
-  onDelete: (repoName: string, filePath: string) => void;
+  onDelete: (repoName: string, filePath: string, promptName: string) => void;
 }
 
 export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
@@ -72,7 +72,7 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
                 colorPalette="red"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onDelete(prompt.repo_name, prompt.file_path);
+                  onDelete(prompt.repo_name, prompt.file_path, prompt.prompt?.name || 'Untitled Prompt');
                 }}
                 _hover={{ bg: 'red.50' }}
               >
@@ -106,14 +106,20 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
 
             <HStack gap={1} fontSize="xs"opacity={0.6}>
               <LuClock size={12} />
-              <Text>{prompt.prompt?.updated_at ? formatDate(new Date(prompt.prompt.updated_at)) : 'N/A'}</Text>
+              <Text>
+                {prompt.recent_commits && prompt.recent_commits.length > 0
+                  ? formatDate(new Date(prompt.recent_commits[0].timestamp))
+                  : prompt.prompt?.updated_at
+                    ? formatDate(new Date(prompt.prompt.updated_at))
+                    : 'N/A'}
+              </Text>
             </HStack>
           </HStack>
 
           {prompt.prompt?.prompt && (
             <Box
               p={3}
-              bg="primary.50"
+              bg="bg.subtle"
               borderRadius="md"
               borderLeft="3px solid"
               borderColor="bg.emphasized"

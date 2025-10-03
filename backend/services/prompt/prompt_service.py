@@ -15,7 +15,7 @@ from services.config.config_interface import IConfig
 from services.git.git_service import GitService
 from services.file_operations import FileOperationsService
 from settings import settings
-from middlewares.rest.exceptions import NotFoundException, AppException
+from middlewares.rest.exceptions import NotFoundException, AppException, ConflictException
 
 from .prompt_interface import IPromptService
 from .models import (
@@ -113,6 +113,14 @@ class PromptService(IPromptService):
                 identifier=repo_name
             )
         
+        # Check if file already exists
+        full_file_path = repo_path / file_path
+        if full_file_path.exists():
+            raise ConflictException(
+                message=f"Prompt file already exists at {file_path}",
+                context={"repo_name": repo_name, "file_path": file_path}
+            )
+        
         # Set user field in organization mode
         if self.config_service.get_hosting_config().type == HostingType.ORGANIZATION:
             prompt_data.user = user_id
@@ -133,8 +141,7 @@ class PromptService(IPromptService):
         if isinstance(prompt_content.get("updated_at"), datetime):
             prompt_content["updated_at"] = prompt_content["updated_at"].isoformat()
         
-        # Save to file
-        full_file_path = repo_path / file_path
+        # Save to file (full_file_path already defined above)
         success = self._save_prompt_file(full_file_path, prompt_content)
         
         if not success:

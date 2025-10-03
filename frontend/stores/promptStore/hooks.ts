@@ -123,6 +123,11 @@ export const useModelOptions = () => {
   }, [config.llm_configs]);
 };
 
+// Delete Dialog Hooks
+export const useDeleteDialog = () => usePromptStore(state => state.deleteDialog);
+export const useDeleteDialogOpen = () => usePromptStore(state => state.deleteDialog.isOpen);
+export const usePromptToDelete = () => usePromptStore(state => state.deleteDialog.promptToDelete);
+
 // Action Hooks
 export const usePromptActions = () => {
   const store = usePromptStore();
@@ -142,6 +147,11 @@ export const usePromptActions = () => {
     // State Management
     setCurrentPrompt: store.setCurrentPrompt,
     clearCurrentPrompt: store.clearCurrentPrompt,
+    
+    // Delete Dialog Management
+    openDeleteDialog: store.openDeleteDialog,
+    closeDeleteDialog: store.closeDeleteDialog,
+    confirmDelete: store.confirmDelete,
     
     // Convenience handlers
     saveCurrentPrompt: async () => {
@@ -232,4 +242,59 @@ export const usePromptStoreState = () => {
     // Actions
     ...actions,
   };
+};
+
+/**
+ * Hook to manage new prompt creation form state and logic
+ * This centralizes all the business logic for creating new prompts
+ */
+export const useNewPromptForm = () => {
+  const { createPrompt } = usePromptActions();
+  const config = useConfigStore(state => state.config);
+
+  return useMemo(() => {
+    const repositories = config?.repo_configs || [];
+
+    const validateForm = (selectedRepo: string, filePath: string): { repo?: string; filePath?: string } => {
+      const errors: { repo?: string; filePath?: string } = {};
+
+      if (!selectedRepo) {
+        errors.repo = 'Please select a repository';
+      }
+
+      if (!filePath.trim()) {
+        errors.filePath = 'File path is required';
+      } else if (!filePath.endsWith('.yaml') && !filePath.endsWith('.yml')) {
+        errors.filePath = 'File path must end with .yaml or .yml';
+      }
+
+      return errors;
+    };
+
+    const createNewPrompt = async (selectedRepo: string, filePath: string) => {
+      const newPrompt = await createPrompt({
+        repo_name: selectedRepo,
+        file_path: filePath.trim(),
+        prompt: {
+          id: '',
+          name: 'Untitled Prompt',
+          description: '',
+          provider: '',
+          model: '',
+          prompt: '',
+          tags: [],
+          temperature: 0.0,
+          reasoning_effort: 'auto',
+        },
+      });
+
+      return newPrompt;
+    };
+
+    return {
+      repositories,
+      validateForm,
+      createNewPrompt,
+    };
+  }, [config?.repo_configs, createPrompt]);
 };

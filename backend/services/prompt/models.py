@@ -15,13 +15,13 @@ class PromptData(BaseModel):
     Core prompt data model with all fields that get saved to YAML files.
     This model represents the complete prompt configuration including LLM parameters.
     """
-    id: str = Field(..., description="Unique identifier for the prompt")
-    name: str = Field(..., description="Prompt name")
-    description: Optional[str] = Field(None, description="Prompt description")
-    provider: str = Field(..., description="LLM provider (e.g., openai, anthropic)")
-    model: str = Field(..., description="Model name (e.g., gpt-4, claude-3)")
+    id: str = Field(default="", description="Unique identifier for the prompt")
+    name: str = Field(default="Untitled Prompt", description="Prompt name")
+    description: Optional[str] = Field(default="", description="Prompt description")
+    provider: str = Field(default="openai", description="LLM provider (e.g., openai, anthropic)")
+    model: str = Field(default="gpt-4", description="Model name (e.g., gpt-4, claude-3)")
     failover_model: Optional[str] = Field(None, description="Backup model if primary fails")
-    prompt: str = Field(..., description="Combined prompt content")
+    prompt: str = Field(default="", description="Combined prompt content")
     tool_choice: Optional[Union[str, Dict[str, Any]]] = Field(None, description="Tool choice configuration")
     temperature: float = Field(default=0.0, ge=0.0, le=2.0, description="Sampling temperature")
     top_p: Optional[float] = Field(None, ge=0.0, le=1.0, description="Top-p sampling parameter")

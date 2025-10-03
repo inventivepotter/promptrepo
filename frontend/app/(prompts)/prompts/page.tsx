@@ -5,13 +5,11 @@ import { useRouter } from 'next/navigation';
 import {
   VStack,
   Text,
-  Button,
   Grid,
   Box,
   Container,
   ScrollArea,
 } from '@chakra-ui/react';
-import { LuPlus } from 'react-icons/lu';
 import type { PromptMeta } from '@/services/prompts/api';
 import {
   useFilteredPrompts,
@@ -25,11 +23,15 @@ import {
   usePromptActions,
   useUniqueRepositories,
   usePageSize,
+  useDeleteDialogOpen,
+  usePromptToDelete,
+  useIsDeleting,
 } from '@/stores/promptStore';
 import { PromptSearch } from '../_components/PromptSearch';
 import { PromptCard } from '../_components/PromptCard';
 import { Pagination } from '../_components/Pagination';
 import { PromptsHeader } from '@/components/PromptsHeader';
+import { DeletePromptDialog } from '@/components/DeletePromptDialog';
 
 export default function PromptsPage() {
   const router = useRouter();
@@ -47,15 +49,21 @@ export default function PromptsPage() {
   const itemsPerPage = usePageSize();
   const {
     fetchPrompts,
-    createPrompt,
-    deletePrompt,
     setCurrentPrompt,
     setSearch,
     setPage,
     setSortBy,
     setSortOrder,
     setRepository,
+    openDeleteDialog,
+    closeDeleteDialog,
+    confirmDelete,
   } = usePromptActions();
+
+  // Delete dialog state from store
+  const deleteDialogOpen = useDeleteDialogOpen();
+  const promptToDelete = usePromptToDelete();
+  const isDeleting = useIsDeleting();
 
   // Manually hydrate the store on client side and fetch prompts
   useEffect(() => {
@@ -65,40 +73,13 @@ export default function PromptsPage() {
     }
   }, []);
 
-
-  const handleCreateNew = async () => {
-    // Generate a unique ID for the new prompt
-    const newId = `_prompts/prompt-${Date.now()}`;
-    const newPrompt = await createPrompt({
-      repo_name: 'default',
-      file_path: `${newId}.md`,
-      prompt: {
-        id: newId,
-        name: 'New Prompt',
-        description: '',
-        provider: '',
-        model: '',
-        prompt: '',
-        tags: [],
-        temperature: 0.7,
-        reasoning_effort: 'auto',
-      },
-    });
-    if (newPrompt) {
-      setCurrentPrompt(newPrompt);
-      router.push(`/editor?repo_name=${encodeURIComponent(newPrompt.repo_name)}&file_path=${encodeURIComponent(newPrompt.file_path)}`);
-    }
-  };
-
   const handleEditPrompt = (prompt: PromptMeta) => {
     setCurrentPrompt(prompt);
     router.push(`/editor?repo_name=${encodeURIComponent(prompt.repo_name)}&file_path=${encodeURIComponent(prompt.file_path)}`);
   };
 
-  const handleDeletePrompt = async (repoName: string, filePath: string) => {
-    if (confirm('Are you sure you want to delete this prompt?')) {
-      await deletePrompt(repoName, filePath);
-    }
+  const handleDeletePrompt = async (repoName: string, filePath: string, promptName: string) => {
+    openDeleteDialog(repoName, filePath, promptName);
   };
 
   const handleSortChange = (newSortBy: 'name' | 'updated_at') => {
@@ -114,9 +95,7 @@ export default function PromptsPage() {
   return (
     <Box height="100vh" width="100%" display="flex" flexDirection="column">
         {/* Prompts Header - Outside ScrollArea */}
-        <PromptsHeader
-          onCreateNew={handleCreateNew}
-        />
+        <PromptsHeader />
 
         <ScrollArea.Root flex="1" width="100%">
         <ScrollArea.Viewport
@@ -161,11 +140,7 @@ export default function PromptsPage() {
                     : 'No prompts yet. Create your first prompt to get started!'
                   }
                 </Text>
-                {!searchQuery && (
-                  <Button onClick={handleCreateNew}>
-                      <LuPlus /> Create First Prompt
-                  </Button>
-                )}
+                {/* Empty state - user can click the "New Prompt" button in the header */}
               </VStack>
             </Box>
           ) : (
@@ -207,6 +182,15 @@ export default function PromptsPage() {
           <ScrollArea.Thumb />
         </ScrollArea.Scrollbar>
         </ScrollArea.Root>
+
+        {/* Delete Confirmation Dialog */}
+        <DeletePromptDialog
+          open={deleteDialogOpen}
+          onOpenChange={closeDeleteDialog}
+          promptName={promptToDelete?.name || 'this prompt'}
+          onConfirm={confirmDelete}
+          isDeleting={isDeleting}
+        />
       </Box>
   );
 }

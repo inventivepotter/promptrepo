@@ -13,7 +13,8 @@ from middlewares.rest import (
     success_response,
     AppException,
     NotFoundException,
-    ValidationException
+    ValidationException,
+    ConflictException
 )
 from services.prompt.models import PromptMeta, PromptData, PromptDataUpdate
 
@@ -139,6 +140,19 @@ async def get_prompt(
                 }
             }
         },
+        409: {
+            "description": "Prompt file already exists",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "status": "error",
+                        "type": "/errors/conflict",
+                        "title": "Conflict",
+                        "detail": "Prompt file already exists at the specified path"
+                    }
+                }
+            }
+        },
         500: {
             "description": "Internal server error",
             "content": {
@@ -174,6 +188,8 @@ async def create_prompt(
     
     Raises:
         ValidationException: When prompt validation fails
+        ConflictException: When prompt file already exists
+        NotFoundException: When repository is not found
         AppException: When prompt creation fails
     """
     request_id = request.state.request_id
@@ -211,7 +227,7 @@ async def create_prompt(
                 "field": "prompt_data"
             }]
         )
-    except (ValidationException, AppException):
+    except (ValidationException, ConflictException, NotFoundException, AppException):
         # These will be handled by the global exception handlers
         raise
     except Exception as e:
