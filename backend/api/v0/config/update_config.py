@@ -95,18 +95,18 @@ async def update_config(
         llm_configs = getattr(request_body, 'llm_configs', None)
         repo_configs = getattr(request_body, 'repo_configs', None)
 
-        if llm_configs:
+        if llm_configs is not None:
             _validate_llm_configs_uniqueness(llm_configs)
 
-        if repo_configs:
+        if repo_configs is not None:
             _validate_repo_configs_uniqueness(repo_configs)
 
         # Update LLM configs
-        if llm_configs:
+        if llm_configs is not None:
             config_service.set_llm_configs(user_id=user_id, llm_configs=llm_configs)
         
         # Update repo configs with remote_repo_service for cloning
-        if repo_configs:
+        if repo_configs is not None:
             config_service.set_repo_configs(
                 user_id=user_id,
                 repo_configs=repo_configs,

@@ -26,7 +26,7 @@ function TimelineNodeCompact({ commit, isLatest }: { commit: CommitInfo & { id?:
           width={isLatest ? "15px" : "14px"}
           height={isLatest ? "15px" : "14px"}
           borderRadius="full"
-          bg="blue.500"
+          bg="bg.emphasized"
           border="2px solid"
           borderColor="gray.200"
           animation={isLatest ? "pulse 1s infinite" : undefined}
@@ -90,7 +90,7 @@ export function PromptTimeline({ commits }: PromptTimelineProps) {
   const lineColor = useColorModeValue('gray.300', 'gray.600');
 
   return (
-    <Box position="relative" height="100%" width="100%">
+    <Box position="relative" height="120%" width="100%">
       {/* Continuous Timeline Line - extends full height */}
       <Box
         position="absolute"

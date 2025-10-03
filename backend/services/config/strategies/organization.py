@@ -124,12 +124,15 @@ class OrganizationConfig(IConfig):
         if not repo_configs:
             # If an empty list is provided, delete all existing repos for the user
             existing_repos = user_repos_dao.get_user_repositories(user_id)
+            logger.info(f"Deleting all {len(existing_repos)} repositories for user {user_id}")
             for repo in existing_repos:
+                # Delete from file system first
+                if repo.local_path:
+                    logger.info(f"Deleting repository directory: {repo.local_path}")
+                    file_ops.delete_directory(repo.local_path)
                 # Delete from database
                 user_repos_dao.delete_repository(repo.id)
-                # Delete from file system
-                if repo.local_path:
-                    file_ops.delete_directory(repo.local_path)
+            logger.info(f"Successfully deleted all repositories for user {user_id}")
             return []
 
         # Get existing repos to track which ones to keep
@@ -197,12 +200,14 @@ class OrganizationConfig(IConfig):
         # Delete any existing repos that were not in the new list
         for repo in existing_repos:
             if repo.repo_clone_url not in processed_repo_urls:
+                logger.info(f"Deleting repository {repo.repo_name} (ID: {repo.id}, URL: {repo.repo_clone_url}) for user {user_id}")
+                # Delete from file system first
+                if repo.local_path:
+                    logger.info(f"Deleting repository directory: {repo.local_path}")
+                    file_ops.delete_directory(repo.local_path)
                 # Delete from database
                 user_repos_dao.delete_repository(repo.id)
-                # Delete from file system
-                if repo.local_path:
-                    file_ops.delete_directory(repo.local_path)
-                logger.info(f"Deleted repository {repo.repo_name} (ID: {repo.id}) for user {user_id}")
+                logger.info(f"Successfully deleted repository {repo.repo_name} (ID: {repo.id}) for user {user_id}")
         
         return saved_repos if saved_repos else None
     
