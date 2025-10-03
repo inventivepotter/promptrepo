@@ -88,11 +88,6 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
                   {prompt.repo_name}
                 </Badge>
               )}
-              {prompt.prompt?.category && (
-                <Badge size="sm" variant="subtle" colorPalette="blue">
-                  {prompt.prompt.category}
-                </Badge>
-              )}
               {prompt.prompt?.tags && prompt.prompt.tags.length > 0 && (
                 <>
                   {prompt.prompt.tags.slice(0, 3).map((tag, index) => (

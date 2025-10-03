@@ -197,7 +197,6 @@ class PromptService(IPromptService):
                 id=self._generate_prompt_id(repo_name, file_path),
                 name=yaml_data.get("name", file_path),
                 description=yaml_data.get("description"),
-                category=yaml_data.get("category"),
                 provider=yaml_data.get("provider", ""),
                 model=yaml_data.get("model", ""),
                 failover_model=yaml_data.get("failover_model"),

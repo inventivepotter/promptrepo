@@ -6,6 +6,8 @@ import {
   VStack,
   HStack,
   ScrollArea,
+  Badge,
+  Text,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { PromptEditorHeader } from './PromptEditorHeader';
@@ -17,6 +19,7 @@ import { PromptTimeline } from './PromptTimeline';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { useUser } from '@/stores/authStore';
 import { useCurrentPrompt, usePromptActions, useIsUpdating, useIsLoading } from '@/stores/promptStore/hooks';
+import { FaGitAlt, FaFolder } from 'react-icons/fa';
 
 export function PromptEditor() {
   const router = useRouter();
@@ -93,15 +96,11 @@ export function PromptEditor() {
                 <HStack gap={6} align="start" minH="600px">
                   {/* Left Section - Form */}
                   <Box
-                    p={6}
-                    borderWidth="1px"
-                    borderRadius="md"
-                    borderColor="border.muted"
                     width="54%"
                   >
                     <VStack gap={6} align="stretch">
                       {/* Basic Info */}
-                      <PromptFieldGroup />
+                      <PromptFieldGroup repoName={currentPrompt.repo_name} filePath={currentPrompt.file_path} />
                       
                       {/* Model Configuration */}
                       <ModelFieldGroup />

@@ -73,7 +73,6 @@ export interface PromptVariable {
 
 export interface PromptMetadata {
   author?: string;
-  category?: string;
   estimatedTokens?: number;
   lastUsed?: string;
   usageCount?: number;
@@ -82,7 +81,6 @@ export interface PromptMetadata {
 export interface PromptSearchFilters {
   query?: string;
   tags?: string[];
-  category?: string;
   dateRange?: {
     start: string;
     end: string;

@@ -922,11 +922,6 @@ export interface components {
              */
             description?: string | null;
             /**
-             * Category
-             * @description Prompt category for organization
-             */
-            category?: string | null;
-            /**
              * Provider
              * @description LLM provider (e.g., openai, anthropic)
              */
@@ -990,7 +985,7 @@ export interface components {
              * Stop
              * @description Stop sequences
              */
-            stop?: string | string[] | null;
+            stop?: string[] | string | null;
             /**
              * Presence Penalty
              * @description Presence penalty
@@ -1109,11 +1104,6 @@ export interface components {
              */
             description?: string | null;
             /**
-             * Category
-             * @description Prompt category for organization
-             */
-            category?: string | null;
-            /**
              * Provider
              * @description LLM provider (e.g., openai, anthropic)
              */
@@ -1176,7 +1166,7 @@ export interface components {
              * Stop
              * @description Stop sequences
              */
-            stop?: string | string[] | null;
+            stop?: string[] | string | null;
             /**
              * Presence Penalty
              * @description Presence penalty

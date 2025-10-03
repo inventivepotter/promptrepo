@@ -76,7 +76,6 @@ export default function PromptsPage() {
         id: newId,
         name: 'New Prompt',
         description: '',
-        category: null,
         provider: '',
         model: '',
         prompt: '',
