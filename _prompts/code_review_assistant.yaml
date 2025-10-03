@@ -5,15 +5,13 @@ tags:
   - code-review
   - best-practices
   - quality-assurance
-model: "lmstudio/gemma-3-270m-it-mlx"
-failover_model: "anthropic/claude-3.5-sonnet"
+provider: "lmstudio"
+model: "gemma-3-270m-it-mlx"
+failover_model: "claude-3.5-sonnet"
 temperature: 0.3
 top_p: 0.9
 max_tokens: 2048
-thinking_enabled: true
-thinking_budget: 15000
-
-system_prompt: |
+prompt: |
   You are an experienced code reviewer. Analyze the following code and provide feedback on:
   
   1. Code quality and best practices
@@ -21,8 +19,7 @@ system_prompt: |
   3. Performance optimizations
   4. Code readability and maintainability
   5. Suggestions for improvement
-
-user_prompt: |
+  
   Code to review:
   
   {{code}}

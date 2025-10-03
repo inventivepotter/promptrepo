@@ -6,15 +6,13 @@ tags:
   - system-design
   - scalability
   - design-patterns
-model: "openai/gpt-4o"
-failover_model: "anthropic/claude-3.5-sonnet"
+provider: "openai"
+model: "gpt-4o"
+failover_model: "claude-3.5-sonnet"
 temperature: 0.6
 top_p: 0.95
 max_tokens: 4096
-thinking_enabled: true
-thinking_budget: 25000
-
-system_prompt: |
+prompt: |
   You are a senior software architect. Design a system architecture for:
   
   **Requirements**:
@@ -35,8 +33,7 @@ system_prompt: |
   8. Monitoring and observability
   
   Consider microservices, event-driven patterns, and cloud-native approaches.
-
-user_prompt: |
+  
   Design a system architecture with:
   Functionality: {{functionality}}
   Scale: {{scale}}

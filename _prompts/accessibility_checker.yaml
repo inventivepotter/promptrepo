@@ -6,15 +6,13 @@ tags:
   - wcag
   - a11y
   - web-standards
-model: "openai/gpt-4o"
-failover_model: "anthropic/claude-3.5-sonnet"
+provider: "openai"
+model: "gpt-4o"
+failover_model: "claude-3.5-sonnet"
 temperature: 0.3
 top_p: 0.9
 max_tokens: 2048
-thinking_enabled: false
-thinking_budget: 10000
-
-system_prompt: |
+prompt: |
   You are an accessibility expert. Review the following HTML and CSS for WCAG compliance:
   
   {code}
@@ -30,7 +28,6 @@ system_prompt: |
   8. Screen reader compatibility
   
   List issues and suggest fixes with specific code examples.
-
-user_prompt: |
+  
   Review this code for accessibility:
   {{code}}

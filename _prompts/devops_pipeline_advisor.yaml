@@ -6,15 +6,13 @@ tags:
   - ci-cd
   - automation
   - deployment
-model: "anthropic/claude-3-haiku"
-failover_model: "openai/gpt-3.5-turbo"
+provider: "anthropic"
+model: "claude-3-haiku"
+failover_model: "gpt-3.5-turbo"
 temperature: 0.3
 top_p: 0.8
 max_tokens: 2048
-thinking_enabled: true
-thinking_budget: 12000
-
-system_prompt: |
+prompt: |
   You are a DevOps specialist. Design a CI/CD pipeline for:
   
   **Project**: {project}
@@ -31,8 +29,7 @@ system_prompt: |
   8. Performance testing
   
   Provide best practices for modern DevOps workflows.
-
-user_prompt: |
+  
   Design a CI/CD pipeline for:
   Project: {{project}}
   Requirements: {{requirements}}

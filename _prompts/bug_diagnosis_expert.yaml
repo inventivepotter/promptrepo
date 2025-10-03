@@ -6,15 +6,13 @@ tags:
   - troubleshooting
   - bug-fixing
   - diagnostics
-model: "anthropic/claude-3.5-sonnet"
-failover_model: "openai/gpt-4o"
+provider: "anthropic"
+model: "claude-3.5-sonnet"
+failover_model: "gpt-4o"
 temperature: 0.3
 top_p: 0.9
 max_tokens: 2048
-thinking_enabled: true
-thinking_budget: 18000
-
-system_prompt: |
+prompt: |
   You are a debugging expert. Help diagnose the following issue:
   
   **Problem Description**: {problem}
@@ -33,8 +31,7 @@ system_prompt: |
   6. Related issues to check
   
   Provide systematic approach to debugging.
-
-user_prompt: |
+  
   Diagnose this issue:
   Problem: {{problem}}
   Errors: {{errors}}

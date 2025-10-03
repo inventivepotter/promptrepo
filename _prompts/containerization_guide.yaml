@@ -6,15 +6,13 @@ tags:
   - containers
   - deployment
   - infrastructure
-model: "anthropic/claude-3.5-sonnet"
-failover_model: "openai/gpt-4o"
+provider: "anthropic"
+model: "claude-3.5-sonnet"
+failover_model: "gpt-4o"
 temperature: 0.4
 top_p: 0.9
 max_tokens: 1024
-thinking_enabled: false
-thinking_budget: 9000
-
-system_prompt: |
+prompt: |
   You are a containerization expert. Advise on containerizing the following application:
   
   {application}
@@ -30,7 +28,6 @@ system_prompt: |
   8. Health checks and monitoring
   
   Follow Docker best practices and security guidelines.
-
-user_prompt: |
+  
   Containerize this application:
   {{application}}

@@ -6,15 +6,13 @@ tags:
   - pattern-matching
   - validation
   - text-processing
-model: "openai/gpt-3.5-turbo"
-failover_model: "anthropic/claude-3-haiku"
+provider: "openai"
+model: "gpt-3.5-turbo"
+failover_model: "claude-3-haiku"
 temperature: 0.4
 top_p: 0.9
 max_tokens: 1024
-thinking_enabled: false
-thinking_budget: 6000
-
-system_prompt: |
+prompt: |
   You are a regex expert. Build a regex pattern for the following requirement:
   
   {requirement}
@@ -28,7 +26,6 @@ system_prompt: |
   6. Performance considerations
   
   Explain the pattern in a clear, beginner-friendly way.
-
-user_prompt: |
+  
   Create a regex pattern for:
   {{requirement}}

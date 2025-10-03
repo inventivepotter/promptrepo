@@ -5,15 +5,13 @@ tags:
   - documentation
   - technical-writing
   - markdown
-model: "lmstudio/qwen/qwen3-30b-a3b-2507"
-failover_model: "openai/gpt-4o"
+provider: "lmstudio"
+model: "qwen/qwen3-30b-a3b-2507"
+failover_model: "gpt-4o"
 temperature: 0.4
 top_p: 0.95
 max_tokens: 4096
-thinking_enabled: false
-thinking_budget: 10000
-
-system_prompt: |
+prompt: |
   You are a technical documentation expert. Create clear, comprehensive documentation for the following:
   
   **Task**: {task_type}
@@ -29,8 +27,7 @@ system_prompt: |
   - Best practices
   
   Write in markdown format.
-
-user_prompt: |
+  
   Please create documentation for:
   Task Type: {{task_type}}
   Context: {{context}}

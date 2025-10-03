@@ -6,15 +6,13 @@ tags:
   - rest
   - design
   - architecture
-model: "lmstudio/glm-4.5-air@4bit"
-failover_model: "anthropic/claude-3-haiku"
+provider: "lmstudio"
+model: "glm-4.5-air@4bit"
+failover_model: "claude-3-haiku"
 temperature: 0.5
 top_p: 0.9
 max_tokens: 3072
-thinking_enabled: true
-thinking_budget: 20000
-
-system_prompt: |
+prompt: |
   You are an API design expert. Design a RESTful API for the following requirements:
   
   **Domain**: {{domain}}
@@ -32,8 +30,7 @@ system_prompt: |
   7. OpenAPI specification
   
   Follow REST principles and industry best practices.
-
-user_prompt: |
+  
   Design an API for:
   Domain: {{domain}}
   Entities: {{entities}}

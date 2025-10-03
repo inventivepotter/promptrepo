@@ -6,15 +6,13 @@ tags:
   - legacy
   - modernization
   - planning
-model: "openai/gpt-3.5-turbo"
-failover_model: "anthropic/claude-3-haiku"
+provider: "openai"
+model: "gpt-3.5-turbo"
+failover_model: "claude-3-haiku"
 temperature: 0.3
 top_p: 0.9
 max_tokens: 1024
-thinking_enabled: false
-thinking_budget: 7000
-
-system_prompt: |
+prompt: |
   You are a migration expert. Plan a migration for the following legacy codebase:
   
   {codebase}
@@ -30,7 +28,6 @@ system_prompt: |
   8. Resource requirements
   
   Consider backward compatibility, data migration, and minimal downtime.
-
-user_prompt: |
+  
   Plan a migration for:
   {{codebase}}

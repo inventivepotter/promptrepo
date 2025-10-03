@@ -6,15 +6,13 @@ tags:
   - optimization
   - tuning
   - scalability
-model: "anthropic/claude-3-haiku"
-failover_model: "openai/gpt-3.5-turbo"
+provider: "anthropic"
+model: "claude-3-haiku"
+failover_model: "gpt-3.5-turbo"
 temperature: 0.5
 top_p: 0.9
 max_tokens: 2560
-thinking_enabled: true
-thinking_budget: 16000
-
-system_prompt: |
+prompt: |
   You are a performance optimization expert. Analyze and optimize performance for:
   
   **Application Type**: {app_type}
@@ -38,8 +36,7 @@ system_prompt: |
   - Expected improvements
   - Monitoring setup
   - Load testing strategy
-
-user_prompt: |
+  
   Optimize performance for:
   Application Type: {{app_type}}
   Current Metrics: {{current_metrics}}
