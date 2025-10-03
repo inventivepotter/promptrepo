@@ -8,48 +8,66 @@ export const createGetConfigAction: StateCreator<
   ConfigStore,
   [],
   [],
-  { getConfig: () => Promise<void> }
+  { getConfig: (all?: boolean) => Promise<void> }
 > = (set, get) => {
   return {
-    getConfig: async () => {
-      logStoreAction('ConfigStore', 'getConfig');
+    getConfig: async (all = false) => {
+      const actionName = all ? 'getAllConfigs' : 'getConfig';
+      logStoreAction('ConfigStore', actionName);
       
       set((draft) => {
         draft.error = null;
       // @ts-expect-error - Immer middleware supports 3 params
-      }, false, 'config/getConfig/start');
+      }, false, `config/${actionName}/start`);
 
       try {
         // Check if we already have config data (from localStorage hydration)
         const currentState = get();
-        const hasValidConfig = currentState.config &&
-          currentState.config.hosting_config &&
-          currentState.config.hosting_config.type !== 'individual' && // Check if it's not just the default value
-          currentState.config.llm_configs !== undefined &&
-          currentState.config.repo_configs !== undefined;
+        
+        // Check if we have a valid config that's not just the default initial state
+        // We need to check if the config has been fetched from the API before
+        let hasValidConfig = false;
+        
+        if (currentState.config && currentState.config.hosting_config && currentState.config.hosting_config.type) {
+          // Basic config validation passed
+          // For organization hosting, check OAuth configs
+          if (currentState.config.hosting_config.type === "organization") {
+            hasValidConfig = !!(currentState.config.oauth_configs && currentState.config.oauth_configs.length > 0);
+          } else {
+            // For individual hosting, basic config is enough
+            hasValidConfig = true;
+          }
+          
+          // If 'all' parameter is true, also check LLM and repo configs
+          if (all && hasValidConfig) {
+            const hasLLMConfigs = !!(currentState.config.llm_configs && currentState.config.llm_configs.length > 0);
+            const hasRepoConfigs = !!(currentState.config.repo_configs && currentState.config.repo_configs.length > 0);
+            hasValidConfig = hasLLMConfigs || hasRepoConfigs;
+          }
+        }
           
         if (hasValidConfig) {
           // We have valid config data, no need to call API
-          logStoreAction('ConfigStore', 'getConfig/skip - data from localStorage');
+          logStoreAction('ConfigStore', `${actionName}/skip - data from localStorage`);
           return;
         }
 
-        // If we get here, we don't have valid config data in localStorage, so fetch from API
-        logStoreAction('ConfigStore', 'getConfig/fetching from API - no data in localStorage');
+        // If we get here, we don't have valid config data, so fetch from API
+        logStoreAction('ConfigStore', `${actionName}/fetching from API`);
         const config = await ConfigService.getConfig();
         
         set((draft) => {
           draft.config = config;
         // @ts-expect-error - Immer middleware supports 3 params
-        }, false, 'config/getConfig/success');
+        }, false, `config/${actionName}/success`);
       } catch (error) {
-        const storeError = handleStoreError(error, 'getConfig');
-        console.error('Get config error:', error);
+        const storeError = handleStoreError(error, actionName);
+        console.error(`${actionName} error:`, error);
         
         set((draft) => {
           draft.error = storeError.message;
         // @ts-expect-error - Immer middleware supports 3 params
-        }, false, 'config/getConfig/error');
+        }, false, `config/${actionName}/error`);
         
         throw error;
       }

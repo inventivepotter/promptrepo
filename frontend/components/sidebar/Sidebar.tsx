@@ -12,8 +12,7 @@ import {
   LuSettings,
   LuFileText,
 } from 'react-icons/lu'
-import { useColorModeValue } from '../ui/color-mode'
-import { useSidebarCollapsed } from '@/stores/sidebarStore'
+import { useSidebarCollapsed, useSidebarHasHydrated } from '@/stores/sidebarStore'
 import { Branding } from '../Branding'
 import { AuthSection } from './AuthSection'
 import { ThemeToggle } from './ThemeToggle'
@@ -24,40 +23,40 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
-  // Sidebar state from store (auto-initializes)
-  const isCollapsed = useSidebarCollapsed()
+  const hasHydrated = useSidebarHasHydrated();
+  const isCollapsed = useSidebarCollapsed();
+
+  // Show placeholder with correct width while hydrating
+  if (!hasHydrated) {
+    return
+  }
 
   // Theme-aware semantic colors
-  const bgColor = useColorModeValue('white', 'gray.900')
-  const borderColor = useColorModeValue('gray.200', 'gray.700')
-  const textColor = useColorModeValue('gray.900', 'gray.50')
-  const mutedTextColor = useColorModeValue('gray.600', 'gray.400')
-  const hoverBg = useColorModeValue('gray.50', 'gray.800')
-  const activeBg = useColorModeValue('blue.50', 'blue.900')
-  const userProfileBg = useColorModeValue('gray.50', 'gray.800')
+  const hoverBg = "bg.muted"
+  const activeBg = "bg.emphasized"
+  const userProfileBg = "bg.muted"
 
-  const sidebarWidth = isCollapsed ? '60px' : '240px'
+  const sidebarWidth = isCollapsed ? '60px' : '180px'
 
   return (
     <Box
       className={className}
       width={sidebarWidth}
       minHeight="100vh"
-      bg={bgColor}
+      bg="bg.subtle"
       borderRight="1px solid"
-      borderColor={borderColor}
+      borderColor="bg.muted"
       transition="all 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
       position="relative"
       zIndex={10}
-      boxShadow={useColorModeValue('sm', 'dark-lg')}
     >
       {/* Header with branding */}
-      <Box p={isCollapsed ? 2 : 4} borderBottom="1px solid" borderColor={borderColor}>
-        <HStack justify="space-between" align="center" minH="40px">
-          <Branding collapsed={isCollapsed} color={textColor} />
+      <Box px={isCollapsed ? 2 : 4} py={4}>
+        <HStack justify="space-between" align="center" minH="46px">
+          <Branding collapsed={isCollapsed} />
         </HStack>
       </Box>
-
+      <Separator borderColor="bg.muted" mx={2} />
       {/* Navigation Menu */}
       <Stack gap={1} p={2} pt={3}>
         {/* Setup */}
@@ -68,18 +67,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
               justifyContent={isCollapsed ? "center" : "flex-start"}
               size="sm"
               _hover={{ bg: hoverBg, transform: "translateX(2px)" }}
-              _active={{ bg: activeBg }}
               px={isCollapsed ? 2 : 3}
               py={2}
               height="36px"
-              borderRadius="6px"
+              borderRadius="2px"
               fontWeight="500"
               transition="all 0.15s ease"
               width="100%"
             >
-              <LuSettings size={16} color={mutedTextColor} />
+              <LuSettings size={16} />
               {!isCollapsed && (
-                <span style={{ marginLeft: 12, fontSize: '14px', color: textColor, fontWeight: 500 }}>
+                <span style={{ marginLeft: 12, fontSize: '14px', fontWeight: 500 }}>
                   Configuration
                 </span>
               )}
@@ -95,18 +93,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
               justifyContent={isCollapsed ? "center" : "flex-start"}
               size="sm"
               _hover={{ bg: hoverBg, transform: "translateX(2px)" }}
-              _active={{ bg: activeBg }}
               px={isCollapsed ? 2 : 3}
               py={2}
               height="36px"
-              borderRadius="6px"
+              borderRadius="2px"
               fontWeight="500"
               transition="all 0.15s ease"
               width="100%"
             >
-              <LuFileText size={16} color={mutedTextColor} />
+              <LuFileText size={16} />
               {!isCollapsed && (
-                <span style={{ marginLeft: 12, fontSize: '14px', color: textColor, fontWeight: 500 }}>
+                <span style={{ marginLeft: 12, fontSize: '14px', fontWeight: 500 }}>
                   Prompts
                 </span>
               )}
@@ -121,29 +118,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
           {/* Auth Section (User Profile + Login/Logout) */}
           <AuthSection
             isCollapsed={isCollapsed}
-            textColor={textColor}
-            mutedTextColor={mutedTextColor}
             hoverBg={hoverBg}
             activeBg={activeBg}
             userProfileBg={userProfileBg}
-            borderColor={borderColor}
+            borderColor="bg.muted"
           />
           
-          <Separator borderColor={borderColor} />
+          <Separator borderColor="bg.muted" />
 
           {/* Theme Toggle */}
           <ThemeToggle
             isCollapsed={isCollapsed}
-            textColor={textColor}
-            mutedTextColor={mutedTextColor}
             hoverBg={hoverBg}
             activeBg={activeBg}
           />
 
           {/* Sidebar Toggle Button */}
           <SidebarToggle
-            textColor={textColor}
-            mutedTextColor={mutedTextColor}
             hoverBg={hoverBg}
             activeBg={activeBg}
           />

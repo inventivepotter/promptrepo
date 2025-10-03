@@ -1,131 +1,124 @@
 'use client';
 
-import React from 'react';
+import { useState } from 'react';
 import {
   Box,
   VStack,
-  Text,
   Input,
   Textarea,
   Combobox,
   createListCollection,
+  Field,
+  Switch,
 } from '@chakra-ui/react';
 import { FaChevronDown } from 'react-icons/fa';
-import { useColorModeValue } from '@/components/ui/color-mode';
-import { Repo } from '@/types/Repo';
-import { Prompt } from '@/types/Prompt';
+import { useCurrentPrompt, usePromptActions, useModelOptions } from '@/stores/promptStore/hooks';
 
-interface PromptFieldGroupProps {
-  formData: Partial<Prompt>;
-  configuredRepos: Array<Repo>;
-  showRepoError: boolean;
-  updateField: (field: keyof Prompt, value: string | number | boolean) => void;
-  updateRepoField: (repo: Repo | undefined) => void;
-}
+export function PromptFieldGroup() {
+  const currentPrompt = useCurrentPrompt();
+  const { setCurrentPrompt } = usePromptActions();
+  const modelOptions = useModelOptions();
+  const [modelSearchValue, setModelSearchValue] = useState('');
 
-export function PromptFieldGroup({
-  formData,
-  configuredRepos,
-  showRepoError,
-  updateField,
-  updateRepoField
-}: PromptFieldGroupProps) {
-  const [repoSearchValue, setRepoSearchValue] = React.useState('');
-  const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
+  if (!currentPrompt) {
+    return <Box>No prompt selected</Box>;
+  }
 
-  // Check if current repo exists and matches one of the available repos
-  const isRepoDisabled = Boolean(formData.repo?.id && configuredRepos.some(repo => repo.id === formData.repo?.id));
+  const updateField = (field: string, value: string | number | boolean | string[] | null | Record<string, unknown>) => {
+    if (!currentPrompt) return;
+    
+    setCurrentPrompt({
+      ...currentPrompt,
+      prompt: {
+        ...currentPrompt.prompt,
+        [field]: value,
+      },
+    });
+  };
 
-  // Filter repositories based on search value
-  const filteredRepos = configuredRepos.filter(repo =>
-    repo.name.toLowerCase().includes(repoSearchValue.toLowerCase()) ||
-    repo.id.toString().toLowerCase().includes(repoSearchValue.toLowerCase())
+  const filteredModels = modelOptions.filter(opt =>
+    opt.label.toLowerCase().includes(modelSearchValue.toLowerCase())
   );
 
-  return (
-    <Box>
-      <VStack gap={4} align="stretch">
-        <Box>
-          <Text mb={2} fontWeight="semibold" color={!isRepoDisabled ? "red.500" : undefined} opacity={0.7}>
-            Repository
-          </Text>
-          {showRepoError && !formData.repo && (
-            <Text fontSize="sm" color="red.500" mb={2}>
-              Please select a repository before editing other fields
-            </Text>
-          )}
-          <Combobox.Root
-          collection={createListCollection({
-            items: filteredRepos.map(repo => ({
-              label: repo.name,
-              value: repo.id
-            }))
-          })}
-          value={formData.repo?.id ? [formData.repo.id] : []}
-          onValueChange={(e) => {
-            const id = e.value[0] || '0';
-            const selectedRepo = configuredRepos.find(r => r.id === id);
-            if (selectedRepo) {
-              updateRepoField({
-                id: selectedRepo.id,
-                base_branch: selectedRepo.base_branch,
-                name: selectedRepo.name
-              });
-            } else {
-              updateRepoField(undefined);
-            }
-          }}
-          inputValue={repoSearchValue}
-          onInputValueChange={(e) => setRepoSearchValue(e.inputValue)}
-          openOnClick
-          disabled={isRepoDisabled}
-        >
-          <Combobox.Control position="relative">
-            <Combobox.Input
-              placeholder={configuredRepos.length > 0 ? "Select repository" : "No repositories configured"}
-              paddingRight="2rem"
-            />
-            <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
-              <FaChevronDown size={16} />
-            </Combobox.Trigger>
-          </Combobox.Control>
-          <Combobox.Positioner>
-            <Combobox.Content>
-              {filteredRepos.map(repo => (
-                <Combobox.Item key={repo.id} item={repo.id.toString()}>
-                  <Combobox.ItemText>{repo.name}</Combobox.ItemText>
-                  <Combobox.ItemIndicator />
-                </Combobox.Item>
-              ))}
-            </Combobox.Content>
-          </Combobox.Positioner>
-          </Combobox.Root>
-        </Box>
+  const { prompt } = currentPrompt;
+  const currentModelValue = prompt?.provider && prompt?.model
+    ? `${prompt.provider}:${prompt.model}`
+    : '';
 
-        <Box opacity={!formData.repo ? 0.5 : 1}>
-          <Text mb={2} fontWeight={formData.repo ? "medium" : "normal"} color={!formData.repo ? "gray.400" : undefined}>Name</Text>
+  return (
+    <Box as="form">
+      <VStack gap={6} align="stretch">
+        {/* Repository (read-only) */}
+        <Field.Root>
+          <Field.Label>Repository</Field.Label>
+          <Input value={currentPrompt.repo_name} disabled />
+        </Field.Root>
+
+        {/* File Path (read-only) */}
+        <Field.Root>
+          <Field.Label>File Path</Field.Label>
+          <Input value={currentPrompt.file_path} disabled />
+        </Field.Root>
+
+        {/* Name */}
+        <Field.Root required>
+          <Field.Label>Name</Field.Label>
           <Input
-            value={formData.name || ''}
+            value={prompt?.name || ''}
             onChange={(e) => updateField('name', e.target.value)}
             placeholder="Enter prompt name"
           />
-        </Box>
+        </Field.Root>
 
-        <Box opacity={!formData.repo ? 0.5 : 1}>
-          <Text mb={2} fontWeight={formData.repo ? "medium" : "normal"} color={!formData.repo ? "gray.400" : undefined} fontSize="lg">Prompt Template</Text>
-          <Text mb={3} fontSize="sm" color={mutedTextColor}>
-            This is the core of your prompt. Write your instructions, context, and any variables here.
-          </Text>
+        {/* Description */}
+        <Field.Root>
+          <Field.Label>Description</Field.Label>
           <Textarea
-            value={formData.prompt || ''}
+            value={prompt?.description || ''}
+            onChange={(e) => updateField('description', e.target.value)}
+            placeholder="Enter prompt description (optional)"
+            rows={2}
+            resize="vertical"
+          />
+        </Field.Root>
+
+        {/* Category */}
+        <Field.Root>
+          <Field.Label>Category</Field.Label>
+          <Input
+            value={prompt?.category || ''}
+            onChange={(e) => updateField('category', e.target.value)}
+            placeholder="Enter category (optional)"
+          />
+        </Field.Root>
+
+        {/* Prompt Content */}
+        <Field.Root required>
+          <Field.Label>Prompt</Field.Label>
+          <Textarea
+            value={prompt?.prompt || ''}
             onChange={(e) => updateField('prompt', e.target.value)}
-            placeholder="Enter your prompt template here..."
-            rows={15}
-            minH="400px"
+            placeholder="Enter the main prompt content..."
+            rows={10}
+            minH="300px"
             lineHeight="1.6"
             resize="vertical"
           />
-        </Box>
+        </Field.Root>
+
+        {/* Tags */}
+        <Field.Root>
+          <Field.Label>Tags</Field.Label>
+          <Input
+            value={Array.isArray(prompt?.tags) ? prompt.tags.join(', ') : ''}
+            onChange={(e) => {
+              const tagsArray = e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag);
+              updateField('tags', tagsArray);
+            }}
+            placeholder="e.g., coding, debugging, refactoring"
+          />
+        </Field.Root>
+
       </VStack>
     </Box>
   );

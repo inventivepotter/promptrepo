@@ -15,12 +15,13 @@ from pydantic import ValidationError
 from .middleware import ResponseMiddleware, LoggingMiddleware
 from .handlers import (
     app_exception_handler,
-    http_exception_handler,  
+    http_exception_handler,
     validation_exception_handler,
     pydantic_exception_handler,
     general_exception_handler,
+    oauth_token_invalid_handler,
 )
-from .exceptions import AppException
+from .exceptions import AppException, OAuthTokenInvalidException
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +104,9 @@ class FastAPISetup:
         # Type-ignore comments are necessary because FastAPI's type hints
         # don't properly support custom exception handler signatures
         
+        # OAuth token invalid (must be registered before AppException)
+        app.add_exception_handler(OAuthTokenInvalidException, oauth_token_invalid_handler)  # type: ignore
+        
         # Custom application exceptions
         app.add_exception_handler(AppException, app_exception_handler)  # type: ignore
         
@@ -160,7 +164,7 @@ class FastAPISetup:
             return hosts
         
         # Default for production
-        return ["*.promptrepo.com", "promptrepo.com"]
+        return ["*.promptrepo.dev", "promptrepo.dev"]
     
     def _get_cors_origins(self):
         """Get CORS allowed origins."""
@@ -172,8 +176,8 @@ class FastAPISetup:
         # Defaults based on environment
         if self.is_production:
             return [
-                "https://promptrepo.com",
-                "https://www.promptrepo.com",
+                "https://promptrepo.dev",
+                "https://www.promptrepo.dev",
             ]
         else:
             return [

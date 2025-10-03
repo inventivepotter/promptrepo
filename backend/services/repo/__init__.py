@@ -1,2 +1,0 @@
-from .repo_locator_service import RepoLocatorService
-from .repo_service import RepoService

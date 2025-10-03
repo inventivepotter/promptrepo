@@ -83,6 +83,10 @@ export function isPaginatedResponse<T>(response: OpenApiResponse<T>): response i
   return 'pagination' in response && 'data' in response;
 }
 
+export function isSuccess<T>(response: OpenApiResponse<T>): response is StandardResponse<T> | PaginatedResponse<T> {
+  return response.status === ResponseStatus.SUCCESS;
+}
+
 // Normalized response type for frontend consumption
 export interface OpenAPIResponse<T = unknown> {
   success: boolean;

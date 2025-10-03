@@ -19,6 +19,7 @@ from .exceptions import (
     NotFoundException,
     ConflictException,
     BadRequestException,
+    OAuthTokenInvalidException,
 )
 from .dependencies import (
     get_request_id,
@@ -44,6 +45,7 @@ __all__ = [
     "NotFoundException",
     "ConflictException",
     "BadRequestException",
+    "OAuthTokenInvalidException",
     
     # Dependencies
     "get_request_id",

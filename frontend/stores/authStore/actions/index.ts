@@ -2,6 +2,8 @@
 import { createLoginAction } from './login';
 import { createLogoutAction } from './logout';
 import { createLoginWithGithubAction } from './oauthCallbackGithub';
+import { createProcessGithubCallbackAction } from './processGithubCallback';
+import { createHandleGithubCallbackAction } from './handleGithubCallback';
 import { createRefreshSessionAction } from './refreshSession';
 import { createInitializeAuthAction } from './initializeAuth';
 import { createUpdateUserAction } from './updateUser';
@@ -17,6 +19,8 @@ export const createAuthActions: StateCreator<AuthStore, [], [], AuthActions> = (
   // Public actions
   ...createLoginAction(set, get, api),
   ...createLoginWithGithubAction(set, get, api),
+  ...createProcessGithubCallbackAction(set, get, api),
+  ...createHandleGithubCallbackAction(set, get, api),
   ...createLogoutAction(set, get, api),
   ...createRefreshSessionAction(set, get, api),
   ...createInitializeAuthAction(set, get, api),

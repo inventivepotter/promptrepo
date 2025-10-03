@@ -5,7 +5,7 @@ Provides factory functions for creating service instances.
 
 from .llm import LLMProviderService, ChatCompletionService
 from .config import ConfigService, IConfig
-from .repo import RepoLocatorService, RepoService
+from .remote_repo import RemoteRepoService
 from .auth import AuthService, SessionService
 from .oauth import OAuthService
 
@@ -14,8 +14,7 @@ __all__ = [
     'ChatCompletionService',
     'ConfigService',
     'IConfig',
-    'RepoLocatorService',
-    'RepoService',
+    'RemoteRepoService',
     'AuthService',
     'SessionService',
     'OAuthService',

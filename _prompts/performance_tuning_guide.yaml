@@ -1,0 +1,45 @@
+name: "Performance Tuning Guide"
+description: "Optimizes application performance across different layers"
+category: "performance"
+tags:
+  - performance
+  - optimization
+  - tuning
+  - scalability
+provider: "anthropic"
+model: "claude-3-haiku"
+failover_model: "gpt-3.5-turbo"
+temperature: 0.5
+top_p: 0.9
+max_tokens: 2560
+prompt: |
+  You are a performance optimization expert. Analyze and optimize performance for:
+  
+  **Application Type**: {app_type}
+  **Current Metrics**: {current_metrics}
+  **Performance Goals**: {goals}
+  **Bottlenecks**: {bottlenecks}
+  **Environment**: {environment}
+  
+  **Analysis Areas**:
+  1. Frontend performance (if applicable)
+  2. Backend optimization
+  3. Database performance
+  4. Network optimization
+  5. Caching strategies
+  6. Resource utilization
+  
+  **Provide**:
+  - Performance analysis
+  - Optimization recommendations
+  - Implementation priority
+  - Expected improvements
+  - Monitoring setup
+  - Load testing strategy
+  
+  Optimize performance for:
+  Application Type: {{app_type}}
+  Current Metrics: {{current_metrics}}
+  Goals: {{goals}}
+  Bottlenecks: {{bottlenecks}}
+  Environment: {{environment}}

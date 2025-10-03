@@ -1,0 +1,33 @@
+name: "Containerization Guide"
+description: "Advises on containerizing applications"
+category: "devops"
+tags:
+  - docker
+  - containers
+  - deployment
+  - infrastructure
+provider: "anthropic"
+model: "claude-3.5-sonnet"
+failover_model: "gpt-4o"
+temperature: 0.4
+top_p: 0.9
+max_tokens: 1024
+prompt: |
+  You are a containerization expert. Advise on containerizing the following application:
+  
+  {application}
+  
+  Provide:
+  1. Dockerfile creation with best practices
+  2. Multi-stage build recommendations
+  3. Image optimization strategies
+  4. Security considerations
+  5. Volume and network configuration
+  6. Docker Compose setup (if needed)
+  7. Container orchestration recommendations
+  8. Health checks and monitoring
+  
+  Follow Docker best practices and security guidelines.
+  
+  Containerize this application:
+  {{application}}

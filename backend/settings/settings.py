@@ -15,7 +15,7 @@ class Settings(BaseSettings):
 
     # Database Configuration
     database_url: str = Field(
-        default="sqlite:///./persistence/database/promptrepo.db",
+        default="sqlite:////persistence/database/promptrepo.db",
         description="Database URL"
     )
     database_echo: bool = Field(default=True, description="Echo SQL queries")
@@ -38,12 +38,12 @@ class Settings(BaseSettings):
 
     # Core Repository Paths
     local_repo_path: str = Field(
-        default="",
+        default="/persistence/repos/",
         description="Path for individual local repositories"
     )
 
     multi_user_repo_path: str = Field(
-        default="",
+        default="/persistence/repos/workspaces/",
         description="Path for multi-user repository workspaces"
     )
     

@@ -56,7 +56,6 @@ async def verify_session(
     request_id = getattr(request.state, "request_id", None)
     
     try:
-        print(f"\n\n\n\nVerifying session with token: {token}\n\n\n\n")
         # Create verify request using auth service models
         verify_request = VerifyRequest(session_token=token)
         verify_response = await auth_service.verify_session(verify_request)

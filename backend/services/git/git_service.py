@@ -466,6 +466,59 @@ class GitService:
                 message=f"Failed to pull latest changes: {e}"
             )
 
+    def clone_repository(
+            self,
+            clone_url: str,
+            branch: Optional[str] = None,
+            oauth_token: Optional[str] = None
+    ) -> GitOperationResult:
+        """
+        Clone a repository from a remote URL.
+
+        Args:
+            clone_url: Git clone URL
+            branch: Optional branch to checkout (default: main/master)
+            oauth_token: Optional OAuth token for authentication
+
+        Returns:
+            GitOperationResult: Result of the operation
+        """
+        try:
+            logger.info(f"🔄 Cloning repository from {clone_url}")
+
+            # Add OAuth token to URL if provided
+            authenticated_url = clone_url
+            if oauth_token:
+                authenticated_url = self._add_token_to_url(clone_url, oauth_token)
+
+            # Ensure parent directory exists
+            self.repo_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Clone the repository
+            repo = Repo.clone_from(authenticated_url, self.repo_path)
+
+            # Checkout specific branch if provided
+            if branch and branch != repo.active_branch.name:
+                try:
+                    repo.git.checkout(branch)
+                    logger.info(f"✅ Checked out branch: {branch}")
+                except Exception as e:
+                    logger.warning(f"Could not checkout branch {branch}: {e}")
+
+            logger.info(f"✅ Successfully cloned repository to {self.repo_path}")
+            return GitOperationResult(
+                success=True,
+                message=f"Successfully cloned repository to {self.repo_path}",
+                data={"repo_path": str(self.repo_path)}
+            )
+
+        except Exception as e:
+            logger.error(f"❌ Failed to clone repository: {e}")
+            return GitOperationResult(
+                success=False,
+                message=f"Failed to clone repository: {e}"
+            )
+
     # Private helper methods
 
     def _add_token_to_url(self, url: str, oauth_token: str) -> str:
@@ -499,3 +552,42 @@ class GitService:
             return str(value) if value is not None else None
         except:
             return None
+
+    def get_file_commit_history(self, file_path: str, limit: int = 5) -> List[CommitInfo]:
+        """
+        Get commit history for a specific file.
+        
+        Args:
+            file_path: Path to the file relative to repository root
+            limit: Maximum number of commits to retrieve (default: 5)
+            
+        Returns:
+            List[CommitInfo]: List of commit information for the file
+        """
+        try:
+            repo = Repo(self.repo_path)
+            commits = list(repo.iter_commits(paths=file_path, max_count=limit))
+            
+            commit_info_list = []
+            for commit in commits:
+                # Handle message - ensure it's a string
+                message = commit.message
+                if isinstance(message, bytes):
+                    message = message.decode('utf-8', errors='replace')
+                elif not isinstance(message, str):
+                    message = str(message)
+                
+                commit_info = CommitInfo(
+                    commit_id=commit.hexsha,
+                    message=message.strip(),
+                    author=str(commit.author),
+                    timestamp=commit.committed_datetime
+                )
+                commit_info_list.append(commit_info)
+            
+            logger.info(f"✅ Retrieved {len(commit_info_list)} commits for file: {file_path}")
+            return commit_info_list
+            
+        except Exception as e:
+            logger.warning(f"⚠️  Failed to get commit history for {file_path}: {e}")
+            return []

@@ -6,16 +6,12 @@ import { useAuthActions } from '@/stores/authStore';
 
 interface LoginButtonProps {
   isCollapsed?: boolean;
-  textColor?: string;
-  mutedTextColor?: string;
   hoverBg?: string;
   activeBg?: string;
 }
 
 export const LoginButton = ({ 
   isCollapsed = false,
-  textColor,
-  mutedTextColor,
   hoverBg,
   activeBg 
 }: LoginButtonProps) => {
@@ -37,10 +33,10 @@ export const LoginButton = ({
       transition="all 0.15s ease"
       onClick={() => login(pathname)}
     >
-      <LuGithub size={16} color={mutedTextColor} />
+      <LuGithub size={16} />
       {!isCollapsed && (
-        <span style={{ marginLeft: 12, fontSize: 14, color: textColor, fontWeight: 500 }}>
-          Login with GitHub
+        <span style={{ marginLeft: 12, fontSize: 14, fontWeight: 500 }}>
+          GitHub Login
         </span>
       )}
     </Button>

@@ -6,75 +6,67 @@ import {
   VStack,
   Text,
   Button,
-  Spinner,
+  Box,
 } from '@chakra-ui/react';
-import { LuArrowLeft, LuGitBranch } from 'react-icons/lu';
-import { useColorModeValue } from '@/components/ui/color-mode';
-import { Prompt } from '@/types/Prompt';
+import { LuArrowLeft } from 'react-icons/lu';
+import { useCurrentPrompt } from '@/stores/promptStore/hooks';
 
 interface PromptEditorHeaderProps {
-  displayPrompt: Prompt;
   onBack: () => void;
   onSave: () => void;
   canSave: boolean;
   isSaving?: boolean;
-  onCommitPush?: () => void;
-  isCommitPushing?: boolean;
-  canCommitPush?: boolean;
 }
 
-export function PromptEditorHeader({ displayPrompt, onBack, onSave, canSave, isSaving = false, onCommitPush, isCommitPushing = false, canCommitPush = false }: PromptEditorHeaderProps) {
-  const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
+export function PromptEditorHeader({ onBack, onSave, canSave, isSaving = false }: PromptEditorHeaderProps) {
+  const currentPrompt = useCurrentPrompt();
 
   return (
-    <HStack justify="space-between" align="center">
-      <HStack gap={4}>
-        <Button
-          variant="ghost"
-          onClick={onBack}
-          size="sm"
-        >
-          <HStack gap={2}>
-            <LuArrowLeft size={16} />
-            <Text>Back</Text>
-          </HStack>
-        </Button>
-        <VStack align="start" gap={1}>
-          <Text fontSize="2xl" fontWeight="bold">
-            {displayPrompt.name || 'New Prompt'}
-          </Text>
-          <Text fontSize="sm" color={mutedTextColor}>
-            Edit prompt settings and configuration. Click Save to persist changes.
-          </Text>
-        </VStack>
-      </HStack>
-      <HStack gap={3}>
-        {onCommitPush && (
+    <Box
+      py={4}
+      px={6}
+      position="sticky"
+      top={0}
+      zIndex={10}
+      bg="bg.subtle"
+    >
+      <HStack justify="space-between" align="center">
+        <HStack gap={4}>
           <Button
-            colorPalette="green"
             variant="outline"
-            onClick={onCommitPush}
-            disabled={!canCommitPush || isSaving || isCommitPushing}
-            loading={isCommitPushing}
+            onClick={onBack}
+            size="sm"
           >
             <HStack gap={2}>
-              <LuGitBranch size={16} />
-              <Text>{isCommitPushing ? 'Committing...' : 'Commit & Push'}</Text>
+              <LuArrowLeft size={16} />
+              <Text>Back</Text>
             </HStack>
           </Button>
-        )}
-        <Button
-          colorScheme="blue"
-          onClick={onSave}
-          disabled={!canSave || isSaving}
-          loading={isSaving}
-        >
-          <HStack gap={2}>
-            {isSaving && <Spinner size="sm" />}
-            <Text>{isSaving ? 'Saving...' : 'Save Prompt'}</Text>
-          </HStack>
-        </Button>
+          <VStack align="start" gap={1}>
+            <Text
+              color="fg.muted"
+              fontSize="2xl"
+              letterSpacing="tight"
+              fontWeight="1000"
+            >
+              {currentPrompt?.prompt?.name || 'New Prompt'}
+            </Text>
+            <Text fontSize="sm" opacity={0.7}>
+              Edit prompt settings and configuration. Click Save to persist changes.
+            </Text>
+          </VStack>
+        </HStack>
+        <HStack gap={3}>
+          <Button
+            colorScheme="blue"
+            onClick={onSave}
+            disabled={!canSave || isSaving}
+            loading={isSaving}
+          >
+            {isSaving ? 'Saving...' : 'Save Prompt'}
+          </Button>
+        </HStack>
       </HStack>
-    </HStack>
+    </Box>
   );
 }

@@ -15,7 +15,7 @@ from middlewares import ContextMiddleware
 # Import core setup and components from middlewares
 from middlewares.rest.setup import setup_fastapi_app
 from middlewares.rest.responses import StandardResponse, success_response
-from services import repo
+from services import remote_repo
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -28,6 +28,7 @@ from api.v0.config import router as config_router
 from api.v0.repos import router as repos_router
 from api.v0.health import router as health_router
 from api.v0.info import router as info_router
+from api.v0.prompts import router as prompts_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -88,6 +89,12 @@ app.include_router(
     info_router,
     prefix="/api/v0",
     tags=["info"]
+)
+
+app.include_router(
+    prompts_router,
+    prefix="/api/v0/prompts",
+    tags=["prompts"]
 )
 
 

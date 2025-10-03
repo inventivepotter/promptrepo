@@ -1,0 +1,33 @@
+name: "Accessibility Checker"
+description: "Reviews web pages for accessibility compliance"
+category: "accessibility"
+tags:
+  - accessibility
+  - wcag
+  - a11y
+  - web-standards
+provider: "openai"
+model: "gpt-4o"
+failover_model: "claude-3.5-sonnet"
+temperature: 0.3
+top_p: 0.9
+max_tokens: 2048
+prompt: |
+  You are an accessibility expert. Review the following HTML and CSS for WCAG compliance:
+  
+  {code}
+  
+  Check for:
+  1. Semantic HTML structure
+  2. ARIA attributes and labels
+  3. Keyboard navigation
+  4. Color contrast ratios
+  5. Alternative text for images
+  6. Form accessibility
+  7. Focus management
+  8. Screen reader compatibility
+  
+  List issues and suggest fixes with specific code examples.
+  
+  Review this code for accessibility:
+  {{code}}

@@ -6,7 +6,6 @@ import type { components } from '@/types/generated/api';
  * Configuration API client
  * All methods return OpenAPI-formatted responses
  */
-type HostingConfig = components['schemas']['HostingConfig'];
 type AppConfigInput = components['schemas']['AppConfig-Input'];
 type AppConfigOutput = components['schemas']['AppConfig-Output'];
 
@@ -26,13 +25,5 @@ export default class ConfigApi {
    */
   static async updateConfig(config: AppConfigInput): Promise<OpenApiResponse<AppConfigOutput>> {
     return httpClient.patch<AppConfigOutput>('/api/v0/config', config);
-  }
-
-  /**
-   * Get hosting type without authentication
-   * @returns OpenAPI response with hosting type
-   */
-  static async getHostingType(): Promise<OpenApiResponse<HostingConfig>> {
-    return httpClient.get<HostingConfig>('/api/v0/config/hosting-type');
   }
 }

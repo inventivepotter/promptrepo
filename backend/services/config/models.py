@@ -99,7 +99,8 @@ class AppConfig(BaseModel):
     """Main application configuration"""
     
     # Main Configuration
-    hosting_config: HostingConfig = Field(
+    hosting_config: Optional[HostingConfig] = Field(
+        default=None,
         description="Hosting-specific configuration settings"
     )
     oauth_configs: Optional[List[OAuthConfig]] = Field(

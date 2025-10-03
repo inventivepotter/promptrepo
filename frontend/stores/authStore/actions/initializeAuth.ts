@@ -9,11 +9,20 @@ export const createInitializeAuthAction: StateCreator<
   [],
   [],
   Pick<AuthStore, 'initializeAuth'>
-> = (set) => ({
+> = (set, get) => ({
   initializeAuth: async () => {
+    const state = get();
+    
+    // Skip if already initialized or currently initializing
+    if (state.isInitialized || state.isInitializing) {
+      logStoreAction('AuthStore', 'initializeAuth - skipped (already initialized or in progress)');
+      return;
+    }
+    
     logStoreAction('AuthStore', 'initializeAuth');
     
     set((draft) => {
+      draft.isInitializing = true;
       draft.isLoading = true;
       draft.error = null;
     // @ts-expect-error - Immer middleware supports 3 params
@@ -28,6 +37,8 @@ export const createInitializeAuthAction: StateCreator<
           draft.user = user;
           draft.isAuthenticated = true;
           draft.isLoading = false;
+          draft.isInitialized = true;
+          draft.isInitializing = false;
         // @ts-expect-error - Immer middleware supports 3 params
         }, false, 'auth/initialize/success');
       } else {
@@ -35,6 +46,8 @@ export const createInitializeAuthAction: StateCreator<
           draft.user = null;
           draft.isAuthenticated = false;
           draft.isLoading = false;
+          draft.isInitialized = true;
+          draft.isInitializing = false;
         // @ts-expect-error - Immer middleware supports 3 params
         }, false, 'auth/initialize/no-session');
       }
@@ -47,6 +60,8 @@ export const createInitializeAuthAction: StateCreator<
         draft.isAuthenticated = false;
         draft.isLoading = false;
         draft.error = storeError.message;
+        draft.isInitialized = true;
+        draft.isInitializing = false;
       // @ts-expect-error - Immer middleware supports 3 params
       }, false, 'auth/initialize/error');
     }

@@ -177,3 +177,33 @@ class RateLimitException(AppException):
             message=message,
             context=context
         )
+
+
+class OAuthTokenInvalidException(AppException):
+    """
+    Raised when OAuth token is invalid or expired.
+    This exception triggers automatic session invalidation.
+    """
+    
+    def __init__(
+        self,
+        message: str = "OAuth token is invalid or expired",
+        provider: Optional[str] = None,
+        session_id: Optional[str] = None,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        context = context or {}
+        if provider:
+            context["provider"] = provider
+        if session_id:
+            context["session_id"] = session_id
+            
+        super().__init__(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            error_code="OAUTH_TOKEN_INVALID",
+            message=message,
+            detail="Your authentication has expired. Please sign in again.",
+            context=context
+        )
+        self.session_id = session_id
+        self.provider = provider

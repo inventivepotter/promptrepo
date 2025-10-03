@@ -5,7 +5,7 @@ import logging
 from fastapi import APIRouter, Request, status, Body
 
 from services.config.models import AppConfig
-from api.deps import ConfigServiceDep, CurrentUserDep
+from api.deps import ConfigServiceDep, CurrentUserDep, RemoteRepoServiceDep
 from middlewares.rest import (
     StandardResponse,
     success_response,
@@ -68,6 +68,7 @@ router = APIRouter()
 async def update_config(
     request: Request,
     config_service: ConfigServiceDep,
+    remote_repo_service: RemoteRepoServiceDep,
     user_id: CurrentUserDep,
     request_body: AppConfig = Body(...)
 ) -> StandardResponse[AppConfig]:
@@ -94,18 +95,23 @@ async def update_config(
         llm_configs = getattr(request_body, 'llm_configs', None)
         repo_configs = getattr(request_body, 'repo_configs', None)
 
-        if llm_configs:
+        if llm_configs is not None:
             _validate_llm_configs_uniqueness(llm_configs)
 
-        if repo_configs:
+        if repo_configs is not None:
             _validate_repo_configs_uniqueness(repo_configs)
 
-        # Update configuration using the service method
-        config_service.save_configs_for_api(
-            user_id=user_id,
-            llm_configs=llm_configs,
-            repo_configs=repo_configs
-        )
+        # Update LLM configs
+        if llm_configs is not None:
+            config_service.set_llm_configs(user_id=user_id, llm_configs=llm_configs)
+        
+        # Update repo configs with remote_repo_service for cloning
+        if repo_configs is not None:
+            config_service.set_repo_configs(
+                user_id=user_id,
+                repo_configs=repo_configs,
+                remote_repo_service=remote_repo_service
+            )
 
         # Get and return the updated configuration
         updated_config = config_service.get_configs_for_api(user_id=user_id)

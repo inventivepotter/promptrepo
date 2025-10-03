@@ -4,21 +4,11 @@
 
 echo "Generating TypeScript types from FastAPI OpenAPI schema..."
 
-# Start the FastAPI server temporarily to get the schema
-cd backend
-uvicorn main:app --host localhost --port 8001 &
-SERVER_PID=$!
-
-# Wait for server to start
-sleep 3
-
 # Download OpenAPI schema
-curl -s http://localhost:8001/openapi.json > ../openapi-schema.json
+curl -s http://localhost:8000/openapi.json > ./openapi-schema.json
 
-# Kill the server
-kill $SERVER_PID
-
-cd ..
+# # Kill the server
+# kill $SERVER_PID
 
 # Generate TypeScript types using openapi-typescript
 npx openapi-typescript openapi-schema.json --output frontend/types/generated/api.ts

@@ -56,3 +56,6 @@ export const selectAuthStatus = (state: AuthStore) => {
 
 export const selectCanRefreshSession = (state: AuthStore): boolean =>
   state.isAuthenticated && !state.isLoading;
+
+export const selectShouldTriggerProtectedRouteEffect = (state: AuthStore): boolean =>
+  state.isInitialized && !state.isAuthenticated && !state.isLoading;

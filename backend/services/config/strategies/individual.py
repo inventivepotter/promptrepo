@@ -11,8 +11,10 @@ from sqlmodel import Session
 
 from services.config.models import HostingConfig, HostingType, LLMConfig, LLMConfigScope, OAuthConfig, RepoConfig
 from services.config.config_interface import IConfig
-from database.daos.user import UserLLMDAO, UserDAO
+from database.daos.user.user_llm_dao import UserLLMDAO
+from database.daos.user.user_dao import UserDAO
 from database.models.user import User
+from schemas.oauth_provider_enum import OAuthProvider
 
 
 class IndividualConfig(IConfig):
@@ -32,7 +34,7 @@ class IndividualConfig(IConfig):
             new_user = User(
                 id=user_id,
                 oauth_username=user_id,
-                oauth_provider=user_id,
+                oauth_provider=OAuthProvider.GITHUB,  # Placeholder for individual hosting
             )
             user_dao.save_user(new_user)
 
@@ -95,7 +97,7 @@ class IndividualConfig(IConfig):
         
         return user_configs
     
-    def set_repo_configs(self, db: Session, user_id: str, repo_configs: List[RepoConfig]) -> List[RepoConfig] | None:
+    def set_repo_configs(self, db: Session, user_id: str, repo_configs: List[RepoConfig], remote_repo_service=None) -> List[RepoConfig] | None:
         # Individual hosting does not manage repo configs
         return None
 

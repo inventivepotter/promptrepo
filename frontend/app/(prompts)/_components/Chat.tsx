@@ -11,46 +11,23 @@ import { ChatInput } from './ChatInput';
 import { ChatFooter } from './ChatFooter';
 import { ChatSimpleHeader } from './ChatSimpleHeader';
 import { TokenStats } from './TokenStats';
-import { TemplateVariables } from './TemplateVariables';
-import { ChatState, Tool } from '../_types/ChatState';
-import { chatService } from '@/services/llm/chat/chatService';
-import type { ChatCompletionOptions } from '@/types/Chat';
-import { TemplateUtils } from '@/services/prompts';
+import { Tool } from '../_types/ChatState';
+import { useChatInput, useMessages, useIsSending, useChatActions } from '@/stores/chatStore/hooks';
 
 interface ChatProps {
   // Optional props for customization
   height?: string;
   onMessageSend?: (message: string, tools: string[]) => void;
-  // Prompt data for chat completion
-  promptData?: {
-    prompt: string;
-    model: string;
-    temperature: number;
-    max_tokens: number;
-    top_p: number;
-  };
 }
 
-export function Chat({ height = "700px", onMessageSend, promptData }: ChatProps) {
-  // Use provided promptData
-  const activePrompt = promptData;
+export function Chat({ height = "700px", onMessageSend }: ChatProps) {
+  // Use chatStore hooks
+  const messages = useMessages();
+  const isSending = useIsSending();
+  const { inputMessage, setInputMessage } = useChatInput();
+  const { sendMessage, clearMessages, clearInput, stopStreaming } = useChatActions();
   
-  // Chat state
-  const [chatState, setChatState] = React.useState<ChatState>({
-    messages: [],
-    isLoading: false,
-    selectedTools: [],
-    availableTools: [
-      'search_files',
-      'read_file',
-      'write_to_file',
-      'execute_command',
-      'browser_action',
-    ],
-  });
-
-  const [inputValue, setInputValue] = React.useState('');
-  const [templateVariables, setTemplateVariables] = React.useState<Record<string, string>>({});
+  const [selectedTools, setSelectedTools] = React.useState<string[]>([]);
 
   // Mock tools data - in real implementation this would come from API
   const mockTools: Tool[] = [
@@ -83,139 +60,28 @@ export function Chat({ height = "700px", onMessageSend, promptData }: ChatProps)
 
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const bgColor = useColorModeValue('white', 'gray.800');
-
-  // Extract variables from the active prompt template
-  const promptTemplate = activePrompt?.prompt || '';
-  const extractedVariables = React.useMemo(() => TemplateUtils.extractVariables(promptTemplate), [promptTemplate]);
-
-  // Initialize template variables when extracted variables change
-  React.useEffect(() => {
-    const newVariables: Record<string, string> = {};
-    extractedVariables.forEach(variable => {
-      newVariables[variable] = templateVariables[variable] || '';
-    });
-    setTemplateVariables(newVariables);
-  }, [extractedVariables]);
-
-  // Update a template variable value
-  const updateTemplateVariable = (variableName: string, value: string) => {
-    setTemplateVariables(prev => ({
-      ...prev,
-      [variableName]: value
-    }));
-  };
-
-  // Get resolved template with current variable values
-  const resolvedPrompt = React.useMemo(() => {
-    if (!TemplateUtils.hasVariables(promptTemplate)) return promptTemplate;
-    return TemplateUtils.resolveTemplate(promptTemplate, templateVariables);
-  }, [promptTemplate, templateVariables]);
-
-  const handleToolsChange = (tools: string[]) => {
-    setChatState(prev => ({
-      ...prev,
-      selectedTools: tools
-    }));
-  };
-
   const handleReset = () => {
-    setChatState(prev => ({
-      ...prev,
-      messages: [],
-      isLoading: false
-    }));
-    setInputValue('');
+    // Clear messages using store actions
+    clearMessages();
+    clearInput();
+    setSelectedTools([]);
   };
 
   const handleSendMessage = async (message: string) => {
-    // Check if this is the first message and template variables exist
-    const isFirstMessage = chatState.messages.length === 0;
-    const hasTemplateVariables = extractedVariables.length > 0;
-    
-    // Validate template variables for first message
-    if (isFirstMessage && hasTemplateVariables) {
-      const emptyVariables = extractedVariables.filter(variable =>
-        !templateVariables[variable] || templateVariables[variable].trim() === ''
-      );
-      
-      if (emptyVariables.length > 0) {
-        // Don't proceed - template variables are required for the first message
-        return;
-      }
-    }
-    
-    // Create user message using chat service
-    const userMessage = chatService.createUserMessage(message);
-
-    // Add user message and set loading state
-    const updatedMessages = [...chatState.messages, userMessage];
-    setChatState(prev => ({
-      ...prev,
-      messages: updatedMessages,
-      isLoading: true
-    }));
-
     // Call the optional callback
     if (onMessageSend) {
-      onMessageSend(message, chatState.selectedTools);
+      onMessageSend(message, selectedTools);
     }
 
-    // Convert messages to OpenAI format for API call
-    const openAIMessages = chatService.toOpenAIMessages(updatedMessages);
-
-    // Build completion options from active prompt (prioritize promptData prop)
-    const completionOptions: ChatCompletionOptions | undefined = activePrompt ? {
-      provider: activePrompt.model.includes('/')
-        ? activePrompt.model.split('/')[0]
-        : '',
-      model: activePrompt.model.includes('/')
-        ? activePrompt.model.split('/').slice(1).join('/')
-        : activePrompt.model,
-      temperature: activePrompt.temperature,
-      max_tokens: activePrompt.max_tokens,
-      top_p: activePrompt.top_p,
-    } : undefined;
-
-    // Get system message from active prompt (use resolved template if variables exist)
-    const systemMessage = TemplateUtils.hasVariables(promptTemplate) ? resolvedPrompt : activePrompt?.prompt;
-
-    // Call chat completion middleware (handles all errors and notifications)
-    const aiMessage = await chatService.sendChatCompletion(openAIMessages, undefined, completionOptions, systemMessage);
-    
-    if (aiMessage) {
-      // Success - add AI response
-      setChatState(prev => ({
-        ...prev,
-        messages: [...prev.messages, aiMessage],
-        isLoading: false
-      }));
-    } else {
-      // Error handled by middleware, just add fallback message and stop loading
-      const fallbackMessage = chatService.createAssistantMessage(
-        'Unable to get AI response. Please try again.'
-      );
-
-      setChatState(prev => ({
-        ...prev,
-        messages: [...prev.messages, fallbackMessage],
-        isLoading: false
-      }));
-    }
+    // Use the store's sendMessage action
+    await sendMessage(message);
   };
-
-  const handleStopGeneration = () => {
-    setChatState(prev => ({
-      ...prev,
-      isLoading: false
-    }));
-  };
-
   // Calculate total tokens from all messages
   const calculateTotalTokens = () => {
     let totalInput = 0;
     let totalOutput = 0;
     
-    chatState.messages.forEach(message => {
+    messages.forEach(message => {
       if (message.usage) {
         totalInput += message.usage.prompt_tokens || 0;
         totalOutput += message.usage.completion_tokens || 0;
@@ -226,14 +92,6 @@ export function Chat({ height = "700px", onMessageSend, promptData }: ChatProps)
   };
 
   const { totalInput, totalOutput } = calculateTotalTokens();
-
-  // Check if template variables are missing for first message validation
-  const isFirstMessage = chatState.messages.length === 0;
-  const hasTemplateVariables = extractedVariables.length > 0;
-  const missingTemplateVariables = hasTemplateVariables ? extractedVariables.filter(variable =>
-    !templateVariables[variable] || templateVariables[variable].trim() === ''
-  ) : [];
-  const isDisabledDueToTemplateVariables = isFirstMessage && hasTemplateVariables && missingTemplateVariables.length > 0;
 
   return (
     <Box
@@ -253,7 +111,8 @@ export function Chat({ height = "700px", onMessageSend, promptData }: ChatProps)
           {/* Header - Agent title and reset functionality */}
           <ChatSimpleHeader
             onReset={handleReset}
-            isLoading={chatState.isLoading}
+            isLoading={isSending}
+            messages={messages}
           />
 
           {/* Token Stats at the top */}
@@ -265,52 +124,31 @@ export function Chat({ height = "700px", onMessageSend, promptData }: ChatProps)
           {/* Messages */}
           <Box flex={1} overflow="hidden" minHeight="300px">
             <ChatMessages
-              messages={[
-                // Add system prompt as first message if there are any messages
-                ...(chatState.messages.length > 0 && (TemplateUtils.hasVariables(promptTemplate) ? resolvedPrompt : activePrompt?.prompt)
-                  ? [{
-                      id: 'system-prompt',
-                      role: 'system' as const,
-                      content: TemplateUtils.hasVariables(promptTemplate) ? resolvedPrompt : activePrompt?.prompt || '',
-                      timestamp: new Date()
-                    }]
-                  : []),
-                ...chatState.messages
-              ]}
-              isLoading={chatState.isLoading}
+              messages={messages}
+              isLoading={isSending}
             />
           </Box>
 
           {/* Input */}
           <ChatInput
-            value={inputValue}
-            onChange={setInputValue}
+            value={inputMessage}
+            onChange={setInputMessage}
             onSubmit={handleSendMessage}
-            onStop={handleStopGeneration}
-            isLoading={chatState.isLoading}
-            disabled={isDisabledDueToTemplateVariables}
-            placeholder={isDisabledDueToTemplateVariables
-              ? `Complete template variables to send a message`
-              : "Type your message here..."
-            }
+            onStop={stopStreaming}
+            isLoading={isSending}
+            disabled={false}
+            placeholder="Type your message here..."
             totalInputTokens={totalInput}
             totalOutputTokens={totalOutput}
           />
         </VStack>
       </Box>
 
-      {/* Template Variables Section - Outside height constraint to expand downward */}
-      <TemplateVariables
-        promptTemplate={promptTemplate}
-        templateVariables={templateVariables}
-        onUpdateVariable={updateTemplateVariable}
-      />
-
       {/* Footer - tools only - Outside height constraint so it gets pushed down */}
       <ChatFooter
-        selectedTools={chatState.selectedTools}
+        selectedTools={selectedTools}
         availableTools={mockTools}
-        onToolsChange={handleToolsChange}
+        onToolsChange={setSelectedTools}
       />
     </Box>
   );

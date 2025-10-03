@@ -7,10 +7,12 @@ from fastapi import APIRouter, Request, status
 from middlewares.rest import (
     StandardResponse,
     success_response,
-    AppException
+    AppException,
+    OAuthTokenInvalidException
 )
-from api.deps import SessionServiceDep, RepoLocatorServiceDep, CurrentUserDep, BearerTokenDep
-from services.repo.models import RepositoryList
+from api.deps import CurrentSessionDep, RemoteRepoServiceDep, CurrentUserDep
+from services.remote_repo.models import RepositoryList
+from services.oauth.models import OAuthError
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -53,9 +55,8 @@ router = APIRouter()
 )
 async def get_available_repositories(
     request: Request,
-    session_service: SessionServiceDep,
-    repo_locator_service: RepoLocatorServiceDep,
-    user_id: CurrentUserDep,
+    remote_repo_service: RemoteRepoServiceDep,
+    user_session: CurrentSessionDep,
 ) -> StandardResponse[RepositoryList]:
     """
     Get available repositories.
@@ -73,12 +74,12 @@ async def get_available_repositories(
             "Fetching available repositories",
             extra={
                 "request_id": request_id,
-                "user_id": user_id
+                "user_id": user_session.user_id
             }
         )
         
-        repo_list: RepositoryList = await repo_locator_service.get_repositories(
-            user_id=user_id,
+        repo_list: RepositoryList = await remote_repo_service.get_repositories(
+            user_session=user_session,
         )
         
         logger.info(
@@ -86,7 +87,7 @@ async def get_available_repositories(
             extra={
                 "request_id": request_id,
                 "repo_count": len(repo_list.repositories),
-                "user_id": user_id
+                "user_id": user_session.user_id
             }
         )
         
@@ -94,6 +95,23 @@ async def get_available_repositories(
             data=repo_list,
             message="Repositories retrieved successfully",
             meta={"request_id": request_id}
+        )
+        
+    except OAuthError as e:
+        # Convert OAuth errors to OAuthTokenInvalidException for automatic session invalidation
+        logger.error(
+            f"OAuth error retrieving repositories: {e.message}",
+            extra={
+                "request_id": request_id,
+                "provider": e.provider,
+                "user_id": user_session.user_id,
+                "session_id": user_session.id
+            }
+        )
+        raise OAuthTokenInvalidException(
+            message=e.message,
+            provider=e.provider,
+            session_id=user_session.id
         )
         
     except Exception as e:

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Box,
   VStack,
@@ -12,45 +12,50 @@ import {
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaChevronDown } from 'react-icons/fa';
 import { LuInfo } from 'react-icons/lu';
-import { Prompt } from '@/types/Prompt';
-import { LLMProvider } from '@/types/LLMProvider';
+import { useCurrentPrompt, usePromptActions } from '@/stores/promptStore/hooks';
+import { useConfigStore } from '@/stores/configStore';
 
-interface ModelFieldGroupProps {
-  formData: Partial<Prompt>;
-  configuredModels: Array<LLMProvider>;
-  updateField: (field: keyof Prompt, value: string | number | boolean) => void;
-}
+export function ModelFieldGroup() {
+  const currentPrompt = useCurrentPrompt();
+  const { setCurrentPrompt } = usePromptActions();
+  const config = useConfigStore(state => state.config);
+  const [modelSearchValue, setModelSearchValue] = React.useState('');
 
-export function ModelFieldGroup({
-  formData,
-  configuredModels,
-  updateField
-}: ModelFieldGroupProps) {
-  const [primaryModelSearchValue, setPrimaryModelSearchValue] = React.useState('');
-  const [failoverModelSearchValue, setFailoverModelSearchValue] = React.useState('');
+  // Build provider/model options from config
+  const modelOptions = useMemo(() => {
+    const llmConfigs = config.llm_configs || [];
+    return llmConfigs.map(llm => ({
+      label: `${llm.provider} / ${llm.model}`,
+      value: `${llm.provider}:${llm.model}`,
+      provider: llm.provider,
+      model: llm.model,
+    }));
+  }, [config.llm_configs]);
 
-  // Filter models based on search values
-  const filteredModelsForPrimary = configuredModels.filter(model =>
-    model.name.toLowerCase().includes(primaryModelSearchValue.toLowerCase()) ||
-    model.id.toLowerCase().includes(primaryModelSearchValue.toLowerCase())
-  );
+  if (!currentPrompt) {
+    return null;
+  }
 
-  const filteredModelsForFailover = configuredModels.filter(model =>
-    model.name.toLowerCase().includes(failoverModelSearchValue.toLowerCase()) ||
-    model.id.toLowerCase().includes(failoverModelSearchValue.toLowerCase())
+  const { prompt } = currentPrompt;
+  const currentModelValue = `${prompt.provider}:${prompt.model}`;
+  const failoverModelValue = prompt.failover_model || '';
+
+  const filteredModels = modelOptions.filter(opt =>
+    opt.label.toLowerCase().includes(modelSearchValue.toLowerCase())
   );
 
   return (
-    <Box opacity={!formData.repo ? 0.5 : 1}>
+    <Box>
       <Text fontSize="lg" fontWeight="semibold" mb={4}>
         Model Configuration
       </Text>
       <VStack gap={4} align="stretch">
         <HStack gap={4}>
+          {/* Primary Model */}
           <Box flex={1}>
             <HStack mb={2}>
-              <Text fontWeight={formData.repo ? "medium" : "normal"} color={!formData.repo ? "gray.400" : undefined}>Primary Model</Text>
-              <Tooltip content="Select the main model used for generating responses.">
+              <Text fontWeight="medium">Primary Model</Text>
+              <Tooltip content="Select the primary provider and model used for generating responses.">
                 <Box cursor="help">
                   <LuInfo size={14} opacity={0.6} />
                 </Box>
@@ -58,20 +63,32 @@ export function ModelFieldGroup({
             </HStack>
             <Combobox.Root
               collection={createListCollection({
-                items: filteredModelsForPrimary.map(model => ({
-                  value: model.id,
-                  label: model.name
+                items: filteredModels.map(opt => ({
+                  value: opt.value,
+                  label: opt.label
                 }))
               })}
-              value={[formData.model || '']}
-              onValueChange={(e) => updateField('model', e.value[0] || '')}
-              inputValue={primaryModelSearchValue}
-              onInputValueChange={(e) => setPrimaryModelSearchValue(e.inputValue)}
+              value={[currentModelValue]}
+              onValueChange={(e) => {
+                const selected = modelOptions.find(opt => opt.value === e.value[0]);
+                if (selected) {
+                  setCurrentPrompt({
+                    ...currentPrompt,
+                    prompt: {
+                      ...currentPrompt.prompt,
+                      provider: selected.provider,
+                      model: selected.model,
+                    },
+                  });
+                }
+              }}
+              inputValue={modelSearchValue}
+              onInputValueChange={(e) => setModelSearchValue(e.inputValue)}
               openOnClick
             >
               <Combobox.Control position="relative">
                 <Combobox.Input
-                  placeholder="Select primary model"
+                  placeholder="Select primary provider and model"
                   paddingRight="2rem"
                 />
                 <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
@@ -80,9 +97,9 @@ export function ModelFieldGroup({
               </Combobox.Control>
               <Combobox.Positioner>
                 <Combobox.Content>
-                  {filteredModelsForPrimary.map(model => (
-                    <Combobox.Item key={model.id} item={model.id}>
-                      <Combobox.ItemText>{model.name}</Combobox.ItemText>
+                  {filteredModels.map(opt => (
+                    <Combobox.Item key={opt.value} item={opt.value}>
+                      <Combobox.ItemText>{opt.label}</Combobox.ItemText>
                       <Combobox.ItemIndicator />
                     </Combobox.Item>
                   ))}
@@ -91,9 +108,10 @@ export function ModelFieldGroup({
             </Combobox.Root>
           </Box>
 
+          {/* Failover Model */}
           <Box flex={1}>
             <HStack mb={2}>
-              <Text fontWeight={formData.repo ? "medium" : "normal"} color={!formData.repo ? "gray.400" : undefined}>Failover Model</Text>
+              <Text fontWeight="medium">Failover Model</Text>
               <Tooltip content="Backup model used if the primary model fails or is unavailable.">
                 <Box cursor="help">
                   <LuInfo size={14} opacity={0.6} />
@@ -102,20 +120,28 @@ export function ModelFieldGroup({
             </HStack>
             <Combobox.Root
               collection={createListCollection({
-                items: filteredModelsForFailover.map(model => ({
-                  value: model.id,
-                  label: model.name
+                items: filteredModels.map(opt => ({
+                  value: opt.value,
+                  label: opt.label
                 }))
               })}
-              value={[formData.failover_model || '']}
-              onValueChange={(e) => updateField('failover_model', e.value[0] || '')}
-              inputValue={failoverModelSearchValue}
-              onInputValueChange={(e) => setFailoverModelSearchValue(e.inputValue)}
+              value={[failoverModelValue]}
+              onValueChange={(e) => {
+                setCurrentPrompt({
+                  ...currentPrompt,
+                  prompt: {
+                    ...currentPrompt.prompt,
+                    failover_model: e.value[0] || '',
+                  },
+                });
+              }}
+              inputValue={modelSearchValue}
+              onInputValueChange={(e) => setModelSearchValue(e.inputValue)}
               openOnClick
             >
               <Combobox.Control position="relative">
                 <Combobox.Input
-                  placeholder="Select failover model"
+                  placeholder="Select failover model (optional)"
                   paddingRight="2rem"
                 />
                 <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
@@ -124,9 +150,9 @@ export function ModelFieldGroup({
               </Combobox.Control>
               <Combobox.Positioner>
                 <Combobox.Content>
-                  {filteredModelsForFailover.map(model => (
-                    <Combobox.Item key={model.id} item={model.id}>
-                      <Combobox.ItemText>{model.name}</Combobox.ItemText>
+                  {filteredModels.map(opt => (
+                    <Combobox.Item key={opt.value} item={opt.value}>
+                      <Combobox.ItemText>{opt.label}</Combobox.ItemText>
                       <Combobox.ItemIndicator />
                     </Combobox.Item>
                   ))}

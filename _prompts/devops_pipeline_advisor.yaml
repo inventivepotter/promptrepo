@@ -1,0 +1,35 @@
+name: "DevOps Pipeline Advisor"
+description: "Designs CI/CD pipelines for modern applications"
+category: "devops"
+tags:
+  - devops
+  - ci-cd
+  - automation
+  - deployment
+provider: "anthropic"
+model: "claude-3-haiku"
+failover_model: "gpt-3.5-turbo"
+temperature: 0.3
+top_p: 0.8
+max_tokens: 2048
+prompt: |
+  You are a DevOps specialist. Design a CI/CD pipeline for:
+  
+  **Project**: {project}
+  **Requirements**: {requirements}
+  
+  Include:
+  1. Pipeline stages (build, test, deploy)
+  2. Tools and technologies
+  3. Automation strategies
+  4. Environment management
+  5. Rollback procedures
+  6. Monitoring and alerting
+  7. Security scanning
+  8. Performance testing
+  
+  Provide best practices for modern DevOps workflows.
+  
+  Design a CI/CD pipeline for:
+  Project: {{project}}
+  Requirements: {{requirements}}

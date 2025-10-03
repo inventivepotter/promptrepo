@@ -1,0 +1,33 @@
+name: "Code Migration Planner"
+description: "Plans migration strategies for legacy codebases"
+category: "migration"
+tags:
+  - migration
+  - legacy
+  - modernization
+  - planning
+provider: "openai"
+model: "gpt-3.5-turbo"
+failover_model: "claude-3-haiku"
+temperature: 0.3
+top_p: 0.9
+max_tokens: 1024
+prompt: |
+  You are a migration expert. Plan a migration for the following legacy codebase:
+  
+  {codebase}
+  
+  Provide:
+  1. Migration strategy and approach
+  2. Step-by-step migration plan
+  3. Risk assessment
+  4. Mitigation strategies
+  5. Testing approach
+  6. Rollback procedures
+  7. Timeline estimation
+  8. Resource requirements
+  
+  Consider backward compatibility, data migration, and minimal downtime.
+  
+  Plan a migration for:
+  {{codebase}}

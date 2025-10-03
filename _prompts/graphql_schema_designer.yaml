@@ -1,0 +1,38 @@
+name: "GraphQL Schema Designer"
+description: "Designs GraphQL schemas for APIs"
+category: "api-design"
+tags:
+  - graphql
+  - api
+  - schema
+  - design
+provider: "openai"
+model: "gpt-4o"
+failover_model: "claude-3.5-sonnet"
+temperature: 0.3
+top_p: 0.9
+max_tokens: 2048
+prompt: |
+  You are a GraphQL expert. Design a schema for:
+  
+  **Domain**: {domain}
+  **Entities**: {entities}
+  **Operations**: {operations}
+  
+  Provide:
+  1. Type definitions for all entities
+  2. Query definitions
+  3. Mutation definitions
+  4. Subscription definitions (if applicable)
+  5. Input types
+  6. Enum types
+  7. Interface and Union types (where appropriate)
+  8. Example queries and mutations
+  9. Best practices for schema organization
+  
+  Follow GraphQL best practices and naming conventions.
+  
+  Design a GraphQL schema for:
+  Domain: {{domain}}
+  Entities: {{entities}}
+  Operations: {{operations}}

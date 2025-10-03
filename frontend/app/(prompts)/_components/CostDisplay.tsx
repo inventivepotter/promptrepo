@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { pricingService } from '@/services/llm/pricing/pricingService';
 import { CostCalculation, TokenUsage } from '@/types/Pricing';
+import { usePricingData, useIsLoading } from '@/stores/pricingStore/hooks';
 
 interface CostDisplayProps {
   modelName: string;
@@ -11,32 +12,26 @@ interface CostDisplayProps {
   showDetails?: boolean;
 }
 
-export default function CostDisplay({ 
-  modelName, 
-  tokenUsage, 
+export default function CostDisplay({
+  modelName,
+  tokenUsage,
   className = '',
-  showDetails = false 
+  showDetails = false
 }: CostDisplayProps) {
-  const [costCalculation, setCostCalculation] = useState<CostCalculation | null>(null);
-  const [loading, setLoading] = useState(false);
+  const pricingData = usePricingData();
+  const loading = useIsLoading();
 
-  useEffect(() => {
-    calculateCost();
-  }, [modelName, tokenUsage]);
-
-  const calculateCost = async () => {
-    setLoading(true);
+  // Calculate cost using memoization
+  const costCalculation = useMemo<CostCalculation | null>(() => {
+    if (!pricingData) return null;
+    
     try {
-      await pricingService.getPricingData();
-      const calculation = pricingService.calculateCost(modelName, tokenUsage);
-      setCostCalculation(calculation);
+      return pricingService.calculateCost(modelName, tokenUsage);
     } catch (error) {
       console.warn('Failed to calculate cost:', error);
-      setCostCalculation(null);
-    } finally {
-      setLoading(false);
+      return null;
     }
-  };
+  }, [modelName, tokenUsage, pricingData]);
 
   if (loading) {
     return (

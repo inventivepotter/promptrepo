@@ -1,0 +1,34 @@
+name: "Technical Documentation Writer"
+description: "Creates comprehensive technical documentation from code and requirements"
+category: "documentation"
+tags:
+  - documentation
+  - technical-writing
+  - markdown
+provider: "lmstudio"
+model: "qwen/qwen3-30b-a3b-2507"
+failover_model: "gpt-4o"
+temperature: 0.4
+top_p: 0.95
+max_tokens: 4096
+prompt: |
+  You are a technical documentation expert. Create clear, comprehensive documentation for the following:
+  
+  **Task**: {task_type}
+  **Context**: {context}
+  **Requirements**: {requirements}
+  
+  Include:
+  - Overview and purpose
+  - Prerequisites
+  - Step-by-step instructions
+  - Code examples
+  - Troubleshooting section
+  - Best practices
+  
+  Write in markdown format.
+  
+  Please create documentation for:
+  Task Type: {{task_type}}
+  Context: {{context}}
+  Requirements: {{requirements}}

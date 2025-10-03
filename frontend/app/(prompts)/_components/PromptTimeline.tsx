@@ -6,17 +6,8 @@ import {
   HStack,
   Text,
 } from '@chakra-ui/react';
-import { useColorModeValue } from '../../../components/ui/color-mode';
+import { useColorModeValue } from '@/components/ui/color-mode';
 import { CommitInfo } from '@/types/Prompt';
-
-interface PromptCommit {
-  id: string;
-  message: string;
-  author: string;
-  timestamp: string;
-  hash: string;
-  isLatest?: boolean;
-}
 
 interface PromptTimelineProps {
   commits: (CommitInfo & { id?: string; isLatest?: boolean })[];
@@ -35,7 +26,7 @@ function TimelineNodeCompact({ commit, isLatest }: { commit: CommitInfo & { id?:
           width={isLatest ? "15px" : "14px"}
           height={isLatest ? "15px" : "14px"}
           borderRadius="full"
-          bg="blue.500"
+          bg="bg.emphasized"
           border="2px solid"
           borderColor="gray.200"
           animation={isLatest ? "pulse 1s infinite" : undefined}
@@ -58,7 +49,7 @@ function TimelineNodeCompact({ commit, isLatest }: { commit: CommitInfo & { id?:
               color="bg.emphasis"
               fontWeight="semibold"
             >
-              {commit.hash.substring(0, 7)}
+              {commit.commit_id.substring(0, 7)}
             </Text>
             <Text
               fontSize="xs"
@@ -71,7 +62,7 @@ function TimelineNodeCompact({ commit, isLatest }: { commit: CommitInfo & { id?:
             <Text fontSize="xs" color={metaColor} mt={1}>
               {(() => {
                 const now = new Date();
-                const commitDate = new Date(commit.date);
+                const commitDate = new Date(commit.timestamp);
                 const diffMs = now.getTime() - commitDate.getTime();
                 const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
                 const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -99,7 +90,7 @@ export function PromptTimeline({ commits }: PromptTimelineProps) {
   const lineColor = useColorModeValue('gray.300', 'gray.600');
 
   return (
-    <Box position="relative" height="100%" width="100%">
+    <Box position="relative" height="120%" width="100%">
       {/* Continuous Timeline Line - extends full height */}
       <Box
         position="absolute"
@@ -115,7 +106,7 @@ export function PromptTimeline({ commits }: PromptTimelineProps) {
         <Box position="relative" mt="-15px">
           {commits.map((commit, index) => (
             <TimelineNodeCompact
-              key={commit.id || commit.hash || index}
+              key={commit.id || commit.commit_id || index}
               commit={commit}
               isLatest={commit.isLatest || index === 0}
             />

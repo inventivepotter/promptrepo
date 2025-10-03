@@ -3,8 +3,9 @@ Unit tests for the refresh session endpoint.
 """
 import pytest
 from unittest.mock import Mock
+from fastapi import Response
 
-from api.v0.auth.refresh import refresh_session, RefreshResponseData
+from api.v0.auth.refresh import refresh_session
 from middlewares.rest import StandardResponse, AppException, AuthenticationException
 from services.auth.models import SessionNotFoundError, TokenValidationError, AuthError
 
@@ -22,11 +23,13 @@ class TestRefreshSession:
         """Test successful session refresh"""
         # Arrange
         token = "valid_session_token"
+        mock_response = Mock(spec=Response)
         mock_auth_service.refresh_session.return_value = sample_refresh_response
         
         # Act
         result = await refresh_session(
             request=mock_request,
+            response=mock_response,
             token=token,
             auth_service=mock_auth_service
         )
@@ -37,13 +40,8 @@ class TestRefreshSession:
         assert result.message == "Session refreshed successfully"
         assert result.meta.request_id == "test_request_id"
         
-        # Check response data
-        assert result.data is not None
-        # Data is serialized as dict by success_response function
-        response_data = result.data
-        assert isinstance(response_data, dict)
-        assert response_data["sessionToken"] == "new_session_token"
-        assert response_data["expiresAt"] == "2024-01-01T12:00:00Z"
+        # Check response data is None (standardized response)
+        assert result.data is None
         
         # Verify service was called with correct parameters
         mock_auth_service.refresh_session.assert_called_once()
@@ -60,17 +58,19 @@ class TestRefreshSession:
         """Test refresh when session is not found"""
         # Arrange
         token = "invalid_session_token"
+        mock_response = Mock(spec=Response)
         mock_auth_service.refresh_session.side_effect = SessionNotFoundError("Invalid session token")
         
         # Act & Assert
         with pytest.raises(AuthenticationException) as exc_info:
             await refresh_session(
                 request=mock_request,
+                response=mock_response,
                 token=token,
                 auth_service=mock_auth_service
             )
         
-        assert "Invalid session token" in str(exc_info.value)
+        assert "Authentication required" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_refresh_session_token_validation_error(
@@ -81,17 +81,19 @@ class TestRefreshSession:
         """Test refresh when OAuth token validation fails"""
         # Arrange
         token = "session_with_invalid_oauth_token"
+        mock_response = Mock(spec=Response)
         mock_auth_service.refresh_session.side_effect = TokenValidationError("Invalid OAuth token")
         
         # Act & Assert
         with pytest.raises(AuthenticationException) as exc_info:
             await refresh_session(
                 request=mock_request,
+                response=mock_response,
                 token=token,
                 auth_service=mock_auth_service
             )
         
-        assert "Invalid OAuth token" in str(exc_info.value)
+        assert "Authentication failed" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_refresh_session_auth_error(
@@ -102,12 +104,14 @@ class TestRefreshSession:
         """Test refresh when auth error occurs"""
         # Arrange
         token = "session_token"
+        mock_response = Mock(spec=Response)
         mock_auth_service.refresh_session.side_effect = AuthError("Auth service error")
         
         # Act & Assert
         with pytest.raises(AppException) as exc_info:
             await refresh_session(
                 request=mock_request,
+                response=mock_response,
                 token=token,
                 auth_service=mock_auth_service
             )
@@ -123,12 +127,14 @@ class TestRefreshSession:
         """Test refresh when unexpected error occurs"""
         # Arrange
         token = "session_token"
+        mock_response = Mock(spec=Response)
         mock_auth_service.refresh_session.side_effect = Exception("Unexpected error")
         
         # Act & Assert
         with pytest.raises(AppException) as exc_info:
             await refresh_session(
                 request=mock_request,
+                response=mock_response,
                 token=token,
                 auth_service=mock_auth_service
             )
@@ -145,11 +151,13 @@ class TestRefreshSession:
         """Test refresh with empty token string"""
         # Arrange
         token = ""
+        mock_response = Mock(spec=Response)
         mock_auth_service.refresh_session.return_value = sample_refresh_response
         
         # Act
         result = await refresh_session(
             request=mock_request,
+            response=mock_response,
             token=token,
             auth_service=mock_auth_service
         )
@@ -171,11 +179,13 @@ class TestRefreshSession:
         request.state = Mock()
         request.state.request_id = None
         token = "session_token"
+        mock_response = Mock(spec=Response)
         mock_auth_service.refresh_session.return_value = sample_refresh_response
         
         # Act
         result = await refresh_session(
             request=request,
+            response=mock_response,
             token=token,
             auth_service=mock_auth_service
         )
@@ -195,20 +205,17 @@ class TestRefreshSession:
         """Test that response data format matches expected structure"""
         # Arrange
         token = "session_token"
+        mock_response = Mock(spec=Response)
         mock_auth_service.refresh_session.return_value = sample_refresh_response
         
         # Act
         result = await refresh_session(
             request=mock_request,
+            response=mock_response,
             token=token,
             auth_service=mock_auth_service
         )
         
         # Assert
-        assert result.data is not None
-        response_data = result.data
-        assert isinstance(response_data, dict)
-        assert 'sessionToken' in response_data
-        assert 'expiresAt' in response_data
-        assert isinstance(response_data['sessionToken'], str)
-        assert isinstance(response_data['expiresAt'], str)
+        # Response data should be None for standardized response
+        assert result.data is None

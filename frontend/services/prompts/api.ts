@@ -1,59 +1,92 @@
 import httpClient from '@/lib/httpClient';
 import type { OpenApiResponse } from '@/types/OpenApiResponse';
-import type { Prompt } from '@/types/Prompt';
+import type { components } from '@/types/generated/api';
 
-// Note: Prompt endpoints may not be implemented in backend yet
-// These are placeholders that follow the OpenAPI pattern
+// Type aliases for better readability
+type PromptMeta = components['schemas']['PromptMeta'];
+type PromptData = components['schemas']['PromptData'];
+type PromptDataUpdate = components['schemas']['PromptDataUpdate'];
+type DiscoverRepositoriesRequest = components['schemas']['DiscoverRepositoriesRequest'];
 
+/**
+ * Prompts API client matching backend endpoints
+ * Uses the real backend API endpoints for prompt operations
+ */
 export const promptsApi = {
-  // Get all prompts
-  getPrompts: async (): Promise<OpenApiResponse<Prompt[]>> => {
-    return await httpClient.get<Prompt[]>('/api/v0/prompts');
+  /**
+   * Get individual prompt by repository name and file path
+   * GET /api/v0/prompts?repo_name=...&file_path=...
+   */
+  getPrompt: async (repoName: string, filePath: string): Promise<OpenApiResponse<PromptMeta>> => {
+    const searchParams = new URLSearchParams();
+    searchParams.append('repo_name', repoName);
+    searchParams.append('file_path', filePath);
+    
+    return await httpClient.get<PromptMeta>(`/api/v0/prompts/?${searchParams.toString()}`);
   },
 
-  // Get individual prompt with commit history
-  getPrompt: async (id: string): Promise<OpenApiResponse<Prompt>> => {
-    return await httpClient.get<Prompt>(`/api/v0/prompts/${id}`);
+  /**
+   * Create a new prompt
+   * POST /api/v0/prompts?repo_name=...&file_path=...
+   */
+  createPrompt: async (
+    repoName: string,
+    filePath: string,
+    promptData: PromptData
+  ): Promise<OpenApiResponse<PromptMeta>> => {
+    const searchParams = new URLSearchParams();
+    searchParams.append('repo_name', repoName);
+    searchParams.append('file_path', filePath);
+    
+    return await httpClient.post<PromptMeta>(
+      `/api/v0/prompts/?${searchParams.toString()}`,
+      promptData
+    );
   },
 
-  // Update a prompt
-  updatePrompt: async (updates: Partial<Prompt>): Promise<OpenApiResponse<Prompt>> => {
-    if (!updates.id) {
-      throw new Error('Prompt ID is required for updates');
-    }
-
-    return await httpClient.patch<Prompt>(
-      `/api/v0/prompts/${updates.id}`,
+  /**
+   * Update a prompt
+   * PUT /api/v0/prompts?repo_name=...&file_path=...
+   */
+  updatePrompt: async (
+    repoName: string,
+    filePath: string,
+    updates: PromptDataUpdate
+  ): Promise<OpenApiResponse<PromptMeta>> => {
+    const searchParams = new URLSearchParams();
+    searchParams.append('repo_name', repoName);
+    searchParams.append('file_path', filePath);
+    
+    return await httpClient.put<PromptMeta>(
+      `/api/v0/prompts/?${searchParams.toString()}`,
       updates
     );
   },
 
-  // Create a new prompt
-  createPrompt: async (prompt: Omit<Prompt, 'id' | 'created_at' | 'updated_at'>): Promise<OpenApiResponse<Prompt>> => {
-    return await httpClient.post<Prompt>(
-      '/api/v0/prompts',
-      prompt
-    );
+  /**
+   * Delete a prompt
+   * DELETE /api/v0/prompts?repo_name=...&file_path=...
+   */
+  deletePrompt: async (repoName: string, filePath: string): Promise<OpenApiResponse<null>> => {
+    const searchParams = new URLSearchParams();
+    searchParams.append('repo_name', repoName);
+    searchParams.append('file_path', filePath);
+    
+    return await httpClient.delete<null>(`/api/v0/prompts/?${searchParams.toString()}`);
   },
 
-  // Delete a prompt
-  deletePrompt: async (id: string): Promise<OpenApiResponse<void>> => {
-    return await httpClient.delete<void>(`/api/v0/prompts/${id}`);
-  },
-
-  // Commit and push specific prompt
-  commitPushPrompt: async (promptId: string): Promise<OpenApiResponse<void>> => {
-    return await httpClient.post<void>('/api/v0/prompts/commit-push', {
-      prompt_id: promptId
+  /**
+   * Discover prompts from one or more repositories
+   * POST /api/v0/prompts/discover
+   */
+  discoverAllPromptsFromRepos: async (repoNames: string[]): Promise<OpenApiResponse<PromptMeta[]>> => {
+    return await httpClient.post<PromptMeta[]>('/api/v0/prompts/discover', {
+      repo_names: repoNames
     });
   },
-
-  // Commit and push all prompts
-  commitPushAll: async (): Promise<OpenApiResponse<void>> => {
-    return await httpClient.post<void>('/api/v0/prompts/commit-push', {
-      all: true
-    });
-  }
 };
+
+// Re-export types for convenience
+export type { PromptMeta, PromptData, PromptDataUpdate, DiscoverRepositoriesRequest };
 
 export default promptsApi;
