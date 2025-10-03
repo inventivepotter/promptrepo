@@ -314,31 +314,56 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                 borderWidth="1px"
                 borderColor={borderColor}
                 width="100%"
-            bg="transparent"
+                bg="transparent"
               >
                 <Card.Body p={8}>
-                  <Text fontWeight="bold" mb={4}>Selected Repositories</Text>
-                <VStack gap={2}>
-                  {config.repo_configs.map((repoConfig, index) => {
-                    const repo = availableRepos.find(r => r.full_name === repoConfig.repo_name);
-                    return (
-                      <HStack key={index} justify="space-between" width="100%" p={2} bg="bg.subtle" borderRadius="md">
-                        <Text fontSize="sm" fontWeight="400">
-                          {repo?.name || repoConfig.repo_name} ({repoConfig.base_branch})
-                        </Text>
-                        <Button
-                          size="sm"
-                          onClick={() => handleRemoveRepoConfig(index)}
-                          disabled={disabled || isSaving}
+                  <Text fontWeight="semibold" fontSize="lg" mb={6}>Selected Repositories</Text>
+                  <VStack gap={4}>
+                    {config.repo_configs.map((repoConfig, index) => {
+                      const repo = availableRepos.find(r => r.full_name === repoConfig.repo_name);
+                      return (
+                        <Card.Root
+                          key={index}
+                          width="100%"
+                          bg="bg.panel"
+                          borderWidth="1px"
+                          borderColor="border.subtle"
+                          transition="all 0.2s"
+                          _hover={{
+                            borderColor: "border.emphasized",
+                            shadow: "sm"
+                          }}
                         >
-                          Remove
-                        </Button>
-                      </HStack>
-                    );
-                  })}
-                </VStack>
-              </Card.Body>
-            </Card.Root>
+                          <Card.Body p={5}>
+                            <HStack justify="space-between" width="100%">
+                              <HStack gap={3} flex={1} pr={2}>
+                                <Box minWidth="90px">
+                                  <Text fontSize="xs" color="fg.muted" mb={1}>Repository</Text>
+                                  <Text fontSize="sm" fontWeight="semibold">{repo?.name || repoConfig.repo_name}</Text>
+                                </Box>
+                                <Box height="40px" width="1px" bg="border.subtle" />
+                                <Box flex={1} px={2}>
+                                  <Text fontSize="xs" color="fg.muted" mb={1}>Branch</Text>
+                                  <Text fontSize="sm" fontWeight="semibold">{repoConfig.base_branch}</Text>
+                                </Box>
+                              </HStack>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                colorScheme="red"
+                                onClick={() => handleRemoveRepoConfig(index)}
+                                disabled={disabled || isSaving}
+                              >
+                                Remove
+                              </Button>
+                            </HStack>
+                          </Card.Body>
+                        </Card.Root>
+                      );
+                    })}
+                  </VStack>
+                </Card.Body>
+              </Card.Root>
             )}
           </VStack>
         )}

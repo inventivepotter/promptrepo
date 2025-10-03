@@ -320,29 +320,83 @@ export default function LLMConfigManager({
             bg="transparent"
           >
             <Card.Body p={8}>
-            <Text fontWeight="bold" mb={4}>Configured LLM Providers</Text>
-            <VStack gap={2}>
+            <Text fontWeight="semibold" fontSize="lg" mb={6}>Configured LLM Providers</Text>
+            <VStack gap={4}>
               {llmConfigs.map((config, index) => {
                 const isOrgScope = config.scope === 'organization';
                 return (
-                  <HStack key={index} justify="space-between" width="100%" p={2} bg="bg.subtle" borderRadius="md">
-                    <Text fontSize="sm" fontWeight="300">
-                      Provider: <Text as="span" fontWeight="600">{config.provider}</Text> | Model: <Text as="span" fontWeight="bold">{config.model}</Text>
-                      {!isOrgScope && config.api_base_url && (
-                        <> | API Base: <Text as="span" fontWeight="600">{config.api_base_url}</Text></>
-                      )}
-                      {isOrgScope && (
-                        <Text as="span" fontSize="xs" color="gray.500" ml={2}>(Organization Scoped)</Text>
-                      )}
-                    </Text>
-                    <Button
-                      size="sm"
-                      onClick={() => handleRemoveConfig(index)}
-                      disabled={disabled || isOrgScope}
-                    >
-                      Remove
-                    </Button>
-                  </HStack>
+                  <Card.Root
+                    key={index}
+                    width="100%"
+                    bg="bg.panel"
+                    borderWidth="1px"
+                    borderColor="border.subtle"
+                    transition="all 0.2s"
+                    _hover={{
+                      borderColor: isOrgScope ? "border.subtle" : "border.emphasized",
+                      shadow: "sm"
+                    }}
+                  >
+                    <Card.Body p={5}>
+                      <HStack justify="space-between" width="100%">
+                        <HStack gap={3} flex={1}>
+                          <Box minWidth="70px" pr={2}>
+                            <Text fontSize="xs" color="fg.muted" mb={1}>Provider</Text>
+                            <Text fontSize="sm" fontWeight="semibold">{config.provider}</Text>
+                          </Box>
+                          <Box height="40px" width="1px" bg="border.subtle" />
+                          <Box px={2}>
+                            <Text fontSize="xs" color="fg.muted" mb={1}>Model</Text>
+                            <Text fontSize="sm" fontWeight="semibold">{config.model}</Text>
+                          </Box>
+                          {!isOrgScope && config.api_base_url && (
+                            <>
+                              <Box height="40px" width="1px" bg="border.subtle" />
+                              <Box px={2}>
+                                <Text fontSize="xs" color="fg.muted" mb={1}>API Base</Text>
+                                <Text
+                                  fontSize="sm"
+                                  fontWeight="medium"
+                                  maxWidth="200px"
+                                  overflow="hidden"
+                                  textOverflow="ellipsis"
+                                  whiteSpace="nowrap"
+                                >
+                                  {config.api_base_url}
+                                </Text>
+                              </Box>
+                            </>
+                          )}
+                        </HStack>
+                        <HStack gap={3}>
+                          {isOrgScope && (
+                            <Box
+                              px={2}
+                              py={1}
+                              bg="bg.subtle"
+                              borderRadius="sm"
+                              borderWidth="1px"
+                              borderColor="border.subtle"
+                            >
+                              <Text fontSize="xs" fontWeight="normal" color="fg.muted">
+                                Organization Scoped
+                              </Text>
+                            </Box>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            colorScheme="red"
+                            onClick={() => handleRemoveConfig(index)}
+                            disabled={disabled || isOrgScope}
+                            opacity={isOrgScope ? 0.5 : 1}
+                          >
+                            Remove
+                          </Button>
+                        </HStack>
+                      </HStack>
+                    </Card.Body>
+                  </Card.Root>
                 );
               })}
             </VStack>
