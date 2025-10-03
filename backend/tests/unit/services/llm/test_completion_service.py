@@ -10,7 +10,7 @@ import time
 from unittest.mock import Mock, AsyncMock, patch, MagicMock
 from typing import AsyncGenerator
 
-from services.llm.completion_service import ChatCompletionService, chat_completion_service
+from services.llm.completion_service import ChatCompletionService
 from services.llm.models import (
     ChatCompletionRequest,
     ChatMessage,
@@ -33,19 +33,16 @@ class TestChatCompletionService:
     
     def setup_method(self):
         """Set up test fixtures"""
-        self.service = ChatCompletionService()
         self.mock_config_service = Mock()
-        self.service.config_service = self.mock_config_service
+        self.service = ChatCompletionService(config_service=self.mock_config_service)
     
     def test_init(self):
         """Test ChatCompletionService initialization"""
-        service = ChatCompletionService()
+        mock_config = Mock()
+        service = ChatCompletionService(config_service=mock_config)
         assert hasattr(service, 'logger')
         assert hasattr(service, 'config_service')
-    
-    def test_singleton_instance(self):
-        """Test that chat_completion_service is a singleton instance"""
-        assert isinstance(chat_completion_service, ChatCompletionService)
+        assert service.config_service == mock_config
     
     def test_build_completion_params_basic(self):
         """Test build_completion_params with basic parameters"""
@@ -134,6 +131,7 @@ class TestChatCompletionService:
     def test_get_api_details_success(self):
         """Test _get_api_details with valid configuration"""
         llm_config = LLMConfig(
+            id="test-config-1",
             provider="openai",
             model="gpt-4",
             api_key="test-api-key",
@@ -150,6 +148,7 @@ class TestChatCompletionService:
     def test_get_api_details_no_base_url(self):
         """Test _get_api_details with no base URL configured"""
         llm_config = LLMConfig(
+            id="test-config-2",
             provider="openai",
             model="gpt-4",
             api_key="test-api-key",
@@ -165,6 +164,7 @@ class TestChatCompletionService:
     def test_get_api_details_no_matching_config(self):
         """Test _get_api_details when no matching configuration is found"""
         other_config = LLMConfig(
+            id="test-config-3",
             provider="anthropic",
             model="claude-3",
             api_key="other-key"
@@ -412,7 +412,7 @@ class TestChatCompletionService:
     async def test_execute_non_streaming_completion_success(self, mock_acompletion):
         """Test execute_non_streaming_completion with successful response"""
         # Setup mocks
-        llm_config = LLMConfig(provider="openai", model="gpt-4", api_key="test-key")
+        llm_config = LLMConfig(id="test-config-4", provider="openai", model="gpt-4", api_key="test-key")
         self.mock_config_service.get_llm_configs.return_value = [llm_config]
         
         # Mock successful response
@@ -474,7 +474,7 @@ class TestChatCompletionService:
     async def test_execute_non_streaming_completion_no_content(self, mock_acompletion):
         """Test execute_non_streaming_completion when no content is returned"""
         # Setup mocks
-        llm_config = LLMConfig(provider="openai", model="gpt-4", api_key="test-key")
+        llm_config = LLMConfig(id="test-config-5", provider="openai", model="gpt-4", api_key="test-key")
         self.mock_config_service.get_llm_configs.return_value = [llm_config]
         
         # Mock response with no content
@@ -506,7 +506,7 @@ class TestChatCompletionService:
     async def test_stream_completion_success(self, mock_acompletion):
         """Test stream_completion with successful streaming"""
         # Setup mocks
-        llm_config = LLMConfig(provider="openai", model="gpt-4", api_key="test-key")
+        llm_config = LLMConfig(id="test-config-6", provider="openai", model="gpt-4", api_key="test-key")
         self.mock_config_service.get_llm_configs.return_value = [llm_config]
         
         # Mock streaming chunks
@@ -567,7 +567,7 @@ class TestChatCompletionService:
     async def test_stream_completion_exception(self, mock_acompletion):
         """Test stream_completion when any-llm raises exception"""
         # Setup mocks
-        llm_config = LLMConfig(provider="openai", model="gpt-4", api_key="test-key")
+        llm_config = LLMConfig(id="test-config-7", provider="openai", model="gpt-4", api_key="test-key")
         self.mock_config_service.get_llm_configs.return_value = [llm_config]
         
         mock_acompletion.side_effect = Exception("API error")

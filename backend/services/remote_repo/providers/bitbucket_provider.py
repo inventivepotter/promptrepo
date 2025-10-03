@@ -86,7 +86,7 @@ class BitbucketRepoLocator(IRemoteRepo):
             raise OAuthError(f"Unexpected error: {str(e)}", "bitbucket")
     
     async def get_repository_branches(self, owner: str, repo: str) -> RepositoryBranchesResponse:
-        """Get branches from Bitbucket repository."""
+        """Get branches from Bitbucket repository with pagination support."""
         try:
             # First get default branch
             repo_response = await self.http_client.get(
@@ -106,29 +106,53 @@ class BitbucketRepoLocator(IRemoteRepo):
             repo_data = repo_response.json()
             default_branch = repo_data.get("mainbranch", {}).get("name", "main")
             
-            # Get all branches
-            branches_response = await self.http_client.get(
-                f"https://api.bitbucket.org/2.0/repositories/{owner}/{repo}/refs/branches",
-                headers={
-                    "Authorization": f"Bearer {self.access_token}"
-                }
-            )
+            # Get all branches with pagination support
+            all_branches = []
+            page = 1
+            pagelen = 100  # Bitbucket's maximum pagelen value
             
-            if branches_response.status_code != 200:
-                logger.error(f"Failed to get branches: {branches_response.status_code}")
-                # Return just the default branch if we can't get branches
-                return RepositoryBranchesResponse(
-                    branches=[BranchInfo(name=default_branch, is_default=True)],
-                    default_branch=default_branch
+            while True:
+                branches_response = await self.http_client.get(
+                    f"https://api.bitbucket.org/2.0/repositories/{owner}/{repo}/refs/branches",
+                    headers={
+                        "Authorization": f"Bearer {self.access_token}"
+                    },
+                    params={
+                        "pagelen": pagelen,
+                        "page": page
+                    }
                 )
+                
+                if branches_response.status_code != 200:
+                    logger.error(f"Failed to get branches: {branches_response.status_code}")
+                    # Return just the default branch if we can't get branches
+                    if not all_branches:
+                        return RepositoryBranchesResponse(
+                            branches=[BranchInfo(name=default_branch, is_default=True)],
+                            default_branch=default_branch
+                        )
+                    break
+                
+                branches_data = branches_response.json()
+                values = branches_data.get("values", [])
+                
+                if not values:
+                    break
+                
+                all_branches.extend(values)
+                
+                # Check if there's a next page using Bitbucket's pagination
+                if not branches_data.get("next"):
+                    break
+                
+                page += 1
             
-            branches_data = branches_response.json()
             branches = [
                 BranchInfo(
                     name=branch["name"],
                     is_default=(branch["name"] == default_branch)
                 )
-                for branch in branches_data.get("values", [])
+                for branch in all_branches
             ]
             
             return RepositoryBranchesResponse(

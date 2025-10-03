@@ -79,7 +79,7 @@ class GitLabRepoLocator(IRemoteRepo):
             raise OAuthError(f"Unexpected error: {str(e)}", "gitlab")
     
     async def get_repository_branches(self, owner: str, repo: str) -> RepositoryBranchesResponse:
-        """Get branches from GitLab repository."""
+        """Get branches from GitLab repository with pagination support."""
         try:
             # GitLab uses URL-encoded project paths
             project_path = f"{owner}/{repo}".replace("/", "%2F")
@@ -102,29 +102,51 @@ class GitLabRepoLocator(IRemoteRepo):
             repo_data = repo_response.json()
             default_branch = repo_data.get("default_branch", "main")
             
-            # Get all branches
-            branches_response = await self.http_client.get(
-                f"https://gitlab.com/api/v4/projects/{project_path}/repository/branches",
-                headers={
-                    "Authorization": f"Bearer {self.access_token}"
-                }
-            )
+            # Get all branches with pagination support
+            all_branches = []
+            page = 1
+            per_page = 100  # GitLab's maximum per_page value
             
-            if branches_response.status_code != 200:
-                logger.error(f"Failed to get branches: {branches_response.status_code}")
-                # Return just the default branch if we can't get branches
-                return RepositoryBranchesResponse(
-                    branches=[BranchInfo(name=default_branch, is_default=True)],
-                    default_branch=default_branch
+            while True:
+                branches_response = await self.http_client.get(
+                    f"https://gitlab.com/api/v4/projects/{project_path}/repository/branches",
+                    headers={
+                        "Authorization": f"Bearer {self.access_token}"
+                    },
+                    params={
+                        "per_page": per_page,
+                        "page": page
+                    }
                 )
+                
+                if branches_response.status_code != 200:
+                    logger.error(f"Failed to get branches: {branches_response.status_code}")
+                    # Return just the default branch if we can't get branches
+                    if not all_branches:
+                        return RepositoryBranchesResponse(
+                            branches=[BranchInfo(name=default_branch, is_default=True)],
+                            default_branch=default_branch
+                        )
+                    break
+                
+                branches_data = branches_response.json()
+                if not branches_data:
+                    break
+                
+                all_branches.extend(branches_data)
+                
+                # Check if there are more pages
+                if len(branches_data) < per_page:
+                    break
+                
+                page += 1
             
-            branches_data = branches_response.json()
             branches = [
                 BranchInfo(
                     name=branch["name"],
                     is_default=(branch["name"] == default_branch)
                 )
-                for branch in branches_data
+                for branch in all_branches
             ]
             
             return RepositoryBranchesResponse(

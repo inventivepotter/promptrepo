@@ -240,30 +240,33 @@ class SessionService:
             logger.error(f"Failed to cleanup expired sessions: {e}")
             return 0
 
-    def is_session_valid(self, session_id: str, ttl_minutes: int = 1440) -> bool:
+    def is_session_valid(self, session_id: str, ttl_minutes: int = 1440) -> Optional[UserSessions]:
         """
-        Check if session is valid (exists and not expired).
+        Check if session is valid (exists and not expired) and return it.
 
         Args:
             session_id: Session identifier
             ttl_minutes: Time-to-live in minutes
 
         Returns:
-            True if session is valid, False otherwise
+            UserSessions object if session is valid, None otherwise
         """
         try:
             user_session = self.get_session_by_id(session_id)
 
             if not user_session:
-                return False
+                return None
 
             # Check if session is expired
             ttl_seconds = ttl_minutes * 60
-            return not self.user_session_dao.is_expired(user_session, ttl_seconds)
+            if self.user_session_dao.is_expired(user_session, ttl_seconds):
+                return None
+            
+            return user_session
 
         except Exception as e:
             logger.error(f"Failed to validate session {session_id}: {e}")
-            return False
+            return None
 
     def get_oauth_token_and_user_info(self, session_id: str) -> Optional[OAuthTokenUserInfo]:
         """

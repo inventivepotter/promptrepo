@@ -21,7 +21,7 @@ export const Toaster = () => {
         {(toast) => (
           <Toast.Root width={{ md: "sm" }}>
             {toast.type === "loading" ? (
-              <Spinner size="sm" color="blue.solid" />
+              <Spinner size="sm"/>
             ) : (
               <Toast.Indicator />
             )}
@@ -30,7 +30,7 @@ export const Toaster = () => {
                 <Toast.Title
                   fontSize={toast.type === "success" ? "sm" : "md"}
                   fontWeight={toast.type === "success" ? "normal" : "bold"}
-                  color={toast.type === "success" ? "green.600" : undefined}
+                  color={toast.type === "success" ? "white" : undefined}
                   style={toast.type === "success" ? { letterSpacing: "0.01em" } : undefined}
                 >
                   {toast.title}
@@ -40,7 +40,7 @@ export const Toaster = () => {
                 <Toast.Description
                   fontSize={toast.type === "success" ? "xs" : "sm"}
                   fontWeight={toast.type === "success" ? "normal" : "medium"}
-                  color={toast.type === "success" ? "green.500" : undefined}
+                  color={toast.type === "success" ? "gray.200" : undefined}
                   style={toast.type === "success" ? { letterSpacing: "0.01em" } : undefined}
                 >
                   {toast.description}

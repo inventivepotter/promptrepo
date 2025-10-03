@@ -11,12 +11,15 @@ import json
 import os
 import logging
 from typing import List
+from pathlib import Path
 
 from sqlmodel import Session
 from services.config.models import HostingConfig, HostingType, LLMConfig, LLMConfigScope, OAuthConfig, RepoConfig
 from database.daos.user.user_repos_dao import UserReposDAO
 from database.daos.user import UserLLMDAO
 from services.config.config_interface import IConfig
+from services.file_operations import FileOperationsService
+from settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -116,18 +119,34 @@ class OrganizationConfig(IConfig):
             remote_repo_service: Optional RepoLocatorService instance for cloning
         """
         user_repos_dao = UserReposDAO(db)
+        file_ops = FileOperationsService()
+        
         if not repo_configs:
+            # If an empty list is provided, delete all existing repos for the user
+            existing_repos = user_repos_dao.get_user_repositories(user_id)
+            for repo in existing_repos:
+                # Delete from database
+                user_repos_dao.delete_repository(repo.id)
+                # Delete from file system
+                if repo.local_path:
+                    file_ops.delete_directory(repo.local_path)
             return []
+
+        # Get existing repos to track which ones to keep
+        existing_repos = user_repos_dao.get_user_repositories(user_id)
+        existing_repos_map = {repo.repo_clone_url: repo for repo in existing_repos}
+        processed_repo_urls = set()
 
         saved_repos = []
         for config in repo_configs:
             try:
                 # Check if repo already exists to avoid duplicates
-                existing_repo = user_repos_dao.get_repository_by_url(user_id, config.repo_url)
+                existing_repo = existing_repos_map.get(config.repo_url)
                 if existing_repo:
                     # If it exists, we can optionally update it or just acknowledge it.
                     # For now, we'll consider it as successfully "set" and add to the return list.
                     saved_repos.append(config)
+                    processed_repo_urls.add(config.repo_url)
                     logger.info(f"Repository {config.repo_name} already exists for user {user_id}")
                     continue
                 
@@ -150,6 +169,10 @@ class OrganizationConfig(IConfig):
                     repo_name=repo_name_to_use,
                     branch=config.base_branch or "main"
                 )
+                processed_repo_urls.add(config.repo_url)
+                
+                # Commit the transaction so the repository is visible for cloning
+                db.commit()
                 
                 # Initiate cloning if remote_repo_service is provided
                 if remote_repo_service:
@@ -170,6 +193,16 @@ class OrganizationConfig(IConfig):
             except Exception as e:
                 # Log error and continue with other configs
                 logger.error(f"Error saving repository config for {config.repo_url or config.repo_name}: {e}", exc_info=True)
+        
+        # Delete any existing repos that were not in the new list
+        for repo in existing_repos:
+            if repo.repo_clone_url not in processed_repo_urls:
+                # Delete from database
+                user_repos_dao.delete_repository(repo.id)
+                # Delete from file system
+                if repo.local_path:
+                    file_ops.delete_directory(repo.local_path)
+                logger.info(f"Deleted repository {repo.repo_name} (ID: {repo.id}) for user {user_id}")
         
         return saved_repos if saved_repos else None
     

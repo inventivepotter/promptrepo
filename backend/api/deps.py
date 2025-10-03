@@ -7,9 +7,11 @@ We use function-based dependencies as recommended by FastAPI documentation.
 """
 from typing import Generator, Annotated, Optional
 from fastapi import Depends, Header, Cookie, Request
+from huggingface_hub import User
 from sqlmodel import Session
 from pathlib import Path
 import logging
+from database.models.user_sessions import UserSessions
 from middlewares.rest import AuthenticationException
 from utils.cookie import get_session_from_cookie
 
@@ -17,7 +19,6 @@ from utils.cookie import get_session_from_cookie
 logger = logging.getLogger(__name__)
 
 from database.core import get_session
-from services.oauth.oauth_service import OAuthService
 from services.auth.auth_service import AuthService
 from services.auth.session_service import SessionService
 from services.config.config_service import ConfigService
@@ -27,6 +28,7 @@ from services.llm.llm_provider_service import LLMProviderService
 from services.git.git_service import GitService
 from services.remote_repo.remote_repo_service import RemoteRepoService
 from services.prompt.prompt_service import PromptService
+from services.file_operations.file_operations_service import FileOperationsService
 
 
 # ==============================================================================
@@ -208,8 +210,7 @@ ProviderServiceDep = Annotated[LLMProviderService, Depends(get_provider_service)
 # ==============================================================================
 
 def get_remote_repo_service(
-    db: DBSession,
-    session_service: SessionServiceDep
+    db: DBSession
 ) -> RemoteRepoService:
     """
     Remote repository service dependency.
@@ -218,10 +219,35 @@ def get_remote_repo_service(
     This service can handle both individual and organization hosting types
     dynamically based on the configuration and user context.
     """
-    return RemoteRepoService(db=db, session_service=session_service)
+    return RemoteRepoService(db=db)
 
 
 RemoteRepoServiceDep = Annotated[RemoteRepoService, Depends(get_remote_repo_service)]
+
+
+# ==============================================================================
+# File Operations Service (Singleton)
+# ==============================================================================
+
+# Create a singleton instance of FileOperationsService
+# This service is stateless and can be safely shared across all requests
+_file_operations_service: FileOperationsService | None = None
+
+
+def get_file_operations_service() -> FileOperationsService:
+    """
+    File operations service dependency (singleton).
+    
+    Returns a shared instance of FileOperationsService for file I/O operations.
+    This is a stateless utility service that doesn't need per-request instances.
+    """
+    global _file_operations_service
+    if _file_operations_service is None:
+        _file_operations_service = FileOperationsService()
+    return _file_operations_service
+
+
+FileOperationsServiceDep = Annotated[FileOperationsService, Depends(get_file_operations_service)]
 
 
 # ==============================================================================
@@ -230,7 +256,7 @@ RemoteRepoServiceDep = Annotated[RemoteRepoService, Depends(get_remote_repo_serv
 
 def get_prompt_service(
     config_service: ConfigServiceDep,
-    session_service: SessionServiceDep
+    file_ops_service: FileOperationsServiceDep
 ) -> PromptService:
     """
     Prompt service dependency.
@@ -241,7 +267,7 @@ def get_prompt_service(
     
     return PromptService(
         config_service=config_service.config,
-        session_service=session_service
+        file_ops_service=file_ops_service
     )
 
 
@@ -328,24 +354,40 @@ async def get_current_user(
     except Exception as e:
         logger.warning(f"Failed to get hosting type: {e}")
     
-    # Validate session
-    if not session_service.is_session_valid(session_id):
-        raise AuthenticationException(
-            message="Authentication Required",
-            detail="Your session has expired. Please sign in again",
-            context={"user_action": "session_expired"}
-        )
-    
-    # Get session and user
-    user_session = session_service.get_session_by_id(session_id)
+    user_session = session_service.is_session_valid(session_id)
     if not user_session:
         raise AuthenticationException(
             message="Authentication Required",
-            detail="Your session could not be found. Please sign in again",
-            context={"user_action": "session_not_found"}
+            detail="Your session has expired or could not be found. Please sign in again",
+            context={"user_action": "session_invalid"}
         )
     
     return user_session.user_id
+
+async def get_current_session(
+    session_service: SessionServiceDep,
+    session_id: SessionCookieDep
+) -> UserSessions:
+    """
+    Get current authenticated user.
+    
+    Validates session cookie, returns user_id or raises HTTPException.
+    Handles INDIVIDUAL hosting type by returning INDIVIDUAL_USER_ID.
+    
+    Returns:
+        str: User ID for authenticated user
+        
+    Raises:
+        HTTPException: 401 if authentication fails
+    """
+    user_session = session_service.is_session_valid(session_id)
+    if not user_session:
+        raise AuthenticationException(
+            message="Authentication Required",
+            detail="Your session has expired or could not be found. Please sign in again",
+            context={"user_action": "session_invalid"}
+        )
+    return user_session
 
 
 async def get_optional_user(
@@ -389,4 +431,5 @@ async def get_optional_user(
 
 # Type aliases for authentication dependencies
 CurrentUserDep = Annotated[str, Depends(get_current_user)]
+CurrentSessionDep = Annotated[UserSessions, Depends(get_current_session)]
 OptionalUserDep = Annotated[Optional[str], Depends(get_optional_user)]

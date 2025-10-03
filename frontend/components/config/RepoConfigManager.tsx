@@ -142,7 +142,6 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
       bg={{ _light: 'primary.100', _dark: 'primary.900' }}
       borderWidth="1px"
       borderColor={borderColor}
-      overflow="hidden"
       position="relative"
       transition="all 0.3s"
       _hover={{

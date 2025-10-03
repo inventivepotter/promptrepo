@@ -1,7 +1,7 @@
 // Combined prompt store actions
 import type { StateCreator } from '@/lib/zustand';
 import { promptsService } from '@/services/prompts/promptsService';
-import { ConfigService } from '@/services/config/configService';
+import { useConfigStore } from '@/stores/configStore/configStore';
 import type { PromptStore, PromptActions, PromptFilters } from './types';
 import type { PromptMeta, PromptDataUpdate } from '@/services/prompts/api';
 
@@ -41,9 +41,9 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
     }, false, 'prompts/discover-all-start');
 
     try {
-      // Get configured repositories from config
-      const config = await ConfigService.getConfig();
-      const repoConfigs = config.repo_configs || [];
+      // Get configured repositories from config store (uses cached data if available)
+      const configState = useConfigStore.getState();
+      const repoConfigs = configState.config?.repo_configs || [];
       
       if (repoConfigs.length === 0) {
         console.warn('No repositories configured for discovery');

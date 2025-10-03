@@ -80,7 +80,7 @@ class GitHubRepoLocator(IRemoteRepo):
             raise OAuthError(f"Unexpected error: {str(e)}", "github")
     
     async def get_repository_branches(self, owner: str, repo: str) -> RepositoryBranchesResponse:
-        """Get branches from GitHub repository."""
+        """Get branches from GitHub repository with pagination support."""
         try:
             # First get default branch
             repo_response = await self.http_client.get(
@@ -102,31 +102,53 @@ class GitHubRepoLocator(IRemoteRepo):
             repo_data = repo_response.json()
             default_branch = repo_data.get("default_branch", "main")
             
-            # Get all branches
-            branches_response = await self.http_client.get(
-                f"https://api.github.com/repos/{owner}/{repo}/branches",
-                headers={
-                    "Authorization": f"Bearer {self.access_token}",
-                    "Accept": "application/vnd.github.v3+json",
-                    "X-GitHub-Api-Version": "2022-11-28"
-                }
-            )
+            # Get all branches with pagination support
+            all_branches = []
+            page = 1
+            per_page = 100  # GitHub's maximum per_page value
             
-            if branches_response.status_code != 200:
-                logger.error(f"Failed to get branches: {branches_response.status_code}")
-                # Return just the default branch if we can't get branches
-                return RepositoryBranchesResponse(
-                    branches=[BranchInfo(name=default_branch, is_default=True)],
-                    default_branch=default_branch
+            while True:
+                branches_response = await self.http_client.get(
+                    f"https://api.github.com/repos/{owner}/{repo}/branches",
+                    headers={
+                        "Authorization": f"Bearer {self.access_token}",
+                        "Accept": "application/vnd.github.v3+json",
+                        "X-GitHub-Api-Version": "2022-11-28"
+                    },
+                    params={
+                        "per_page": per_page,
+                        "page": page
+                    }
                 )
+                
+                if branches_response.status_code != 200:
+                    logger.error(f"Failed to get branches: {branches_response.status_code}")
+                    # Return just the default branch if we can't get branches
+                    if not all_branches:
+                        return RepositoryBranchesResponse(
+                            branches=[BranchInfo(name=default_branch, is_default=True)],
+                            default_branch=default_branch
+                        )
+                    break
+                
+                branches_data = branches_response.json()
+                if not branches_data:
+                    break
+                
+                all_branches.extend(branches_data)
+                
+                # Check if there are more pages
+                if len(branches_data) < per_page:
+                    break
+                
+                page += 1
             
-            branches_data = branches_response.json()
             branches = [
                 BranchInfo(
                     name=branch["name"],
                     is_default=(branch["name"] == default_branch)
                 )
-                for branch in branches_data
+                for branch in all_branches
             ]
             
             return RepositoryBranchesResponse(

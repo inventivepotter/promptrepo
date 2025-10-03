@@ -5,7 +5,6 @@ Handles prompt operations across both individual and organization hosting types,
 using constructor injection for all dependencies following SOLID principles.
 """
 
-import yaml
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -13,8 +12,8 @@ from typing import List, Optional, Dict, Any, Union
 
 from schemas.hosting_type_enum import HostingType
 from services.config.config_interface import IConfig
-from services.auth.session_service import SessionService
 from services.git.git_service import GitService
+from services.file_operations import FileOperationsService
 from settings import settings
 from middlewares.rest.exceptions import NotFoundException, AppException
 
@@ -43,17 +42,17 @@ class PromptService(IPromptService):
     def __init__(
         self,
         config_service: IConfig,
-        session_service: SessionService
+        file_ops_service: FileOperationsService
     ):
         """
         Initialize PromptService with injected dependencies.
         
         Args:
             config_service: Configuration service for hosting type
-            session_service: Session service for user context
+            file_ops_service: File operations service for file I/O
         """
         self.config_service = config_service
-        self.session_service = session_service
+        self.file_ops = file_ops_service
         
     def _get_repo_base_path(self, user_id: str) -> Path:
         """
@@ -75,31 +74,12 @@ class PromptService(IPromptService):
             return Path(settings.multi_user_repo_path) / user_id
         
     def _save_prompt_file(self, file_path: Union[str, Path], data: Dict[str, Any]) -> bool:
-        """Save prompt data to a YAML file."""
-        path = Path(file_path) if isinstance(file_path, str) else file_path
-        
-        try:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            with open(path, 'w') as f:
-                yaml.safe_dump(data, f)
-            return True
-        except Exception as e:
-            logger.error(f"Failed to save prompt file {file_path}: {e}")
-            return False
+        """Save prompt data to a YAML file using FileOperationsService."""
+        return self.file_ops.save_yaml_file(file_path, data)
     
     def _load_prompt_file(self, file_path: Union[str, Path]) -> Optional[Dict[str, Any]]:
-        """Load prompt data from a YAML file."""
-        path = Path(file_path) if isinstance(file_path, str) else file_path
-        
-        if not path.exists():
-            return None
-            
-        try:
-            with open(path, 'r') as f:
-                return yaml.safe_load(f)
-        except Exception as e:
-            logger.error(f"Failed to load prompt file {file_path}: {e}")
-            return None
+        """Load prompt data from a YAML file using FileOperationsService."""
+        return self.file_ops.load_yaml_file(file_path)
     
     def _generate_prompt_id(self, repo_name: str, file_path: str) -> str:
         """Generate a deterministic prompt ID based on repo and file path."""
@@ -323,16 +303,15 @@ class PromptService(IPromptService):
         repo_path = repo_base_path / repo_name
         full_file_path = repo_path / file_path
         
-        # Delete the file
-        try:
-            if full_file_path.exists():
-                full_file_path.unlink()
-            
+        # Delete the file using FileOperationsService
+        success = self.file_ops.delete_file(full_file_path)
+        
+        if success:
             logger.info(f"Deleted prompt {repo_name}:{file_path} for user {user_id}")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to delete prompt {repo_name}:{file_path}: {e}")
-            return False
+        else:
+            logger.error(f"Failed to delete prompt {repo_name}:{file_path}")
+        
+        return success
     
     async def discover_prompts(
         self,

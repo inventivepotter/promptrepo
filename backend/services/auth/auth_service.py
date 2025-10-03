@@ -330,7 +330,11 @@ class AuthService:
         request: VerifyRequest,
     ) -> VerifyResponse:
         """
-        Verify session and return user information.
+        Verify session and return user information from database.
+        
+        This method validates the session exists and is not expired,
+        then returns cached user data from the database. OAuth token
+        validation is skipped to avoid unnecessary API calls on every request.
         
         Args:
             request: Verify request containing session token
@@ -339,105 +343,29 @@ class AuthService:
             Verify response with user information
             
         Raises:
-            SessionNotFoundError: If session is not found
-            TokenValidationError: If token validation fails
+            SessionNotFoundError: If session is not found or expired
         """
         try:
-            # Check if session exists and is valid
-            if not self.session_service.is_session_valid(request.session_token):
+            # Validate session (returns session object if valid, None otherwise)
+            user_session = self.session_service.is_session_valid(request.session_token)
+            if not user_session:
                 raise SessionNotFoundError("Invalid or expired session token")
             
-            user_session = self.session_service.get_session_by_id(request.session_token)
-            if not user_session:
-                raise SessionNotFoundError("Session not found")
+            # Return cached user data from session (no OAuth API calls needed)
+            logger.info(
+                "Session verified successfully",
+                extra={
+                    "username": user_session.user.oauth_username,
+                    "provider": user_session.user.oauth_provider
+                }
+            )
             
-            # Infer provider from user data if available, otherwise default to github
-            provider = user_session.user.oauth_provider
-            
-            try:
-                # Validate OAuth token
-                if not await self.oauth_service.validate_token(provider, user_session.oauth_token):
-                    # OAuth token is invalid, delete session
-                    self.session_service.delete_session(request.session_token)
-                    raise TokenValidationError("OAuth token has been revoked")
-                
-                # Get fresh user info from OAuth provider
-                oauth_user_info = await self.oauth_service.get_user_info(provider, user_session.oauth_token)
-                
-                # Get user's primary email
-                primary_email = None
-                try:
-                    emails = await self.oauth_service.get_user_emails(provider, user_session.oauth_token)
-                    # Find primary email
-                    primary_email = next(
-                        (email.email for email in emails if email.primary and email.verified),
-                        None
-                    )
-                    # If no primary verified email, use the first verified one
-                    if not primary_email:
-                        primary_email = next(
-                            (email.email for email in emails if email.verified),
-                            None
-                        )
-                except Exception as e:
-                    logger.warning(f"Failed to get user emails from OAuth provider: {e}")
-                
-                # Get or create/update user in database
-                user_dao = UserDAO(self.db)
-                user_db = User(
-                    oauth_name=oauth_user_info.name or oauth_user_info.username,
-                    oauth_provider=provider,
-                    oauth_username=oauth_user_info.username,
-                    oauth_email=primary_email or oauth_user_info.email or "",
-                    oauth_avatar_url=oauth_user_info.avatar_url,
-                    oauth_user_id=oauth_user_info.id,
-                    oauth_profile_url=oauth_user_info.profile_url,
-                )
-                user_db = user_dao.save_user(user_data=user_db)
-                
-                logger.info(
-                    "Session verified successfully",
-                    extra={
-                        "username": oauth_user_info.username,
-                        "provider": provider
-                    }
-                )
-                
-                return VerifyResponse(
-                    user=user_db,
-                    is_valid=True
-                )
-                
-            except Exception as e:
-                logger.warning(f"Could not validate OAuth token for session: {e}")
-                
-                # Try to get user from database if OAuth validation fails
-                from database.models.user import User as UserModel
-                user = self.db.query(UserModel).filter_by(username=user_session.user.oauth_username).first()
-                
-                if user:
-                    # OAuth token validation failed but user exists in DB
-                    # Delete the session and raise an error
-                    self.session_service.delete_session(request.session_token)
-                    raise TokenValidationError("OAuth token has been revoked")
-                else:
-                    # Create minimal user object if not found
-                    user_db = User(
-                        oauth_username=user_session.user.oauth_username,
-                        oauth_provider=provider, # Use inferred provider
-                        oauth_name=user_session.user.oauth_username,
-                        oauth_email="",
-                        oauth_avatar_url="",
-                        oauth_user_id=None,
-                        oauth_profile_url=""
-                    )
+            return VerifyResponse(
+                user=user_session.user,
+                is_valid=True
+            )
                     
-                    return VerifyResponse(
-                        user=user_db,
-                        is_valid=True
-                    )
-                    
-        except (SessionNotFoundError, TokenValidationError):
+        except SessionNotFoundError:
             raise
         except Exception as e:
             logger.error(f"Failed to verify session: {e}", exc_info=True)

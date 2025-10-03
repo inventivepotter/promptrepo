@@ -9,9 +9,11 @@ from pydantic import BaseModel, Field
 from middlewares.rest import (
     StandardResponse,
     success_response,
-    AppException
+    AppException,
+    OAuthTokenInvalidException
 )
-from api.deps import SessionServiceDep, RemoteRepoServiceDep, CurrentUserDep
+from api.deps import CurrentSessionDep, RemoteRepoServiceDep
+from services.oauth.models import OAuthError
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -80,7 +82,7 @@ class RepositoryBranchesResponse(BaseModel):
 async def get_repository_branches(
     request: Request,
     remote_repo_service: RemoteRepoServiceDep,
-    user_id: CurrentUserDep,
+    user_session: CurrentSessionDep,
     owner: str = Query(..., description="Repository owner/organization"),
     repo: str = Query(..., description="Repository name")
 ) -> StandardResponse[RepositoryBranchesResponse]:
@@ -104,13 +106,13 @@ async def get_repository_branches(
             f"Fetching branches for repository {owner}/{repo}",
             extra={
                 "request_id": request_id,
-                "user_id": user_id,
+                "user_id": user_session.user_id,
                 "repository": f"{owner}/{repo}"
             }
         )
         
         branches_data = await remote_repo_service.get_repository_branches(
-            user_id=user_id,
+            user_session=user_session,
             owner=owner,
             repo=repo
         )
@@ -120,7 +122,7 @@ async def get_repository_branches(
             extra={
                 "request_id": request_id,
                 "branch_count": len(branches_data.branches),
-                "user_id": user_id
+                "user_id": user_session.user_id,
             }
         )
         
@@ -128,6 +130,23 @@ async def get_repository_branches(
             data=branches_data,
             message="Branches retrieved successfully",
             meta={"request_id": request_id}
+        )
+        
+    except OAuthError as e:
+        # Convert OAuth errors to OAuthTokenInvalidException for automatic session invalidation
+        logger.error(
+            f"OAuth error retrieving branches: {e.message}",
+            extra={
+                "request_id": request_id,
+                "provider": e.provider,
+                "user_id": user_session.user_id,
+                "session_id": user_session.id
+            }
+        )
+        raise OAuthTokenInvalidException(
+            message=e.message,
+            provider=e.provider,
+            session_id=user_session.id
         )
         
     except Exception as e:

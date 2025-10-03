@@ -5,21 +5,18 @@ This module provides the main service for managing remote repositories,
 including fetching repository lists and branch information.
 """
 
-import uuid
 import logging
 from pathlib import Path
 from typing import Optional
 
 from sqlmodel import Session
+from database.models.user_sessions import UserSessions
 from settings import settings
-from schemas.hosting_type_enum import HostingType
-from services.config.config_interface import IConfig
 from services.oauth.models import OAuthError
 from database.daos.user.user_dao import UserDAO
 from database.daos.user.user_repos_dao import UserReposDAO
 from database.models.user_repos import RepoStatus
-from services.auth.session_service import SessionService
-from services.remote_repo.models import RepoInfo, RepositoryList, RepositoryBranchesResponse, BranchInfo
+from services.remote_repo.models import RepositoryList, RepositoryBranchesResponse
 from services.remote_repo.remote_repo_interface import IRemoteRepo
 from services.remote_repo.providers import (
     GitHubRepoLocator,
@@ -36,15 +33,14 @@ class RemoteRepoService:
     Service class for locating and cloning repositories using different strategies.
     Uses constructor injection for config and auth services following SOLID principles.
     """
-    def __init__(self, db: Session, session_service: SessionService):
+    def __init__(self, db: Session):
         self.db = db
         self.user_dao = UserDAO(db)
         self.user_repos_dao = UserReposDAO(db)
-        self.session_service = session_service
     
     async def get_repositories(
         self,
-        user_id: str
+        user_session: UserSessions
     ) -> RepositoryList:
         """
         Get repositories for a given user based on the configured locator strategy.
@@ -56,16 +52,12 @@ class RemoteRepoService:
             RepositoryList: A list of repository information.
         """
         try:
-            user = self.user_dao.get_user_by_id(user_id)
+            user = self.user_dao.get_user_by_id(user_session.user_id)
             if not user:
-                raise ValueError(f"User not found for ID: {user_id}")
-
-            latest_session = self.session_service.get_active_session(user_id)
-            if not latest_session:
-                raise ValueError(f"No active session found for user ID: {user_id}")
+                raise ValueError(f"User not found for ID: {user_session.user_id}")
 
             oauth_provider = user.oauth_provider
-            oauth_token = latest_session.oauth_token
+            oauth_token = user_session.oauth_token
             oauth_username = user.oauth_username
 
         except ValueError as e:
@@ -76,7 +68,7 @@ class RemoteRepoService:
             raise
 
         if not oauth_provider or not oauth_token:
-            raise ValueError(f"OAuth provider and token not configured for user {user_id}")
+            raise ValueError(f"OAuth provider and token not configured for user {user_session.user_id}")
         
         locator: IRemoteRepo
         if oauth_provider.lower() == "github":
@@ -86,7 +78,7 @@ class RemoteRepoService:
         elif oauth_provider.lower() == "bitbucket":
             username = oauth_username
             if not username:
-                raise ValueError(f"OAuth username not configured for user {user_id} with Bitbucket")
+                raise ValueError(f"OAuth username not configured for user {user_session.user_id} with Bitbucket")
             locator = BitbucketRepoLocator(oauth_token, username)
         else:
             raise OAuthError(f"Unsupported provider: {oauth_provider}", oauth_provider)
@@ -96,7 +88,7 @@ class RemoteRepoService:
     
     async def get_repository_branches(
         self,
-        user_id: str,
+        user_session: UserSessions,
         owner: str,
         repo: str
     ) -> RepositoryBranchesResponse:
@@ -112,16 +104,12 @@ class RemoteRepoService:
             RepositoryBranchesResponse: Branch information for the repository
         """
         try:
-            user = self.user_dao.get_user_by_id(user_id)
+            user = self.user_dao.get_user_by_id(user_session.user_id)
             if not user:
-                raise ValueError(f"User not found for ID: {user_id}")
-
-            latest_session = self.session_service.get_active_session(user_id)
-            if not latest_session:
-                raise ValueError(f"No active session found for user ID: {user_id}")
+                raise ValueError(f"User not found for ID: {user_session.user_id}")
 
             oauth_provider = user.oauth_provider
-            oauth_token = latest_session.oauth_token
+            oauth_token = user_session.oauth_token
             oauth_username = user.oauth_username
 
         except ValueError as e:
@@ -132,7 +120,7 @@ class RemoteRepoService:
             raise
 
         if not oauth_provider or not oauth_token:
-            raise ValueError(f"OAuth provider and token not configured for user {user_id}")
+            raise ValueError(f"OAuth provider and token not configured for user {user_session.user_id}")
         
         locator: IRemoteRepo
         if oauth_provider.lower() == "github":
@@ -142,7 +130,7 @@ class RemoteRepoService:
         elif oauth_provider.lower() == "bitbucket":
             username = oauth_username
             if not username:
-                raise ValueError(f"OAuth username not configured for user {user_id} with Bitbucket")
+                raise ValueError(f"OAuth username not configured for user {user_session.user_id} with Bitbucket")
             locator = BitbucketRepoLocator(oauth_token, username)
         else:
             raise OAuthError(f"Unsupported provider: {oauth_provider}", oauth_provider)
