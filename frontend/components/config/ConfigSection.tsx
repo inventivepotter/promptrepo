@@ -26,7 +26,7 @@ export const ConfigSection = ({
 
   return (
     <Box className={className}>
-      <VStack gap={4} align="stretch">
+      <VStack gap={6} align="stretch">
         {children}
       </VStack>
     </Box>

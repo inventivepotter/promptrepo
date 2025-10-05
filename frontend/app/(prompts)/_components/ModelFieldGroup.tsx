@@ -67,7 +67,7 @@ export function ModelFieldGroup() {
           {/* Primary Model */}
           <Field.Root flex={1} required>
             <Field.Label display="flex" alignItems="center" gap={1} fontSize="xs">
-              Primary Model
+              Primary Model <Field.RequiredIndicator />
               <Tooltip content="Primary provider and model for generating responses.">
                 <Box cursor="help">
                   <LuInfo size={12} opacity={0.6} />

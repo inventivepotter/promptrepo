@@ -12,6 +12,7 @@ import {
   Card,
   Fieldset,
   Stack,
+  Skeleton,
 } from '@chakra-ui/react';
 import { FaChevronDown } from 'react-icons/fa';
 import {
@@ -22,6 +23,7 @@ import {
   useAvailableBranches,
   useIsLoadingBranches,
   useRepoFormState,
+  useIsLoadingConfig,
 } from '@/stores/configStore';
 import type { RepoInfo } from '@/stores/configStore';
 
@@ -35,6 +37,7 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
   const error = useConfigError();
   const availableBranches = useAvailableBranches();
   const isLoadingBranches = useIsLoadingBranches();
+  const isLoading = useIsLoadingConfig();
   
   const {
     addRepoConfig,
@@ -43,10 +46,10 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
     resetBranches,
     setSelectedRepoWithSideEffects,
     setSelectedBranch,
-    setIsSaving,
     setRepoSearchValue,
     setBranchSearchValue,
     resetRepoForm,
+    setIsSaving,
   } = useConfigActions();
   
   // Repo form state from store
@@ -70,8 +73,8 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
     const repoInfo = availableRepos.find(r => r.full_name === selectedRepo);
     if (!repoInfo) return;
 
-    setIsSaving(true);
     try {
+      setIsSaving(true);
       const repoConfig = {
         id: '', // Blank for new record
         repo_name: repoInfo.full_name, // Use full_name for consistency
@@ -101,7 +104,6 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
   };
 
   const handleRemoveRepoConfig = async (index: number) => {
-    setIsSaving(true);
     try {
       // Remove from local store
       removeRepoConfig(index);
@@ -116,8 +118,6 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
       await updateConfig(updatedConfig);
     } catch (error) {
       console.error('Failed to remove repository:', error);
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -299,6 +299,8 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                   <Button
                     onClick={handleAddRepoConfig}
                     disabled={!selectedRepo || !selectedBranch || disabled || isSaving}
+                    loading={isSaving}
+                    loadingText="Saving..."
                     alignSelf="end"
                   >
                     Add Repository
@@ -309,7 +311,7 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
             </Card.Root>
             
             {/* Configured Repositories */}
-            {(config.repo_configs && config.repo_configs.length > 0) && (
+            {(config.repo_configs && config.repo_configs.length > 0) || isLoading ? (
               <Card.Root
                 borderWidth="1px"
                 borderColor={borderColor}
@@ -318,8 +320,15 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
               >
                 <Card.Body p={8}>
                   <Text fontWeight="semibold" fontSize="lg" mb={6}>Selected Repositories</Text>
-                  <VStack gap={4}>
-                    {config.repo_configs.map((repoConfig, index) => {
+                  {isLoading ? (
+                    <VStack gap={4} width="100%">
+                      {[1, 2].map((i) => (
+                        <Skeleton key={i} height="60px" width="100%" bg="bg"/>
+                      ))}
+                    </VStack>
+                  ) : (
+                    <VStack gap={4}>
+                    {config.repo_configs?.map((repoConfig, index) => {
                       const repo = availableRepos.find(r => r.full_name === repoConfig.repo_name);
                       return (
                         <Card.Root
@@ -360,11 +369,12 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                           </Card.Body>
                         </Card.Root>
                       );
-                    })}
-                  </VStack>
+                      })}
+                    </VStack>
+                  )}
                 </Card.Body>
               </Card.Root>
-            )}
+            ) : null}
           </VStack>
         )}
             </VStack>

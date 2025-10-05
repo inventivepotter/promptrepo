@@ -18,6 +18,9 @@ export interface ConfigState {
   availableLLMProviders: BasicProviderInfo[];
   availableRepos: RepoInfo[];
   
+  // Config loading state
+  isLoadingConfig: boolean;
+  
   // LLM form state
   llmProvider: string;
   apiKey: string;
@@ -50,6 +53,7 @@ export interface ConfigActions {
   updateConfig: (config: AppConfigInput) => Promise<void>;
   initializeConfig: (autoLoad?: boolean, all?: boolean) => Promise<void>;
   logout: () => void;
+  setLoadingConfig: (loading: boolean) => void;
   
   // LLM Config actions
   addLLMConfig: (config: LLMConfig) => void;

@@ -67,14 +67,13 @@ if (typeof window !== 'undefined') {
 }
 
 const MotionBox = motion(Box);
-const MotionText = motion(Text);
 
 
 const AuthButton = () => {
   const isAuthenticated = useIsAuthenticated();
   const isLoading = useAuthLoading();
   const user = useUser();
-  const { login, logout } = useAuthActions();
+  const { logout } = useAuthActions();
   const config = useConfig();
   const hostingType = config?.hosting_config?.type;
 
@@ -82,7 +81,7 @@ const AuthButton = () => {
     return (
       <HStack gap={2}>
         <Spinner size="sm" />
-        <Text fontSize="sm">Checking...</Text>
+        <Text fontSize="sm">Loading...</Text>
       </HStack>
     );
   }
@@ -124,15 +123,17 @@ const AuthButton = () => {
     );
   }
 
-  // Don't show GitHub login for individual hosting
+  // Don't show login button for individual hosting
   if (ConfigService.shouldSkipAuth(hostingType || undefined)) {
     return null;
   }
 
   return (
-    <Button colorScheme="blue" onClick={() => login()}>
-      Login with GitHub
-    </Button>
+    <Link href="/login" passHref>
+      <Button>
+        Login
+      </Button>
+    </Link>
   );
 };
 
@@ -163,7 +164,6 @@ const renderHighlightedText = (text: string) => {
 
 const HomePage = () => {
   const borderColor = useColorModeValue('gray.200', 'gray.700');
-  const featureIconBg = useColorModeValue('primary.50', 'primary.900');
   const featureIconColor = useColorModeValue('primary.600', 'primary.300');
   const footerBg = useColorModeValue('gray.50', 'gray.900');
 

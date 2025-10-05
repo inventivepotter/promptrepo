@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   VStack,
@@ -26,6 +26,7 @@ import {
   useDeleteDialogOpen,
   usePromptToDelete,
   useIsDeleting,
+  useIsLoading,
 } from '@/stores/promptStore';
 import { PromptSearch } from '../_components/PromptSearch';
 import { PromptCard } from '../_components/PromptCard';
@@ -71,7 +72,7 @@ export default function PromptsPage() {
     if (typeof window !== 'undefined') {
       fetchPrompts();
     }
-  }, []);
+  });
 
   const handleEditPrompt = (prompt: PromptMeta) => {
     setCurrentPrompt(prompt);

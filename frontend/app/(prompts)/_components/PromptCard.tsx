@@ -119,7 +119,7 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
           {prompt.prompt?.prompt && (
             <Box
               p={3}
-              bg="bg.subtle"
+              bg="bg"
               borderRadius="md"
               borderLeft="3px solid"
               borderColor="bg.emphasized"

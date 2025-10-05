@@ -12,6 +12,9 @@ export const initialConfigState: ConfigState = {
   availableLLMProviders: [],
   availableRepos: [],
   
+  // Config loading state - starts as true to show skeleton on initial load
+  isLoadingConfig: true,
+  
   // LLM form state
   llmProvider: '',
   apiKey: '',

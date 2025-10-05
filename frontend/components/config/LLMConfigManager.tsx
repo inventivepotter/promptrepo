@@ -13,12 +13,15 @@ import {
   Card,
   Fieldset,
   Stack,
+  Skeleton,
+  EmptyState,
 } from '@chakra-ui/react'
+import { List } from '@chakra-ui/react';
+import { HiColorSwatch } from 'react-icons/hi';
 import { FaChevronDown } from 'react-icons/fa';
 import { useEffect } from 'react';
 import type { components } from '@/types/generated/api';
-import { useConfig, useConfigActions, useAvailableProviders, useLLMFormState, useLLMFormUIState, useConfigStore } from '@/stores/configStore';
-import { useLoadingStore } from '@/stores/loadingStore';
+import { useConfig, useConfigActions, useAvailableProviders, useLLMFormState, useLLMFormUIState, useConfigStore, useIsLoadingConfig, useIsSavingRepo } from '@/stores/configStore';
 
 type LLMConfig = components['schemas']['LLMConfig'];
 type BasicProviderInfo = components['schemas']['BasicProviderInfo'];
@@ -44,11 +47,13 @@ export default function LLMConfigManager({
     setModelSearchValue,
     setLLMProviderWithSideEffects,
     fetchModelsIfReady,
+    setIsSaving,
   } = useConfigActions();
   const availableProviders = useAvailableProviders();
   const { llmProvider, apiKey, llmModel, apiBaseUrl, availableModels, isLoadingModels } = useLLMFormState();
   const { providerSearchValue, modelSearchValue } = useLLMFormUIState();
-  const { isLoading, showLoading, hideLoading } = useLoadingStore();
+  const isSaving = useIsSavingRepo();
+  const isLoading = useIsLoadingConfig();
   
   const llmConfigs = config.llm_configs || [];
   const borderColor = "border.elevated";
@@ -79,16 +84,19 @@ export default function LLMConfigManager({
     await setLLMProviderWithSideEffects(newProvider);
   };
 
-  // Fetch models when API key or API base URL changes
+  // Fetch models when API key or API base URL changes (debounced for API base URL)
   useEffect(() => {
     if (llmProvider && apiKey && apiKey.length >= 3 && (!requiresApiBase || (apiBaseUrl && apiBaseUrl.length >= 3))) {
-      fetchModelsIfReady();
+      // Debounce only when requiresApiBase is true and apiBaseUrl is changing
+      const timeoutId = setTimeout(() => {
+        fetchModelsIfReady();
+      }, requiresApiBase ? 500 : 0);
+
+      return () => clearTimeout(timeoutId);
     }
   }, [apiKey, apiBaseUrl, llmProvider, requiresApiBase, fetchModelsIfReady]);
 
   const handleAddConfiguration = async () => {
-    showLoading('Adding Configuration', 'Saving your LLM configuration...');
-    
     const newConfig: LLMConfig = {
       id: '',
       provider: llmProvider,
@@ -107,6 +115,7 @@ export default function LLMConfigManager({
     };
     
     try {
+      setIsSaving(true);
       await updateConfig(updatedConfig);
       
       // Reset form
@@ -116,13 +125,11 @@ export default function LLMConfigManager({
     } catch (error) {
       console.error('Error saving configuration:', error);
     } finally {
-      hideLoading();
+      setIsSaving(false);
     }
   };
 
   const handleRemoveConfig = async (index: number) => {
-    showLoading('Removing Configuration', 'Removing LLM configuration...');
-    
     // removeLLMConfig already updates the state correctly.
     // We just need to call updateConfig to persist the current state.
     removeLLMConfig(index);
@@ -133,8 +140,6 @@ export default function LLMConfigManager({
       await updateConfig(currentState);
     } catch (error) {
       console.error('Error removing configuration:', error);
-    } finally {
-      hideLoading();
     }
   };
 
@@ -229,12 +234,15 @@ export default function LLMConfigManager({
                       !llmModel ||
                       !apiKey ||
                       (requiresApiBase && !apiBaseUrl) ||
-                      disabled
+                      disabled ||
+                      isSaving
                     }
+                    loading={isSaving}
+                    loadingText="Saving..."
                     alignSelf="end"
                     verticalAlign={"bottom"}
                   >
-                    Add Configuration
+                    Add LLM Config
                   </Button>
                 </Box>
               </HStack>
@@ -306,22 +314,29 @@ export default function LLMConfigManager({
                   )}
                 </Box>
                   {/* Dummy button for layout consistency */}
-                <Box><Button visibility="hidden">Add Configuration</Button></Box>
+                <Box><Button visibility="hidden">Add LLM Config</Button></Box>
               </HStack>
             </Box>
           </VStack>
           </Card.Body>
         </Card.Root>
         {/* Display configured LLMs */}
-        {llmConfigs.length > 0 && (
+        {llmConfigs.length > 0 || isLoading ? (
           <Card.Root
             borderWidth="1px"
             borderColor={borderColor}
             bg="transparent"
           >
             <Card.Body p={8}>
-            <Text fontWeight="semibold" fontSize="lg" mb={6}>Configured LLM Providers</Text>
-            <VStack gap={4}>
+              <Text fontWeight="semibold" fontSize="lg" mb={6}>Configured LLM Providers</Text>
+              {isLoading ? (
+                <VStack gap={4} width="100%">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} height="80px" width="100%" bg="bg"/>
+                  ))}
+                </VStack>
+              ) : (
+                <VStack gap={4}>
               {llmConfigs.map((config, index) => {
                 const isOrgScope = config.scope === 'organization';
                 return (
@@ -399,9 +414,29 @@ export default function LLMConfigManager({
                   </Card.Root>
                 );
               })}
-            </VStack>
+                </VStack>
+              )}
             </Card.Body>
           </Card.Root>
+        ) : (
+          <EmptyState.Root>
+            <EmptyState.Content>
+              <EmptyState.Indicator>
+                <HiColorSwatch />
+              </EmptyState.Indicator>
+              <VStack textAlign="center">
+                <EmptyState.Title>No LLM providers configured</EmptyState.Title>
+                <EmptyState.Description>
+                  Add your first LLM provider to get started
+                </EmptyState.Description>
+              </VStack>
+              <List.Root variant="marker">
+                <List.Item>Choose a provider from the dropdown</List.Item>
+                <List.Item>Enter your API key</List.Item>
+                <List.Item>Select a model</List.Item>
+              </List.Root>
+            </EmptyState.Content>
+          </EmptyState.Root>
         )}
             </VStack>
           </Fieldset.Content>

@@ -19,6 +19,9 @@ export const useAvailableBranches = () => useConfigStore((state) => state.availa
 // Hook for loading branches state
 export const useIsLoadingBranches = () => useConfigStore((state) => state.isLoadingBranches);
 
+// Hook for loading config state
+export const useIsLoadingConfig = () => useConfigStore((state) => state.isLoadingConfig);
+
 // Hook for error state
 export const useConfigError = () => useConfigStore((state) => state.error);
 
@@ -95,6 +98,7 @@ export const useConfigActions = () => {
     resetLLMForm,
     setAvailableModels,
     setLoadingModels,
+    setLoadingConfig,
     addRepoConfig,
     removeRepoConfig,
     loadAvailableRepos,
@@ -129,6 +133,7 @@ export const useConfigActions = () => {
     resetLLMForm,
     setAvailableModels,
     setLoadingModels,
+    setLoadingConfig,
     addRepoConfig,
     removeRepoConfig,
     loadAvailableRepos,

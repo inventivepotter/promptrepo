@@ -21,6 +21,7 @@ import { createSetLLMProviderWithSideEffectsAction } from './setLLMProviderWithS
 import { createFetchModelsIfReadyAction } from './fetchModelsIfReady';
 import { createInitializeConfigAction } from './initializeConfig';
 import { createLogoutAction } from './logout';
+import { createSetLoadingConfigAction } from './setLoadingConfig';
 import type { StateCreator } from '@/lib/zustand';
 import type { ConfigStore, ConfigActions } from '../types';
 
@@ -61,4 +62,5 @@ export const createConfigActions: StateCreator<ConfigStore, [], [], ConfigAction
   ...createSetConfigAction(set, get, api),
   ...createSetAvailableProvidersAction(set, get, api),
   ...createSetAvailableReposAction(set, get, api),
+  ...createSetLoadingConfigAction(set, get, api),
 });

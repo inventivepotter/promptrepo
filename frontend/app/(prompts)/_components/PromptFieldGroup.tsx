@@ -79,7 +79,7 @@ export function PromptFieldGroup({ repoName, filePath }: PromptFieldGroupProps) 
             <VStack gap={4} align="stretch">
           {/* Name - Primary Field */}
           <Field.Root required>
-            <Field.Label fontSize="xs" fontWeight="medium">Name</Field.Label>
+            <Field.Label fontSize="xs" fontWeight="medium">Name <Field.RequiredIndicator /></Field.Label>
             <Input
               value={prompt?.name || ''}
               onChange={(e) => updateField('name', e.target.value)}
@@ -90,7 +90,7 @@ export function PromptFieldGroup({ repoName, filePath }: PromptFieldGroupProps) 
 
           {/* Prompt Content - Main Focus */}
           <Field.Root required>
-            <Field.Label fontSize="xs" fontWeight="medium">Prompt</Field.Label>
+            <Field.Label fontSize="xs" fontWeight="medium">Prompt <Field.RequiredIndicator /></Field.Label>
             <Textarea
               value={prompt?.prompt || ''}
               onChange={(e) => updateField('prompt', e.target.value)}

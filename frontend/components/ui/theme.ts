@@ -84,6 +84,9 @@ const config = defineConfig({
           inverted: {
             value: { _light: "{colors.primary.950}", _dark: "{colors.primary.50}" },
           },
+          panel: {
+            value: { _light: "{colors.white}", _dark: "{colors.gray.800}" },
+          },
         },
         // Foreground/Text colors
         fg: {
