@@ -347,6 +347,21 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
     }
   },
 
+  // Model Search UI State
+  setPrimaryModelSearch: (search: string) => {
+    set((draft) => {
+      draft.modelSearch.primaryModel = search;
+    // @ts-expect-error - Immer middleware supports 3 params
+    }, false, 'prompts/set-primary-model-search');
+  },
+
+  setFailoverModelSearch: (search: string) => {
+    set((draft) => {
+      draft.modelSearch.failoverModel = search;
+    // @ts-expect-error - Immer middleware supports 3 params
+    }, false, 'prompts/set-failover-model-search');
+  },
+
   // Error Handling
   clearError: () => {
     set((draft) => {

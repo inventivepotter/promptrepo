@@ -28,3 +28,4 @@
   - Add structured logging with `request_id` and `user_id`
 
 # Frontend
+* Zustand stores has been implemented in this project, use zustand avoid useEffect, React use directly.

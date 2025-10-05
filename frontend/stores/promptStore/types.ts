@@ -40,6 +40,12 @@ export interface PromptState {
   filters: PromptFilters;
   pagination: PaginationState;
   
+  // Model selector UI state
+  modelSearch: {
+    primaryModel: string;
+    failoverModel: string;
+  };
+  
   // Cache management
   lastSyncTimestamp: number | null;
 }
@@ -79,6 +85,10 @@ export interface PromptActions {
   setPageSize: (pageSize: number) => void;
   nextPage: () => void;
   previousPage: () => void;
+  
+  // Model Search UI State
+  setPrimaryModelSearch: (search: string) => void;
+  setFailoverModelSearch: (search: string) => void;
   
   // Error Handling
   clearError: () => void;

@@ -128,6 +128,12 @@ export const useDeleteDialog = () => usePromptStore(state => state.deleteDialog)
 export const useDeleteDialogOpen = () => usePromptStore(state => state.deleteDialog.isOpen);
 export const usePromptToDelete = () => usePromptStore(state => state.deleteDialog.promptToDelete);
 
+// Model Search Hooks
+export const usePrimaryModelSearch = () => usePromptStore(state => state.modelSearch.primaryModel);
+export const useFailoverModelSearch = () => usePromptStore(state => state.modelSearch.failoverModel);
+export const useSetPrimaryModelSearch = () => usePromptStore(state => state.setPrimaryModelSearch);
+export const useSetFailoverModelSearch = () => usePromptStore(state => state.setFailoverModelSearch);
+
 // Action Hooks
 export const usePromptActions = () => {
   const store = usePromptStore();

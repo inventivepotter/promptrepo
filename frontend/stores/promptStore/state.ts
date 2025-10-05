@@ -36,6 +36,12 @@ export const initialPromptState: PromptState = {
     totalPages: 0,
   },
   
+  // Model selector UI state
+  modelSearch: {
+    primaryModel: '',
+    failoverModel: '',
+  },
+  
   // Cache management
   lastSyncTimestamp: null,
 };
