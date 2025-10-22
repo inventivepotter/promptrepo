@@ -1,5 +1,5 @@
 import { ChatStore, ChatSession } from './types';
-import { ChatMessage } from '@/app/(prompts)/_types/ChatState';
+import { ChatMessage, Tool } from '@/app/(prompts)/_types/ChatState';
 import { ModelConfig } from './types';
 
 // Session Selectors
@@ -159,3 +159,31 @@ export const selectCanRegenerateLastMessage = (state: ChatStore): boolean => {
   const lastMessage = selectLastMessage(state);
   return lastMessage !== null && lastMessage.role === 'assistant' && !state.isRegenerating;
 };
+
+// Tools Selectors
+export const selectAvailableTools = (state: ChatStore): Tool[] => state.availableTools;
+export const selectSelectedTools = (state: ChatStore): string[] => state.selectedTools;
+export const selectSelectedToolObjects = (state: ChatStore): Tool[] =>
+  state.availableTools.filter(tool => state.selectedTools.includes(tool.id));
+export const selectHasSelectedTools = (state: ChatStore): boolean => state.selectedTools.length > 0;
+export const selectIsToolSelected = (toolId: string) => (state: ChatStore): boolean =>
+  state.selectedTools.includes(toolId);
+
+// Token Calculation Selectors
+export const selectTotalInputTokens = (state: ChatStore): number => {
+  return state.messages.reduce((total, message) => {
+    return total + (message.usage?.prompt_tokens || 0);
+  }, 0);
+};
+
+export const selectTotalOutputTokens = (state: ChatStore): number => {
+  return state.messages.reduce((total, message) => {
+    return total + (message.usage?.completion_tokens || 0);
+  }, 0);
+};
+
+export const selectTokenStats = (state: ChatStore) => ({
+  totalInput: selectTotalInputTokens(state),
+  totalOutput: selectTotalOutputTokens(state),
+  total: selectTotalInputTokens(state) + selectTotalOutputTokens(state),
+});

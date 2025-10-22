@@ -2,7 +2,7 @@
 import type { StateCreator } from '@/lib/zustand';
 import { chatService } from '@/services/llm/chat/chatService';
 import type { ChatStore, ChatActions, ChatSession } from './types';
-import type { ChatMessage } from '@/app/(prompts)/_types/ChatState';
+import type { ChatMessage, Tool } from '@/app/(prompts)/_types/ChatState';
 import type { ChatCompletionOptions } from '@/types/Chat';
 
 // Helper function to generate unique IDs
@@ -92,6 +92,13 @@ export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (
       currentSession = get().createSession();
     }
     
+    // Create system message if systemPrompt is provided and it's the first message
+    const isFirstMessage = state.messages.length === 0;
+    let systemMessage = null;
+    if (options.systemPrompt && isFirstMessage) {
+      systemMessage = chatService.createSystemMessage(options.systemPrompt);
+    }
+    
     // Create user message
     const userMessage = chatService.createUserMessage(content);
     
@@ -99,6 +106,15 @@ export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (
       draft.isSending = true;
       draft.error = null;
       draft.inputMessage = '';
+      
+      // Add system message if needed
+      if (systemMessage) {
+        const session = draft.sessions.find(s => s.id === draft.currentSessionId);
+        if (session) {
+          session.messages.push(systemMessage);
+        }
+        draft.messages.push(systemMessage);
+      }
       
       // Add user message to current session
       const session = draft.sessions.find(s => s.id === draft.currentSessionId);
@@ -412,6 +428,55 @@ export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (
     }, false, 'chat/clear-input');
   },
   
+  // Template Variables Management
+  setTemplateVariable: (name: string, value: string) => {
+    set((draft) => {
+      draft.templateVariables[name] = value;
+    // @ts-expect-error - Immer middleware supports 3 params
+    }, false, 'chat/set-template-variable');
+  },
+  
+  clearTemplateVariables: () => {
+    set((draft) => {
+      draft.templateVariables = {};
+    // @ts-expect-error - Immer middleware supports 3 params
+    }, false, 'chat/clear-template-variables');
+  },
+  
+  // Tools Management
+  setAvailableTools: (tools: Tool[]) => {
+    set((draft) => {
+      draft.availableTools = tools;
+    // @ts-expect-error - Immer middleware supports 3 params
+    }, false, 'chat/set-available-tools');
+  },
+  
+  setSelectedTools: (toolIds: string[]) => {
+    set((draft) => {
+      draft.selectedTools = toolIds;
+    // @ts-expect-error - Immer middleware supports 3 params
+    }, false, 'chat/set-selected-tools');
+  },
+  
+  toggleTool: (toolId: string) => {
+    set((draft) => {
+      const index = draft.selectedTools.indexOf(toolId);
+      if (index === -1) {
+        draft.selectedTools.push(toolId);
+      } else {
+        draft.selectedTools.splice(index, 1);
+      }
+    // @ts-expect-error - Immer middleware supports 3 params
+    }, false, 'chat/toggle-tool');
+  },
+  
+  clearSelectedTools: () => {
+    set((draft) => {
+      draft.selectedTools = [];
+    // @ts-expect-error - Immer middleware supports 3 params
+    }, false, 'chat/clear-selected-tools');
+  },
+  
   // Error Handling
   setError: (error: string | null) => {
     set((draft) => {
@@ -475,6 +540,9 @@ export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (
       draft.editingMessageId = null;
       draft.editingContent = '';
       draft.inputMessage = '';
+      draft.templateVariables = {};
+      draft.availableTools = [];
+      draft.selectedTools = [];
       draft.totalTokensUsed = 0;
       draft.totalCost = 0;
     // @ts-expect-error - Immer middleware supports 3 params

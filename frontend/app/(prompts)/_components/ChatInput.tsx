@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import {
   Box,
   HStack,
@@ -9,39 +8,33 @@ import {
 } from '@chakra-ui/react';
 import { LuSend, LuSquare } from 'react-icons/lu';
 import { useColorModeValue } from '@/components/ui/color-mode';
+import { useChatInput, useIsSending, useChatActions, useTokenStats } from '@/stores/chatStore/hooks';
 
 interface ChatInputProps {
-  value: string;
-  onChange: (value: string) => void;
-  onSubmit: (message: string) => void;
-  onStop?: () => void;
-  isLoading?: boolean;
-  disabled?: boolean;
+  onSubmit?: (message: string) => void;
   placeholder?: string;
-  totalInputTokens?: number;
-  totalOutputTokens?: number;
+  disabled?: boolean;
 }
 
 export function ChatInput({
-  value,
-  onChange,
   onSubmit,
-  onStop,
-  isLoading = false,
-  disabled = false,
   placeholder = "Type your message here...",
-  totalInputTokens = 0,
-  totalOutputTokens = 0
+  disabled = false,
 }: ChatInputProps) {
-  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const { inputMessage, setInputMessage } = useChatInput();
+  const isSending = useIsSending();
+  const { stopStreaming, clearInput } = useChatActions();
+  const { totalInput, totalOutput } = useTokenStats();
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const bgColor = useColorModeValue('white', 'gray.800');
 
   const handleSubmit = () => {
-    const trimmedValue = value.trim();
-    if (trimmedValue && !isLoading && !disabled) {
-      onSubmit(trimmedValue);
-      onChange('');
+    const trimmedValue = inputMessage.trim();
+    if (trimmedValue && !isSending && !disabled) {
+      if (onSubmit) {
+        onSubmit(trimmedValue);
+      }
+      clearInput();
     }
   };
 
@@ -53,20 +46,10 @@ export function ChatInput({
   };
 
   const handleStop = () => {
-    if (onStop) {
-      onStop();
-    }
+    stopStreaming();
   };
 
-  // Auto-resize textarea
-  React.useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [value]);
-
-  const canSend = value.trim().length > 0 && !disabled && !isLoading;
+  const canSend = inputMessage.trim().length > 0 && !isSending && !disabled;
 
   return (
     <Box
@@ -78,29 +61,20 @@ export function ChatInput({
       <HStack gap={2} align="center">
         <Box flex={1}>
           <Textarea
-            ref={textareaRef}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            disabled={disabled}
+            disabled={isSending}
             resize="none"
             minH="40px"
             maxH="120px"
             rows={1}
-            borderColor={borderColor}
             fontSize="sm"
-            _placeholder={{
-              color: useColorModeValue('gray.500', 'gray.400')
-            }}
-            _focus={{
-              borderColor: useColorModeValue('blue.500', 'blue.300'),
-              boxShadow: `0 0 0 1px ${useColorModeValue('#3182ce', '#63b3ed')}`
-            }}
           />
         </Box>
         
-        {isLoading ? (
+        {isSending ? (
           <IconButton
             size="sm"
             colorPalette="red"
@@ -116,10 +90,10 @@ export function ChatInput({
         ) : (
           <IconButton
             size="sm"
-            colorPalette="blue"
+            colorPalette={disabled ? "gray" : "blue"}
             onClick={handleSubmit}
             disabled={!canSend}
-            aria-label="Send message"
+            aria-label={disabled ? "Fill in all variables to send" : "Send message"}
             variant="solid"
             h="40px"
             mt="-5px"
@@ -134,10 +108,10 @@ export function ChatInput({
       <Box mt={2} fontSize="xs" color={useColorModeValue('gray.500', 'gray.400')}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>Press Enter to send, Shift+Enter for new line</Box>
-          {(totalInputTokens > 0 || totalOutputTokens > 0) && (
+          {(totalInput > 0 || totalOutput > 0) && (
             <Box display="flex" gap={4}>
-              <Box>Total Input: {totalInputTokens.toLocaleString()}</Box>
-              <Box>Total Output: {totalOutputTokens.toLocaleString()}</Box>
+              <Box>Total Input: {totalInput.toLocaleString()}</Box>
+              <Box>Total Output: {totalOutput.toLocaleString()}</Box>
             </Box>
           )}
         </Box>

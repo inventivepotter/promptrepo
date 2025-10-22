@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useChatStore } from './store';
 import {
   selectSessions,
@@ -43,6 +44,13 @@ import {
   selectSessionsWithStats,
   selectIsSessionActive,
   selectCanRegenerateLastMessage,
+  selectAvailableTools,
+  selectSelectedTools,
+  selectHasSelectedTools,
+  selectIsToolSelected,
+  selectTotalInputTokens,
+  selectTotalOutputTokens,
+  selectTokenStats,
 } from './selectors';
 
 // Session Hooks
@@ -96,6 +104,9 @@ export const useInputMessage = () => useChatStore(selectInputMessage);
 export const useHasInput = () => useChatStore(selectHasInput);
 export const useCanSendMessage = () => useChatStore(selectCanSendMessage);
 
+// Template Variables Hooks
+export const useTemplateVariables = () => useChatStore(state => state.templateVariables);
+
 // Error Hooks
 export const useChatError = () => useChatStore(selectError);
 export const useHasError = () => useChatStore(selectHasError);
@@ -106,6 +117,38 @@ export const useTotalCost = () => useChatStore(selectTotalCost);
 export const useSessionTokensUsed = () => useChatStore(selectSessionTokensUsed);
 export const useSessionCost = () => useChatStore(selectSessionCost);
 export const useAverageResponseTime = () => useChatStore(selectAverageResponseTime);
+
+// Tools Hooks
+export const useAvailableTools = () => useChatStore(selectAvailableTools);
+export const useSelectedTools = () => useChatStore(selectSelectedTools);
+export const useSelectedToolObjects = () => {
+  const availableTools = useAvailableTools();
+  const selectedTools = useSelectedTools();
+  
+  return useMemo(
+    () => availableTools.filter(tool => selectedTools.includes(tool.id)),
+    [availableTools, selectedTools]
+  );
+};
+export const useHasSelectedTools = () => useChatStore(selectHasSelectedTools);
+export const useIsToolSelected = (toolId: string) => useChatStore(selectIsToolSelected(toolId));
+
+// Token Calculation Hooks
+export const useTotalInputTokens = () => useChatStore(selectTotalInputTokens);
+export const useTotalOutputTokens = () => useChatStore(selectTotalOutputTokens);
+export const useTokenStats = () => {
+  const totalInput = useTotalInputTokens();
+  const totalOutput = useTotalOutputTokens();
+  
+  return useMemo(
+    () => ({
+      totalInput,
+      totalOutput,
+      total: totalInput + totalOutput,
+    }),
+    [totalInput, totalOutput]
+  );
+};
 
 // Action Hooks
 export const useChatActions = () => {
@@ -148,6 +191,16 @@ export const useChatActions = () => {
     // Input Management
     setInputMessage: store.setInputMessage,
     clearInput: store.clearInput,
+    
+    // Template Variables Management
+    setTemplateVariable: store.setTemplateVariable,
+    clearTemplateVariables: store.clearTemplateVariables,
+    
+    // Tools Management
+    setAvailableTools: store.setAvailableTools,
+    setSelectedTools: store.setSelectedTools,
+    toggleTool: store.toggleTool,
+    clearSelectedTools: store.clearSelectedTools,
     
     // Error Handling
     setError: store.setError,
@@ -275,5 +328,30 @@ export const useMessageEditing = () => {
     cancelEditingMessage,
     saveEditedMessage,
     setEditingContent,
+  };
+};
+
+// Hook for tools management
+export const useToolsManagement = () => {
+  const availableTools = useAvailableTools();
+  const selectedTools = useSelectedTools();
+  const selectedToolObjects = useSelectedToolObjects();
+  const hasSelectedTools = useHasSelectedTools();
+  const {
+    setAvailableTools,
+    setSelectedTools,
+    toggleTool,
+    clearSelectedTools,
+  } = useChatActions();
+  
+  return {
+    availableTools,
+    selectedTools,
+    selectedToolObjects,
+    hasSelectedTools,
+    setAvailableTools,
+    setSelectedTools,
+    toggleTool,
+    clearSelectedTools,
   };
 };

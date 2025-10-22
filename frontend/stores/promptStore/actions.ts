@@ -11,6 +11,13 @@ const createPromptKey = (repoName: string, filePath: string): string =>
 
 const CACHE_DURATION = 1000 * 60 * 60; // 1 hour in milliseconds
 
+// Helper to check if cache is stale
+const isCacheStale = (lastSyncTimestamp: number | null): boolean => {
+  if (!lastSyncTimestamp) return true;
+  const age = Date.now() - lastSyncTimestamp;
+  return age >= CACHE_DURATION;
+};
+
 // Create all prompt actions as a single StateCreator
 export const createPromptActions: StateCreator<PromptStore, [], [], PromptActions> = (set, get, api) => ({
   // Initialize store - check cache and auto-sync if needed
@@ -19,17 +26,36 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
     
     // If we have cached data and it's not stale, we're done
     const promptCount = Object.keys(state.prompts).length;
-    if (promptCount > 0 && state.lastSyncTimestamp) {
-      const age = Date.now() - state.lastSyncTimestamp;
-      if (age < CACHE_DURATION) {
-        console.log('Using cached prompts, age:', Math.round(age / 1000), 'seconds');
-        return;
-      }
+    if (promptCount > 0 && !isCacheStale(state.lastSyncTimestamp)) {
+      const age = state.lastSyncTimestamp ? Date.now() - state.lastSyncTimestamp : 0;
+      console.log('Using cached prompts, age:', Math.round(age / 1000), 'seconds');
+      return;
     }
     
-    // Otherwise, trigger auto-sync
+    // Cache is empty or stale, trigger auto-sync
     console.log('Cache empty or stale, triggering auto-sync');
     await get().discoverAllPromptsFromRepos();
+  },
+  
+  // Check cache staleness and refresh if needed
+  checkAndRefreshCache: async () => {
+    const state = get();
+    
+    // If cache is stale, refresh
+    if (isCacheStale(state.lastSyncTimestamp)) {
+      console.log('Cache is stale, refreshing...');
+      await get().discoverAllPromptsFromRepos();
+    }
+  },
+  
+  // Invalidate cache - clear prompts and force refresh on next access
+  invalidateCache: () => {
+    set((draft) => {
+      draft.prompts = {};
+      draft.lastSyncTimestamp = null;
+    // @ts-expect-error - Immer middleware supports 3 params
+    }, false, 'prompts/invalidate-cache');
+    console.log('Prompt cache invalidated');
   },
 
   // Discover prompts from all configured repositories

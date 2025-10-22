@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import {
   HStack,
   VStack,
@@ -10,26 +9,20 @@ import {
 } from '@chakra-ui/react';
 import { LuRefreshCw, LuBot, LuDollarSign } from 'react-icons/lu';
 import { useColorModeValue } from '@/components/ui/color-mode';
-import { ChatMessage } from '../_types/ChatState';
 import { pricingService } from '@/services/llm/pricing/pricingService';
+import { useSessionCost } from '@/stores/chatStore/hooks';
 
 interface ChatSimpleHeaderProps {
   onReset: () => void;
   isLoading?: boolean;
-  messages?: ChatMessage[];
 }
 
 export function ChatSimpleHeader({
   onReset,
   isLoading = false,
-  messages = []
 }: ChatSimpleHeaderProps) {
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
-
-  // Calculate total cost from all messages
-  const totalCost = messages.reduce((sum, message) => {
-    return sum + (message.cost || 0);
-  }, 0);
+  const totalCost = useSessionCost();
 
   return (
     <Box

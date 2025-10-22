@@ -74,12 +74,6 @@ app.include_router(
 )
 
 app.include_router(
-    llm_router,
-    prefix="/api/v0/llm/chat",
-    tags=["llm"]
-)
-
-app.include_router(
     repos_router,
     prefix="/api/v0/repos",
     tags=["repos"]

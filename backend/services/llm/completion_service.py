@@ -228,9 +228,16 @@ class ChatCompletionService:
         # Build completion parameters
         completion_params = self.build_completion_params(request, api_key, api_base_url, stream=False)
         
-        # Debug logging
-        self.logger.info(f"Calling any-llm completion with params: {completion_params}")
-        self.logger.info(f"Provider: '{request.provider}', Model: '{request.model}', Model Identifier: '{completion_params['model']}'")
+        # Debug logging - DETAILED CONFIG BEFORE SENDING REQUEST
+        self.logger.info(f"=" * 80)
+        self.logger.info(f"COMPLETION REQUEST CONFIG:")
+        self.logger.info(f"  Provider: '{request.provider}'")
+        self.logger.info(f"  Model: '{request.model}'")
+        self.logger.info(f"  API Key: '{api_key[:10]}...' (length: {len(api_key) if api_key else 0})")
+        self.logger.info(f"  API Base URL: '{api_base_url}'")
+        self.logger.info(f"  Model Identifier: '{completion_params['model']}'")
+        self.logger.info(f"  Full Params: {completion_params}")
+        self.logger.info(f"=" * 80)
 
         # Track inference timing
         start_time = time.time()

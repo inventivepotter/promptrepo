@@ -12,7 +12,7 @@ from typing import List, Optional, Dict, Any, Union
 
 from schemas.hosting_type_enum import HostingType
 from services.config.config_interface import IConfig
-from services.git.git_service import GitService
+from services.local_repo.git_service import GitService
 from services.file_operations import FileOperationsService
 from settings import settings
 from middlewares.rest.exceptions import NotFoundException, AppException, ConflictException
@@ -23,7 +23,7 @@ from .models import (
     PromptData,
     PromptDataUpdate
 )
-from services.git.models import CommitInfo
+from services.local_repo.models import CommitInfo
 
 logger = logging.getLogger(__name__)
 
@@ -329,11 +329,11 @@ class PromptService(IPromptService):
         repo_base_path = self._get_repo_base_path(user_id)
         repo_path = repo_base_path / repo_name
         
+        # Check if repository exists, if not return empty list instead of raising exception
+        # This prevents infinite loops when repos haven't been cloned yet
         if not repo_path.exists():
-            raise NotFoundException(
-                resource="Repository",
-                identifier=f"{repo_name} at {repo_path}"
-            )
+            logger.warning(f"Repository {repo_name} not found at {repo_path}, returning empty list")
+            return []
         
         # Scan for all YAML/YML files
         prompt_metas = []

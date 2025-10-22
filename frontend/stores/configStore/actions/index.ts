@@ -20,6 +20,7 @@ import { createLLMFormActions } from './llmFormActions';
 import { createSetLLMProviderWithSideEffectsAction } from './setLLMProviderWithSideEffects';
 import { createFetchModelsIfReadyAction } from './fetchModelsIfReady';
 import { createInitializeConfigAction } from './initializeConfig';
+import { createInvalidateCacheAction } from './invalidateCache';
 import { createLogoutAction } from './logout';
 import { createSetLoadingConfigAction } from './setLoadingConfig';
 import type { StateCreator } from '@/lib/zustand';
@@ -31,6 +32,7 @@ export const createConfigActions: StateCreator<ConfigStore, [], [], ConfigAction
   ...createGetConfigAction(set, get, api),
   ...createUpdateConfigAction(set, get, api),
   ...createInitializeConfigAction(set, get, api),
+  ...createInvalidateCacheAction(set, get, api),
   ...createLogoutAction(set, get, api),
   ...createLoadProvidersAction(set, get, api),
   ...createLoadReposAction(set, get, api),

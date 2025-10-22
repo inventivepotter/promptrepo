@@ -23,7 +23,7 @@ from services.remote_repo.providers import (
     GitLabRepoLocator,
     BitbucketRepoLocator,
 )
-from services.git.git_service import GitService
+from services.local_repo.git_service import GitService
 
 logger = logging.getLogger(__name__)
 

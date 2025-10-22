@@ -62,6 +62,8 @@ export interface PromptActions {
   deletePrompt: (repoName: string, filePath: string) => Promise<void>;
   
   initializeStore: () => Promise<void>;
+  checkAndRefreshCache: () => Promise<void>;
+  invalidateCache: () => void;
   
   // State Management
   setCurrentPrompt: (prompt: PromptMeta | null) => void;

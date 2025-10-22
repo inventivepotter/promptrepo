@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import List, Dict, Optional, Union
 import logging
 
-from services.git.models import GitOperationResult, PullRequestResult, RepoStatus, CommitInfo
+from services.local_repo.models import GitOperationResult, PullRequestResult, RepoStatus, CommitInfo
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ class GitService:
             GitOperationResult: Result of the operation
         """
         try:
-            logger.info(f"🔄 Creating new branch: {branch_name} from {base_branch}")
+            logger.info(f"Creating new branch: {branch_name} from {base_branch}")
 
             # Initialize repository
             repo = Repo(self.repo_path)
@@ -87,14 +87,14 @@ class GitService:
             new_branch = repo.create_head(branch_name)
             new_branch.checkout()
 
-            logger.info(f"✅ Successfully created and checked out branch: {branch_name}")
+            logger.info(f"Successfully created and checked out branch: {branch_name}")
             return GitOperationResult(
                 success=True,
                 message=f"Successfully created and checked out branch: {branch_name}"
             )
 
         except Exception as e:
-            logger.error(f"❌ Failed to create branch {branch_name}: {e}")
+            logger.error(f"Failed to create branch {branch_name}: {e}")
             return GitOperationResult(
                 success=False,
                 message=f"Failed to create branch {branch_name}: {e}"
@@ -119,7 +119,7 @@ class GitService:
             repo_path_obj = self.repo_path
 
             if isinstance(files_to_add, dict):
-                logger.info(f"📝 Creating and adding {len(files_to_add)} new files")
+                logger.info(f"Creating and adding {len(files_to_add)} new files")
                 # Dict format: {file_path: content}
                 for file_path, content in files_to_add.items():
                     try:
@@ -142,7 +142,7 @@ class GitService:
                         logger.error(f"Failed to create/stage file {file_path}: {e}")
 
             elif isinstance(files_to_add, list):
-                logger.info(f"📁 Staging {len(files_to_add)} existing files")
+                logger.info(f"Staging {len(files_to_add)} existing files")
                 # List format: [file_paths] - files must already exist
                 for file_path in files_to_add:
                     try:
@@ -156,7 +156,7 @@ class GitService:
                     except Exception as e:
                         logger.error(f"Failed to stage file {file_path}: {e}")
 
-            logger.info(f"✅ Successfully added {len(added_files)} files")
+            logger.info(f"Successfully added {len(added_files)} files")
             return GitOperationResult(
                 success=True,
                 message=f"Successfully added {len(added_files)} files",
@@ -164,7 +164,7 @@ class GitService:
             )
 
         except Exception as e:
-            logger.error(f"❌ Failed to add files: {e}")
+            logger.error(f"Failed to add files: {e}")
             return GitOperationResult(
                 success=False,
                 message=f"Failed to add files: {e}",
@@ -189,7 +189,7 @@ class GitService:
             GitOperationResult: Result of the operation
         """
         try:
-            logger.info(f"💾 Committing changes: {commit_message[:50]}...")
+            logger.info(f"Committing changes: {commit_message[:50]}...")
 
             repo = Repo(self.repo_path)
 
@@ -198,7 +198,7 @@ class GitService:
 
             # Check if there are changes to commit
             if not repo.is_dirty() and not repo.untracked_files:
-                logger.warning("⚠️  No changes to commit")
+                logger.warning("No changes to commit")
                 return GitOperationResult(
                     success=False,
                     message="No changes to commit"
@@ -208,7 +208,7 @@ class GitService:
             commit = repo.index.commit(commit_message)
             commit_hash = commit.hexsha
 
-            logger.info(f"✅ Successfully committed: {commit_hash[:8]}")
+            logger.info(f"Successfully committed: {commit_hash[:8]}")
             return GitOperationResult(
                 success=True,
                 message=f"Successfully committed: {commit_hash[:8]}",
@@ -216,7 +216,7 @@ class GitService:
             )
 
         except Exception as e:
-            logger.error(f"❌ Failed to commit changes: {e}")
+            logger.error(f"Failed to commit changes: {e}")
             return GitOperationResult(
                 success=False,
                 message=f"Failed to commit changes: {e}"
@@ -239,7 +239,7 @@ class GitService:
             if branch_name is None:
                 branch_name = repo.active_branch.name
 
-            logger.info(f"🚀 Pushing branch to remote: {branch_name}")
+            logger.info(f"Pushing branch to remote: {branch_name}")
 
             # Get remote origin
             origin = repo.remote('origin')
@@ -257,14 +257,14 @@ class GitService:
             if oauth_token in origin.url:
                 origin.set_url(original_url)
 
-            logger.info(f"✅ Successfully pushed branch: {branch_name}")
+            logger.info(f"Successfully pushed branch: {branch_name}")
             return GitOperationResult(
                 success=True,
                 message=f"Successfully pushed branch: {branch_name}"
             )
 
         except Exception as e:
-            logger.error(f"❌ Failed to push branch {branch_name}: {e}")
+            logger.error(f"Failed to push branch {branch_name}: {e}")
             return GitOperationResult(
                 success=False,
                 message=f"Failed to push branch {branch_name}: {e}"
@@ -296,7 +296,7 @@ class GitService:
             PullRequestResult: Result of the operation
         """
         try:
-            logger.info(f"🔀 Creating pull request: {title}")
+            logger.info(f"Creating pull request: {title}")
 
             headers = {
                 "Authorization": f"Bearer {oauth_token}",
@@ -325,7 +325,7 @@ class GitService:
 
                 if response.status_code == 201:
                     pr_info = response.json()
-                    logger.info(f"✅ Successfully created PR #{pr_info['number']}: {pr_info['html_url']}")
+                    logger.info(f"Successfully created PR #{pr_info['number']}: {pr_info['html_url']}")
                     return PullRequestResult(
                         success=True,
                         pr_number=pr_info["number"],
@@ -335,7 +335,7 @@ class GitService:
                     )
                 else:
                     error_msg = f"PR creation failed: {response.status_code} {response.text}"
-                    logger.error(f"❌ {error_msg}")
+                    logger.error(f"{error_msg}")
                     return PullRequestResult(
                         success=False,
                         error=error_msg
@@ -343,7 +343,7 @@ class GitService:
 
         except Exception as e:
             error_msg = f"Failed to create pull request: {e}"
-            logger.error(f"❌ {error_msg}")
+            logger.error(f"{error_msg}")
             return PullRequestResult(
                 success=False,
                 error=error_msg
@@ -407,13 +407,13 @@ class GitService:
         try:
             repo = Repo(self.repo_path)
             repo.git.checkout(branch_name)
-            logger.info(f"✅ Switched to branch: {branch_name}")
+            logger.info(f"Switched to branch: {branch_name}")
             return GitOperationResult(
                 success=True,
                 message=f"Switched to branch: {branch_name}"
             )
         except Exception as e:
-            logger.error(f"❌ Failed to switch to branch {branch_name}: {e}")
+            logger.error(f"Failed to switch to branch {branch_name}: {e}")
             return GitOperationResult(
                 success=False,
                 message=f"Failed to switch to branch {branch_name}: {e}"
@@ -453,14 +453,14 @@ class GitService:
                 origin.set_url(original_url)
 
             current_branch = repo.active_branch.name
-            logger.info(f"✅ Pulled latest changes for branch: {current_branch}")
+            logger.info(f"Pulled latest changes for branch: {current_branch}")
             return GitOperationResult(
                 success=True,
                 message=f"Pulled latest changes for branch: {current_branch}"
             )
 
         except Exception as e:
-            logger.error(f"❌ Failed to pull latest changes: {e}")
+            logger.error(f"Failed to pull latest changes: {e}")
             return GitOperationResult(
                 success=False,
                 message=f"Failed to pull latest changes: {e}"
@@ -484,7 +484,7 @@ class GitService:
             GitOperationResult: Result of the operation
         """
         try:
-            logger.info(f"🔄 Cloning repository from {clone_url}")
+            logger.info(f"Cloning repository from {clone_url}")
 
             # Add OAuth token to URL if provided
             authenticated_url = clone_url
@@ -501,11 +501,11 @@ class GitService:
             if branch and branch != repo.active_branch.name:
                 try:
                     repo.git.checkout(branch)
-                    logger.info(f"✅ Checked out branch: {branch}")
+                    logger.info(f"Checked out branch: {branch}")
                 except Exception as e:
                     logger.warning(f"Could not checkout branch {branch}: {e}")
 
-            logger.info(f"✅ Successfully cloned repository to {self.repo_path}")
+            logger.info(f"Successfully cloned repository to {self.repo_path}")
             return GitOperationResult(
                 success=True,
                 message=f"Successfully cloned repository to {self.repo_path}",
@@ -513,7 +513,7 @@ class GitService:
             )
 
         except Exception as e:
-            logger.error(f"❌ Failed to clone repository: {e}")
+            logger.error(f"Failed to clone repository: {e}")
             return GitOperationResult(
                 success=False,
                 message=f"Failed to clone repository: {e}"
@@ -585,9 +585,9 @@ class GitService:
                 )
                 commit_info_list.append(commit_info)
             
-            logger.info(f"✅ Retrieved {len(commit_info_list)} commits for file: {file_path}")
+            logger.info(f"Retrieved {len(commit_info_list)} commits for file: {file_path}")
             return commit_info_list
             
         except Exception as e:
-            logger.warning(f"⚠️  Failed to get commit history for {file_path}: {e}")
+            logger.warning(f"Failed to get commit history for {file_path}: {e}")
             return []

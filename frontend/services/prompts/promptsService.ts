@@ -2,6 +2,8 @@ import { promptsApi } from './api';
 import { errorNotification, successNotification } from '@/lib/notifications';
 import { isStandardResponse, isErrorResponse } from '@/types/OpenApiResponse';
 import type { PromptMeta, PromptDataUpdate } from './api';
+import { usePromptStore } from '@/stores/promptStore/store';
+import { useConfigStore } from '@/stores/configStore/configStore';
 
 /**
  * Prompts service that handles all prompt-related operations.
@@ -162,39 +164,62 @@ export class PromptsService {
    * Discover prompts from a repository
    */
   async discoverAllPromptsFromRepos(repoNames: string[]): Promise<PromptMeta[]> {
+    // Return empty array immediately if no repos provided
+    if (!repoNames || repoNames.length === 0) {
+      console.log('No repositories to discover prompts from');
+      return [];
+    }
+    
     try {
       const result = await promptsApi.discoverAllPromptsFromRepos(repoNames);
       
       if (isErrorResponse(result)) {
-        errorNotification(
-          result.title || 'Discovery Failed',
-          result.detail || `Failed to discover prompts from repository ${repoNames}`
-        );
+        // Log error but don't show notification - let the store handle it
+        console.error('Discovery failed:', result.detail || result.title);
+        
+        // Handle authentication errors - throw to prevent retries
+        if (result.status_code === 401) {
+          console.warn('Authentication required (401) - User needs to log in');
+          throw new Error('AUTHENTICATION_REQUIRED');
+        }
+        
+        // If 400 Bad Request, invalidate both caches to force refresh
+        if (result.status_code === 400) {
+          console.warn('Bad Request (400) - Invalidating prompt and config caches');
+          
+          // Invalidate prompt cache
+          usePromptStore.getState().invalidateCache();
+          
+          // Invalidate config cache
+          useConfigStore.getState().invalidateCache();
+        }
+        
         return [];
       }
 
       if (!isStandardResponse(result) || !result.data) {
-        errorNotification(
-          'Unexpected Response',
-          'Received an unexpected response from the server.'
-        );
+        console.error('Unexpected response format from discovery API');
         return [];
       }
 
       const promptMetas = result.data;
 
-      successNotification(
-        'Repository Discovered',
-        `Successfully discovered ${promptMetas.length} prompts from ${repoNames}`
-      );
+      // Only show success notification if prompts were actually discovered
+      if (promptMetas.length > 0) {
+        successNotification(
+          'Repository Discovered',
+          `Successfully discovered ${promptMetas.length} prompts from ${repoNames.length} repository/repositories`
+        );
+      }
       
       return promptMetas;
     } catch (error: unknown) {
       console.error('Error discovering repository:', error);
-      errorNotification(
-        'Discovery Error',
-        'An unexpected error occurred while discovering the repository'
-      );
+      // Re-throw authentication errors to prevent retries
+      if (error instanceof Error && error.message === 'AUTHENTICATION_REQUIRED') {
+        throw error;
+      }
+      // Log but don't show notification to avoid spam
       return [];
     }
   }

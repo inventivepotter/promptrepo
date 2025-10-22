@@ -41,6 +41,13 @@ export const initialChatState: ChatState = {
   // Input state
   inputMessage: '',
   
+  // Template variables for prompt templates
+  templateVariables: {},
+  
+  // Tools
+  availableTools: [],
+  selectedTools: [],
+  
   // Statistics
   totalTokensUsed: 0,
   totalCost: 0,

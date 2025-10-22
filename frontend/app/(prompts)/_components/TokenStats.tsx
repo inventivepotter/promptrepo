@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import {
   Box,
   HStack,
@@ -11,13 +10,10 @@ import {
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { LuInfo } from 'react-icons/lu';
 import { FaInfoCircle } from 'react-icons/fa';
+import { useTokenStats } from '@/stores/chatStore/hooks';
 
-interface TokenStatsProps {
-  totalInputTokens: number;
-  totalOutputTokens: number;
-}
-
-export function TokenStats({ totalInputTokens, totalOutputTokens }: TokenStatsProps) {
+export function TokenStats() {
+  const { totalInput, totalOutput } = useTokenStats();
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
   const bgColor = useColorModeValue('gray.50', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
@@ -26,7 +22,7 @@ export function TokenStats({ totalInputTokens, totalOutputTokens }: TokenStatsPr
   const textColor = useColorModeValue('gray.700', 'gray.300');
   const subTextColor = useColorModeValue('gray.600', 'gray.400');
   
-  if (totalInputTokens === 0 && totalOutputTokens === 0) {
+  if (totalInput === 0 && totalOutput === 0) {
     return null;
   }
 
@@ -95,10 +91,10 @@ export function TokenStats({ totalInputTokens, totalOutputTokens }: TokenStatsPr
         </HStack>
         <HStack gap={4} color={mutedTextColor}>
           <Text>
-            <Text as="span" fontWeight="medium">Input:</Text> {totalInputTokens.toLocaleString()}
+            <Text as="span" fontWeight="medium">Input:</Text> {totalInput.toLocaleString()}
           </Text>
           <Text>
-            <Text as="span" fontWeight="medium">Output:</Text> {totalOutputTokens.toLocaleString()}
+            <Text as="span" fontWeight="medium">Output:</Text> {totalOutput.toLocaleString()}
           </Text>
         </HStack>
       </HStack>

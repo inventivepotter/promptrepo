@@ -8,7 +8,7 @@ across both individual and organization hosting types.
 from datetime import datetime
 from typing import Optional, List, Dict, Any, Literal, Union
 from pydantic import BaseModel, Field
-from services.git.models import CommitInfo
+from services.local_repo.models import CommitInfo
 
 class PromptData(BaseModel):
     """

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import { useState } from 'react';
 import {
   VStack,
   Text,
@@ -13,20 +13,11 @@ import {
 } from '@chakra-ui/react';
 import { FaChevronDown, FaInfoCircle } from 'react-icons/fa';
 import { useColorModeValue } from '@/components/ui/color-mode';
-import { Tool } from '../_types/ChatState';
+import { useToolsManagement } from '@/stores/chatStore/hooks';
 
-interface ChatFooterProps {
-  selectedTools: string[];
-  availableTools: Tool[];
-  onToolsChange: (tools: string[]) => void;
-}
-
-export function ChatFooter({
-  selectedTools,
-  availableTools,
-  onToolsChange
-}: ChatFooterProps) {
-  const [toolSearchValue, setToolSearchValue] = React.useState('');
+export function ChatFooter() {
+  const { availableTools, selectedTools, setSelectedTools } = useToolsManagement();
+  const [toolSearchValue, setToolSearchValue] = useState('');
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
   const linkColor = useColorModeValue('blue.500', 'blue.300');
 
@@ -58,7 +49,7 @@ export function ChatFooter({
           collection={toolsCollection}
           multiple
           value={selectedTools}
-          onValueChange={(e) => onToolsChange(e.value)}
+          onValueChange={(e) => setSelectedTools(e.value)}
           inputValue={toolSearchValue}
           onInputValueChange={(e) => setToolSearchValue(e.inputValue)}
           openOnClick

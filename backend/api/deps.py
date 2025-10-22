@@ -25,7 +25,7 @@ from services.config.config_service import ConfigService
 from schemas.hosting_type_enum import HostingType
 from services.llm.completion_service import ChatCompletionService
 from services.llm.llm_provider_service import LLMProviderService
-from services.git.git_service import GitService
+from services.local_repo.git_service import GitService
 from services.remote_repo.remote_repo_service import RemoteRepoService
 from services.prompt.prompt_service import PromptService
 from services.file_operations.file_operations_service import FileOperationsService

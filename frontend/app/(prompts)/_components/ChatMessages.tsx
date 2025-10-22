@@ -32,8 +32,8 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
   const aiMessageBorder = useColorModeValue('blue.200', 'blue.600');
   
   // User Message (right side)
-  const userMessageBg = useColorModeValue('blue.50', 'blue.900');
-  const userMessageBorder = useColorModeValue('blue.300', 'blue.500');
+  const userMessageBg = "bg";
+  const userMessageBorder = "bg.muted";
   
   // System Message (right side, muted)
   const systemMessageBg = useColorModeValue('gray.50', 'gray.700');

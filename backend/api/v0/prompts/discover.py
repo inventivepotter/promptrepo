@@ -9,8 +9,9 @@ from pydantic import BaseModel, Field
 from typing import List
 import logging
 
-from api.deps import CurrentUserDep, PromptServiceDep
+from api.deps import CurrentUserDep, PromptServiceDep, ConfigServiceDep, RemoteRepoServiceDep, DBSession, CurrentSessionDep
 from services.prompt.models import PromptMeta
+from services.local_repo.repo_cloning_service import RepoCloningService
 from middlewares.rest import (
     StandardResponse,
     success_response,
@@ -69,11 +70,18 @@ class DiscoverRepositoriesRequest(BaseModel):
 async def discover_repository_prompts(
     request: Request,
     user_id: CurrentUserDep,
+    user_session: CurrentSessionDep,
     prompt_service: PromptServiceDep,
+    config_service: ConfigServiceDep,
+    remote_repo_service: RemoteRepoServiceDep,
+    db: DBSession,
     request_body: DiscoverRepositoriesRequest
 ) -> StandardResponse[List[PromptMeta]]:
     """
     Discover prompts from one or more repositories.
+    
+    This endpoint ensures repositories are cloned before attempting to discover prompts,
+    preventing infinite loops when repositories don't exist.
     
     Scans and retrieves all prompt YAML/YML files from the specified repositories.
     Accepts repository names in 'owner/repo' or 'repo' format.
@@ -93,10 +101,50 @@ async def discover_repository_prompts(
             extra={"request_id": request_id, "user_id": user_id}
         )
         
+        # Get hosting config and repo configs
+        hosting_config = config_service.get_hosting_config()
+        repo_configs = config_service.get_repo_configs(user_id) or []
+        
+        # Filter repo configs to only those requested
+        requested_repo_configs = [
+            rc for rc in repo_configs
+            if rc.repo_name in request_body.repo_names
+        ]
+        
+        # Ensure all requested repos are cloned before discovery
+        cloning_service = RepoCloningService(
+            db=db,
+            remote_repo_service=remote_repo_service,
+            hosting_type=hosting_config.type
+        )
+        
+        # Get OAuth token from user session if available
+        oauth_token = getattr(user_session, 'oauth_token', None)
+        
+        available_repos = cloning_service.ensure_repos_cloned(
+            user_id=user_id,
+            repo_configs=requested_repo_configs,
+            oauth_token=oauth_token
+        )
+        
+        logger.info(
+            f"{len(available_repos)} repositories are available for discovery",
+            extra={"request_id": request_id, "user_id": user_id}
+        )
+        
         all_prompts = []
         failed_repos = []
         
+        # Only attempt to discover from available repos
         for repo_name in request_body.repo_names:
+            if repo_name not in available_repos:
+                logger.warning(
+                    f"Repository {repo_name} is not available, skipping",
+                    extra={"request_id": request_id, "user_id": user_id}
+                )
+                failed_repos.append(repo_name)
+                continue
+                
             try:
                 discovered_prompts = await prompt_service.discover_prompts(
                     user_id=user_id,

@@ -26,7 +26,6 @@ import {
   useDeleteDialogOpen,
   usePromptToDelete,
   useIsDeleting,
-  useIsLoading,
 } from '@/stores/promptStore';
 import { PromptSearch } from '../_components/PromptSearch';
 import { PromptCard } from '../_components/PromptCard';
@@ -72,7 +71,8 @@ export default function PromptsPage() {
     if (typeof window !== 'undefined') {
       fetchPrompts();
     }
-  });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   const handleEditPrompt = (prompt: PromptMeta) => {
     setCurrentPrompt(prompt);

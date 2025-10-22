@@ -52,6 +52,7 @@ export interface ConfigActions {
   getConfig: (all?: boolean) => Promise<void>;
   updateConfig: (config: AppConfigInput) => Promise<void>;
   initializeConfig: (autoLoad?: boolean, all?: boolean) => Promise<void>;
+  invalidateCache: () => Promise<void>;
   logout: () => void;
   setLoadingConfig: (loading: boolean) => void;
   
