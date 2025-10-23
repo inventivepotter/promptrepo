@@ -4,6 +4,7 @@ import { useConfigStore } from '@/stores/configStore';
 import {
   selectPrompts,
   selectCurrentPrompt,
+  selectIsChanged,
   selectIsLoading,
   selectIsCreating,
   selectIsUpdating,
@@ -28,12 +29,12 @@ import {
   selectPromptCount,
   selectIsEmpty,
   selectPageInfo,
-  selectHasUnsavedChanges,
 } from './selectors';
 
 // Data Hooks
 export const usePrompts = () => usePromptStore(selectPrompts);
 export const useCurrentPrompt = () => usePromptStore(selectCurrentPrompt);
+export const useIsChanged = () => usePromptStore(selectIsChanged);
 export const usePromptByKey = (repoName: string, filePath: string) =>
   usePromptStore(selectPromptByKey(repoName, filePath));
 export const usePromptsByRepository = (repository: string) =>
@@ -70,9 +71,6 @@ export const useIsProcessing = () => usePromptStore(selectIsProcessing);
 
 // Error Hook
 export const usePromptError = () => usePromptStore(selectError);
-
-// Unsaved Changes Hook
-export const useHasUnsavedChanges = () => usePromptStore(selectHasUnsavedChanges);
 
 // Filter Hooks
 export const usePromptFilters = () => usePromptStore(selectFilters);
@@ -156,9 +154,7 @@ export const usePromptActions = () => {
     
     // State Management
     setCurrentPrompt: store.setCurrentPrompt,
-    updateCurrentPrompt: store.updateCurrentPrompt,
     clearCurrentPrompt: store.clearCurrentPrompt,
-    checkForChanges: store.checkForChanges,
     
     // Delete Dialog Management
     openDeleteDialog: store.openDeleteDialog,
@@ -199,8 +195,7 @@ export const usePromptActions = () => {
  */
 export const useUpdateCurrentPromptField = () => {
   const currentPrompt = useCurrentPrompt();
-  const updateCurrentPrompt = usePromptStore(state => state.updateCurrentPrompt);
-  const checkForChanges = usePromptStore(state => state.checkForChanges);
+  const setCurrentPrompt = usePromptStore(state => state.setCurrentPrompt);
 
   return useMemo(() => {
     return (field: string, value: string | number | boolean | string[] | null | Record<string, unknown>) => {
@@ -208,18 +203,15 @@ export const useUpdateCurrentPromptField = () => {
         return;
       }
 
-      updateCurrentPrompt({
+      setCurrentPrompt({
         ...currentPrompt,
         prompt: {
           ...currentPrompt.prompt,
           [field]: value,
         },
       });
-      
-      // Check for changes after updating the field
-      checkForChanges();
     };
-  }, [currentPrompt, updateCurrentPrompt, checkForChanges]);
+  }, [currentPrompt, setCurrentPrompt]);
 };
 
 // Convenience hook that returns everything

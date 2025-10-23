@@ -23,8 +23,8 @@ export interface PromptState {
   // Currently selected/editing prompt (serves as form data)
   currentPrompt: PromptMeta | null;
   
-  // Original prompt data for change tracking
-  originalPrompt: PromptMeta | null;
+  // Track if current prompt has unsaved changes
+  isChanged: boolean;
   
   // UI State
   isLoading: boolean;
@@ -32,7 +32,6 @@ export interface PromptState {
   isUpdating: boolean;
   isDeleting: boolean;
   error: string | null;
-  hasUnsavedChanges: boolean;
   
   // Delete dialog state
   deleteDialog: {
@@ -71,10 +70,7 @@ export interface PromptActions {
   
   // State Management
   setCurrentPrompt: (prompt: PromptMeta | null) => void;
-  updateCurrentPrompt: (prompt: PromptMeta) => void;
   clearCurrentPrompt: () => void;
-  checkForChanges: () => void;
-  saveCurrentPrompt: () => Promise<void>;
   
   // Delete Dialog Management
   openDeleteDialog: (repoName: string, filePath: string, promptName: string) => void;

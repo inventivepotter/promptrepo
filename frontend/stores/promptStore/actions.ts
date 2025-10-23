@@ -158,10 +158,8 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
       const key = createPromptKey(repoName, filePath);
       set((draft) => {
         draft.currentPrompt = promptMeta;
-        // Deep clone original prompt for change tracking
-        draft.originalPrompt = JSON.parse(JSON.stringify(promptMeta));
         draft.prompts[key] = promptMeta;
-        draft.hasUnsavedChanges = false;
+        draft.isChanged = false; // Reset isChanged when loading a prompt
         draft.isLoading = false;
       // @ts-expect-error - Immer middleware supports 3 params
       }, false, 'prompts/fetch-by-id-success');
@@ -189,6 +187,7 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
       set((draft) => {
         draft.prompts[key] = newPromptMeta;
         draft.currentPrompt = newPromptMeta;
+        draft.isChanged = false; // Reset isChanged after creation
         draft.isCreating = false;
       // @ts-expect-error - Immer middleware supports 3 params
       }, false, 'prompts/create-success');
@@ -220,6 +219,7 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
         if (draft.currentPrompt?.repo_name === repoName && draft.currentPrompt?.file_path === filePath) {
           draft.currentPrompt = updatedPromptMeta;
         }
+        draft.isChanged = false; // Reset isChanged after successful save
         draft.isUpdating = false;
       // @ts-expect-error - Immer middleware supports 3 params
       }, false, 'prompts/update-success');
@@ -266,71 +266,17 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
   setCurrentPrompt: (prompt: PromptMeta | null) => {
     set((draft) => {
       draft.currentPrompt = prompt;
-      // Deep clone the prompt to track original state
-      draft.originalPrompt = prompt ? JSON.parse(JSON.stringify(prompt)) : null;
-      draft.hasUnsavedChanges = false;
+      draft.isChanged = true; // Mark as changed when prompt is modified
     // @ts-expect-error - Immer middleware supports 3 params
     }, false, 'prompts/set-current');
-  },
-
-  updateCurrentPrompt: (prompt: PromptMeta) => {
-    set((draft) => {
-      draft.currentPrompt = prompt;
-      // Don't reset originalPrompt - we want to track changes against the original
-    // @ts-expect-error - Immer middleware supports 3 params
-    }, false, 'prompts/update-current');
   },
 
   clearCurrentPrompt: () => {
     set((draft) => {
       draft.currentPrompt = null;
-      draft.originalPrompt = null;
-      draft.hasUnsavedChanges = false;
+      draft.isChanged = false; // Reset isChanged when clearing
     // @ts-expect-error - Immer middleware supports 3 params
     }, false, 'prompts/clear-current');
-  },
-
-  checkForChanges: () => {
-    const { currentPrompt, originalPrompt } = get();
-    
-    if (!currentPrompt || !originalPrompt) {
-      set((draft) => {
-        draft.hasUnsavedChanges = false;
-      // @ts-expect-error - Immer middleware supports 3 params
-      }, false, 'prompts/check-changes-no-prompt');
-      return;
-    }
-
-    // Deep comparison of prompt data
-    const hasChanges = JSON.stringify(currentPrompt.prompt) !== JSON.stringify(originalPrompt.prompt);
-    
-    set((draft) => {
-      draft.hasUnsavedChanges = hasChanges;
-    // @ts-expect-error - Immer middleware supports 3 params
-    }, false, 'prompts/check-changes');
-  },
-
-  saveCurrentPrompt: async () => {
-    const { currentPrompt } = get();
-    
-    if (!currentPrompt) {
-      throw new Error('No prompt to save');
-    }
-
-    await get().updatePrompt(
-      currentPrompt.repo_name,
-      currentPrompt.file_path,
-      currentPrompt.prompt as PromptDataUpdate
-    );
-
-    // After successful save, update original prompt and reset changes flag
-    set((draft) => {
-      if (draft.currentPrompt) {
-        draft.originalPrompt = JSON.parse(JSON.stringify(draft.currentPrompt));
-        draft.hasUnsavedChanges = false;
-      }
-    // @ts-expect-error - Immer middleware supports 3 params
-    }, false, 'prompts/save-success');
   },
 
   // Delete Dialog Management

@@ -16,15 +16,15 @@ import { Chat } from './Chat';
 import { PromptTimeline } from './PromptTimeline';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { useUser } from '@/stores/authStore';
-import { useCurrentPrompt, usePromptActions, useIsUpdating, useIsLoading, useHasUnsavedChanges } from '@/stores/promptStore/hooks';
+import { useCurrentPrompt, usePromptActions, useIsUpdating, useIsLoading, useIsChanged } from '@/stores/promptStore/hooks';
 
 export function PromptEditor() {
   const router = useRouter();
   const currentPrompt = useCurrentPrompt();
   const isUpdating = useIsUpdating();
   const isLoading = useIsLoading();
-  const hasUnsavedChanges = useHasUnsavedChanges();
-  const { saveCurrentPrompt, setCurrentPrompt } = usePromptActions();
+  const isChanged = useIsChanged();
+  const { saveCurrentPrompt } = usePromptActions();
   const user = useUser();
 
   const handleBack = () => {
@@ -67,7 +67,7 @@ export function PromptEditor() {
       <PromptEditorHeader
         onBack={handleBack}
         onSave={saveCurrentPrompt}
-        canSave={hasUnsavedChanges}
+        canSave={!!currentPrompt && isChanged}
         isSaving={isUpdating}
       />
 

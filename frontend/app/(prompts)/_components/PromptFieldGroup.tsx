@@ -24,7 +24,7 @@ interface PromptFieldGroupProps {
 
 export function PromptFieldGroup({ repoName, filePath }: PromptFieldGroupProps) {
   const currentPrompt = useCurrentPrompt();
-  const { updateCurrentPrompt, checkForChanges } = usePromptActions();
+  const { setCurrentPrompt } = usePromptActions();
   const [tagInput, setTagInput] = useState('');
 
   if (!currentPrompt) {
@@ -34,15 +34,13 @@ export function PromptFieldGroup({ repoName, filePath }: PromptFieldGroupProps) 
   const updateField = (field: string, value: string | number | boolean | string[] | null | Record<string, unknown>) => {
     if (!currentPrompt) return;
     
-    updateCurrentPrompt({
+    setCurrentPrompt({
       ...currentPrompt,
       prompt: {
         ...currentPrompt.prompt,
         [field]: value,
       },
     });
-    
-    checkForChanges();
   };
 
   const { prompt } = currentPrompt;
