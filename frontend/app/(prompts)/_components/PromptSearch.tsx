@@ -13,7 +13,6 @@ import {
 } from '@chakra-ui/react';
 import { LuSearch, LuArrowUp, LuArrowDown } from 'react-icons/lu';
 import { FaChevronDown } from 'react-icons/fa';
-import { useColorModeValue } from '@/components/ui/color-mode';
 
 interface PromptSearchProps {
   searchQuery: string;
@@ -40,13 +39,6 @@ export function PromptSearch({
 }: PromptSearchProps) {
   const [repoSearchValue, setRepoSearchValue] = React.useState('');
 
-  // Theme-aware colors
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
-  const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
-  const activeBg = useColorModeValue('blue.50', 'blue.900');
-  const activeColor = useColorModeValue('blue.600', 'blue.300');
-  const hoverBg = useColorModeValue('gray.50', 'gray.700');
-
   // Filter repositories based on search value
   const filteredRepos = availableRepos.filter(repo =>
     repo.toLowerCase().includes(repoSearchValue.toLowerCase())
@@ -69,21 +61,36 @@ export function PromptSearch({
   };
 
   return (
-    <Box p={6} borderWidth="1px" borderRadius="md" borderColor="border.emphasized">
+    <Box
+      p={6}
+      borderWidth="1px"
+      borderRadius="lg"
+      borderColor="border.emphasized"
+      bg="bg.subtle"
+      shadow="sm"
+      _hover={{ shadow: "md" }}
+      transition="all 0.2s"
+    >
       <VStack gap={4} align="stretch" mb={0}>
-        <HStack justify="space-between" align="start" flexWrap="wrap" gap={4}>
-          <HStack gap={4} flex={1}>
-            <Box flex={1} maxW="400px" position="relative">
+        <HStack justify="space-between" align="center" flexWrap="wrap" gap={4}>
+          <HStack gap={4} flex={1} height="40px">
+            <Box flex={1} maxW="400px" position="relative" height="100%">
               <Input
                 placeholder="Search prompts by name, description, or repo..."
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
-                borderColor={borderColor}
                 paddingRight="2.5rem"
+                size="md"
+                height="100%"
+                borderRadius="md"
+                borderColor="border"
+                bg="bg"
+                _hover={{ borderColor: "border.emphasized" }}
                 _focus={{
-                  borderColor: activeColor,
-                  boxShadow: `0 0 0 1px ${activeColor}`,
+                  borderColor: "colorPalette.500",
+                  boxShadow: "0 0 0 1px var(--chakra-colors-colorPalette-500)"
                 }}
+                transition="all 0.2s"
               />
               <Box
                 position="absolute"
@@ -91,13 +98,14 @@ export function PromptSearch({
                 top="50%"
                 transform="translateY(-50%)"
                 pointerEvents="none"
+                color="fg.muted"
               >
-                <LuSearch size={16} color={mutedTextColor} />
+                <LuSearch size={18} />
               </Box>
             </Box>
             
             {availableRepos.length > 0 && (
-              <Box minW="200px">
+              <Box minW="200px" height="100%">
                 <Combobox.Root
                   collection={createListCollection({
                     items: repoCollection
@@ -108,18 +116,29 @@ export function PromptSearch({
                   onInputValueChange={(e) => setRepoSearchValue(e.inputValue)}
                   openOnClick
                 >
-                  <Combobox.Control position="relative">
+                  <Combobox.Control position="relative" height="100%">
                     <Combobox.Input
                       placeholder="Filter by repository"
                       paddingRight="2rem"
-                      borderColor={borderColor}
+                      height="100%"
+                      borderRadius="md"
+                      borderColor="border"
+                      bg="bg"
+                      _hover={{ borderColor: "border.emphasized" }}
                       _focus={{
-                        borderColor: activeColor,
-                        boxShadow: `0 0 0 1px ${activeColor}`,
+                        borderColor: "colorPalette.500",
+                        boxShadow: "0 0 0 1px var(--chakra-colors-colorPalette-500)"
                       }}
+                      transition="all 0.2s"
                     />
-                    <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
-                      <FaChevronDown size={16} />
+                    <Combobox.Trigger
+                      position="absolute"
+                      right="0.5rem"
+                      top="50%"
+                      transform="translateY(-50%)"
+                      color="fg.muted"
+                    >
+                      <FaChevronDown size={10} />
                     </Combobox.Trigger>
                   </Combobox.Control>
                   <Combobox.Positioner>
@@ -141,25 +160,40 @@ export function PromptSearch({
             )}
           </HStack>
 
-          <HStack gap={2} align="center">
-            <Text fontSize="sm" color={mutedTextColor}>
+          <HStack
+            gap={2}
+            align="center"
+            px={3}
+            height="40px"
+            borderRadius="md"
+            bg="bg"
+            borderWidth="1px"
+            borderColor="border"
+          >
+            <Text fontSize="sm" fontWeight="medium" color="fg.muted">
               Sort by:
             </Text>
             <Button
               size="sm"
               variant={sortBy === 'name' ? 'solid' : 'ghost'}
               onClick={() => handleSortToggle('name')}
-              bg={sortBy === 'name' ? activeBg : 'transparent'}
-              color={sortBy === 'name' ? activeColor : mutedTextColor}
-              _hover={{ bg: sortBy === 'name' ? activeBg : hoverBg }}
+              bg={sortBy === 'name' ? "colorPalette.100" : 'transparent'}
+              color={sortBy === 'name' ? "colorPalette.700" : "fg"}
+              _hover={{
+                bg: sortBy === 'name' ? "colorPalette.200" : "bg.muted",
+                transform: "translateY(-1px)"
+              }}
+              _active={{ transform: "translateY(0)" }}
+              borderRadius="md"
+              transition="all 0.2s"
             >
               <HStack gap={1}>
-                <Text>Name</Text>
+                <Text fontWeight={sortBy === 'name' ? "semibold" : "normal"}>Name</Text>
                 {sortBy === 'name' && (
                   sortOrder === 'asc' ? (
-                    <LuArrowUp size={12} />
+                    <LuArrowUp size={14} />
                   ) : (
-                    <LuArrowDown size={12} />
+                    <LuArrowDown size={14} />
                   )
                 )}
               </HStack>
@@ -168,17 +202,23 @@ export function PromptSearch({
               size="sm"
               variant={sortBy === 'updated_at' ? 'solid' : 'ghost'}
               onClick={() => handleSortToggle('updated_at')}
-              bg={sortBy === 'updated_at' ? activeBg : 'transparent'}
-              color={sortBy === 'updated_at' ? activeColor : mutedTextColor}
-              _hover={{ bg: sortBy === 'updated_at' ? activeBg : hoverBg }}
+              bg={sortBy === 'updated_at' ? "colorPalette.100" : 'transparent'}
+              color={sortBy === 'updated_at' ? "colorPalette.700" : "fg"}
+              _hover={{
+                bg: sortBy === 'updated_at' ? "colorPalette.200" : "bg.muted",
+                transform: "translateY(-1px)"
+              }}
+              _active={{ transform: "translateY(0)" }}
+              borderRadius="md"
+              transition="all 0.2s"
             >
               <HStack gap={1}>
-                <Text>Last Updated</Text>
+                <Text fontWeight={sortBy === 'updated_at' ? "semibold" : "normal"}>Last Updated</Text>
                 {sortBy === 'updated_at' && (
                   sortOrder === 'asc' ? (
-                    <LuArrowUp size={12} />
+                    <LuArrowUp size={14} />
                   ) : (
-                    <LuArrowDown size={12} />
+                    <LuArrowDown size={14} />
                   )
                 )}
               </HStack>
@@ -186,14 +226,25 @@ export function PromptSearch({
           </HStack>
         </HStack>
 
-        <HStack justify="space-between">
-          <Text fontSize="sm" color={mutedTextColor}>
+        <HStack justify="space-between" pt={2} borderTopWidth="1px" borderColor="border">
+          <Text fontSize="sm" fontWeight="medium" color="fg.muted">
             {totalPrompts} prompt{totalPrompts !== 1 ? 's' : ''} found
           </Text>
           {repoFilter && (
-            <Text fontSize="sm" color={activeColor}>
-              Filtered by: {repoFilter}
-            </Text>
+            <HStack gap={2}>
+              <Text fontSize="sm" color="fg.muted">Filtered by:</Text>
+              <Text
+                fontSize="sm"
+                fontWeight="semibold"
+                px={2}
+                py={1}
+                borderRadius="md"
+                bg="colorPalette.100"
+                color="colorPalette.700"
+              >
+                {repoFilter}
+              </Text>
+            </HStack>
           )}
         </HStack>
       </VStack>

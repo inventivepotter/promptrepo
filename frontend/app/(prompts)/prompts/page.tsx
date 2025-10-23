@@ -1,17 +1,20 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   VStack,
   Text,
-  Button,
   Grid,
   Box,
   Container,
   ScrollArea,
+  SkeletonText,
+  EmptyState,
+  Button,
+  ButtonGroup,
 } from '@chakra-ui/react';
-import { LuPlus } from 'react-icons/lu';
+import { HiColorSwatch } from 'react-icons/hi';
 import type { PromptMeta } from '@/services/prompts/api';
 import {
   useFilteredPrompts,
@@ -25,16 +28,24 @@ import {
   usePromptActions,
   useUniqueRepositories,
   usePageSize,
+  useDeleteDialogOpen,
+  usePromptToDelete,
+  useIsDeleting,
+  useIsLoading,
 } from '@/stores/promptStore';
 import { PromptSearch } from '../_components/PromptSearch';
 import { PromptCard } from '../_components/PromptCard';
 import { Pagination } from '../_components/Pagination';
 import { PromptsHeader } from '@/components/PromptsHeader';
+import { DeletePromptDialog } from '@/components/DeletePromptDialog';
+import { CreatePromptModal } from '@/components/CreatePromptModal';
 
 export default function PromptsPage() {
   const router = useRouter();
+  const [isNewPromptModalOpen, setIsNewPromptModalOpen] = useState(false);
   
   // Use prompt store hooks
+  const isLoading = useIsLoading();
   const filteredPrompts = useFilteredPrompts();
   const totalPrompts = useTotalPrompts();
   const totalPages = useTotalPages();
@@ -47,15 +58,21 @@ export default function PromptsPage() {
   const itemsPerPage = usePageSize();
   const {
     fetchPrompts,
-    createPrompt,
-    deletePrompt,
     setCurrentPrompt,
     setSearch,
     setPage,
     setSortBy,
     setSortOrder,
     setRepository,
+    openDeleteDialog,
+    closeDeleteDialog,
+    confirmDelete,
   } = usePromptActions();
+
+  // Delete dialog state from store
+  const deleteDialogOpen = useDeleteDialogOpen();
+  const promptToDelete = usePromptToDelete();
+  const isDeleting = useIsDeleting();
 
   // Manually hydrate the store on client side and fetch prompts
   useEffect(() => {
@@ -63,43 +80,16 @@ export default function PromptsPage() {
     if (typeof window !== 'undefined') {
       fetchPrompts();
     }
-  }, []);
-
-
-  const handleCreateNew = async () => {
-    // Generate a unique ID for the new prompt
-    const newId = `_prompts/prompt-${Date.now()}`;
-    const newPrompt = await createPrompt({
-      repo_name: 'default',
-      file_path: `${newId}.md`,
-      prompt: {
-        id: newId,
-        name: 'New Prompt',
-        description: '',
-        category: null,
-        provider: '',
-        model: '',
-        prompt: '',
-        tags: [],
-        temperature: 0.7,
-        reasoning_effort: 'auto',
-      },
-    });
-    if (newPrompt) {
-      setCurrentPrompt(newPrompt);
-      router.push(`/editor?repo_name=${encodeURIComponent(newPrompt.repo_name)}&file_path=${encodeURIComponent(newPrompt.file_path)}`);
-    }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   const handleEditPrompt = (prompt: PromptMeta) => {
     setCurrentPrompt(prompt);
     router.push(`/editor?repo_name=${encodeURIComponent(prompt.repo_name)}&file_path=${encodeURIComponent(prompt.file_path)}`);
   };
 
-  const handleDeletePrompt = async (repoName: string, filePath: string) => {
-    if (confirm('Are you sure you want to delete this prompt?')) {
-      await deletePrompt(repoName, filePath);
-    }
+  const handleDeletePrompt = async (repoName: string, filePath: string, promptName: string) => {
+    openDeleteDialog(repoName, filePath, promptName);
   };
 
   const handleSortChange = (newSortBy: 'name' | 'updated_at') => {
@@ -112,12 +102,18 @@ export default function PromptsPage() {
     }
   };
 
+  const handleAddRepositories = () => {
+    router.push('/config#repositories');
+  };
+
+  const handleNewPrompt = () => {
+    setIsNewPromptModalOpen(true);
+  };
+
   return (
     <Box height="100vh" width="100%" display="flex" flexDirection="column">
         {/* Prompts Header - Outside ScrollArea */}
-        <PromptsHeader
-          onCreateNew={handleCreateNew}
-        />
+        <PromptsHeader />
 
         <ScrollArea.Root flex="1" width="100%">
         <ScrollArea.Viewport
@@ -153,22 +149,62 @@ export default function PromptsPage() {
           />
 
           {/* Prompts grid */}
-          {filteredPrompts.length === 0 ? (
-            <Box textAlign="center" py={12}>
-              <VStack gap={4}>
-                <Text fontSize="lg" color="gray.500">
-                  {searchQuery
-                    ? 'No prompts found matching your search.'
-                    : 'No prompts yet. Create your first prompt to get started!'
-                  }
-                </Text>
-                {!searchQuery && (
-                  <Button onClick={handleCreateNew}>
-                      <LuPlus /> Create First Prompt
-                  </Button>
-                )}
-              </VStack>
-            </Box>
+          {isLoading ? (
+            <Grid
+              templateColumns={{
+                base: '1fr',
+                md: 'repeat(2, 1fr)',
+                lg: 'repeat(3, 1fr)',
+              }}
+              gap={6}
+            >
+              {[...Array(6)].map((_, index) => (
+                <Box
+                  key={index}
+                  p={6}
+                  borderRadius="md"
+                  bg="bg.subtle"
+                  borderWidth="1px"
+                  borderColor="transparent"
+                  minHeight="200px"
+                >
+                  <SkeletonText
+                    noOfLines={3}
+                    gap={5}
+                    height={5}
+                    opacity={0.2}
+                  />
+                </Box>
+              ))}
+            </Grid>
+          ) : filteredPrompts.length === 0 ? (
+            searchQuery ? (
+              <Box textAlign="center" py={12}>
+                <VStack gap={4}>
+                  <Text fontSize="lg" color="gray.500">
+                    No prompts found matching your search.
+                  </Text>
+                </VStack>
+              </Box>
+            ) : (
+              <EmptyState.Root>
+                <EmptyState.Content>
+                  <EmptyState.Indicator>
+                    <HiColorSwatch />
+                  </EmptyState.Indicator>
+                  <VStack textAlign="center">
+                    <EmptyState.Title>Start adding prompts</EmptyState.Title>
+                    <EmptyState.Description>
+                      Add repositories or create a new prompt to get started
+                    </EmptyState.Description>
+                  </VStack>
+                  <ButtonGroup>
+                    <Button onClick={handleAddRepositories}>Add Repositories</Button>
+                    <Button variant="outline" onClick={handleNewPrompt}>New Prompt</Button>
+                  </ButtonGroup>
+                </EmptyState.Content>
+              </EmptyState.Root>
+            )
           ) : (
             <Grid
               templateColumns={{
@@ -208,6 +244,21 @@ export default function PromptsPage() {
           <ScrollArea.Thumb />
         </ScrollArea.Scrollbar>
         </ScrollArea.Root>
+
+        {/* Delete Confirmation Dialog */}
+        <DeletePromptDialog
+          open={deleteDialogOpen}
+          onOpenChange={closeDeleteDialog}
+          promptName={promptToDelete?.name || 'this prompt'}
+          onConfirm={confirmDelete}
+          isDeleting={isDeleting}
+        />
+
+        {/* Create Prompt Modal */}
+        <CreatePromptModal
+          open={isNewPromptModalOpen}
+          onOpenChange={setIsNewPromptModalOpen}
+        />
       </Box>
   );
 }

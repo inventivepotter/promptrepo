@@ -23,6 +23,9 @@ export interface PromptState {
   // Currently selected/editing prompt (serves as form data)
   currentPrompt: PromptMeta | null;
   
+  // Track if current prompt has unsaved changes
+  isChanged: boolean;
+  
   // UI State
   isLoading: boolean;
   isCreating: boolean;
@@ -30,9 +33,21 @@ export interface PromptState {
   isDeleting: boolean;
   error: string | null;
   
+  // Delete dialog state
+  deleteDialog: {
+    isOpen: boolean;
+    promptToDelete: { repoName: string; filePath: string; name: string } | null;
+  };
+  
   // Filters and Pagination (frontend-only)
   filters: PromptFilters;
   pagination: PaginationState;
+  
+  // Model selector UI state
+  modelSearch: {
+    primaryModel: string;
+    failoverModel: string;
+  };
   
   // Cache management
   lastSyncTimestamp: number | null;
@@ -46,14 +61,21 @@ export interface PromptActions {
   fetchPrompts: (filters?: PromptFilters, page?: number, pageSize?: number) => Promise<void>;
   fetchPromptById: (repoName: string, filePath: string) => Promise<void>;
   createPrompt: (promptMeta: PromptMeta) => Promise<PromptMeta>;
-  updatePrompt: (repoName: string, filePath: string, updates: PromptDataUpdate) => Promise<void>;
+  updatePrompt: (repoName: string, filePath: string, updates: PromptDataUpdate) => Promise<PromptMeta>;
   deletePrompt: (repoName: string, filePath: string) => Promise<void>;
   
   initializeStore: () => Promise<void>;
+  checkAndRefreshCache: () => Promise<void>;
+  invalidateCache: () => void;
   
   // State Management
   setCurrentPrompt: (prompt: PromptMeta | null) => void;
   clearCurrentPrompt: () => void;
+  
+  // Delete Dialog Management
+  openDeleteDialog: (repoName: string, filePath: string, promptName: string) => void;
+  closeDeleteDialog: () => void;
+  confirmDelete: () => Promise<void>;
   
   // Filters and Search (frontend-only, no backend calls)
   setFilters: (filters: PromptFilters) => void;
@@ -68,6 +90,10 @@ export interface PromptActions {
   setPageSize: (pageSize: number) => void;
   nextPage: () => void;
   previousPage: () => void;
+  
+  // Model Search UI State
+  setPrimaryModelSearch: (search: string) => void;
+  setFailoverModelSearch: (search: string) => void;
   
   // Error Handling
   clearError: () => void;

@@ -1,4 +1,4 @@
-import type { ChatMessage, OpenAIMessage } from '@/app/(prompts)/_types/ChatState';
+import type { ChatMessage, OpenAIMessage, Tool } from '@/app/(prompts)/_types/ChatState';
 
 // Model configuration for chat sessions
 export interface ModelConfig {
@@ -59,6 +59,13 @@ export interface ChatState {
   // Input state
   inputMessage: string;
   
+  // Template variables for prompt templates
+  templateVariables: Record<string, string>;
+  
+  // Tools
+  availableTools: Tool[];
+  selectedTools: string[];
+  
   // Statistics
   totalTokensUsed: number;
   totalCost: number;
@@ -111,6 +118,16 @@ export interface ChatActions {
   // Input Management
   setInputMessage: (message: string) => void;
   clearInput: () => void;
+  
+  // Template Variables Management
+  setTemplateVariable: (name: string, value: string) => void;
+  clearTemplateVariables: () => void;
+  
+  // Tools Management
+  setAvailableTools: (tools: Tool[]) => void;
+  setSelectedTools: (toolIds: string[]) => void;
+  toggleTool: (toolId: string) => void;
+  clearSelectedTools: () => void;
   
   // Error Handling
   setError: (error: string | null) => void;

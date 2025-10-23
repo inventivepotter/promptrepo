@@ -17,6 +17,7 @@ export const createGetConfigAction: StateCreator<
       
       set((draft) => {
         draft.error = null;
+        draft.isLoadingConfig = true;
       // @ts-expect-error - Immer middleware supports 3 params
       }, false, `config/${actionName}/start`);
 
@@ -49,6 +50,10 @@ export const createGetConfigAction: StateCreator<
         if (hasValidConfig) {
           // We have valid config data, no need to call API
           logStoreAction('ConfigStore', `${actionName}/skip - data from localStorage`);
+          set((draft) => {
+            draft.isLoadingConfig = false;
+          // @ts-expect-error - Immer middleware supports 3 params
+          }, false, `config/${actionName}/skip`);
           return;
         }
 
@@ -58,6 +63,7 @@ export const createGetConfigAction: StateCreator<
         
         set((draft) => {
           draft.config = config;
+          draft.isLoadingConfig = false;
         // @ts-expect-error - Immer middleware supports 3 params
         }, false, `config/${actionName}/success`);
       } catch (error) {
@@ -66,10 +72,16 @@ export const createGetConfigAction: StateCreator<
         
         set((draft) => {
           draft.error = storeError.message;
+          draft.isLoadingConfig = false;
         // @ts-expect-error - Immer middleware supports 3 params
         }, false, `config/${actionName}/error`);
         
         throw error;
+      } finally {
+        set((draft) => {
+          draft.isLoadingConfig = false;
+        // @ts-expect-error - Immer middleware supports 3 params
+        }, false, `config/${actionName}/complete`);
       }
     },
   };

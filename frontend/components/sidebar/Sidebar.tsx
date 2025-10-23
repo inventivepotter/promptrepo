@@ -51,7 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       zIndex={10}
     >
       {/* Header with branding */}
-      <Box px={isCollapsed ? 2 : 4} py={4}>
+      <Box px={isCollapsed ? 2 : 4} py={6}>
         <HStack justify="space-between" align="center" minH="46px">
           <Branding collapsed={isCollapsed} />
         </HStack>

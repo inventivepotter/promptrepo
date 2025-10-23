@@ -4,12 +4,20 @@ import { promptsService } from '@/services/prompts/promptsService';
 import { useConfigStore } from '@/stores/configStore/configStore';
 import type { PromptStore, PromptActions, PromptFilters } from './types';
 import type { PromptMeta, PromptDataUpdate } from '@/services/prompts/api';
+import { del } from 'idb-keyval';
 
 // Helper function to create consistent Map keys
 const createPromptKey = (repoName: string, filePath: string): string =>
   `${repoName}:${filePath}`;
 
 const CACHE_DURATION = 1000 * 60 * 60; // 1 hour in milliseconds
+
+// Helper to check if cache is stale
+const isCacheStale = (lastSyncTimestamp: number | null): boolean => {
+  if (!lastSyncTimestamp) return true;
+  const age = Date.now() - lastSyncTimestamp;
+  return age >= CACHE_DURATION;
+};
 
 // Create all prompt actions as a single StateCreator
 export const createPromptActions: StateCreator<PromptStore, [], [], PromptActions> = (set, get, api) => ({
@@ -19,17 +27,55 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
     
     // If we have cached data and it's not stale, we're done
     const promptCount = Object.keys(state.prompts).length;
-    if (promptCount > 0 && state.lastSyncTimestamp) {
-      const age = Date.now() - state.lastSyncTimestamp;
-      if (age < CACHE_DURATION) {
-        console.log('Using cached prompts, age:', Math.round(age / 1000), 'seconds');
-        return;
-      }
+    if (promptCount > 0 && !isCacheStale(state.lastSyncTimestamp)) {
+      const age = state.lastSyncTimestamp ? Date.now() - state.lastSyncTimestamp : 0;
+      console.log('Using cached prompts, age:', Math.round(age / 1000), 'seconds');
+      return;
     }
     
-    // Otherwise, trigger auto-sync
+    // Cache is empty or stale, trigger auto-sync
     console.log('Cache empty or stale, triggering auto-sync');
     await get().discoverAllPromptsFromRepos();
+  },
+  
+  // Check cache staleness and refresh if needed
+  checkAndRefreshCache: async () => {
+    const state = get();
+    
+    // If cache is stale, refresh
+    if (isCacheStale(state.lastSyncTimestamp)) {
+      console.log('Cache is stale, refreshing...');
+      await get().discoverAllPromptsFromRepos();
+    }
+  },
+  
+  // Invalidate cache - clear prompts and fetch fresh data
+  invalidateCache: async () => {
+    console.log('Prompt cache invalidated - clearing IndexedDB and resetting state');
+    
+    // Clear IndexedDB storage first to prevent rehydration
+    try {
+      if (typeof window !== 'undefined') {
+        await del('prompt-store');
+        console.log('Cleared prompt-store from IndexedDB');
+      }
+    } catch (err) {
+      console.error('Failed to clear IndexedDB:', err);
+    }
+    
+    // Clear in-memory state
+    set((draft) => {
+      draft.prompts = {};
+      draft.lastSyncTimestamp = null;
+    // @ts-expect-error - Immer middleware supports 3 params
+    }, false, 'prompts/invalidate-cache');
+    
+    // Fetch fresh prompts from backend
+    try {
+      await get().discoverAllPromptsFromRepos();
+    } catch (err) {
+      console.error('Failed to refresh prompts after cache invalidation:', err);
+    }
   },
 
   // Discover prompts from all configured repositories
@@ -46,8 +92,9 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
       const repoConfigs = configState.config?.repo_configs || [];
       
       if (repoConfigs.length === 0) {
-        console.warn('No repositories configured for discovery');
+        console.warn('No repositories configured for discovery - clearing all prompts');
         set((draft) => {
+          draft.prompts = {}; // Clear all prompts when no repos configured
           draft.isLoading = false;
           draft.lastSyncTimestamp = Date.now();
         // @ts-expect-error - Immer middleware supports 3 params
@@ -62,12 +109,14 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
       const allPrompts = await promptsService.discoverAllPromptsFromRepos(repoNames);
 
       set((draft) => {
-        // Convert array to Record object
-        draft.prompts = {};
+        // Replace all prompts with fresh ones from discovery
+        // This ensures we don't keep old prompts from repos that were removed
+        const newPrompts: Record<string, PromptMeta> = {};
         allPrompts.forEach((promptMeta: PromptMeta) => {
           const key = createPromptKey(promptMeta.repo_name, promptMeta.file_path);
-          draft.prompts[key] = promptMeta;
+          newPrompts[key] = promptMeta;
         });
+        draft.prompts = newPrompts;
         draft.lastSyncTimestamp = Date.now();
         draft.isLoading = false;
       // @ts-expect-error - Immer middleware supports 3 params
@@ -110,6 +159,7 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
       set((draft) => {
         draft.currentPrompt = promptMeta;
         draft.prompts[key] = promptMeta;
+        draft.isChanged = false; // Reset isChanged when loading a prompt
         draft.isLoading = false;
       // @ts-expect-error - Immer middleware supports 3 params
       }, false, 'prompts/fetch-by-id-success');
@@ -137,6 +187,7 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
       set((draft) => {
         draft.prompts[key] = newPromptMeta;
         draft.currentPrompt = newPromptMeta;
+        draft.isChanged = false; // Reset isChanged after creation
         draft.isCreating = false;
       // @ts-expect-error - Immer middleware supports 3 params
       }, false, 'prompts/create-success');
@@ -168,9 +219,12 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
         if (draft.currentPrompt?.repo_name === repoName && draft.currentPrompt?.file_path === filePath) {
           draft.currentPrompt = updatedPromptMeta;
         }
+        draft.isChanged = false; // Reset isChanged after successful save
         draft.isUpdating = false;
       // @ts-expect-error - Immer middleware supports 3 params
       }, false, 'prompts/update-success');
+      
+      return updatedPromptMeta;
     } catch (error) {
       set((draft) => {
         draft.error = error instanceof Error ? error.message : 'Failed to update prompt';
@@ -214,6 +268,7 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
   setCurrentPrompt: (prompt: PromptMeta | null) => {
     set((draft) => {
       draft.currentPrompt = prompt;
+      draft.isChanged = true; // Mark as changed when prompt is modified
     // @ts-expect-error - Immer middleware supports 3 params
     }, false, 'prompts/set-current');
   },
@@ -221,8 +276,45 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
   clearCurrentPrompt: () => {
     set((draft) => {
       draft.currentPrompt = null;
+      draft.isChanged = false; // Reset isChanged when clearing
     // @ts-expect-error - Immer middleware supports 3 params
     }, false, 'prompts/clear-current');
+  },
+
+  // Delete Dialog Management
+  openDeleteDialog: (repoName: string, filePath: string, promptName: string) => {
+    set((draft) => {
+      draft.deleteDialog = {
+        isOpen: true,
+        promptToDelete: { repoName, filePath, name: promptName },
+      };
+    // @ts-expect-error - Immer middleware supports 3 params
+    }, false, 'prompts/open-delete-dialog');
+  },
+
+  closeDeleteDialog: () => {
+    set((draft) => {
+      draft.deleteDialog = {
+        isOpen: false,
+        promptToDelete: null,
+      };
+    // @ts-expect-error - Immer middleware supports 3 params
+    }, false, 'prompts/close-delete-dialog');
+  },
+
+  confirmDelete: async () => {
+    const { deleteDialog } = get();
+    const promptToDelete = deleteDialog.promptToDelete;
+    
+    if (!promptToDelete) return;
+
+    try {
+      await get().deletePrompt(promptToDelete.repoName, promptToDelete.filePath);
+      get().closeDeleteDialog();
+    } catch (error) {
+      // Error is already handled by deletePrompt
+      throw error;
+    }
   },
 
   // Filters and Search - frontend-only, no backend calls
@@ -307,6 +399,21 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
     if (page > 1) {
       get().setPage(page - 1);
     }
+  },
+
+  // Model Search UI State
+  setPrimaryModelSearch: (search: string) => {
+    set((draft) => {
+      draft.modelSearch.primaryModel = search;
+    // @ts-expect-error - Immer middleware supports 3 params
+    }, false, 'prompts/set-primary-model-search');
+  },
+
+  setFailoverModelSearch: (search: string) => {
+    set((draft) => {
+      draft.modelSearch.failoverModel = search;
+    // @ts-expect-error - Immer middleware supports 3 params
+    }, false, 'prompts/set-failover-model-search');
   },
 
   // Error Handling

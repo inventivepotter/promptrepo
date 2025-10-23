@@ -10,8 +10,13 @@ import {
   createListCollection,
   Field,
   Card,
+  Fieldset,
+  Stack,
+  Skeleton,
+  EmptyState,
 } from '@chakra-ui/react';
 import { FaChevronDown } from 'react-icons/fa';
+import { LuGitBranch } from 'react-icons/lu';
 import {
   useConfig,
   useAvailableRepos,
@@ -20,6 +25,7 @@ import {
   useAvailableBranches,
   useIsLoadingBranches,
   useRepoFormState,
+  useIsLoadingConfig,
 } from '@/stores/configStore';
 import type { RepoInfo } from '@/stores/configStore';
 
@@ -33,6 +39,7 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
   const error = useConfigError();
   const availableBranches = useAvailableBranches();
   const isLoadingBranches = useIsLoadingBranches();
+  const isLoading = useIsLoadingConfig();
   
   const {
     addRepoConfig,
@@ -41,10 +48,10 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
     resetBranches,
     setSelectedRepoWithSideEffects,
     setSelectedBranch,
-    setIsSaving,
     setRepoSearchValue,
     setBranchSearchValue,
     resetRepoForm,
+    setIsSaving,
   } = useConfigActions();
   
   // Repo form state from store
@@ -68,8 +75,8 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
     const repoInfo = availableRepos.find(r => r.full_name === selectedRepo);
     if (!repoInfo) return;
 
-    setIsSaving(true);
     try {
+      setIsSaving(true);
       const repoConfig = {
         id: '', // Blank for new record
         repo_name: repoInfo.full_name, // Use full_name for consistency
@@ -99,7 +106,6 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
   };
 
   const handleRemoveRepoConfig = async (index: number) => {
-    setIsSaving(true);
     try {
       // Remove from local store
       removeRepoConfig(index);
@@ -114,8 +120,6 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
       await updateConfig(updatedConfig);
     } catch (error) {
       console.error('Failed to remove repository:', error);
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -139,24 +143,21 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
 
   return (
     <Card.Root
-      bg={{ _light: 'primary.100', _dark: 'primary.900' }}
+      id="repositories"
       borderWidth="1px"
       borderColor={borderColor}
-      position="relative"
-      transition="all 0.3s"
-      _hover={{
-        transform: 'translateY(-4px)',
-        shadow: 'xl',
-        borderColor: 'primary.400'
-      }}
     >
       <Card.Body p={8}>
-        <VStack gap={6} align="stretch">
-          <Text fontSize="lg" fontWeight="bold">Repository Configuration</Text>
-          <Box fontSize="sm" opacity={0.7}>
-            Configure repositories containing prompts to access them in the application.
-          </Box>
+        <Fieldset.Root size="lg">
+          <Stack>
+            <Fieldset.Legend>Repository Configuration</Fieldset.Legend>
+            <Fieldset.HelperText>
+              Configure repositories containing prompts to access them in the application.
+            </Fieldset.HelperText>
+          </Stack>
 
+          <Fieldset.Content>
+            <VStack gap={6} align="stretch">
         {/* Error display */}
         {error && (
           <Box
@@ -214,7 +215,7 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                           paddingRight="2rem"
                         />
                         <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
-                          <FaChevronDown size={16} />
+                          <FaChevronDown size={10} />
                         </Combobox.Trigger>
                       </Combobox.Control>
                       <Combobox.Positioner style={{ zIndex: 50 }}>
@@ -267,7 +268,7 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                           disabled={disabled || isSaving || isLoadingBranches || !selectedRepo}
                         />
                         <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
-                          <FaChevronDown size={16} />
+                          <FaChevronDown size={10} />
                         </Combobox.Trigger>
                       </Combobox.Control>
                       <Combobox.Positioner style={{ zIndex: 50 }}>
@@ -301,6 +302,8 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                   <Button
                     onClick={handleAddRepoConfig}
                     disabled={!selectedRepo || !selectedBranch || disabled || isSaving}
+                    loading={isSaving}
+                    loadingText="Saving..."
                     alignSelf="end"
                   >
                     Add Repository
@@ -311,40 +314,98 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
             </Card.Root>
             
             {/* Configured Repositories */}
-            {(config.repo_configs && config.repo_configs.length > 0) && (
+            {(config.repo_configs && config.repo_configs.length > 0) || isLoading ? (
               <Card.Root
                 borderWidth="1px"
                 borderColor={borderColor}
                 width="100%"
-            bg="transparent"
+                bg="transparent"
               >
                 <Card.Body p={8}>
-                  <Text fontWeight="bold" mb={4}>Selected Repositories</Text>
-                <VStack gap={2}>
-                  {config.repo_configs.map((repoConfig, index) => {
-                    const repo = availableRepos.find(r => r.full_name === repoConfig.repo_name);
-                    return (
-                      <HStack key={index} justify="space-between" width="100%" p={2} bg={{ _light: "primary.50", _dark: "primary.950" }} borderRadius="md">
-                        <Text fontSize="sm" fontWeight="400">
-                          {repo?.name || repoConfig.repo_name} ({repoConfig.base_branch})
-                        </Text>
-                        <Button
-                          size="sm"
-                          onClick={() => handleRemoveRepoConfig(index)}
-                          disabled={disabled || isSaving}
+                  <Text fontWeight="semibold" fontSize="lg" mb={6}>Selected Repositories</Text>
+                  {isLoading ? (
+                    <VStack gap={4} width="100%">
+                      {[1, 2].map((i) => (
+                        <Skeleton key={i} height="60px" width="100%" bg="bg"/>
+                      ))}
+                    </VStack>
+                  ) : (
+                    <VStack gap={4}>
+                    {config.repo_configs?.map((repoConfig, index) => {
+                      const repo = availableRepos.find(r => r.full_name === repoConfig.repo_name);
+                      return (
+                        <Card.Root
+                          key={index}
+                          width="100%"
+                          bg="bg.panel"
+                          borderWidth="1px"
+                          borderColor="border.subtle"
+                          transition="all 0.2s"
+                          _hover={{
+                            borderColor: "border.emphasized",
+                            shadow: "sm"
+                          }}
                         >
-                          Remove
-                        </Button>
-                      </HStack>
-                    );
-                  })}
-                </VStack>
-              </Card.Body>
-            </Card.Root>
+                          <Card.Body p={5}>
+                            <HStack justify="space-between" width="100%">
+                              <HStack gap={3} flex={1} pr={2}>
+                                <Box minWidth="90px">
+                                  <Text fontSize="xs" color="fg.muted" mb={1}>Repository</Text>
+                                  <Text fontSize="sm" fontWeight="semibold">{repo?.name || repoConfig.repo_name}</Text>
+                                </Box>
+                                <Box height="40px" width="1px" bg="border.subtle" />
+                                <Box flex={1} px={2}>
+                                  <Text fontSize="xs" color="fg.muted" mb={1}>Branch</Text>
+                                  <Text fontSize="sm" fontWeight="semibold">{repoConfig.base_branch}</Text>
+                                </Box>
+                              </HStack>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                colorScheme="red"
+                                onClick={() => handleRemoveRepoConfig(index)}
+                                disabled={disabled || isSaving}
+                              >
+                                Remove
+                              </Button>
+                            </HStack>
+                          </Card.Body>
+                        </Card.Root>
+                      );
+                      })}
+                    </VStack>
+                  )}
+                </Card.Body>
+              </Card.Root>
+            ) : (
+              <Card.Root
+                borderWidth="1px"
+                borderColor={borderColor}
+                width="100%"
+                bg="transparent"
+              >
+                <Card.Body p={8}>
+                  <EmptyState.Root>
+                    <EmptyState.Content>
+                      <EmptyState.Indicator>
+                        <LuGitBranch />
+                      </EmptyState.Indicator>
+                      <VStack textAlign="center">
+                        <EmptyState.Title>No repositories configured</EmptyState.Title>
+                        <EmptyState.Description>
+                          Add your first repository to get started
+                        </EmptyState.Description>
+                      </VStack>
+                    </EmptyState.Content>
+                  </EmptyState.Root>
+                </Card.Body>
+              </Card.Root>
             )}
           </VStack>
         )}
-      </VStack>
+            </VStack>
+          </Fieldset.Content>
+        </Fieldset.Root>
       </Card.Body>
     </Card.Root>
   );

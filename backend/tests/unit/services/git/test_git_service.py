@@ -8,8 +8,8 @@ import shutil
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from services.git.git_service import GitService
-from services.git.models import GitOperationResult, PullRequestResult, RepoStatus
+from services.local_repo.git_service import GitService
+from services.local_repo.models import GitOperationResult, PullRequestResult, RepoStatus
 
 
 class TestGitService:

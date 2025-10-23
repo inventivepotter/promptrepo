@@ -8,16 +8,22 @@ export const createHandleAuthSuccessAction: StateCreator<
   [],
   [],
   Pick<AuthStore, 'handleAuthSuccess'>
-> = (set) => ({
-  handleAuthSuccess: (user: User) => {
+> = (set, get) => ({
+  handleAuthSuccess: async (user: User) => {
     logStoreAction('AuthStore', 'handleAuthSuccess', { user: { id: user.id } });
     
     set((draft) => {
-      draft.user = user;
-      draft.isAuthenticated = true;
       draft.isLoading = false;
       draft.error = null;
     // @ts-expect-error - Immer middleware supports 3 params
-    }, false, 'auth/success');
+    }, false, 'auth/success/start');
+    
+    // Call setUser which will handle cache invalidation
+    await get().setUser(user);
+    
+    set((draft) => {
+      draft.isAuthenticated = true;
+    // @ts-expect-error - Immer middleware supports 3 params
+    }, false, 'auth/success/complete');
   },
 });

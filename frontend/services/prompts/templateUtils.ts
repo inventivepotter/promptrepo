@@ -7,19 +7,28 @@ import * as nunjucks from 'nunjucks';
 export class TemplateUtils {
   /**
    * Extracts variable names from a Jinja2/Nunjucks template
+   * Supports both {{ variable }} and { variable } patterns
    */
   static extractVariables(template: string): string[] {
     if (!template) return [];
     
-    const variablePattern = /\{\{\s*(\w+(?:\.\w+)*)\s*\}\}/g;
+    // Match both {{ variable }} and { variable } patterns
+    const doublePattern = /\{\{\s*(\w+(?:\.\w+)*)\s*\}\}/g;
+    const singlePattern = /\{(\w+)\}/g;
     const variables = new Set<string>();
     let match;
     
-    while ((match = variablePattern.exec(template)) !== null) {
+    // Extract {{ variable }} style
+    while ((match = doublePattern.exec(template)) !== null) {
       const variable = match[1];
-      // Only add root variable names (before any dots for object properties)
       const rootVariable = variable.split('.')[0];
       variables.add(rootVariable);
+    }
+    
+    // Extract { variable } style
+    while ((match = singlePattern.exec(template)) !== null) {
+      const variable = match[1];
+      variables.add(variable);
     }
     
     return Array.from(variables).sort();
@@ -27,18 +36,28 @@ export class TemplateUtils {
 
   /**
    * Resolves a Jinja2/Nunjucks template with provided variables
+   * Supports both {{ variable }} and { variable } patterns
    */
   static resolveTemplate(template: string, variables: Record<string, string>): string {
     if (!template) return '';
     
     try {
-      // Configure nunjucks to not escape HTML and use similar syntax to Jinja2
+      // First, replace { variable } style with simple string replacement
+      let resolved = template;
+      Object.entries(variables).forEach(([key, value]) => {
+        const singleBracePattern = new RegExp(`\\{${key}\\}`, 'g');
+        resolved = resolved.replace(singleBracePattern, value);
+      });
+      
+      // Then use nunjucks for {{ variable }} style
       const env = new nunjucks.Environment(null, {
         autoescape: false,
         throwOnUndefined: false
       });
       
-      return env.renderString(template, variables);
+      resolved = env.renderString(resolved, variables);
+      
+      return resolved;
     } catch (error) {
       console.error('Template resolution error:', error);
       return template; // Return original template if resolution fails

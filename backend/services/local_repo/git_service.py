@@ -5,13 +5,12 @@ This module provides Git operations for repository management,
 including branch management, file operations, commits, and pull requests.
 """
 
-import httpx
 from git import Repo
 from pathlib import Path
 from typing import List, Dict, Optional, Union
 import logging
 
-from services.git.models import GitOperationResult, PullRequestResult, RepoStatus, CommitInfo
+from services.local_repo.models import GitOperationResult, RepoStatus, CommitInfo
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +47,7 @@ class GitService:
             GitOperationResult: Result of the operation
         """
         try:
-            logger.info(f"🔄 Creating new branch: {branch_name} from {base_branch}")
+            logger.info(f"Creating new branch: {branch_name} from {base_branch}")
 
             # Initialize repository
             repo = Repo(self.repo_path)
@@ -87,14 +86,14 @@ class GitService:
             new_branch = repo.create_head(branch_name)
             new_branch.checkout()
 
-            logger.info(f"✅ Successfully created and checked out branch: {branch_name}")
+            logger.info(f"Successfully created and checked out branch: {branch_name}")
             return GitOperationResult(
                 success=True,
                 message=f"Successfully created and checked out branch: {branch_name}"
             )
 
         except Exception as e:
-            logger.error(f"❌ Failed to create branch {branch_name}: {e}")
+            logger.error(f"Failed to create branch {branch_name}: {e}")
             return GitOperationResult(
                 success=False,
                 message=f"Failed to create branch {branch_name}: {e}"
@@ -119,7 +118,7 @@ class GitService:
             repo_path_obj = self.repo_path
 
             if isinstance(files_to_add, dict):
-                logger.info(f"📝 Creating and adding {len(files_to_add)} new files")
+                logger.info(f"Creating and adding {len(files_to_add)} new files")
                 # Dict format: {file_path: content}
                 for file_path, content in files_to_add.items():
                     try:
@@ -142,7 +141,7 @@ class GitService:
                         logger.error(f"Failed to create/stage file {file_path}: {e}")
 
             elif isinstance(files_to_add, list):
-                logger.info(f"📁 Staging {len(files_to_add)} existing files")
+                logger.info(f"Staging {len(files_to_add)} existing files")
                 # List format: [file_paths] - files must already exist
                 for file_path in files_to_add:
                     try:
@@ -156,7 +155,7 @@ class GitService:
                     except Exception as e:
                         logger.error(f"Failed to stage file {file_path}: {e}")
 
-            logger.info(f"✅ Successfully added {len(added_files)} files")
+            logger.info(f"Successfully added {len(added_files)} files")
             return GitOperationResult(
                 success=True,
                 message=f"Successfully added {len(added_files)} files",
@@ -164,7 +163,7 @@ class GitService:
             )
 
         except Exception as e:
-            logger.error(f"❌ Failed to add files: {e}")
+            logger.error(f"Failed to add files: {e}")
             return GitOperationResult(
                 success=False,
                 message=f"Failed to add files: {e}",
@@ -189,7 +188,7 @@ class GitService:
             GitOperationResult: Result of the operation
         """
         try:
-            logger.info(f"💾 Committing changes: {commit_message[:50]}...")
+            logger.info(f"Committing changes: {commit_message[:50]}...")
 
             repo = Repo(self.repo_path)
 
@@ -198,7 +197,7 @@ class GitService:
 
             # Check if there are changes to commit
             if not repo.is_dirty() and not repo.untracked_files:
-                logger.warning("⚠️  No changes to commit")
+                logger.warning("No changes to commit")
                 return GitOperationResult(
                     success=False,
                     message="No changes to commit"
@@ -208,7 +207,7 @@ class GitService:
             commit = repo.index.commit(commit_message)
             commit_hash = commit.hexsha
 
-            logger.info(f"✅ Successfully committed: {commit_hash[:8]}")
+            logger.info(f"Successfully committed: {commit_hash[:8]}")
             return GitOperationResult(
                 success=True,
                 message=f"Successfully committed: {commit_hash[:8]}",
@@ -216,19 +215,20 @@ class GitService:
             )
 
         except Exception as e:
-            logger.error(f"❌ Failed to commit changes: {e}")
+            logger.error(f"Failed to commit changes: {e}")
             return GitOperationResult(
                 success=False,
                 message=f"Failed to commit changes: {e}"
             )
 
-    def push_branch(self, oauth_token: str, branch_name: Optional[str] = None) -> GitOperationResult:
+    def push_branch(self, oauth_token: str, branch_name: Optional[str], repo_url: str) -> GitOperationResult:
         """
         Push branch to remote repository.
 
         Args:
             oauth_token: GitHub OAuth token for authentication
             branch_name: Name of branch to push (default: current branch)
+            repo_url: Repository URL from config
 
         Returns:
             GitOperationResult: Result of the operation
@@ -239,114 +239,38 @@ class GitService:
             if branch_name is None:
                 branch_name = repo.active_branch.name
 
-            logger.info(f"🚀 Pushing branch to remote: {branch_name}")
+            logger.info(f"Pushing branch to remote: {branch_name}")
 
-            # Get remote origin
-            origin = repo.remote('origin')
+            # Clean the URL (remove any existing auth and normalize)
+            clean_url = repo_url
+            if '@github.com' in clean_url:
+                # Extract the part after @github.com
+                clean_url = 'https://github.com/' + clean_url.split('@github.com/')[-1]
+            
+            # Remove trailing slashes and .git if present, then add .git
+            clean_url = clean_url.rstrip('/')
+            if not clean_url.endswith('.git'):
+                clean_url = clean_url + '.git'
+            
+            authenticated_url = self._add_token_to_url(clean_url, oauth_token)
+            logger.info(f"Authenticated URL (with token masked): {authenticated_url.replace(oauth_token, '***TOKEN***')}")
 
-            # Configure remote URL with token for authentication
-            original_url = origin.url
-            if oauth_token not in original_url:
-                authenticated_url = self._add_token_to_url(original_url, oauth_token)
-                origin.set_url(authenticated_url)
+            # Push branch directly to the authenticated URL
+            # This bypasses the remote config and pushes directly to the URL
+            logger.info(f"Pushing {branch_name} to remote using authenticated URL...")
+            repo.git.push(authenticated_url, f"{branch_name}:{branch_name}")
 
-            # Push branch
-            origin.push(refspec=f"{branch_name}:{branch_name}")
-
-            # Reset URL for security
-            if oauth_token in origin.url:
-                origin.set_url(original_url)
-
-            logger.info(f"✅ Successfully pushed branch: {branch_name}")
+            logger.info(f"Successfully pushed branch: {branch_name}")
             return GitOperationResult(
                 success=True,
                 message=f"Successfully pushed branch: {branch_name}"
             )
 
         except Exception as e:
-            logger.error(f"❌ Failed to push branch {branch_name}: {e}")
+            logger.error(f"Failed to push branch {branch_name}: {e}")
             return GitOperationResult(
                 success=False,
                 message=f"Failed to push branch {branch_name}: {e}"
-            )
-
-    async def create_pull_request(
-            self,
-            github_repo: str,
-            oauth_token: str,
-            head_branch: str,
-            title: str,
-            body: str = "",
-            base_branch: str = "main",
-            draft: bool = False
-    ) -> PullRequestResult:
-        """
-        Create a pull request via GitHub API.
-
-        Args:
-            github_repo: GitHub repository in format "owner/repo"
-            oauth_token: GitHub OAuth token with repo permissions
-            head_branch: Source branch for the PR
-            title: Pull request title
-            body: Pull request description
-            base_branch: Target branch (default: main)
-            draft: Create as draft PR (default: False)
-
-        Returns:
-            PullRequestResult: Result of the operation
-        """
-        try:
-            logger.info(f"🔀 Creating pull request: {title}")
-
-            headers = {
-                "Authorization": f"Bearer {oauth_token}",
-                "Accept": "application/vnd.github+json",
-                "X-GitHub-Api-Version": "2022-11-28",
-                "User-Agent": "GitHubWorkflowAutomation/1.0"
-            }
-
-            pr_data = {
-                "title": title,
-                "body": body,
-                "head": head_branch,
-                "base": base_branch,
-                "draft": draft,
-                "maintainer_can_modify": True
-            }
-
-            api_url = f"https://api.github.com/repos/{github_repo}/pulls"
-
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.post(
-                    api_url,
-                    headers=headers,
-                    json=pr_data
-                )
-
-                if response.status_code == 201:
-                    pr_info = response.json()
-                    logger.info(f"✅ Successfully created PR #{pr_info['number']}: {pr_info['html_url']}")
-                    return PullRequestResult(
-                        success=True,
-                        pr_number=pr_info["number"],
-                        pr_url=pr_info["html_url"],
-                        pr_id=pr_info["id"],
-                        data=pr_info
-                    )
-                else:
-                    error_msg = f"PR creation failed: {response.status_code} {response.text}"
-                    logger.error(f"❌ {error_msg}")
-                    return PullRequestResult(
-                        success=False,
-                        error=error_msg
-                    )
-
-        except Exception as e:
-            error_msg = f"Failed to create pull request: {e}"
-            logger.error(f"❌ {error_msg}")
-            return PullRequestResult(
-                success=False,
-                error=error_msg
             )
 
     def get_repo_status(self) -> RepoStatus:
@@ -407,13 +331,13 @@ class GitService:
         try:
             repo = Repo(self.repo_path)
             repo.git.checkout(branch_name)
-            logger.info(f"✅ Switched to branch: {branch_name}")
+            logger.info(f"Switched to branch: {branch_name}")
             return GitOperationResult(
                 success=True,
                 message=f"Switched to branch: {branch_name}"
             )
         except Exception as e:
-            logger.error(f"❌ Failed to switch to branch {branch_name}: {e}")
+            logger.error(f"Failed to switch to branch {branch_name}: {e}")
             return GitOperationResult(
                 success=False,
                 message=f"Failed to switch to branch {branch_name}: {e}"
@@ -453,14 +377,14 @@ class GitService:
                 origin.set_url(original_url)
 
             current_branch = repo.active_branch.name
-            logger.info(f"✅ Pulled latest changes for branch: {current_branch}")
+            logger.info(f"Pulled latest changes for branch: {current_branch}")
             return GitOperationResult(
                 success=True,
                 message=f"Pulled latest changes for branch: {current_branch}"
             )
 
         except Exception as e:
-            logger.error(f"❌ Failed to pull latest changes: {e}")
+            logger.error(f"Failed to pull latest changes: {e}")
             return GitOperationResult(
                 success=False,
                 message=f"Failed to pull latest changes: {e}"
@@ -484,7 +408,7 @@ class GitService:
             GitOperationResult: Result of the operation
         """
         try:
-            logger.info(f"🔄 Cloning repository from {clone_url}")
+            logger.info(f"Cloning repository from {clone_url}")
 
             # Add OAuth token to URL if provided
             authenticated_url = clone_url
@@ -501,11 +425,11 @@ class GitService:
             if branch and branch != repo.active_branch.name:
                 try:
                     repo.git.checkout(branch)
-                    logger.info(f"✅ Checked out branch: {branch}")
+                    logger.info(f"Checked out branch: {branch}")
                 except Exception as e:
                     logger.warning(f"Could not checkout branch {branch}: {e}")
 
-            logger.info(f"✅ Successfully cloned repository to {self.repo_path}")
+            logger.info(f"Successfully cloned repository to {self.repo_path}")
             return GitOperationResult(
                 success=True,
                 message=f"Successfully cloned repository to {self.repo_path}",
@@ -513,7 +437,7 @@ class GitService:
             )
 
         except Exception as e:
-            logger.error(f"❌ Failed to clone repository: {e}")
+            logger.error(f"Failed to clone repository: {e}")
             return GitOperationResult(
                 success=False,
                 message=f"Failed to clone repository: {e}"
@@ -524,7 +448,16 @@ class GitService:
     def _add_token_to_url(self, url: str, oauth_token: str) -> str:
         """Add OAuth token to GitHub URL."""
         if url.startswith('https://github.com/'):
-            return url.replace('https://github.com/', f'https://{oauth_token}@github.com/')
+            # Remove .git suffix temporarily
+            clean_url = url
+            if clean_url.endswith('.git'):
+                clean_url = clean_url[:-4]
+            
+            # Extract repo path (owner/repo)
+            repo_path = clean_url.replace('https://github.com/', '').rstrip('/')
+            
+            # GitHub requires x-access-token: prefix for OAuth tokens in HTTPS URLs
+            return f'https://x-access-token:{oauth_token}@github.com/{repo_path}.git'
         return url
 
     def _configure_git_user(self, repo: Repo, author_name: Optional[str] = None, author_email: Optional[str] = None):
@@ -551,6 +484,20 @@ class GitService:
             value = repo.config_reader().get_value(section, option)
             return str(value) if value is not None else None
         except:
+            return None
+
+    def get_current_branch(self) -> Optional[str]:
+        """
+        Get the name of the current branch.
+        
+        Returns:
+            Optional[str]: Current branch name or None if unable to determine
+        """
+        try:
+            repo = Repo(self.repo_path)
+            return repo.active_branch.name
+        except Exception as e:
+            logger.error(f"Failed to get current branch: {e}")
             return None
 
     def get_file_commit_history(self, file_path: str, limit: int = 5) -> List[CommitInfo]:
@@ -585,9 +532,9 @@ class GitService:
                 )
                 commit_info_list.append(commit_info)
             
-            logger.info(f"✅ Retrieved {len(commit_info_list)} commits for file: {file_path}")
+            logger.info(f"Retrieved {len(commit_info_list)} commits for file: {file_path}")
             return commit_info_list
             
         except Exception as e:
-            logger.warning(f"⚠️  Failed to get commit history for {file_path}: {e}")
+            logger.warning(f"Failed to get commit history for {file_path}: {e}")
             return []

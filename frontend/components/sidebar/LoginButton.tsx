@@ -2,21 +2,42 @@
 import { usePathname } from 'next/navigation';
 import { Button } from '@chakra-ui/react';
 import { LuGithub } from 'react-icons/lu';
+import { SiGitlab, SiBitbucket } from 'react-icons/si';
 import { useAuthActions } from '@/stores/authStore';
+import type { components } from '@/types/generated/api';
+import { useSidebarStore } from '@/stores/sidebarStore';
+
+type OAuthProvider = components['schemas']['OAuthProvider'];
 
 interface LoginButtonProps {
-  isCollapsed?: boolean;
-  hoverBg?: string;
-  activeBg?: string;
+  provider: OAuthProvider;
 }
 
-export const LoginButton = ({ 
-  isCollapsed = false,
-  hoverBg,
-  activeBg 
-}: LoginButtonProps) => {
+const providerConfig = {
+  github: {
+    icon: LuGithub,
+    label: 'GitHub',
+  },
+  gitlab: {
+    icon: SiGitlab,
+    label: 'GitLab',
+  },
+  bitbucket: {
+    icon: SiBitbucket,
+    label: 'BitBucket',
+  },
+} as const;
+
+export const LoginButton = ({ provider }: LoginButtonProps) => {
   const { login } = useAuthActions();
   const pathname = usePathname();
+  const isCollapsed = useSidebarStore((state) => state.isCollapsed);
+  const hoverBg = "bg.muted";
+  const activeBg = "bg.emphasized";
+
+  const config = providerConfig[provider];
+  const Icon = config.icon;
+
   return (
     <Button
       variant="ghost"
@@ -33,10 +54,10 @@ export const LoginButton = ({
       transition="all 0.15s ease"
       onClick={() => login(pathname)}
     >
-      <LuGithub size={16} />
+      <Icon size={16} />
       {!isCollapsed && (
         <span style={{ marginLeft: 12, fontSize: 14, fontWeight: 500 }}>
-          GitHub Login
+          {config.label} Login
         </span>
       )}
     </Button>

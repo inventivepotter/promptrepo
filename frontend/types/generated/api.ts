@@ -248,106 +248,6 @@ export interface paths {
         patch: operations["update_config_api_v0_config__patch"];
         trace?: never;
     };
-    "/api/v0/llm/chat/providers/configured": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get configured providers
-         * @description Get configured LLM providers and their database.models based on AppConfig
-         */
-        get: operations["get_configured_providers_api_v0_llm_chat_providers_configured_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v0/llm/chat/providers/available": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get available providers
-         * @description Get all available LLM providers without requiring API keys
-         */
-        get: operations["get_available_providers_api_v0_llm_chat_providers_available_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v0/llm/chat/provider/{provider_id}/models": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Fetch database.models by provider
-         * @description Fetch available database.models for a specific provider using API key
-         */
-        post: operations["fetch_models_by_provider_api_v0_llm_chat_provider__provider_id__models_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v0/llm/chat/completions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create chat completion
-         * @description Create a chat completion using any-llm. Supports both streaming and non-streaming responses.
-         */
-        post: operations["chat_completions_api_v0_llm_chat_completions_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v0/llm/chat/health": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Chat service health check
-         * @description Health check for chat endpoints
-         */
-        get: operations["chat_health_check_api_v0_llm_chat_health_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v0/repos/available": {
         parameters: {
             query?: never;
@@ -611,8 +511,11 @@ export interface components {
          * @description Request model for chat completions
          */
         ChatCompletionRequest: {
-            /** Messages */
-            messages: components["schemas"]["ChatMessage"][];
+            /**
+             * Messages
+             * @description List of messages (can be empty for system-only prompts)
+             */
+            messages?: components["schemas"]["ChatMessage"][];
             /**
              * Provider
              * @description LLM provider (e.g., openai, mistral, anthropic)
@@ -697,7 +600,11 @@ export interface components {
              * @enum {string}
              */
             role: "system" | "user" | "assistant" | "tool";
-            /** Content */
+            /**
+             * Content
+             * @description Message content (can be empty for system-only prompts)
+             * @default
+             */
             content: string;
             /** Tool Call Id */
             tool_call_id?: string | null;
@@ -909,31 +816,31 @@ export interface components {
             /**
              * Id
              * @description Unique identifier for the prompt
+             * @default
              */
             id: string;
             /**
              * Name
              * @description Prompt name
+             * @default Untitled Prompt
              */
             name: string;
             /**
              * Description
              * @description Prompt description
+             * @default
              */
-            description?: string | null;
-            /**
-             * Category
-             * @description Prompt category for organization
-             */
-            category?: string | null;
+            description: string | null;
             /**
              * Provider
              * @description LLM provider (e.g., openai, anthropic)
+             * @default openai
              */
             provider: string;
             /**
              * Model
              * @description Model name (e.g., gpt-4, claude-3)
+             * @default gpt-4
              */
             model: string;
             /**
@@ -944,6 +851,7 @@ export interface components {
             /**
              * Prompt
              * @description Combined prompt content
+             * @default
              */
             prompt: string;
             /**
@@ -990,7 +898,7 @@ export interface components {
              * Stop
              * @description Stop sequences
              */
-            stop?: string | string[] | null;
+            stop?: string[] | string | null;
             /**
              * Presence Penalty
              * @description Presence penalty
@@ -1109,11 +1017,6 @@ export interface components {
              */
             description?: string | null;
             /**
-             * Category
-             * @description Prompt category for organization
-             */
-            category?: string | null;
-            /**
              * Provider
              * @description LLM provider (e.g., openai, anthropic)
              */
@@ -1176,7 +1079,7 @@ export interface components {
              * Stop
              * @description Stop sequences
              */
-            stop?: string | string[] | null;
+            stop?: string[] | string | null;
             /**
              * Presence Penalty
              * @description Presence penalty
@@ -1281,6 +1184,13 @@ export interface components {
              * @description File path within the repository
              */
             file_path: string;
+            /**
+             * Pr Info
+             * @description Pull request information when applicable
+             */
+            pr_info?: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * PromptTokensDetails
@@ -2169,12 +2079,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/authentication-required",
                      *       "title": "Authentication required",
                      *       "detail": "Invalid or expired session token"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -2224,12 +2136,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/authentication-required",
                      *       "title": "Authentication required",
                      *       "detail": "Invalid session token"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -2239,12 +2153,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
                      *       "detail": "Failed to refresh session"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -2297,12 +2213,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/bad-request",
                      *       "title": "Bad request",
                      *       "detail": "Redirect URI parameter is required"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -2312,12 +2230,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/not-found",
                      *       "title": "Provider not found",
                      *       "detail": "OAuth provider 'github' is not supported"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -2336,12 +2256,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
                      *       "detail": "Failed to generate authentication URL"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -2351,12 +2273,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/service-unavailable",
                      *       "title": "Service unavailable",
                      *       "detail": "OAuth provider is not properly configured"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -2391,12 +2315,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/bad-request",
                      *       "title": "Bad request",
                      *       "detail": "Invalid or expired state parameter"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -2406,12 +2332,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/authentication-failed",
                      *       "title": "Authentication failed",
                      *       "detail": "Failed to exchange authorization code for token"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -2430,12 +2358,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
                      *       "detail": "Authentication failed due to server error"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -2465,12 +2395,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
                      *       "detail": "Failed to retrieve configured providers"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -2500,12 +2432,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
                      *       "detail": "Failed to retrieve available providers"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -2541,12 +2475,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/bad-request",
                      *       "title": "Bad request",
                      *       "detail": "Provider ID mismatch"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -2565,12 +2501,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
                      *       "detail": "Failed to fetch models"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -2604,12 +2542,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/bad-request",
                      *       "title": "Bad request",
                      *       "detail": "Invalid provider or model"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -2628,12 +2568,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
                      *       "detail": "Completion failed"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -2683,12 +2625,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
                      *       "detail": "Failed to retrieve configuration"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -2722,12 +2666,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/bad-request",
                      *       "title": "Bad request",
                      *       "detail": "Invalid configuration parameters"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -2737,12 +2683,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/validation-failed",
                      *       "title": "Validation Error",
                      *       "detail": "The request contains invalid data"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -2752,231 +2700,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
                      *       "detail": "Failed to update configuration"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
-                };
-            };
-        };
-    };
-    get_configured_providers_api_v0_llm_chat_providers_configured_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StandardResponse_ProvidersResponse_"];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /** @example {
-                     *       "status": "error",
-                     *       "type": "/errors/internal-server-error",
-                     *       "title": "Internal Server Error",
-                     *       "detail": "Failed to retrieve configured providers"
-                     *     } */
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    get_available_providers_api_v0_llm_chat_providers_available_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StandardResponse_BasicProvidersResponse_"];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /** @example {
-                     *       "status": "error",
-                     *       "type": "/errors/internal-server-error",
-                     *       "title": "Internal Server Error",
-                     *       "detail": "Failed to retrieve available providers"
-                     *     } */
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    fetch_models_by_provider_api_v0_llm_chat_provider__provider_id__models_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                provider_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["FetchModelsRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StandardResponse_ModelsResponse_"];
-                };
-            };
-            /** @description Bad request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /** @example {
-                     *       "status": "error",
-                     *       "type": "/errors/bad-request",
-                     *       "title": "Bad request",
-                     *       "detail": "Provider ID mismatch"
-                     *     } */
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /** @example {
-                     *       "status": "error",
-                     *       "type": "/errors/internal-server-error",
-                     *       "title": "Internal Server Error",
-                     *       "detail": "Failed to fetch models"
-                     *     } */
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    chat_completions_api_v0_llm_chat_completions_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ChatCompletionRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StandardResponse_ChatCompletionResponse_"];
-                };
-            };
-            /** @description Bad request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /** @example {
-                     *       "status": "error",
-                     *       "type": "/errors/bad-request",
-                     *       "title": "Bad request",
-                     *       "detail": "Invalid provider or model"
-                     *     } */
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /** @example {
-                     *       "status": "error",
-                     *       "type": "/errors/internal-server-error",
-                     *       "title": "Internal Server Error",
-                     *       "detail": "Completion failed"
-                     *     } */
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    chat_health_check_api_v0_llm_chat_health_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StandardResponse_dict_"];
                 };
             };
         };
@@ -3005,12 +2737,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/authentication-required",
                      *       "title": "Authentication required",
                      *       "detail": "Session not found or invalid"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -3020,12 +2754,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
                      *       "detail": "Failed to retrieve repositories"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -3055,12 +2791,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/authentication-required",
                      *       "title": "Authentication required",
                      *       "detail": "Valid session required"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -3070,12 +2808,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
                      *       "detail": "Failed to retrieve configured repositories"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -3110,12 +2850,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/authentication-required",
                      *       "title": "Authentication required",
                      *       "detail": "Session not found or invalid"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -3125,12 +2867,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/not-found",
                      *       "title": "Not Found",
                      *       "detail": "Repository not found"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -3149,12 +2893,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
                      *       "detail": "Failed to retrieve repository branches"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -3207,12 +2953,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/not-found",
                      *       "title": "Prompt Not Found",
                      *       "detail": "Prompt with ID 'xxx' not found or access denied"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -3231,12 +2979,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
                      *       "detail": "Failed to retrieve prompt"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -3273,12 +3023,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/validation-failed",
                      *       "title": "Validation Error",
                      *       "detail": "Invalid prompt data"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -3288,12 +3040,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/not-found",
                      *       "title": "Prompt Not Found",
                      *       "detail": "Prompt with ID 'xxx' not found or access denied"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -3312,12 +3066,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
                      *       "detail": "Failed to update prompt"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -3354,12 +3110,31 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/validation-failed",
                      *       "title": "Validation Error",
                      *       "detail": "Invalid prompt data"
-                     *     } */
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Prompt file already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/conflict",
+                     *       "title": "Conflict",
+                     *       "detail": "Prompt file already exists at the specified path"
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -3378,12 +3153,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
                      *       "detail": "Failed to create prompt"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -3416,12 +3193,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/not-found",
                      *       "title": "Prompt Not Found",
                      *       "detail": "Prompt with ID 'xxx' not found or access denied"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -3440,12 +3219,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
                      *       "detail": "Failed to delete prompt"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -3479,12 +3260,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/bad-request",
                      *       "title": "Bad Request",
                      *       "detail": "Failed to discover prompts from all repositories"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };
@@ -3503,12 +3286,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
                      *       "detail": "Failed to discover prompts"
-                     *     } */
+                     *     }
+                     */
                     "application/json": unknown;
                 };
             };

@@ -26,11 +26,11 @@ export interface AuthActions {
   refreshSession: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
   initializeAuth: () => Promise<void>;
-  handleAuthSuccess: (user: User) => void;
+  handleAuthSuccess: (user: User) => Promise<void>;
   
   // Internal actions
   setLoading: (loading: boolean) => void;
-  setUser: (user: User | null) => void;
+  setUser: (user: User | null) => Promise<void>;
   setError: (error: string | null) => void;
 }
 

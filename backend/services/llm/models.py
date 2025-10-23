@@ -5,14 +5,14 @@ from typing import List, Optional, Literal, Any, Dict, Union, Annotated
 class ChatMessage(BaseModel):
     """OpenAI-compatible message format"""
     role: Literal["system", "user", "assistant", "tool"]
-    content: str
+    content: str = Field(default="", description="Message content (can be empty for system-only prompts)")
     tool_call_id: Optional[str] = None
     tool_calls: Optional[List[Dict[str, Any]]] = None
 
 
 class ChatCompletionRequest(BaseModel):
     """Request model for chat completions"""
-    messages: List[ChatMessage]
+    messages: List[ChatMessage] = Field(default_factory=list, description="List of messages (can be empty for system-only prompts)")
     provider: str = Field(..., description="LLM provider (e.g., openai, mistral, anthropic)")
     model: str = Field(..., description="Model name (e.g., gpt-3.5-turbo, claude-3)")
     prompt_id: Optional[str] = Field(None, description="Optional prompt ID for context")

@@ -9,12 +9,21 @@ export const initialPromptState: PromptState = {
   // Currently selected/editing prompt (serves as form data)
   currentPrompt: null,
   
+  // Track if current prompt has unsaved changes
+  isChanged: false,
+  
   // UI State
   isLoading: false,
   isCreating: false,
   isUpdating: false,
   isDeleting: false,
   error: null,
+  
+  // Delete dialog state
+  deleteDialog: {
+    isOpen: false,
+    promptToDelete: null,
+  },
   
   // Filters and Pagination (frontend-only)
   filters: {
@@ -28,6 +37,12 @@ export const initialPromptState: PromptState = {
     pageSize: 20,
     total: 0,
     totalPages: 0,
+  },
+  
+  // Model selector UI state
+  modelSearch: {
+    primaryModel: '',
+    failoverModel: '',
   },
   
   // Cache management

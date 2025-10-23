@@ -11,7 +11,7 @@ export const createLoginWithGithubAction: StateCreator<
   [],
   [],
   Pick<AuthStore, 'oauthCallbackGithub'>
-> = (set) => ({
+> = (set, get) => ({
   oauthCallbackGithub: async (code: string, stateParam?: string) => {
     logStoreAction('AuthStore', 'oauthCallbackGithub', { code, stateParam });
     
@@ -30,14 +30,14 @@ export const createLoginWithGithubAction: StateCreator<
       const response = await authService.handleCallback(code, stateParam || '');
       
       if (response && response.user) {
-        // With httpOnly cookies, we only need to store user data
-        // The authentication cookie is already set by the backend
+        // Store redirect URL before calling handleAuthSuccess
         set((draft) => {
-          draft.user = response.user;
-          draft.isAuthenticated = true;
           draft.promptrepoRedirectUrl = response.promptrepoRedirectUrl || '/';
-    // @ts-expect-error - Immer middleware supports 3 params
-        }, false, 'auth/oauth/callback/github/success');
+        // @ts-expect-error - Immer middleware supports 3 params
+        }, false, 'auth/oauth/callback/github/store-redirect');
+        
+        // Call handleAuthSuccess which will set user and invalidate caches
+        await get().handleAuthSuccess(response.user);
       } else {
         errorNotification(
           'Authentication Failed',

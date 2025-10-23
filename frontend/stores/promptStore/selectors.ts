@@ -7,6 +7,9 @@ export const selectPrompts = (state: PromptStore): PromptMeta[] =>
 
 export const selectCurrentPrompt = (state: PromptStore): PromptMeta | null => state.currentPrompt;
 
+// Changed State Selector
+export const selectIsChanged = (state: PromptStore): boolean => state.isChanged;
+
 // Loading State Selectors
 export const selectIsLoading = (state: PromptStore): boolean => state.isLoading;
 export const selectIsCreating = (state: PromptStore): boolean => state.isCreating;

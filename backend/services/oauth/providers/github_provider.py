@@ -37,7 +37,10 @@ class GitHubOAuthProvider(IOAuthProvider):
     API_BASE_URL = "https://api.github.com"
     
     # Default scopes for GitHub
-    DEFAULT_SCOPES = ["user:email", "read:user"]
+    # repo: Full control of private repositories (includes push access)
+    # user:email: Access to user email addresses
+    # read:user: Read access to user profile data
+    DEFAULT_SCOPES = ["repo", "user:email", "read:user"]
     
     def __init__(self, client_id: str, client_secret: str):
         """

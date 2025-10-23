@@ -7,13 +7,14 @@ Handles create, read, update, delete operations for individual prompts.
 from fastapi import APIRouter, Query, Request, status
 import logging
 
-from api.deps import CurrentUserDep, PromptServiceDep
+from api.deps import CurrentUserDep, PromptServiceDep, CurrentSessionDep
 from middlewares.rest import (
     StandardResponse,
     success_response,
     AppException,
     NotFoundException,
-    ValidationException
+    ValidationException,
+    ConflictException
 )
 from services.prompt.models import PromptMeta, PromptData, PromptDataUpdate
 
@@ -139,6 +140,19 @@ async def get_prompt(
                 }
             }
         },
+        409: {
+            "description": "Prompt file already exists",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "status": "error",
+                        "type": "/errors/conflict",
+                        "title": "Conflict",
+                        "detail": "Prompt file already exists at the specified path"
+                    }
+                }
+            }
+        },
         500: {
             "description": "Internal server error",
             "content": {
@@ -174,6 +188,8 @@ async def create_prompt(
     
     Raises:
         ValidationException: When prompt validation fails
+        ConflictException: When prompt file already exists
+        NotFoundException: When repository is not found
         AppException: When prompt creation fails
     """
     request_id = request.state.request_id
@@ -211,7 +227,7 @@ async def create_prompt(
                 "field": "prompt_data"
             }]
         )
-    except (ValidationException, AppException):
+    except (ValidationException, ConflictException, NotFoundException, AppException):
         # These will be handled by the global exception handlers
         raise
     except Exception as e:
@@ -277,6 +293,7 @@ async def create_prompt(
 async def update_prompt(
     request: Request,
     user_id: CurrentUserDep,
+    user_session: CurrentSessionDep,
     prompt_service: PromptServiceDep,
     prompt_data: PromptDataUpdate,
     repo_name: str = Query(...),
@@ -303,11 +320,23 @@ async def update_prompt(
             extra={"request_id": request_id, "user_id": user_id}
         )
         
-        prompt = await prompt_service.update_prompt(
+        # Get OAuth token and user info from session
+        oauth_token = getattr(user_session, 'oauth_token', None)
+        
+        # Get user information for git commit author
+        user = user_session.user if hasattr(user_session, 'user') else None
+        author_name = user.oauth_name or user.oauth_username if user else None
+        author_email = user.oauth_email if user else None
+        
+        prompt, pr_info = await prompt_service.update_prompt(
             user_id=user_id,
             repo_name=repo_name,
             file_path=file_path,
-            prompt_data=prompt_data
+            prompt_data=prompt_data,
+            oauth_token=oauth_token,
+            author_name=author_name,
+            author_email=author_email,
+            user_session=user_session
         )
         
         if not prompt:
@@ -321,6 +350,7 @@ async def update_prompt(
             extra={"request_id": request_id, "user_id": user_id}
         )
         
+        # PR info is already attached to the prompt data object
         return success_response(
             data=prompt.model_dump(mode='json'),
             message="Prompt updated successfully",

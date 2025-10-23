@@ -4,6 +4,7 @@ import { useConfigStore } from '@/stores/configStore';
 import {
   selectPrompts,
   selectCurrentPrompt,
+  selectIsChanged,
   selectIsLoading,
   selectIsCreating,
   selectIsUpdating,
@@ -33,6 +34,7 @@ import {
 // Data Hooks
 export const usePrompts = () => usePromptStore(selectPrompts);
 export const useCurrentPrompt = () => usePromptStore(selectCurrentPrompt);
+export const useIsChanged = () => usePromptStore(selectIsChanged);
 export const usePromptByKey = (repoName: string, filePath: string) =>
   usePromptStore(selectPromptByKey(repoName, filePath));
 export const usePromptsByRepository = (repository: string) =>
@@ -123,6 +125,17 @@ export const useModelOptions = () => {
   }, [config.llm_configs]);
 };
 
+// Delete Dialog Hooks
+export const useDeleteDialog = () => usePromptStore(state => state.deleteDialog);
+export const useDeleteDialogOpen = () => usePromptStore(state => state.deleteDialog.isOpen);
+export const usePromptToDelete = () => usePromptStore(state => state.deleteDialog.promptToDelete);
+
+// Model Search Hooks
+export const usePrimaryModelSearch = () => usePromptStore(state => state.modelSearch.primaryModel);
+export const useFailoverModelSearch = () => usePromptStore(state => state.modelSearch.failoverModel);
+export const useSetPrimaryModelSearch = () => usePromptStore(state => state.setPrimaryModelSearch);
+export const useSetFailoverModelSearch = () => usePromptStore(state => state.setFailoverModelSearch);
+
 // Action Hooks
 export const usePromptActions = () => {
   const store = usePromptStore();
@@ -143,12 +156,18 @@ export const usePromptActions = () => {
     setCurrentPrompt: store.setCurrentPrompt,
     clearCurrentPrompt: store.clearCurrentPrompt,
     
+    // Delete Dialog Management
+    openDeleteDialog: store.openDeleteDialog,
+    closeDeleteDialog: store.closeDeleteDialog,
+    confirmDelete: store.confirmDelete,
+    
     // Convenience handlers
     saveCurrentPrompt: async () => {
       const currentPrompt = store.currentPrompt;
       if (currentPrompt) {
         // Use the entire currentPrompt.prompt as updates since it's already the modified state
-        await store.updatePrompt(currentPrompt.repo_name, currentPrompt.file_path, currentPrompt.prompt);
+        const result = await store.updatePrompt(currentPrompt.repo_name, currentPrompt.file_path, currentPrompt.prompt);
+        return result;
       }
     },
     
@@ -232,4 +251,59 @@ export const usePromptStoreState = () => {
     // Actions
     ...actions,
   };
+};
+
+/**
+ * Hook to manage new prompt creation form state and logic
+ * This centralizes all the business logic for creating new prompts
+ */
+export const useNewPromptForm = () => {
+  const { createPrompt } = usePromptActions();
+  const config = useConfigStore(state => state.config);
+
+  return useMemo(() => {
+    const repositories = config?.repo_configs || [];
+
+    const validateForm = (selectedRepo: string, filePath: string): { repo?: string; filePath?: string } => {
+      const errors: { repo?: string; filePath?: string } = {};
+
+      if (!selectedRepo) {
+        errors.repo = 'Please select a repository';
+      }
+
+      if (!filePath.trim()) {
+        errors.filePath = 'File path is required';
+      } else if (!filePath.endsWith('.yaml') && !filePath.endsWith('.yml')) {
+        errors.filePath = 'File path must end with .yaml or .yml';
+      }
+
+      return errors;
+    };
+
+    const createNewPrompt = async (selectedRepo: string, filePath: string) => {
+      const newPrompt = await createPrompt({
+        repo_name: selectedRepo,
+        file_path: filePath.trim(),
+        prompt: {
+          id: '',
+          name: 'Untitled Prompt',
+          description: '',
+          provider: '',
+          model: '',
+          prompt: '',
+          tags: [],
+          temperature: 0.0,
+          reasoning_effort: 'auto',
+        },
+      });
+
+      return newPrompt;
+    };
+
+    return {
+      repositories,
+      validateForm,
+      createNewPrompt,
+    };
+  }, [config?.repo_configs, createPrompt]);
 };

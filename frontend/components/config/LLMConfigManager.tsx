@@ -11,12 +11,16 @@ import {
   HStack,
   Field,
   Card,
+  Fieldset,
+  Stack,
+  Skeleton,
+  EmptyState,
 } from '@chakra-ui/react'
 import { FaChevronDown } from 'react-icons/fa';
+import { LuCpu } from 'react-icons/lu';
 import { useEffect } from 'react';
 import type { components } from '@/types/generated/api';
-import { useConfig, useConfigActions, useAvailableProviders, useLLMFormState, useLLMFormUIState, useConfigStore } from '@/stores/configStore';
-import { useLoadingStore } from '@/stores/loadingStore';
+import { useConfig, useConfigActions, useAvailableProviders, useLLMFormState, useLLMFormUIState, useConfigStore, useIsLoadingConfig, useIsSavingRepo } from '@/stores/configStore';
 
 type LLMConfig = components['schemas']['LLMConfig'];
 type BasicProviderInfo = components['schemas']['BasicProviderInfo'];
@@ -42,11 +46,13 @@ export default function LLMConfigManager({
     setModelSearchValue,
     setLLMProviderWithSideEffects,
     fetchModelsIfReady,
+    setIsSaving,
   } = useConfigActions();
   const availableProviders = useAvailableProviders();
   const { llmProvider, apiKey, llmModel, apiBaseUrl, availableModels, isLoadingModels } = useLLMFormState();
   const { providerSearchValue, modelSearchValue } = useLLMFormUIState();
-  const { isLoading, showLoading, hideLoading } = useLoadingStore();
+  const isSaving = useIsSavingRepo();
+  const isLoading = useIsLoadingConfig();
   
   const llmConfigs = config.llm_configs || [];
   const borderColor = "border.elevated";
@@ -77,16 +83,19 @@ export default function LLMConfigManager({
     await setLLMProviderWithSideEffects(newProvider);
   };
 
-  // Fetch models when API key or API base URL changes
+  // Fetch models when API key or API base URL changes (debounced for API base URL)
   useEffect(() => {
     if (llmProvider && apiKey && apiKey.length >= 3 && (!requiresApiBase || (apiBaseUrl && apiBaseUrl.length >= 3))) {
-      fetchModelsIfReady();
+      // Debounce only when requiresApiBase is true and apiBaseUrl is changing
+      const timeoutId = setTimeout(() => {
+        fetchModelsIfReady();
+      }, requiresApiBase ? 500 : 0);
+
+      return () => clearTimeout(timeoutId);
     }
   }, [apiKey, apiBaseUrl, llmProvider, requiresApiBase, fetchModelsIfReady]);
 
   const handleAddConfiguration = async () => {
-    showLoading('Adding Configuration', 'Saving your LLM configuration...');
-    
     const newConfig: LLMConfig = {
       id: '',
       provider: llmProvider,
@@ -105,6 +114,7 @@ export default function LLMConfigManager({
     };
     
     try {
+      setIsSaving(true);
       await updateConfig(updatedConfig);
       
       // Reset form
@@ -114,13 +124,11 @@ export default function LLMConfigManager({
     } catch (error) {
       console.error('Error saving configuration:', error);
     } finally {
-      hideLoading();
+      setIsSaving(false);
     }
   };
 
   const handleRemoveConfig = async (index: number) => {
-    showLoading('Removing Configuration', 'Removing LLM configuration...');
-    
     // removeLLMConfig already updates the state correctly.
     // We just need to call updateConfig to persist the current state.
     removeLLMConfig(index);
@@ -131,31 +139,25 @@ export default function LLMConfigManager({
       await updateConfig(currentState);
     } catch (error) {
       console.error('Error removing configuration:', error);
-    } finally {
-      hideLoading();
     }
   };
 
   return (
     <Card.Root
-      bg={{ _light: 'primary.100', _dark: 'primary.900' }}
       borderWidth="1px"
       borderColor={borderColor}
-      overflow="hidden"
-      position="relative"
-      transition="all 0.3s"
-      _hover={{
-        transform: 'translateY(-4px)',
-        shadow: 'xl',
-        borderColor: 'primary.400'
-      }}
     >
       <Card.Body p={8}>
-        <VStack gap={6} align="stretch">
-          <Text fontSize="lg" fontWeight="bold">LLM Provider Configuration</Text>
-          <Text fontSize="sm" opacity={0.7} mb={2}>
-            Setup your AI provider and API key first, then select from available models.
-          </Text>
+        <Fieldset.Root size="lg">
+          <Stack>
+            <Fieldset.Legend>LLM Provider Configuration</Fieldset.Legend>
+            <Fieldset.HelperText>
+              Setup your AI provider and API key first, then select from available models.
+            </Fieldset.HelperText>
+          </Stack>
+
+          <Fieldset.Content>
+            <VStack gap={6} align="stretch">
         {/* Add new LLM configuration */}
         <Card.Root
           bg="transparent"
@@ -193,7 +195,7 @@ export default function LLMConfigManager({
                       />
                       <Combobox.IndicatorGroup position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
                         <Combobox.Trigger>
-                          <FaChevronDown size={16} />
+                          <FaChevronDown size={10} />
                         </Combobox.Trigger>
                       </Combobox.IndicatorGroup>
                     </Combobox.Control>
@@ -231,12 +233,15 @@ export default function LLMConfigManager({
                       !llmModel ||
                       !apiKey ||
                       (requiresApiBase && !apiBaseUrl) ||
-                      disabled
+                      disabled ||
+                      isSaving
                     }
+                    loading={isSaving}
+                    loadingText="Saving..."
                     alignSelf="end"
                     verticalAlign={"bottom"}
                   >
-                    Add Configuration
+                    Add LLM Config
                   </Button>
                 </Box>
               </HStack>
@@ -280,7 +285,7 @@ export default function LLMConfigManager({
                       />
                       <Combobox.IndicatorGroup position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
                         <Combobox.Trigger>
-                          <FaChevronDown size={16} />
+                          <FaChevronDown size={10} />
                         </Combobox.Trigger>
                       </Combobox.IndicatorGroup>
                     </Combobox.Control>
@@ -308,50 +313,136 @@ export default function LLMConfigManager({
                   )}
                 </Box>
                   {/* Dummy button for layout consistency */}
-                <Box><Button visibility="hidden">Add Configuration</Button></Box>
+                <Box><Button visibility="hidden">Add LLM Config</Button></Box>
               </HStack>
             </Box>
           </VStack>
           </Card.Body>
         </Card.Root>
         {/* Display configured LLMs */}
-        {llmConfigs.length > 0 && (
+        {llmConfigs.length > 0 || isLoading ? (
           <Card.Root
             borderWidth="1px"
             borderColor={borderColor}
             bg="transparent"
           >
             <Card.Body p={8}>
-            <Text fontWeight="bold" mb={4}>Configured LLM Providers</Text>
-            <VStack gap={2}>
+              <Text fontWeight="semibold" fontSize="lg" mb={6}>Configured LLM Providers</Text>
+              {isLoading ? (
+                <VStack gap={4} width="100%">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} height="80px" width="100%" bg="bg"/>
+                  ))}
+                </VStack>
+              ) : (
+                <VStack gap={4}>
               {llmConfigs.map((config, index) => {
                 const isOrgScope = config.scope === 'organization';
                 return (
-                  <HStack key={index} justify="space-between" width="100%" p={2} bg={{ _light: "primary.50", _dark: "primary.950" }} borderRadius="md">
-                    <Text fontSize="sm" fontWeight="400">
-                      Provider: <Text as="span" fontWeight="bold">{config.provider}</Text> | Model: <Text as="span" fontWeight="bold">{config.model}</Text>
-                      {!isOrgScope && config.api_base_url && (
-                        <> | API Base: <Text as="span" fontWeight="bold">{config.api_base_url}</Text></>
-                      )}
-                      {isOrgScope && (
-                        <Text as="span" fontSize="xs" color="gray.500" ml={2}>(Organization Scoped)</Text>
-                      )}
-                    </Text>
-                    <Button
-                      size="sm"
-                      onClick={() => handleRemoveConfig(index)}
-                      disabled={disabled || isOrgScope}
-                    >
-                      Remove
-                    </Button>
-                  </HStack>
+                  <Card.Root
+                    key={index}
+                    width="100%"
+                    bg="bg.panel"
+                    borderWidth="1px"
+                    borderColor="border.subtle"
+                    transition="all 0.2s"
+                    _hover={{
+                      borderColor: isOrgScope ? "border.subtle" : "border.emphasized",
+                      shadow: "sm"
+                    }}
+                  >
+                    <Card.Body p={5}>
+                      <HStack justify="space-between" width="100%">
+                        <HStack gap={3} flex={1}>
+                          <Box minWidth="70px" pr={2}>
+                            <Text fontSize="xs" color="fg.muted" mb={1}>Provider</Text>
+                            <Text fontSize="sm" fontWeight="semibold">{config.provider}</Text>
+                          </Box>
+                          <Box height="40px" width="1px" bg="border.subtle" />
+                          <Box px={2}>
+                            <Text fontSize="xs" color="fg.muted" mb={1}>Model</Text>
+                            <Text fontSize="sm" fontWeight="semibold">{config.model}</Text>
+                          </Box>
+                          {!isOrgScope && config.api_base_url && (
+                            <>
+                              <Box height="40px" width="1px" bg="border.subtle" />
+                              <Box px={2}>
+                                <Text fontSize="xs" color="fg.muted" mb={1}>API Base</Text>
+                                <Text
+                                  fontSize="sm"
+                                  fontWeight="medium"
+                                  maxWidth="200px"
+                                  overflow="hidden"
+                                  textOverflow="ellipsis"
+                                  whiteSpace="nowrap"
+                                >
+                                  {config.api_base_url}
+                                </Text>
+                              </Box>
+                            </>
+                          )}
+                        </HStack>
+                        <HStack gap={3}>
+                          {isOrgScope && (
+                            <Box
+                              px={2}
+                              py={1}
+                              bg="bg.subtle"
+                              borderRadius="sm"
+                              borderWidth="1px"
+                              borderColor="border.subtle"
+                            >
+                              <Text fontSize="xs" fontWeight="normal" color="fg.muted">
+                                Organization Scoped
+                              </Text>
+                            </Box>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            colorScheme="red"
+                            onClick={() => handleRemoveConfig(index)}
+                            disabled={disabled || isOrgScope}
+                            opacity={isOrgScope ? 0.5 : 1}
+                          >
+                            Remove
+                          </Button>
+                        </HStack>
+                      </HStack>
+                    </Card.Body>
+                  </Card.Root>
                 );
               })}
-            </VStack>
+                </VStack>
+              )}
+            </Card.Body>
+          </Card.Root>
+        ) : (
+          <Card.Root
+            borderWidth="1px"
+            borderColor={borderColor}
+            bg="transparent"
+          >
+            <Card.Body p={8}>
+              <EmptyState.Root>
+                <EmptyState.Content>
+                  <EmptyState.Indicator>
+                    <LuCpu />
+                  </EmptyState.Indicator>
+                  <VStack textAlign="center">
+                    <EmptyState.Title>No LLM providers configured</EmptyState.Title>
+                    <EmptyState.Description>
+                      Add your first LLM provider to get started
+                    </EmptyState.Description>
+                  </VStack>
+                </EmptyState.Content>
+              </EmptyState.Root>
             </Card.Body>
           </Card.Root>
         )}
-      </VStack>
+            </VStack>
+          </Fieldset.Content>
+        </Fieldset.Root>
       </Card.Body>
     </Card.Root>
   )

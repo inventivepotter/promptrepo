@@ -5,7 +5,6 @@ export type CommitInfo = components['schemas']['CommitInfo'];
 export interface PromptSearchParams {
   query?: string;
   repo_name?: string;
-  category?: string;
   tags?: string[];
   owner?: string;
   page?: number;

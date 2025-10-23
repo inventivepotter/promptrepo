@@ -1,10 +1,25 @@
 'use client'
 
+import { useEffect } from 'react'
 import { Box, Container, ScrollArea } from '@chakra-ui/react'
 import { ConfigSection, ConfigHeader, LLMConfigManager, RepoConfigManager } from '@/components/config'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
 export default function ConfigPage() {
+  useEffect(() => {
+    // Check for hash in URL and scroll to that section
+    if (window.location.hash) {
+      const hash = window.location.hash.substring(1); // Remove the '#'
+      const element = document.getElementById(hash);
+      if (element) {
+        // Use setTimeout to ensure the element is fully rendered
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    }
+  }, []);
+
   return (
     <ProtectedRoute>
       <Box height="100vh" width="100%" display="flex" flexDirection="column">

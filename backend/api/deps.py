@@ -25,7 +25,8 @@ from services.config.config_service import ConfigService
 from schemas.hosting_type_enum import HostingType
 from services.llm.completion_service import ChatCompletionService
 from services.llm.llm_provider_service import LLMProviderService
-from services.git.git_service import GitService
+from services.local_repo.git_service import GitService
+from services.local_repo.local_repo_service import LocalRepoService
 from services.remote_repo.remote_repo_service import RemoteRepoService
 from services.prompt.prompt_service import PromptService
 from services.file_operations.file_operations_service import FileOperationsService
@@ -251,12 +252,37 @@ FileOperationsServiceDep = Annotated[FileOperationsService, Depends(get_file_ope
 
 
 # ==============================================================================
+# Local Repository Service
+# ==============================================================================
+
+def get_local_repo_service(
+    config_service: ConfigServiceDep,
+    db: DBSession,
+    remote_repo_service: RemoteRepoServiceDep
+) -> LocalRepoService:
+    """
+    Local repository service dependency.
+    
+    Creates a LocalRepoService for handling git workflow operations and PR creation.
+    """
+    return LocalRepoService(
+        config_service=config_service,
+        db=db,
+        remote_repo_service=remote_repo_service
+    )
+
+
+LocalRepoServiceDep = Annotated[LocalRepoService, Depends(get_local_repo_service)]
+
+
+# ==============================================================================
 # Prompt Service
 # ==============================================================================
 
 def get_prompt_service(
     config_service: ConfigServiceDep,
-    file_ops_service: FileOperationsServiceDep
+    file_ops_service: FileOperationsServiceDep,
+    local_repo_service: LocalRepoServiceDep
 ) -> PromptService:
     """
     Prompt service dependency.
@@ -264,10 +290,10 @@ def get_prompt_service(
     Creates a PromptService with all required dependencies injected.
     The service handles both individual and organization hosting types.
     """
-    
     return PromptService(
         config_service=config_service.config,
-        file_ops_service=file_ops_service
+        file_ops_service=file_ops_service,
+        local_repo_service=local_repo_service
     )
 
 

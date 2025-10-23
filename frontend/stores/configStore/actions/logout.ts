@@ -3,6 +3,7 @@ import type { StateCreator } from '@/lib/zustand';
 import { logStoreAction } from '@/lib/zustand';
 import type { ConfigStore } from '../types';
 import { initialConfigState } from '../state';
+import { usePromptStore } from '@/stores/promptStore/store';
 
 export const createLogoutAction: StateCreator<
   ConfigStore,
@@ -14,6 +15,7 @@ export const createLogoutAction: StateCreator<
     logout: () => {
       logStoreAction('ConfigStore', 'logout', {});
       
+      // Clear config store
       set((draft) => {
         if (draft.config.llm_configs) {
           draft.config.llm_configs = initialConfigState.config.llm_configs;
@@ -23,6 +25,10 @@ export const createLogoutAction: StateCreator<
         }
       // @ts-expect-error - Immer middleware supports 3 params
       }, false, 'config/logout');
+      
+      // Invalidate prompt cache on logout
+      usePromptStore.getState().invalidateCache();
+      console.log('Cleared config and prompt caches on logout');
     },
   };
 };

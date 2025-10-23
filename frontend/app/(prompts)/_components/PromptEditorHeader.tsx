@@ -52,7 +52,7 @@ export function PromptEditorHeader({ onBack, onSave, canSave, isSaving = false }
               {currentPrompt?.prompt?.name || 'New Prompt'}
             </Text>
             <Text fontSize="sm" opacity={0.7}>
-              Edit prompt settings and configuration. Click Save to persist changes.
+              Edit prompt settings and configuration. Click Save to push changes and create a PR.
             </Text>
           </VStack>
         </HStack>

@@ -7,6 +7,9 @@ import { ConfigService } from '@/services/config/configService';
 import { UserProfile } from './UserProfile';
 import { LoginButton } from './LoginButton';
 import { LogoutButton } from './LogoutButton';
+import type { components } from '@/types/generated/api';
+
+type OAuthProvider = components['schemas']['OAuthProvider'];
 
 interface AuthSectionProps {
   isCollapsed?: boolean;
@@ -27,13 +30,13 @@ export const AuthSection = (props: AuthSectionProps) => {
     initializeAuth();
   }, [initializeAuth]);
 
-  // Check if GitHub OAuth provider is configured
-  const hasGitHubOAuth = config?.oauth_configs?.some(
-    (provider) => provider?.provider === 'github'
-  );
+  // Get all configured OAuth providers
+  const configuredProviders = config?.oauth_configs?.map(
+    (provider) => provider?.provider as OAuthProvider
+  ).filter(Boolean) || [];
 
   // Determine whether to show auth buttons
-  const shouldShowAuth = !ConfigService.shouldSkipAuth(hostingType || undefined) && hasGitHubOAuth;
+  const shouldShowAuth = !ConfigService.shouldSkipAuth(hostingType || undefined) && configuredProviders.length > 0;
 
   return (
     <>
@@ -42,12 +45,23 @@ export const AuthSection = (props: AuthSectionProps) => {
         <UserProfile {...props} />
       )}
 
-      {/* GitHub Login or Logout Button - Only show if GitHub OAuth is configured */}
-      {shouldShowAuth && isAuthenticated ? (
-        <LogoutButton {...props} />
-      ) : shouldShowAuth ? (
-        <LoginButton {...props} />
-      ) : null}
+      {/* Login or Logout Buttons - Only show if OAuth providers are configured */}
+      {shouldShowAuth && (
+        <>
+          {isAuthenticated ? (
+            <LogoutButton />
+          ) : (
+            <>
+              {configuredProviders.map((provider) => (
+                <LoginButton
+                  key={provider}
+                  provider={provider}
+                />
+              ))}
+            </>
+          )}
+        </>
+      )}
     </>
   );
 };

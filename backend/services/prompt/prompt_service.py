@@ -8,14 +8,15 @@ using constructor injection for all dependencies following SOLID principles.
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Dict, Any, Union
+from typing import List, Optional, Dict, Any, Union, Tuple
 
 from schemas.hosting_type_enum import HostingType
 from services.config.config_interface import IConfig
-from services.git.git_service import GitService
+from services.local_repo.git_service import GitService
+from services.local_repo.local_repo_service import LocalRepoService
 from services.file_operations import FileOperationsService
 from settings import settings
-from middlewares.rest.exceptions import NotFoundException, AppException
+from middlewares.rest.exceptions import NotFoundException, AppException, ConflictException
 
 from .prompt_interface import IPromptService
 from .models import (
@@ -23,7 +24,8 @@ from .models import (
     PromptData,
     PromptDataUpdate
 )
-from services.git.models import CommitInfo
+from services.local_repo.models import PRInfo
+from services.local_repo.models import CommitInfo
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +44,8 @@ class PromptService(IPromptService):
     def __init__(
         self,
         config_service: IConfig,
-        file_ops_service: FileOperationsService
+        file_ops_service: FileOperationsService,
+        local_repo_service: LocalRepoService
     ):
         """
         Initialize PromptService with injected dependencies.
@@ -50,9 +53,11 @@ class PromptService(IPromptService):
         Args:
             config_service: Configuration service for hosting type
             file_ops_service: File operations service for file I/O
+            local_repo_service: Local repository service for git operations
         """
         self.config_service = config_service
         self.file_ops = file_ops_service
+        self.local_repo_service = local_repo_service
         
     def _get_repo_base_path(self, user_id: str) -> Path:
         """
@@ -113,6 +118,14 @@ class PromptService(IPromptService):
                 identifier=repo_name
             )
         
+        # Check if file already exists
+        full_file_path = repo_path / file_path
+        if full_file_path.exists():
+            raise ConflictException(
+                message=f"Prompt file already exists at {file_path}",
+                context={"repo_name": repo_name, "file_path": file_path}
+            )
+        
         # Set user field in organization mode
         if self.config_service.get_hosting_config().type == HostingType.ORGANIZATION:
             prompt_data.user = user_id
@@ -133,8 +146,7 @@ class PromptService(IPromptService):
         if isinstance(prompt_content.get("updated_at"), datetime):
             prompt_content["updated_at"] = prompt_content["updated_at"].isoformat()
         
-        # Save to file
-        full_file_path = repo_path / file_path
+        # Save to file (full_file_path already defined above)
         success = self._save_prompt_file(full_file_path, prompt_content)
         
         if not success:
@@ -149,7 +161,8 @@ class PromptService(IPromptService):
             prompt=prompt_data,
             repo_name=repo_name,
             file_path=file_path,
-            recent_commits=recent_commits
+            recent_commits=recent_commits,
+            pr_info=None
         )
         
         logger.info(f"Created prompt {prompt_data.id} for user {user_id}")
@@ -197,7 +210,6 @@ class PromptService(IPromptService):
                 id=self._generate_prompt_id(repo_name, file_path),
                 name=yaml_data.get("name", file_path),
                 description=yaml_data.get("description"),
-                category=yaml_data.get("category"),
                 provider=yaml_data.get("provider", ""),
                 model=yaml_data.get("model", ""),
                 failover_model=yaml_data.get("failover_model"),
@@ -234,7 +246,8 @@ class PromptService(IPromptService):
                 prompt=prompt_data,
                 recent_commits=recent_commits,
                 repo_name=repo_name,
-                file_path=file_path
+                file_path=file_path,
+                pr_info=None
             )
             
             return prompt_meta
@@ -247,14 +260,33 @@ class PromptService(IPromptService):
         user_id: str,
         repo_name: str,
         file_path: str,
-        prompt_data: PromptDataUpdate
-    ) -> Optional[PromptMeta]:
-        """Update an existing prompt."""
+        prompt_data: PromptDataUpdate,
+        oauth_token: Optional[str] = None,
+        author_name: Optional[str] = None,
+        author_email: Optional[str] = None,
+        user_session = None
+    ) -> Tuple[Optional[PromptMeta], Optional[PRInfo]]:
+        """
+        Update an existing prompt.
+        
+        Args:
+            user_id: User ID
+            repo_name: Repository name
+            file_path: File path relative to repository root
+            prompt_data: Prompt data to update
+            oauth_token: Optional OAuth token for git operations
+            author_name: Optional git commit author name
+            author_email: Optional git commit author email
+            user_session: Optional user session for PR creation
+            
+        Returns:
+            Tuple[Optional[PromptMeta], Optional[PRInfo]]: Updated prompt and PR info if created
+        """
         # Get existing prompt
         prompt_meta = await self.get_prompt(user_id, repo_name, file_path)
         
         if not prompt_meta:
-            return None
+            return None, None
         
         # Get repository base path
         repo_base_path = self._get_repo_base_path(user_id)
@@ -266,7 +298,7 @@ class PromptService(IPromptService):
         
         if not existing_data:
             logger.error(f"Could not load existing prompt file at {full_file_path}")
-            return None
+            return None, None
         
         # Update existing data with non-None values from prompt_data
         update_dict = prompt_data.model_dump(exclude_none=True, by_alias=False)
@@ -280,11 +312,28 @@ class PromptService(IPromptService):
         
         if not success:
             logger.error(f"Failed to save updated prompt to {full_file_path}")
-            return None
+            return None, None
         
-        # Return updated prompt
+        # Handle git workflow (branch, commit, push, PR creation)
+        pr_info = await self.local_repo_service.handle_git_workflow_after_save(
+            user_id=user_id,
+            repo_name=repo_name,
+            file_path=file_path,
+            oauth_token=oauth_token,
+            author_name=author_name,
+            author_email=author_email,
+            user_session=user_session
+        )
+        
+        # Return updated prompt with PR info attached
         logger.info(f"Updated prompt {repo_name}:{file_path} for user {user_id}")
-        return await self.get_prompt(user_id, repo_name, file_path)
+        updated_prompt = await self.get_prompt(user_id, repo_name, file_path)
+        
+        # Attach PR info to the PromptMeta if available
+        if updated_prompt and pr_info:
+            updated_prompt.pr_info = pr_info.model_dump(mode='json')
+        
+        return updated_prompt, pr_info
     
     async def delete_prompt(
         self,
@@ -323,11 +372,11 @@ class PromptService(IPromptService):
         repo_base_path = self._get_repo_base_path(user_id)
         repo_path = repo_base_path / repo_name
         
+        # Check if repository exists, if not return empty list instead of raising exception
+        # This prevents infinite loops when repos haven't been cloned yet
         if not repo_path.exists():
-            raise NotFoundException(
-                resource="Repository",
-                identifier=f"{repo_name} at {repo_path}"
-            )
+            logger.warning(f"Repository {repo_name} not found at {repo_path}, returning empty list")
+            return []
         
         # Scan for all YAML/YML files
         prompt_metas = []
