@@ -223,6 +223,8 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
         draft.isUpdating = false;
       // @ts-expect-error - Immer middleware supports 3 params
       }, false, 'prompts/update-success');
+      
+      return updatedPromptMeta;
     } catch (error) {
       set((draft) => {
         draft.error = error instanceof Error ? error.message : 'Failed to update prompt';

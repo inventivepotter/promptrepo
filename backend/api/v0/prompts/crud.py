@@ -328,7 +328,7 @@ async def update_prompt(
         author_name = user.oauth_name or user.oauth_username if user else None
         author_email = user.oauth_email if user else None
         
-        prompt = await prompt_service.update_prompt(
+        prompt, pr_info = await prompt_service.update_prompt(
             user_id=user_id,
             repo_name=repo_name,
             file_path=file_path,
@@ -350,6 +350,7 @@ async def update_prompt(
             extra={"request_id": request_id, "user_id": user_id}
         )
         
+        # PR info is already attached to the prompt data object
         return success_response(
             data=prompt.model_dump(mode='json'),
             message="Prompt updated successfully",

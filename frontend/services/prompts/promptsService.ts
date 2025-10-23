@@ -117,11 +117,7 @@ export class PromptsService {
         throw new Error('Unexpected response format');
       }
 
-      successNotification(
-        'Prompt Updated',
-        'Your prompt has been updated successfully.'
-      );
-
+      // Don't show notification here - let the component handle it with toaster.promise
       return result.data;
     } catch (error: unknown) {
       errorNotification(

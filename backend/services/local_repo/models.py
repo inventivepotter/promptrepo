@@ -51,3 +51,22 @@ class CommitInfo(BaseModel):
             datetime: lambda v: v.isoformat()
         }
     }
+
+
+class PRInfo(BaseModel):
+    """
+    Pull Request information returned after prompt save operations.
+    """
+    pr_number: int
+    pr_url: str
+    pr_id: int
+    
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "pr_number": 123,
+                "pr_url": "https://github.com/owner/repo/pull/123",
+                "pr_id": 456789
+            }
+        }
+    }

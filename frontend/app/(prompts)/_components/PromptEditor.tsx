@@ -17,6 +17,7 @@ import { PromptTimeline } from './PromptTimeline';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { useUser } from '@/stores/authStore';
 import { useCurrentPrompt, usePromptActions, useIsUpdating, useIsLoading, useIsChanged } from '@/stores/promptStore/hooks';
+import { toaster } from '@/components/ui/toaster';
 
 export function PromptEditor() {
   const router = useRouter();
@@ -29,6 +30,48 @@ export function PromptEditor() {
 
   const handleBack = () => {
     router.push('/prompts');
+  };
+
+  const handleSave = async () => {
+    if (!currentPrompt) return;
+
+    const savePromise = saveCurrentPrompt();
+
+    toaster.promise(savePromise, {
+      loading: {
+        title: 'Saving...',
+        description: 'Committing changes and creating PR...',
+      },
+      success: (data) => {
+        const prInfo = data?.pr_info as { pr_url?: string; pr_number?: number } | null | undefined;
+        const prUrl = prInfo?.pr_url;
+        const prNumber = prInfo?.pr_number;
+        
+        if (prUrl) {
+          return {
+            title: 'Successfully saved!',
+            description: `Pull Request #${prNumber} created`,
+            duration: 60000, // Sticky notification - 1 minute
+            action: {
+              label: 'View PR',
+              onClick: () => {
+                window.open(prUrl, '_blank', 'noopener,noreferrer');
+              },
+            },
+          };
+        }
+        
+        return {
+          title: 'Successfully saved!',
+          description: 'Changes committed successfully',
+          duration: 5000, // Auto-dismiss after 5 seconds
+        };
+      },
+      error: {
+        title: 'Save failed',
+        description: 'Something went wrong while saving',
+      },
+    });
   };
 
   // Get commits from prompt data with 0th commit for latest changes
@@ -66,7 +109,7 @@ export function PromptEditor() {
       {/* Sticky Header - Outside ScrollArea */}
       <PromptEditorHeader
         onBack={handleBack}
-        onSave={saveCurrentPrompt}
+        onSave={handleSave}
         canSave={!!currentPrompt && isChanged}
         isSaving={isUpdating}
       />

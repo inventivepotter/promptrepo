@@ -8,7 +8,7 @@ using constructor injection for all dependencies following SOLID principles.
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Dict, Any, Union
+from typing import List, Optional, Dict, Any, Union, Tuple
 
 from schemas.hosting_type_enum import HostingType
 from services.config.config_interface import IConfig
@@ -24,6 +24,7 @@ from .models import (
     PromptData,
     PromptDataUpdate
 )
+from services.local_repo.models import PRInfo
 from services.local_repo.models import CommitInfo
 
 logger = logging.getLogger(__name__)
@@ -160,7 +161,8 @@ class PromptService(IPromptService):
             prompt=prompt_data,
             repo_name=repo_name,
             file_path=file_path,
-            recent_commits=recent_commits
+            recent_commits=recent_commits,
+            pr_info=None
         )
         
         logger.info(f"Created prompt {prompt_data.id} for user {user_id}")
@@ -244,7 +246,8 @@ class PromptService(IPromptService):
                 prompt=prompt_data,
                 recent_commits=recent_commits,
                 repo_name=repo_name,
-                file_path=file_path
+                file_path=file_path,
+                pr_info=None
             )
             
             return prompt_meta
@@ -262,7 +265,7 @@ class PromptService(IPromptService):
         author_name: Optional[str] = None,
         author_email: Optional[str] = None,
         user_session = None
-    ) -> Optional[PromptMeta]:
+    ) -> Tuple[Optional[PromptMeta], Optional[PRInfo]]:
         """
         Update an existing prompt.
         
@@ -275,12 +278,15 @@ class PromptService(IPromptService):
             author_name: Optional git commit author name
             author_email: Optional git commit author email
             user_session: Optional user session for PR creation
+            
+        Returns:
+            Tuple[Optional[PromptMeta], Optional[PRInfo]]: Updated prompt and PR info if created
         """
         # Get existing prompt
         prompt_meta = await self.get_prompt(user_id, repo_name, file_path)
         
         if not prompt_meta:
-            return None
+            return None, None
         
         # Get repository base path
         repo_base_path = self._get_repo_base_path(user_id)
@@ -292,7 +298,7 @@ class PromptService(IPromptService):
         
         if not existing_data:
             logger.error(f"Could not load existing prompt file at {full_file_path}")
-            return None
+            return None, None
         
         # Update existing data with non-None values from prompt_data
         update_dict = prompt_data.model_dump(exclude_none=True, by_alias=False)
@@ -306,10 +312,10 @@ class PromptService(IPromptService):
         
         if not success:
             logger.error(f"Failed to save updated prompt to {full_file_path}")
-            return None
+            return None, None
         
         # Handle git workflow (branch, commit, push, PR creation)
-        await self.local_repo_service.handle_git_workflow_after_save(
+        pr_info = await self.local_repo_service.handle_git_workflow_after_save(
             user_id=user_id,
             repo_name=repo_name,
             file_path=file_path,
@@ -319,9 +325,15 @@ class PromptService(IPromptService):
             user_session=user_session
         )
         
-        # Return updated prompt
+        # Return updated prompt with PR info attached
         logger.info(f"Updated prompt {repo_name}:{file_path} for user {user_id}")
-        return await self.get_prompt(user_id, repo_name, file_path)
+        updated_prompt = await self.get_prompt(user_id, repo_name, file_path)
+        
+        # Attach PR info to the PromptMeta if available
+        if updated_prompt and pr_info:
+            updated_prompt.pr_info = pr_info.model_dump(mode='json')
+        
+        return updated_prompt, pr_info
     
     async def delete_prompt(
         self,

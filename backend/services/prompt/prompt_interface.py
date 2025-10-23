@@ -6,7 +6,7 @@ must follow, supporting both individual and organization hosting types.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from pathlib import Path
 
 from .models import (
@@ -14,6 +14,7 @@ from .models import (
     PromptData,
     PromptDataUpdate
 )
+from services.local_repo.models import PRInfo
 
 
 class IPromptService(ABC):
@@ -77,18 +78,27 @@ class IPromptService(ABC):
         user_id: str,
         repo_name: str,
         file_path: str,
-        prompt_data: PromptDataUpdate
-    ) -> Optional[PromptMeta]:
+        prompt_data: PromptDataUpdate,
+        oauth_token: Optional[str] = None,
+        author_name: Optional[str] = None,
+        author_email: Optional[str] = None,
+        user_session = None
+    ) -> Tuple[Optional[PromptMeta], Optional[PRInfo]]:
         """
         Update an existing prompt.
         
         Args:
             user_id: ID of the user updating the prompt
-            prompt_id: ID of the prompt to update
+            repo_name: Repository name
+            file_path: File path relative to repository root
             prompt_data: Updated data for the prompt
+            oauth_token: Optional OAuth token for git operations
+            author_name: Optional git commit author name
+            author_email: Optional git commit author email
+            user_session: Optional user session for PR creation
             
         Returns:
-            Updated PromptMeta object if successful, None if not found
+            Tuple[Optional[PromptMeta], Optional[PRInfo]]: Updated prompt and PR info if created
             
         Raises:
             ValueError: If user lacks permission to update

@@ -12,6 +12,8 @@ from pathlib import Path
 from typing import List, Optional, TYPE_CHECKING
 import uuid
 
+from services.local_repo.models import PRInfo
+
 from sqlmodel import Session
 from database.daos.user.user_repos_dao import UserReposDAO
 from database.models.user_repos import RepoStatus
@@ -228,7 +230,7 @@ class LocalRepoService:
         author_name: Optional[str] = None,
         author_email: Optional[str] = None,
         user_session = None
-    ) -> None:
+    ) -> Optional[PRInfo]:
         """
         Handle git workflow after saving a prompt file.
         
@@ -237,11 +239,13 @@ class LocalRepoService:
         2. Stage the file
         3. Commit changes
         4. Push to remote
+        5. Create PR if possible
         
         If current branch is different from base branch:
         1. Stage the file
         2. Commit changes
         3. Push to remote
+        4. Create PR if possible
         
         Args:
             user_id: User ID
@@ -250,6 +254,10 @@ class LocalRepoService:
             oauth_token: Optional OAuth token for authentication
             author_name: Optional git commit author name
             author_email: Optional git commit author email
+            user_session: Optional user session for PR creation
+            
+        Returns:
+            Optional[PRInfo]: PR info if PR was created, None otherwise
         """
         try:
             # Get base branch and repo URL from repo config
@@ -267,7 +275,7 @@ class LocalRepoService:
             current_branch = git_service.get_current_branch()
             if not current_branch:
                 logger.warning(f"Could not determine current branch for {repo_name}")
-                return
+                return None
             
             # Extract prompt name from file path (remove extension and path)
             prompt_name = Path(file_path).stem.replace('_', '-').replace(' ', '-')
@@ -290,7 +298,7 @@ class LocalRepoService:
                 
                 if not branch_result.success:
                     logger.error(f"Failed to create branch {new_branch_name}: {branch_result.message}")
-                    return
+                    return None
                 
                 # Update current_branch to the new branch for commit/push
                 current_branch = new_branch_name
@@ -302,7 +310,7 @@ class LocalRepoService:
             add_result = git_service.add_files([file_path])
             if not add_result.success:
                 logger.error(f"Failed to stage file {file_path}: {add_result.message}")
-                return
+                return None
             
             # Commit changes with user information
             commit_message = f"Update prompt: {file_path}"
@@ -313,7 +321,7 @@ class LocalRepoService:
             )
             if not commit_result.success:
                 logger.error(f"Failed to commit changes: {commit_result.message}")
-                return
+                return None
             
             # Validate required parameters for push
             if not oauth_token:
@@ -364,14 +372,24 @@ class LocalRepoService:
                             draft=False
                         )
                         
-                        if pr_result.success:
+                        if pr_result.success and pr_result.pr_number and pr_result.pr_url and pr_result.pr_id:
                             logger.info(f"PR created/found: {pr_result.pr_url}")
+                            # Return PR info
+                            return PRInfo(
+                                pr_number=pr_result.pr_number,
+                                pr_url=pr_result.pr_url,
+                                pr_id=pr_result.pr_id
+                            )
                         else:
                             logger.warning(f"Failed to create PR: {pr_result.error}")
                     else:
                         logger.warning(f"Invalid repo_name format: {repo_name}, expected 'owner/repo'")
                 except Exception as pr_error:
                     logger.error(f"Error creating PR: {pr_error}", exc_info=True)
+            
+            # No PR created (on base branch or PR creation failed)
+            return None
                 
         except Exception as e:
             logger.error(f"Error in git workflow after save: {e}", exc_info=True)
+            return None

@@ -166,7 +166,8 @@ export const usePromptActions = () => {
       const currentPrompt = store.currentPrompt;
       if (currentPrompt) {
         // Use the entire currentPrompt.prompt as updates since it's already the modified state
-        await store.updatePrompt(currentPrompt.repo_name, currentPrompt.file_path, currentPrompt.prompt);
+        const result = await store.updatePrompt(currentPrompt.repo_name, currentPrompt.file_path, currentPrompt.prompt);
+        return result;
       }
     },
     

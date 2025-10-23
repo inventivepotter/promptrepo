@@ -61,7 +61,7 @@ export interface PromptActions {
   fetchPrompts: (filters?: PromptFilters, page?: number, pageSize?: number) => Promise<void>;
   fetchPromptById: (repoName: string, filePath: string) => Promise<void>;
   createPrompt: (promptMeta: PromptMeta) => Promise<PromptMeta>;
-  updatePrompt: (repoName: string, filePath: string, updates: PromptDataUpdate) => Promise<void>;
+  updatePrompt: (repoName: string, filePath: string, updates: PromptDataUpdate) => Promise<PromptMeta>;
   deletePrompt: (repoName: string, filePath: string) => Promise<void>;
   
   initializeStore: () => Promise<void>;

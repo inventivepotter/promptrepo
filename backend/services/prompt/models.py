@@ -63,6 +63,7 @@ class PromptMeta(BaseModel):
     recent_commits: Optional[List[CommitInfo]] = Field(None, description="Recent 5 commits for this prompt file")
     repo_name: str = Field(..., description="Repository name where prompt is stored")
     file_path: str = Field(..., description="File path within the repository")
+    pr_info: Optional[Dict[str, Any]] = Field(None, description="Pull request information when applicable")
     
     model_config = {
         "json_encoders": {
