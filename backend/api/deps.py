@@ -256,14 +256,20 @@ FileOperationsServiceDep = Annotated[FileOperationsService, Depends(get_file_ope
 # ==============================================================================
 
 def get_local_repo_service(
-    config_service: ConfigServiceDep
+    config_service: ConfigServiceDep,
+    db: DBSession,
+    remote_repo_service: RemoteRepoServiceDep
 ) -> LocalRepoService:
     """
     Local repository service dependency.
     
-    Creates a LocalRepoService for handling git workflow operations.
+    Creates a LocalRepoService for handling git workflow operations and PR creation.
     """
-    return LocalRepoService(config_service=config_service)
+    return LocalRepoService(
+        config_service=config_service,
+        db=db,
+        remote_repo_service=remote_repo_service
+    )
 
 
 LocalRepoServiceDep = Annotated[LocalRepoService, Depends(get_local_repo_service)]

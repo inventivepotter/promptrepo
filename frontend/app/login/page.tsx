@@ -10,6 +10,8 @@ import { useConfigStore } from '@/stores/configStore';
 import { ConfigService } from '@/services/config/configService';
 import type { components } from '@/types/generated/api';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuthState } from '@/stores/authStore';
 
 type OAuthProvider = components['schemas']['OAuthProvider'];
 
@@ -18,6 +20,15 @@ export default function LoginPage() {
   const hostingType = config?.hosting_config?.type;
   const { initializeConfig } = useConfigStore.getState();
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const { isAuthenticated, isInitialized } = useAuthState();
+
+  // Redirect to prompts if already logged in
+  useEffect(() => {
+    if (isInitialized && isAuthenticated) {
+      router.push('/prompts');
+    }
+  }, [isInitialized, isAuthenticated, router]);
 
   // Initialize config on mount
   useEffect(() => {

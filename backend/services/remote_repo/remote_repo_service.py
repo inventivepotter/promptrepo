@@ -16,7 +16,7 @@ from services.oauth.models import OAuthError
 from database.daos.user.user_dao import UserDAO
 from database.daos.user.user_repos_dao import UserReposDAO
 from database.models.user_repos import RepoStatus
-from services.remote_repo.models import RepositoryList, RepositoryBranchesResponse
+from services.remote_repo.models import RepositoryList, RepositoryBranchesResponse, PullRequestResult
 from services.remote_repo.remote_repo_interface import IRemoteRepo
 from services.remote_repo.providers import (
     GitHubRepoLocator,
@@ -220,3 +220,87 @@ class RemoteRepoService:
                 logger.error(f"Failed to update repository status: {db_error}")
                 self.db.rollback()
             return False
+    
+    async def create_pull_request_if_not_exists(
+        self,
+        user_session: UserSessions,
+        owner: str,
+        repo: str,
+        head_branch: str,
+        title: str,
+        body: str = "",
+        base_branch: str = "main",
+        draft: bool = False
+    ) -> PullRequestResult:
+        """
+        Create a pull request only if it doesn't already exist.
+        
+        Args:
+            user_session: User session containing OAuth credentials
+            owner: Repository owner/organization
+            repo: Repository name
+            head_branch: Source branch for the PR
+            title: Pull request title
+            body: Pull request description
+            base_branch: Target branch (default: main)
+            draft: Create as draft PR (default: False)
+            
+        Returns:
+            PullRequestResult: Result of the operation
+        """
+        try:
+            user = self.user_dao.get_user_by_id(user_session.user_id)
+            if not user:
+                raise ValueError(f"User not found for ID: {user_session.user_id}")
+
+            oauth_provider = user.oauth_provider
+            oauth_token = user_session.oauth_token
+            oauth_username = user.oauth_username
+
+        except ValueError as e:
+            logger.error(f"Failed to retrieve user or session data: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"An unexpected error occurred while fetching OAuth details: {e}")
+            raise
+
+        if not oauth_provider or not oauth_token:
+            raise ValueError(f"OAuth provider and token not configured for user {user_session.user_id}")
+        
+        locator: IRemoteRepo
+        if oauth_provider.lower() == "github":
+            locator = GitHubRepoLocator(oauth_token)
+        elif oauth_provider.lower() == "gitlab":
+            locator = GitLabRepoLocator(oauth_token)
+        elif oauth_provider.lower() == "bitbucket":
+            username = oauth_username
+            if not username:
+                raise ValueError(f"OAuth username not configured for user {user_session.user_id} with Bitbucket")
+            locator = BitbucketRepoLocator(oauth_token, username)
+        else:
+            raise OAuthError(f"Unsupported provider: {oauth_provider}", oauth_provider)
+        
+        async with locator:
+            # Check if PR already exists
+            existing_pr = await locator.check_existing_pull_request(
+                owner=owner,
+                repo=repo,
+                head_branch=head_branch,
+                base_branch=base_branch
+            )
+            
+            if existing_pr.success:
+                logger.info(f"PR already exists: {existing_pr.pr_url}")
+                return existing_pr
+            
+            # Create new PR
+            logger.info(f"Creating new PR from {head_branch} to {base_branch}")
+            return await locator.create_pull_request(
+                owner=owner,
+                repo=repo,
+                head_branch=head_branch,
+                title=title,
+                body=body,
+                base_branch=base_branch,
+                draft=draft
+            )

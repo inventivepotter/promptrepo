@@ -335,7 +335,8 @@ async def update_prompt(
             prompt_data=prompt_data,
             oauth_token=oauth_token,
             author_name=author_name,
-            author_email=author_email
+            author_email=author_email,
+            user_session=user_session
         )
         
         if not prompt:

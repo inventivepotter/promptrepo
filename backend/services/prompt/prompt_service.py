@@ -260,7 +260,8 @@ class PromptService(IPromptService):
         prompt_data: PromptDataUpdate,
         oauth_token: Optional[str] = None,
         author_name: Optional[str] = None,
-        author_email: Optional[str] = None
+        author_email: Optional[str] = None,
+        user_session = None
     ) -> Optional[PromptMeta]:
         """
         Update an existing prompt.
@@ -273,6 +274,7 @@ class PromptService(IPromptService):
             oauth_token: Optional OAuth token for git operations
             author_name: Optional git commit author name
             author_email: Optional git commit author email
+            user_session: Optional user session for PR creation
         """
         # Get existing prompt
         prompt_meta = await self.get_prompt(user_id, repo_name, file_path)
@@ -306,14 +308,15 @@ class PromptService(IPromptService):
             logger.error(f"Failed to save updated prompt to {full_file_path}")
             return None
         
-        # Handle git workflow (branch, commit, push)
-        self.local_repo_service.handle_git_workflow_after_save(
+        # Handle git workflow (branch, commit, push, PR creation)
+        await self.local_repo_service.handle_git_workflow_after_save(
             user_id=user_id,
             repo_name=repo_name,
             file_path=file_path,
             oauth_token=oauth_token,
             author_name=author_name,
-            author_email=author_email
+            author_email=author_email,
+            user_session=user_session
         )
         
         # Return updated prompt

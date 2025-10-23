@@ -9,7 +9,7 @@ Also handles repository cloning and ensuring repositories are available.
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 import uuid
 
 from sqlmodel import Session
@@ -19,9 +19,11 @@ from middlewares.rest.exceptions import AppException, NotFoundException
 from services.config.config_service import ConfigService
 from services.config.models import RepoConfig
 from services.local_repo.git_service import GitService
-from services.remote_repo.remote_repo_service import RemoteRepoService
 from schemas.hosting_type_enum import HostingType
 from settings import settings
+
+if TYPE_CHECKING:
+    from services.remote_repo.remote_repo_service import RemoteRepoService
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +43,7 @@ class LocalRepoService:
         self,
         config_service: ConfigService,
         db: Optional[Session] = None,
-        remote_repo_service: Optional[RemoteRepoService] = None
+        remote_repo_service: Optional["RemoteRepoService"] = None
     ):
         """
         Initialize LocalRepoService with dependencies.
@@ -49,7 +51,7 @@ class LocalRepoService:
         Args:
             config_service: Configuration service for getting repo configs
             db: Optional database session for cloning operations
-            remote_repo_service: Optional remote repo service for cloning operations
+            remote_repo_service: Optional remote repo service for cloning and PR operations
         """
         self.config_service = config_service
         self.db = db
@@ -217,14 +219,15 @@ class LocalRepoService:
             logger.error(f"Error cloning repository {repo_id}: {e}", exc_info=True)
             return False
     
-    def handle_git_workflow_after_save(
+    async def handle_git_workflow_after_save(
         self,
         user_id: str,
         repo_name: str,
         file_path: str,
         oauth_token: Optional[str] = None,
         author_name: Optional[str] = None,
-        author_email: Optional[str] = None
+        author_email: Optional[str] = None,
+        user_session = None
     ) -> None:
         """
         Handle git workflow after saving a prompt file.
@@ -336,6 +339,39 @@ class LocalRepoService:
                 )
             
             logger.info(f"Successfully pushed changes to branch {current_branch}")
+            
+            # Create PR if we're on a new branch and have remote repo service
+            if self.remote_repo_service and user_session and current_branch != base_branch:
+                try:
+                    # Extract owner and repo from repo_name (format: owner/repo)
+                    repo_parts = repo_name.split('/')
+                    if len(repo_parts) == 2:
+                        owner, repo = repo_parts
+                        
+                        # Generate PR title and body
+                        pr_title = f"Update {file_path}"
+                        pr_body = f"Automated update to prompt file: {file_path}"
+                        
+                        # Create PR if it doesn't exist
+                        pr_result = await self.remote_repo_service.create_pull_request_if_not_exists(
+                            user_session=user_session,
+                            owner=owner,
+                            repo=repo,
+                            head_branch=current_branch,
+                            title=pr_title,
+                            body=pr_body,
+                            base_branch=base_branch,
+                            draft=False
+                        )
+                        
+                        if pr_result.success:
+                            logger.info(f"PR created/found: {pr_result.pr_url}")
+                        else:
+                            logger.warning(f"Failed to create PR: {pr_result.error}")
+                    else:
+                        logger.warning(f"Invalid repo_name format: {repo_name}, expected 'owner/repo'")
+                except Exception as pr_error:
+                    logger.error(f"Error creating PR: {pr_error}", exc_info=True)
                 
         except Exception as e:
             logger.error(f"Error in git workflow after save: {e}", exc_info=True)

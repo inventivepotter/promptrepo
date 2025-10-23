@@ -8,7 +8,14 @@ import httpx
 import logging
 
 from services.remote_repo.remote_repo_interface import IRemoteRepo
-from services.remote_repo.models import RepoInfo, RepositoryList, BranchInfo, RepositoryBranchesResponse
+from services.remote_repo.models import (
+    RepoInfo,
+    RepositoryList,
+    BranchInfo,
+    RepositoryBranchesResponse,
+    PullRequestResult,
+    PullRequestInfo
+)
 from services.oauth.models import OAuthError
 
 logger = logging.getLogger(__name__)
@@ -168,3 +175,173 @@ class BitbucketRepoLocator(IRemoteRepo):
                 raise
             logger.error(f"Unexpected error during Bitbucket branch retrieval: {e}")
             raise OAuthError(f"Unexpected error: {str(e)}", "bitbucket")
+    
+    async def check_existing_pull_request(
+        self,
+        owner: str,
+        repo: str,
+        head_branch: str,
+        base_branch: str = "main"
+    ) -> PullRequestResult:
+        """
+        Check if a pull request already exists for the given branch.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+            head_branch: Source branch for the PR
+            base_branch: Target branch (default: main)
+
+        Returns:
+            PullRequestResult: Result with existing PR info if found
+        """
+        try:
+            logger.info(f"Checking for existing PR from {head_branch} to {base_branch}")
+
+            headers = {
+                "Authorization": f"Bearer {self.access_token}"
+            }
+
+            # Check for existing PRs with the same source and destination branches
+            params = {
+                "state": "OPEN"
+            }
+
+            response = await self.http_client.get(
+                f"https://api.bitbucket.org/2.0/repositories/{owner}/{repo}/pullrequests",
+                headers=headers,
+                params=params
+            )
+
+            if response.status_code == 200:
+                prs_data = response.json()
+                prs = prs_data.get("values", [])
+                
+                # Filter PRs by source and destination branches
+                for pr in prs:
+                    source = pr.get("source", {}).get("branch", {}).get("name")
+                    destination = pr.get("destination", {}).get("branch", {}).get("name")
+                    
+                    if source == head_branch and destination == base_branch:
+                        # PR already exists
+                        logger.info(f"Found existing PR #{pr['id']}: {pr['links']['html']['href']}")
+                        return PullRequestResult(
+                            success=True,
+                            pr_number=pr["id"],
+                            pr_url=pr["links"]["html"]["href"],
+                            pr_id=pr["id"],
+                            data=pr
+                        )
+                
+                # No existing PR found
+                logger.info(f"No existing PR found for {head_branch} -> {base_branch}")
+                return PullRequestResult(
+                    success=False,
+                    error="No existing PR found"
+                )
+            else:
+                error_msg = f"Failed to check for existing PRs: {response.status_code} {response.text}"
+                logger.error(error_msg)
+                return PullRequestResult(
+                    success=False,
+                    error=error_msg
+                )
+
+        except httpx.HTTPError as e:
+            logger.error(f"HTTP error during PR check: {e}")
+            return PullRequestResult(
+                success=False,
+                error=f"HTTP error: {str(e)}"
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error during PR check: {e}")
+            return PullRequestResult(
+                success=False,
+                error=f"Unexpected error: {str(e)}"
+            )
+    
+    async def create_pull_request(
+        self,
+        owner: str,
+        repo: str,
+        head_branch: str,
+        title: str,
+        body: str = "",
+        base_branch: str = "main",
+        draft: bool = False
+    ) -> PullRequestResult:
+        """
+        Create a pull request via Bitbucket API.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+            head_branch: Source branch for the PR
+            title: Pull request title
+            body: Pull request description
+            base_branch: Target branch (default: main)
+            draft: Create as draft PR (default: False) - Note: Bitbucket doesn't support draft PRs natively
+
+        Returns:
+            PullRequestResult: Result of the operation
+        """
+        try:
+            logger.info(f"Creating pull request: {title}")
+
+            headers = {
+                "Authorization": f"Bearer {self.access_token}",
+                "Content-Type": "application/json"
+            }
+
+            pr_data = {
+                "title": title,
+                "description": body,
+                "source": {
+                    "branch": {
+                        "name": head_branch
+                    }
+                },
+                "destination": {
+                    "branch": {
+                        "name": base_branch
+                    }
+                },
+                "close_source_branch": False
+            }
+
+            response = await self.http_client.post(
+                f"https://api.bitbucket.org/2.0/repositories/{owner}/{repo}/pullrequests",
+                headers=headers,
+                json=pr_data
+            )
+
+            if response.status_code == 201:
+                pr_info = response.json()
+                logger.info(f"Successfully created PR #{pr_info['id']}: {pr_info['links']['html']['href']}")
+                return PullRequestResult(
+                    success=True,
+                    pr_number=pr_info["id"],
+                    pr_url=pr_info["links"]["html"]["href"],
+                    pr_id=pr_info["id"],
+                    data=pr_info
+                )
+            else:
+                error_msg = f"PR creation failed: {response.status_code} {response.text}"
+                logger.error(error_msg)
+                return PullRequestResult(
+                    success=False,
+                    error=error_msg
+                )
+
+        except httpx.HTTPError as e:
+            logger.error(f"HTTP error during PR creation: {e}")
+            return PullRequestResult(
+                success=False,
+                error=f"HTTP error: {str(e)}"
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error during PR creation: {e}")
+            return PullRequestResult(
+                success=False,
+                error=f"Unexpected error: {str(e)}"
+            )

@@ -67,3 +67,25 @@ class RepositoryBranchesResponse(BaseModel):
     """Response containing repository branches"""
     branches: List[BranchInfo]
     default_branch: str
+
+
+class PullRequestInfo(BaseModel):
+    """Information about a pull request"""
+    pr_number: int
+    pr_url: str
+    pr_id: int
+    title: str
+    state: str
+    head_branch: str
+    base_branch: str
+    is_draft: bool = False
+
+
+class PullRequestResult(BaseModel):
+    """Result of a pull request operation"""
+    success: bool
+    pr_number: Optional[int] = None
+    pr_url: Optional[str] = None
+    pr_id: Optional[int] = None
+    error: Optional[str] = None
+    data: Optional[dict] = None

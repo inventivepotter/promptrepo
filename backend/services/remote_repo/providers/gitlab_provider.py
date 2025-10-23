@@ -8,7 +8,14 @@ import httpx
 import logging
 
 from services.remote_repo.remote_repo_interface import IRemoteRepo
-from services.remote_repo.models import RepoInfo, RepositoryList, BranchInfo, RepositoryBranchesResponse
+from services.remote_repo.models import (
+    RepoInfo,
+    RepositoryList,
+    BranchInfo,
+    RepositoryBranchesResponse,
+    PullRequestResult,
+    PullRequestInfo
+)
 from services.oauth.models import OAuthError
 
 logger = logging.getLogger(__name__)
@@ -162,3 +169,166 @@ class GitLabRepoLocator(IRemoteRepo):
                 raise
             logger.error(f"Unexpected error during GitLab branch retrieval: {e}")
             raise OAuthError(f"Unexpected error: {str(e)}", "gitlab")
+    
+    async def check_existing_pull_request(
+        self,
+        owner: str,
+        repo: str,
+        head_branch: str,
+        base_branch: str = "main"
+    ) -> PullRequestResult:
+        """
+        Check if a merge request already exists for the given branch.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+            head_branch: Source branch for the MR
+            base_branch: Target branch (default: main)
+
+        Returns:
+            PullRequestResult: Result with existing MR info if found
+        """
+        try:
+            logger.info(f"Checking for existing MR from {head_branch} to {base_branch}")
+
+            project_path = f"{owner}/{repo}".replace("/", "%2F")
+            
+            headers = {
+                "Authorization": f"Bearer {self.access_token}"
+            }
+
+            # Check for existing MRs with the same source and target branches
+            params = {
+                "source_branch": head_branch,
+                "target_branch": base_branch,
+                "state": "opened"
+            }
+
+            response = await self.http_client.get(
+                f"https://gitlab.com/api/v4/projects/{project_path}/merge_requests",
+                headers=headers,
+                params=params
+            )
+
+            if response.status_code == 200:
+                mrs = response.json()
+                if mrs:
+                    # MR already exists
+                    mr_info = mrs[0]  # Get the first matching MR
+                    logger.info(f"Found existing MR #{mr_info['iid']}: {mr_info['web_url']}")
+                    return PullRequestResult(
+                        success=True,
+                        pr_number=mr_info["iid"],
+                        pr_url=mr_info["web_url"],
+                        pr_id=mr_info["id"],
+                        data=mr_info
+                    )
+                else:
+                    logger.info(f"No existing MR found for {head_branch} -> {base_branch}")
+                    return PullRequestResult(
+                        success=False,
+                        error="No existing MR found"
+                    )
+            else:
+                error_msg = f"Failed to check for existing MRs: {response.status_code} {response.text}"
+                logger.error(error_msg)
+                return PullRequestResult(
+                    success=False,
+                    error=error_msg
+                )
+
+        except httpx.HTTPError as e:
+            logger.error(f"HTTP error during MR check: {e}")
+            return PullRequestResult(
+                success=False,
+                error=f"HTTP error: {str(e)}"
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error during MR check: {e}")
+            return PullRequestResult(
+                success=False,
+                error=f"Unexpected error: {str(e)}"
+            )
+    
+    async def create_pull_request(
+        self,
+        owner: str,
+        repo: str,
+        head_branch: str,
+        title: str,
+        body: str = "",
+        base_branch: str = "main",
+        draft: bool = False
+    ) -> PullRequestResult:
+        """
+        Create a merge request via GitLab API.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+            head_branch: Source branch for the MR
+            title: Merge request title
+            body: Merge request description
+            base_branch: Target branch (default: main)
+            draft: Create as draft MR (default: False)
+
+        Returns:
+            PullRequestResult: Result of the operation
+        """
+        try:
+            logger.info(f"Creating merge request: {title}")
+
+            project_path = f"{owner}/{repo}".replace("/", "%2F")
+            
+            headers = {
+                "Authorization": f"Bearer {self.access_token}"
+            }
+
+            # Prepend "Draft: " to title if draft
+            mr_title = f"Draft: {title}" if draft else title
+
+            mr_data = {
+                "source_branch": head_branch,
+                "target_branch": base_branch,
+                "title": mr_title,
+                "description": body,
+                "remove_source_branch": False
+            }
+
+            response = await self.http_client.post(
+                f"https://gitlab.com/api/v4/projects/{project_path}/merge_requests",
+                headers=headers,
+                json=mr_data
+            )
+
+            if response.status_code == 201:
+                mr_info = response.json()
+                logger.info(f"Successfully created MR #{mr_info['iid']}: {mr_info['web_url']}")
+                return PullRequestResult(
+                    success=True,
+                    pr_number=mr_info["iid"],
+                    pr_url=mr_info["web_url"],
+                    pr_id=mr_info["id"],
+                    data=mr_info
+                )
+            else:
+                error_msg = f"MR creation failed: {response.status_code} {response.text}"
+                logger.error(error_msg)
+                return PullRequestResult(
+                    success=False,
+                    error=error_msg
+                )
+
+        except httpx.HTTPError as e:
+            logger.error(f"HTTP error during MR creation: {e}")
+            return PullRequestResult(
+                success=False,
+                error=f"HTTP error: {str(e)}"
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error during MR creation: {e}")
+            return PullRequestResult(
+                success=False,
+                error=f"Unexpected error: {str(e)}"
+            )

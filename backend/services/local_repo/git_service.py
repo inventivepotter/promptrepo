@@ -5,13 +5,12 @@ This module provides Git operations for repository management,
 including branch management, file operations, commits, and pull requests.
 """
 
-import httpx
 from git import Repo
 from pathlib import Path
 from typing import List, Dict, Optional, Union
 import logging
 
-from services.local_repo.models import GitOperationResult, PullRequestResult, RepoStatus, CommitInfo
+from services.local_repo.models import GitOperationResult, RepoStatus, CommitInfo
 
 logger = logging.getLogger(__name__)
 
@@ -272,85 +271,6 @@ class GitService:
             return GitOperationResult(
                 success=False,
                 message=f"Failed to push branch {branch_name}: {e}"
-            )
-
-    async def create_pull_request(
-            self,
-            github_repo: str,
-            oauth_token: str,
-            head_branch: str,
-            title: str,
-            body: str = "",
-            base_branch: str = "main",
-            draft: bool = False
-    ) -> PullRequestResult:
-        """
-        Create a pull request via GitHub API.
-
-        Args:
-            github_repo: GitHub repository in format "owner/repo"
-            oauth_token: GitHub OAuth token with repo permissions
-            head_branch: Source branch for the PR
-            title: Pull request title
-            body: Pull request description
-            base_branch: Target branch (default: main)
-            draft: Create as draft PR (default: False)
-
-        Returns:
-            PullRequestResult: Result of the operation
-        """
-        try:
-            logger.info(f"Creating pull request: {title}")
-
-            headers = {
-                "Authorization": f"Bearer {oauth_token}",
-                "Accept": "application/vnd.github+json",
-                "X-GitHub-Api-Version": "2022-11-28",
-                "User-Agent": "GitHubWorkflowAutomation/1.0"
-            }
-
-            pr_data = {
-                "title": title,
-                "body": body,
-                "head": head_branch,
-                "base": base_branch,
-                "draft": draft,
-                "maintainer_can_modify": True
-            }
-
-            api_url = f"https://api.github.com/repos/{github_repo}/pulls"
-
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.post(
-                    api_url,
-                    headers=headers,
-                    json=pr_data
-                )
-
-                if response.status_code == 201:
-                    pr_info = response.json()
-                    logger.info(f"Successfully created PR #{pr_info['number']}: {pr_info['html_url']}")
-                    return PullRequestResult(
-                        success=True,
-                        pr_number=pr_info["number"],
-                        pr_url=pr_info["html_url"],
-                        pr_id=pr_info["id"],
-                        data=pr_info
-                    )
-                else:
-                    error_msg = f"PR creation failed: {response.status_code} {response.text}"
-                    logger.error(f"{error_msg}")
-                    return PullRequestResult(
-                        success=False,
-                        error=error_msg
-                    )
-
-        except Exception as e:
-            error_msg = f"Failed to create pull request: {e}"
-            logger.error(f"{error_msg}")
-            return PullRequestResult(
-                success=False,
-                error=error_msg
             )
 
     def get_repo_status(self) -> RepoStatus:
