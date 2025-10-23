@@ -4,7 +4,17 @@ import { initialConfigState } from '../state';
 
 export const createInvalidateCacheAction: StateCreator<ConfigStore, [], [], Pick<ConfigActions, 'invalidateCache'>> = (set, get, api) => ({
   invalidateCache: async () => {
-    console.log('Config cache invalidated - resetting to initial state and fetching fresh data');
+    console.log('Config cache invalidated - clearing localStorage and resetting state');
+    
+    // Clear localStorage storage first to prevent rehydration
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('config-store');
+        console.log('Cleared config-store from localStorage');
+      }
+    } catch (err) {
+      console.error('Failed to clear localStorage:', err);
+    }
     
     // Reset to initial state
     set((draft) => {

@@ -8,6 +8,7 @@ export const initialPromptState: PromptState = {
   
   // Currently selected/editing prompt (serves as form data)
   currentPrompt: null,
+  originalPrompt: null,
   
   // UI State
   isLoading: false,
@@ -15,6 +16,7 @@ export const initialPromptState: PromptState = {
   isUpdating: false,
   isDeleting: false,
   error: null,
+  hasUnsavedChanges: false,
   
   // Delete dialog state
   deleteDialog: {

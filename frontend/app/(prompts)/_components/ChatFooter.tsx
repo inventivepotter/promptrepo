@@ -65,7 +65,7 @@ export function ChatFooter() {
               fontSize="sm"
             />
             <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
-              <FaChevronDown size={12} />
+              <FaChevronDown size={10} />
             </Combobox.Trigger>
           </Combobox.Control>
           <Combobox.Positioner>

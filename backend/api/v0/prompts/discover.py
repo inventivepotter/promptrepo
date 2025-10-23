@@ -11,7 +11,7 @@ import logging
 
 from api.deps import CurrentUserDep, PromptServiceDep, ConfigServiceDep, RemoteRepoServiceDep, DBSession, CurrentSessionDep
 from services.prompt.models import PromptMeta
-from services.local_repo.repo_cloning_service import RepoCloningService
+from services.local_repo.local_repo_service import LocalRepoService
 from middlewares.rest import (
     StandardResponse,
     success_response,
@@ -112,16 +112,16 @@ async def discover_repository_prompts(
         ]
         
         # Ensure all requested repos are cloned before discovery
-        cloning_service = RepoCloningService(
+        local_repo_service = LocalRepoService(
+            config_service=config_service,
             db=db,
-            remote_repo_service=remote_repo_service,
-            hosting_type=hosting_config.type
+            remote_repo_service=remote_repo_service
         )
         
         # Get OAuth token from user session if available
         oauth_token = getattr(user_session, 'oauth_token', None)
         
-        available_repos = cloning_service.ensure_repos_cloned(
+        available_repos = local_repo_service.ensure_repos_cloned(
             user_id=user_id,
             repo_configs=requested_repo_configs,
             oauth_token=oauth_token

@@ -110,7 +110,7 @@ export function CreatePromptModal({ open, onOpenChange }: CreatePromptModalProps
                       paddingRight="2rem"
                     />
                     <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
-                      <FaChevronDown size={16} />
+                      <FaChevronDown size={10} />
                     </Combobox.Trigger>
                   </Combobox.Control>
                   <Combobox.Positioner style={{ zIndex: 50 }}>

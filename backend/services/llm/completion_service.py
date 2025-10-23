@@ -29,10 +29,10 @@ class ChatCompletionService:
     """Service class for handling chat completions with any-llm."""
     
     def build_completion_params(
-        self, 
-        request: ChatCompletionRequest, 
-        api_key: str, 
-        api_base_url: str | None, 
+        self,
+        request: ChatCompletionRequest,
+        api_key: str,
+        api_base_url: str | None,
         stream: bool = False
     ) -> dict:
         """Build completion parameters for any-llm API call."""

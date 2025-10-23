@@ -16,9 +16,8 @@ import {
   Skeleton,
   EmptyState,
 } from '@chakra-ui/react'
-import { List } from '@chakra-ui/react';
-import { HiColorSwatch } from 'react-icons/hi';
 import { FaChevronDown } from 'react-icons/fa';
+import { LuCpu } from 'react-icons/lu';
 import { useEffect } from 'react';
 import type { components } from '@/types/generated/api';
 import { useConfig, useConfigActions, useAvailableProviders, useLLMFormState, useLLMFormUIState, useConfigStore, useIsLoadingConfig, useIsSavingRepo } from '@/stores/configStore';
@@ -196,7 +195,7 @@ export default function LLMConfigManager({
                       />
                       <Combobox.IndicatorGroup position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
                         <Combobox.Trigger>
-                          <FaChevronDown size={16} />
+                          <FaChevronDown size={10} />
                         </Combobox.Trigger>
                       </Combobox.IndicatorGroup>
                     </Combobox.Control>
@@ -286,7 +285,7 @@ export default function LLMConfigManager({
                       />
                       <Combobox.IndicatorGroup position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
                         <Combobox.Trigger>
-                          <FaChevronDown size={16} />
+                          <FaChevronDown size={10} />
                         </Combobox.Trigger>
                       </Combobox.IndicatorGroup>
                     </Combobox.Control>
@@ -419,24 +418,27 @@ export default function LLMConfigManager({
             </Card.Body>
           </Card.Root>
         ) : (
-          <EmptyState.Root>
-            <EmptyState.Content>
-              <EmptyState.Indicator>
-                <HiColorSwatch />
-              </EmptyState.Indicator>
-              <VStack textAlign="center">
-                <EmptyState.Title>No LLM providers configured</EmptyState.Title>
-                <EmptyState.Description>
-                  Add your first LLM provider to get started
-                </EmptyState.Description>
-              </VStack>
-              <List.Root variant="marker">
-                <List.Item>Choose a provider from the dropdown</List.Item>
-                <List.Item>Enter your API key</List.Item>
-                <List.Item>Select a model</List.Item>
-              </List.Root>
-            </EmptyState.Content>
-          </EmptyState.Root>
+          <Card.Root
+            borderWidth="1px"
+            borderColor={borderColor}
+            bg="transparent"
+          >
+            <Card.Body p={8}>
+              <EmptyState.Root>
+                <EmptyState.Content>
+                  <EmptyState.Indicator>
+                    <LuCpu />
+                  </EmptyState.Indicator>
+                  <VStack textAlign="center">
+                    <EmptyState.Title>No LLM providers configured</EmptyState.Title>
+                    <EmptyState.Description>
+                      Add your first LLM provider to get started
+                    </EmptyState.Description>
+                  </VStack>
+                </EmptyState.Content>
+              </EmptyState.Root>
+            </Card.Body>
+          </Card.Root>
         )}
             </VStack>
           </Fieldset.Content>

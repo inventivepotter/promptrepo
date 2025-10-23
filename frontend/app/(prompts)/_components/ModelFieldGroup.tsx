@@ -103,7 +103,7 @@ function ModelCombobox({
             paddingRight="2rem"
           />
           <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
-            <FaChevronDown size={14} />
+            <FaChevronDown size={10} />
           </Combobox.Trigger>
         </Combobox.Control>
         <Combobox.Positioner>
@@ -123,7 +123,7 @@ function ModelCombobox({
 
 export function ModelFieldGroup() {
   const currentPrompt = useCurrentPrompt();
-  const { setCurrentPrompt } = usePromptActions();
+  const { updateCurrentPrompt, checkForChanges } = usePromptActions();
   const updateField = useUpdateCurrentPromptField();
   const config = useConfigStore(state => state.config);
   
@@ -171,7 +171,7 @@ export function ModelFieldGroup() {
               onValueChange={(value) => {
                 const selected = modelOptions.find(opt => opt.value === value);
                 if (selected) {
-                  setCurrentPrompt({
+                  updateCurrentPrompt({
                     ...currentPrompt,
                     prompt: {
                       ...currentPrompt.prompt,
@@ -179,6 +179,7 @@ export function ModelFieldGroup() {
                       model: selected.model,
                     },
                   });
+                  checkForChanges();
                 }
               }}
               placeholder="Select primary model"
@@ -193,13 +194,14 @@ export function ModelFieldGroup() {
               modelOptions={modelOptions}
               value={failoverModelValue}
               onValueChange={(value) => {
-                setCurrentPrompt({
+                updateCurrentPrompt({
                   ...currentPrompt,
                   prompt: {
                     ...currentPrompt.prompt,
                     failover_model: value,
                   },
                 });
+                checkForChanges();
               }}
               placeholder="Select failover model"
               label="Failover Model"

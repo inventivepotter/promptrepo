@@ -13,6 +13,7 @@ from typing import List, Optional, Dict, Any, Union
 from schemas.hosting_type_enum import HostingType
 from services.config.config_interface import IConfig
 from services.local_repo.git_service import GitService
+from services.local_repo.local_repo_service import LocalRepoService
 from services.file_operations import FileOperationsService
 from settings import settings
 from middlewares.rest.exceptions import NotFoundException, AppException, ConflictException
@@ -42,7 +43,8 @@ class PromptService(IPromptService):
     def __init__(
         self,
         config_service: IConfig,
-        file_ops_service: FileOperationsService
+        file_ops_service: FileOperationsService,
+        local_repo_service: LocalRepoService
     ):
         """
         Initialize PromptService with injected dependencies.
@@ -50,9 +52,11 @@ class PromptService(IPromptService):
         Args:
             config_service: Configuration service for hosting type
             file_ops_service: File operations service for file I/O
+            local_repo_service: Local repository service for git operations
         """
         self.config_service = config_service
         self.file_ops = file_ops_service
+        self.local_repo_service = local_repo_service
         
     def _get_repo_base_path(self, user_id: str) -> Path:
         """
@@ -253,9 +257,23 @@ class PromptService(IPromptService):
         user_id: str,
         repo_name: str,
         file_path: str,
-        prompt_data: PromptDataUpdate
+        prompt_data: PromptDataUpdate,
+        oauth_token: Optional[str] = None,
+        author_name: Optional[str] = None,
+        author_email: Optional[str] = None
     ) -> Optional[PromptMeta]:
-        """Update an existing prompt."""
+        """
+        Update an existing prompt.
+        
+        Args:
+            user_id: User ID
+            repo_name: Repository name
+            file_path: File path relative to repository root
+            prompt_data: Prompt data to update
+            oauth_token: Optional OAuth token for git operations
+            author_name: Optional git commit author name
+            author_email: Optional git commit author email
+        """
         # Get existing prompt
         prompt_meta = await self.get_prompt(user_id, repo_name, file_path)
         
@@ -287,6 +305,16 @@ class PromptService(IPromptService):
         if not success:
             logger.error(f"Failed to save updated prompt to {full_file_path}")
             return None
+        
+        # Handle git workflow (branch, commit, push)
+        self.local_repo_service.handle_git_workflow_after_save(
+            user_id=user_id,
+            repo_name=repo_name,
+            file_path=file_path,
+            oauth_token=oauth_token,
+            author_name=author_name,
+            author_email=author_email
+        )
         
         # Return updated prompt
         logger.info(f"Updated prompt {repo_name}:{file_path} for user {user_id}")

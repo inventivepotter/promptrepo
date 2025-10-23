@@ -7,7 +7,7 @@ Handles create, read, update, delete operations for individual prompts.
 from fastapi import APIRouter, Query, Request, status
 import logging
 
-from api.deps import CurrentUserDep, PromptServiceDep
+from api.deps import CurrentUserDep, PromptServiceDep, CurrentSessionDep
 from middlewares.rest import (
     StandardResponse,
     success_response,
@@ -293,6 +293,7 @@ async def create_prompt(
 async def update_prompt(
     request: Request,
     user_id: CurrentUserDep,
+    user_session: CurrentSessionDep,
     prompt_service: PromptServiceDep,
     prompt_data: PromptDataUpdate,
     repo_name: str = Query(...),
@@ -319,11 +320,22 @@ async def update_prompt(
             extra={"request_id": request_id, "user_id": user_id}
         )
         
+        # Get OAuth token and user info from session
+        oauth_token = getattr(user_session, 'oauth_token', None)
+        
+        # Get user information for git commit author
+        user = user_session.user if hasattr(user_session, 'user') else None
+        author_name = user.oauth_name or user.oauth_username if user else None
+        author_email = user.oauth_email if user else None
+        
         prompt = await prompt_service.update_prompt(
             user_id=user_id,
             repo_name=repo_name,
             file_path=file_path,
-            prompt_data=prompt_data
+            prompt_data=prompt_data,
+            oauth_token=oauth_token,
+            author_name=author_name,
+            author_email=author_email
         )
         
         if not prompt:

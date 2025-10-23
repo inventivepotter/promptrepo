@@ -99,8 +99,8 @@ export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (
       systemMessage = chatService.createSystemMessage(options.systemPrompt);
     }
     
-    // Create user message
-    const userMessage = chatService.createUserMessage(content);
+    // Create user message only if content is provided
+    const userMessage = content.trim() ? chatService.createUserMessage(content) : null;
     
     set((draft) => {
       draft.isSending = true;
@@ -116,13 +116,15 @@ export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (
         draft.messages.push(systemMessage);
       }
       
-      // Add user message to current session
-      const session = draft.sessions.find(s => s.id === draft.currentSessionId);
-      if (session) {
-        session.messages.push(userMessage);
-        session.updatedAt = new Date();
+      // Add user message to current session only if it exists
+      if (userMessage) {
+        const session = draft.sessions.find(s => s.id === draft.currentSessionId);
+        if (session) {
+          session.messages.push(userMessage);
+          session.updatedAt = new Date();
+        }
+        draft.messages.push(userMessage);
       }
-      draft.messages.push(userMessage);
     // @ts-expect-error - Immer middleware supports 3 params
     }, false, 'chat/send-message-start');
     

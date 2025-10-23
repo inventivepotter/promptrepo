@@ -4,6 +4,7 @@ import { ConfigService } from '@/services/config/configService';
 import { handleStoreError, logStoreAction } from '@/lib/zustand';
 import { successNotification } from '@/lib/notifications';
 import type { ConfigStore, AppConfigInput } from '../types';
+import { usePromptStore } from '@/stores/promptStore/store';
 
 export const createUpdateConfigAction: StateCreator<
   ConfigStore,
@@ -27,6 +28,11 @@ export const createUpdateConfigAction: StateCreator<
           draft.config = { ...draft.config, ...config };
         // @ts-expect-error - Immer middleware supports 3 params
         }, false, 'config/updateConfig/success');
+        
+        // Invalidate prompt cache when configuration is updated
+        // This ensures prompts are re-discovered if repo configs change
+        usePromptStore.getState().invalidateCache();
+        console.log('Configuration updated - invalidated prompt cache');
         
         successNotification('Configuration Updated', 'Your configuration has been successfully updated.');
       } catch (error) {

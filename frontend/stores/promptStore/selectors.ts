@@ -18,6 +18,9 @@ export const selectIsProcessing = (state: PromptStore): boolean =>
 // Error Selector
 export const selectError = (state: PromptStore): string | null => state.error;
 
+// Unsaved Changes Selector
+export const selectHasUnsavedChanges = (state: PromptStore): boolean => state.hasUnsavedChanges;
+
 // Filter Selectors
 export const selectFilters = (state: PromptStore) => state.filters;
 export const selectSearch = (state: PromptStore): string => state.filters.search || '';

@@ -13,8 +13,10 @@ import {
   Fieldset,
   Stack,
   Skeleton,
+  EmptyState,
 } from '@chakra-ui/react';
 import { FaChevronDown } from 'react-icons/fa';
+import { LuGitBranch } from 'react-icons/lu';
 import {
   useConfig,
   useAvailableRepos,
@@ -141,6 +143,7 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
 
   return (
     <Card.Root
+      id="repositories"
       borderWidth="1px"
       borderColor={borderColor}
     >
@@ -212,7 +215,7 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                           paddingRight="2rem"
                         />
                         <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
-                          <FaChevronDown size={16} />
+                          <FaChevronDown size={10} />
                         </Combobox.Trigger>
                       </Combobox.Control>
                       <Combobox.Positioner style={{ zIndex: 50 }}>
@@ -265,7 +268,7 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                           disabled={disabled || isSaving || isLoadingBranches || !selectedRepo}
                         />
                         <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
-                          <FaChevronDown size={16} />
+                          <FaChevronDown size={10} />
                         </Combobox.Trigger>
                       </Combobox.Control>
                       <Combobox.Positioner style={{ zIndex: 50 }}>
@@ -374,7 +377,30 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                   )}
                 </Card.Body>
               </Card.Root>
-            ) : null}
+            ) : (
+              <Card.Root
+                borderWidth="1px"
+                borderColor={borderColor}
+                width="100%"
+                bg="transparent"
+              >
+                <Card.Body p={8}>
+                  <EmptyState.Root>
+                    <EmptyState.Content>
+                      <EmptyState.Indicator>
+                        <LuGitBranch />
+                      </EmptyState.Indicator>
+                      <VStack textAlign="center">
+                        <EmptyState.Title>No repositories configured</EmptyState.Title>
+                        <EmptyState.Description>
+                          Add your first repository to get started
+                        </EmptyState.Description>
+                      </VStack>
+                    </EmptyState.Content>
+                  </EmptyState.Root>
+                </Card.Body>
+              </Card.Root>
+            )}
           </VStack>
         )}
             </VStack>

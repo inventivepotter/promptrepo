@@ -4,6 +4,7 @@ import { promptsService } from '@/services/prompts/promptsService';
 import { useConfigStore } from '@/stores/configStore/configStore';
 import type { PromptStore, PromptActions, PromptFilters } from './types';
 import type { PromptMeta, PromptDataUpdate } from '@/services/prompts/api';
+import { del } from 'idb-keyval';
 
 // Helper function to create consistent Map keys
 const createPromptKey = (repoName: string, filePath: string): string =>
@@ -48,14 +49,33 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
     }
   },
   
-  // Invalidate cache - clear prompts and force refresh on next access
-  invalidateCache: () => {
+  // Invalidate cache - clear prompts and fetch fresh data
+  invalidateCache: async () => {
+    console.log('Prompt cache invalidated - clearing IndexedDB and resetting state');
+    
+    // Clear IndexedDB storage first to prevent rehydration
+    try {
+      if (typeof window !== 'undefined') {
+        await del('prompt-store');
+        console.log('Cleared prompt-store from IndexedDB');
+      }
+    } catch (err) {
+      console.error('Failed to clear IndexedDB:', err);
+    }
+    
+    // Clear in-memory state
     set((draft) => {
       draft.prompts = {};
       draft.lastSyncTimestamp = null;
     // @ts-expect-error - Immer middleware supports 3 params
     }, false, 'prompts/invalidate-cache');
-    console.log('Prompt cache invalidated');
+    
+    // Fetch fresh prompts from backend
+    try {
+      await get().discoverAllPromptsFromRepos();
+    } catch (err) {
+      console.error('Failed to refresh prompts after cache invalidation:', err);
+    }
   },
 
   // Discover prompts from all configured repositories
@@ -72,8 +92,9 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
       const repoConfigs = configState.config?.repo_configs || [];
       
       if (repoConfigs.length === 0) {
-        console.warn('No repositories configured for discovery');
+        console.warn('No repositories configured for discovery - clearing all prompts');
         set((draft) => {
+          draft.prompts = {}; // Clear all prompts when no repos configured
           draft.isLoading = false;
           draft.lastSyncTimestamp = Date.now();
         // @ts-expect-error - Immer middleware supports 3 params
@@ -88,9 +109,9 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
       const allPrompts = await promptsService.discoverAllPromptsFromRepos(repoNames);
 
       set((draft) => {
-        // Merge discovered prompts with existing ones instead of replacing
-        // This prevents losing prompts that were just created
-        const newPrompts: Record<string, PromptMeta> = { ...draft.prompts };
+        // Replace all prompts with fresh ones from discovery
+        // This ensures we don't keep old prompts from repos that were removed
+        const newPrompts: Record<string, PromptMeta> = {};
         allPrompts.forEach((promptMeta: PromptMeta) => {
           const key = createPromptKey(promptMeta.repo_name, promptMeta.file_path);
           newPrompts[key] = promptMeta;
@@ -137,7 +158,10 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
       const key = createPromptKey(repoName, filePath);
       set((draft) => {
         draft.currentPrompt = promptMeta;
+        // Deep clone original prompt for change tracking
+        draft.originalPrompt = JSON.parse(JSON.stringify(promptMeta));
         draft.prompts[key] = promptMeta;
+        draft.hasUnsavedChanges = false;
         draft.isLoading = false;
       // @ts-expect-error - Immer middleware supports 3 params
       }, false, 'prompts/fetch-by-id-success');
@@ -242,15 +266,71 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
   setCurrentPrompt: (prompt: PromptMeta | null) => {
     set((draft) => {
       draft.currentPrompt = prompt;
+      // Deep clone the prompt to track original state
+      draft.originalPrompt = prompt ? JSON.parse(JSON.stringify(prompt)) : null;
+      draft.hasUnsavedChanges = false;
     // @ts-expect-error - Immer middleware supports 3 params
     }, false, 'prompts/set-current');
+  },
+
+  updateCurrentPrompt: (prompt: PromptMeta) => {
+    set((draft) => {
+      draft.currentPrompt = prompt;
+      // Don't reset originalPrompt - we want to track changes against the original
+    // @ts-expect-error - Immer middleware supports 3 params
+    }, false, 'prompts/update-current');
   },
 
   clearCurrentPrompt: () => {
     set((draft) => {
       draft.currentPrompt = null;
+      draft.originalPrompt = null;
+      draft.hasUnsavedChanges = false;
     // @ts-expect-error - Immer middleware supports 3 params
     }, false, 'prompts/clear-current');
+  },
+
+  checkForChanges: () => {
+    const { currentPrompt, originalPrompt } = get();
+    
+    if (!currentPrompt || !originalPrompt) {
+      set((draft) => {
+        draft.hasUnsavedChanges = false;
+      // @ts-expect-error - Immer middleware supports 3 params
+      }, false, 'prompts/check-changes-no-prompt');
+      return;
+    }
+
+    // Deep comparison of prompt data
+    const hasChanges = JSON.stringify(currentPrompt.prompt) !== JSON.stringify(originalPrompt.prompt);
+    
+    set((draft) => {
+      draft.hasUnsavedChanges = hasChanges;
+    // @ts-expect-error - Immer middleware supports 3 params
+    }, false, 'prompts/check-changes');
+  },
+
+  saveCurrentPrompt: async () => {
+    const { currentPrompt } = get();
+    
+    if (!currentPrompt) {
+      throw new Error('No prompt to save');
+    }
+
+    await get().updatePrompt(
+      currentPrompt.repo_name,
+      currentPrompt.file_path,
+      currentPrompt.prompt as PromptDataUpdate
+    );
+
+    // After successful save, update original prompt and reset changes flag
+    set((draft) => {
+      if (draft.currentPrompt) {
+        draft.originalPrompt = JSON.parse(JSON.stringify(draft.currentPrompt));
+        draft.hasUnsavedChanges = false;
+      }
+    // @ts-expect-error - Immer middleware supports 3 params
+    }, false, 'prompts/save-success');
   },
 
   // Delete Dialog Management

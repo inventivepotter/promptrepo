@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   VStack,
@@ -9,7 +9,12 @@ import {
   Box,
   Container,
   ScrollArea,
+  SkeletonText,
+  EmptyState,
+  Button,
+  ButtonGroup,
 } from '@chakra-ui/react';
+import { HiColorSwatch } from 'react-icons/hi';
 import type { PromptMeta } from '@/services/prompts/api';
 import {
   useFilteredPrompts,
@@ -26,17 +31,21 @@ import {
   useDeleteDialogOpen,
   usePromptToDelete,
   useIsDeleting,
+  useIsLoading,
 } from '@/stores/promptStore';
 import { PromptSearch } from '../_components/PromptSearch';
 import { PromptCard } from '../_components/PromptCard';
 import { Pagination } from '../_components/Pagination';
 import { PromptsHeader } from '@/components/PromptsHeader';
 import { DeletePromptDialog } from '@/components/DeletePromptDialog';
+import { CreatePromptModal } from '@/components/CreatePromptModal';
 
 export default function PromptsPage() {
   const router = useRouter();
+  const [isNewPromptModalOpen, setIsNewPromptModalOpen] = useState(false);
   
   // Use prompt store hooks
+  const isLoading = useIsLoading();
   const filteredPrompts = useFilteredPrompts();
   const totalPrompts = useTotalPrompts();
   const totalPages = useTotalPages();
@@ -93,6 +102,14 @@ export default function PromptsPage() {
     }
   };
 
+  const handleAddRepositories = () => {
+    router.push('/config#repositories');
+  };
+
+  const handleNewPrompt = () => {
+    setIsNewPromptModalOpen(true);
+  };
+
   return (
     <Box height="100vh" width="100%" display="flex" flexDirection="column">
         {/* Prompts Header - Outside ScrollArea */}
@@ -132,18 +149,62 @@ export default function PromptsPage() {
           />
 
           {/* Prompts grid */}
-          {filteredPrompts.length === 0 ? (
-            <Box textAlign="center" py={12}>
-              <VStack gap={4}>
-                <Text fontSize="lg" color="gray.500">
-                  {searchQuery
-                    ? 'No prompts found matching your search.'
-                    : 'No prompts yet. Create your first prompt to get started!'
-                  }
-                </Text>
-                {/* Empty state - user can click the "New Prompt" button in the header */}
-              </VStack>
-            </Box>
+          {isLoading ? (
+            <Grid
+              templateColumns={{
+                base: '1fr',
+                md: 'repeat(2, 1fr)',
+                lg: 'repeat(3, 1fr)',
+              }}
+              gap={6}
+            >
+              {[...Array(6)].map((_, index) => (
+                <Box
+                  key={index}
+                  p={6}
+                  borderRadius="md"
+                  bg="bg.subtle"
+                  borderWidth="1px"
+                  borderColor="transparent"
+                  minHeight="200px"
+                >
+                  <SkeletonText
+                    noOfLines={3}
+                    gap={5}
+                    height={5}
+                    opacity={0.2}
+                  />
+                </Box>
+              ))}
+            </Grid>
+          ) : filteredPrompts.length === 0 ? (
+            searchQuery ? (
+              <Box textAlign="center" py={12}>
+                <VStack gap={4}>
+                  <Text fontSize="lg" color="gray.500">
+                    No prompts found matching your search.
+                  </Text>
+                </VStack>
+              </Box>
+            ) : (
+              <EmptyState.Root>
+                <EmptyState.Content>
+                  <EmptyState.Indicator>
+                    <HiColorSwatch />
+                  </EmptyState.Indicator>
+                  <VStack textAlign="center">
+                    <EmptyState.Title>Start adding prompts</EmptyState.Title>
+                    <EmptyState.Description>
+                      Add repositories or create a new prompt to get started
+                    </EmptyState.Description>
+                  </VStack>
+                  <ButtonGroup>
+                    <Button onClick={handleAddRepositories}>Add Repositories</Button>
+                    <Button variant="outline" onClick={handleNewPrompt}>New Prompt</Button>
+                  </ButtonGroup>
+                </EmptyState.Content>
+              </EmptyState.Root>
+            )
           ) : (
             <Grid
               templateColumns={{
@@ -191,6 +252,12 @@ export default function PromptsPage() {
           promptName={promptToDelete?.name || 'this prompt'}
           onConfirm={confirmDelete}
           isDeleting={isDeleting}
+        />
+
+        {/* Create Prompt Modal */}
+        <CreatePromptModal
+          open={isNewPromptModalOpen}
+          onOpenChange={setIsNewPromptModalOpen}
         />
       </Box>
   );

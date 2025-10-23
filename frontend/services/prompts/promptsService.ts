@@ -204,13 +204,13 @@ export class PromptsService {
 
       const promptMetas = result.data;
 
-      // Only show success notification if prompts were actually discovered
-      if (promptMetas.length > 0) {
-        successNotification(
-          'Repository Discovered',
-          `Successfully discovered ${promptMetas.length} prompts from ${repoNames.length} repository/repositories`
-        );
-      }
+      // // Only show success notification if prompts were actually discovered
+      // if (promptMetas.length > 0) {
+      //   successNotification(
+      //     'Repository Discovered',
+      //     `Successfully discovered ${promptMetas.length} prompts from ${repoNames.length} repository/repositories`
+      //   );
+      // }
       
       return promptMetas;
     } catch (error: unknown) {

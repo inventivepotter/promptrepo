@@ -28,6 +28,7 @@ import {
   selectPromptCount,
   selectIsEmpty,
   selectPageInfo,
+  selectHasUnsavedChanges,
 } from './selectors';
 
 // Data Hooks
@@ -69,6 +70,9 @@ export const useIsProcessing = () => usePromptStore(selectIsProcessing);
 
 // Error Hook
 export const usePromptError = () => usePromptStore(selectError);
+
+// Unsaved Changes Hook
+export const useHasUnsavedChanges = () => usePromptStore(selectHasUnsavedChanges);
 
 // Filter Hooks
 export const usePromptFilters = () => usePromptStore(selectFilters);
@@ -152,7 +156,9 @@ export const usePromptActions = () => {
     
     // State Management
     setCurrentPrompt: store.setCurrentPrompt,
+    updateCurrentPrompt: store.updateCurrentPrompt,
     clearCurrentPrompt: store.clearCurrentPrompt,
+    checkForChanges: store.checkForChanges,
     
     // Delete Dialog Management
     openDeleteDialog: store.openDeleteDialog,
@@ -193,7 +199,8 @@ export const usePromptActions = () => {
  */
 export const useUpdateCurrentPromptField = () => {
   const currentPrompt = useCurrentPrompt();
-  const setCurrentPrompt = usePromptStore(state => state.setCurrentPrompt);
+  const updateCurrentPrompt = usePromptStore(state => state.updateCurrentPrompt);
+  const checkForChanges = usePromptStore(state => state.checkForChanges);
 
   return useMemo(() => {
     return (field: string, value: string | number | boolean | string[] | null | Record<string, unknown>) => {
@@ -201,15 +208,18 @@ export const useUpdateCurrentPromptField = () => {
         return;
       }
 
-      setCurrentPrompt({
+      updateCurrentPrompt({
         ...currentPrompt,
         prompt: {
           ...currentPrompt.prompt,
           [field]: value,
         },
       });
+      
+      // Check for changes after updating the field
+      checkForChanges();
     };
-  }, [currentPrompt, setCurrentPrompt]);
+  }, [currentPrompt, updateCurrentPrompt, checkForChanges]);
 };
 
 // Convenience hook that returns everything

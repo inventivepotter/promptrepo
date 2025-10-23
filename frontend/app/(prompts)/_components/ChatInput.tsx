@@ -27,12 +27,18 @@ export function ChatInput({
   const { totalInput, totalOutput } = useTokenStats();
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const bgColor = useColorModeValue('white', 'gray.800');
+  const systemModeBg = useColorModeValue('blue.50', 'blue.900');
+  const systemModeBorder = useColorModeValue('blue.400', 'blue.500');
+  const systemModeTextColor = useColorModeValue('blue.700', 'blue.200');
+  const helperTextColor = useColorModeValue('gray.500', 'gray.400');
 
   const handleSubmit = () => {
     const trimmedValue = inputMessage.trim();
-    if (trimmedValue && !isSending && !disabled) {
+    // Allow submission even with empty message
+    if (!isSending && !disabled) {
       if (onSubmit) {
-        onSubmit(trimmedValue);
+        // Pass empty string if no message (system-only mode)
+        onSubmit(trimmedValue || '');
       }
       clearInput();
     }
@@ -49,7 +55,7 @@ export function ChatInput({
     stopStreaming();
   };
 
-  const canSend = inputMessage.trim().length > 0 && !isSending && !disabled;
+  const canSend = !isSending && !disabled;
 
   return (
     <Box
@@ -64,7 +70,7 @@ export function ChatInput({
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={placeholder}
+            placeholder={inputMessage.trim().length === 0 ? "Type your message (optional) or leave empty to use only the system prompt..." : placeholder}
             disabled={isSending}
             resize="none"
             minH="40px"
@@ -93,7 +99,13 @@ export function ChatInput({
             colorPalette={disabled ? "gray" : "blue"}
             onClick={handleSubmit}
             disabled={!canSend}
-            aria-label={disabled ? "Fill in all variables to send" : "Send message"}
+            aria-label={
+              disabled
+                ? "Fill in all variables to send"
+                : inputMessage.trim().length === 0
+                  ? "Send with system prompt only"
+                  : "Send message"
+            }
             variant="solid"
             h="40px"
             mt="-5px"
@@ -105,9 +117,11 @@ export function ChatInput({
       </HStack>
       
       {/* Helper text and token stats */}
-      <Box mt={2} fontSize="xs" color={useColorModeValue('gray.500', 'gray.400')}>
+      <Box mt={2} fontSize="xs" color={helperTextColor}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Box>Press Enter to send, Shift+Enter for new line</Box>
+          <Box>
+            Press Enter to send{inputMessage.trim().length === 0 && ' (system-only mode)'}, Shift+Enter for new line
+          </Box>
           {(totalInput > 0 || totalOutput > 0) && (
             <Box display="flex" gap={4}>
               <Box>Total Input: {totalInput.toLocaleString()}</Box>

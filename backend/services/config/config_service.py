@@ -171,3 +171,49 @@ class ConfigService:
                 raise ValueError("Repository name is required")
             if not config.repo_url:
                 raise ValueError("Repository URL is required")
+    
+    def get_base_branch_for_repo(self, user_id: str, repo_name: str) -> str:
+        """
+        Get the base branch for a repository from config.
+        
+        Args:
+            user_id: User ID
+            repo_name: Repository name
+            
+        Returns:
+            str: Base branch name (defaults to 'main' if not found)
+        """
+        try:
+            repo_configs = self.get_repo_configs(user_id)
+            if repo_configs:
+                for repo_config in repo_configs:
+                    if repo_config.repo_name == repo_name:
+                        return repo_config.base_branch or "main"
+        except Exception as e:
+            # Re-raise exception to let caller handle it
+            raise e
+        
+        return "main"
+    
+    def get_repo_url_for_repo(self, user_id: str, repo_name: str) -> Optional[str]:
+        """
+        Get the repository URL for a repository from config.
+        
+        Args:
+            user_id: User ID
+            repo_name: Repository name
+            
+        Returns:
+            Optional[str]: Repository URL or None if not found
+        """
+        try:
+            repo_configs = self.get_repo_configs(user_id)
+            if repo_configs:
+                for repo_config in repo_configs:
+                    if repo_config.repo_name == repo_name:
+                        return repo_config.repo_url
+        except Exception as e:
+            # Re-raise exception to let caller handle it
+            raise e
+        
+        return None

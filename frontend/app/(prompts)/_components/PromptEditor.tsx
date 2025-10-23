@@ -6,8 +6,6 @@ import {
   VStack,
   HStack,
   ScrollArea,
-  Badge,
-  Text,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { PromptEditorHeader } from './PromptEditorHeader';
@@ -18,14 +16,14 @@ import { Chat } from './Chat';
 import { PromptTimeline } from './PromptTimeline';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { useUser } from '@/stores/authStore';
-import { useCurrentPrompt, usePromptActions, useIsUpdating, useIsLoading } from '@/stores/promptStore/hooks';
-import { FaGitAlt, FaFolder } from 'react-icons/fa';
+import { useCurrentPrompt, usePromptActions, useIsUpdating, useIsLoading, useHasUnsavedChanges } from '@/stores/promptStore/hooks';
 
 export function PromptEditor() {
   const router = useRouter();
   const currentPrompt = useCurrentPrompt();
   const isUpdating = useIsUpdating();
   const isLoading = useIsLoading();
+  const hasUnsavedChanges = useHasUnsavedChanges();
   const { saveCurrentPrompt, setCurrentPrompt } = usePromptActions();
   const user = useUser();
 
@@ -69,7 +67,7 @@ export function PromptEditor() {
       <PromptEditorHeader
         onBack={handleBack}
         onSave={saveCurrentPrompt}
-        canSave={!!currentPrompt}
+        canSave={hasUnsavedChanges}
         isSaving={isUpdating}
       />
 

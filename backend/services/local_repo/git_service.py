@@ -222,13 +222,14 @@ class GitService:
                 message=f"Failed to commit changes: {e}"
             )
 
-    def push_branch(self, oauth_token: str, branch_name: Optional[str] = None) -> GitOperationResult:
+    def push_branch(self, oauth_token: str, branch_name: Optional[str], repo_url: str) -> GitOperationResult:
         """
         Push branch to remote repository.
 
         Args:
             oauth_token: GitHub OAuth token for authentication
             branch_name: Name of branch to push (default: current branch)
+            repo_url: Repository URL from config
 
         Returns:
             GitOperationResult: Result of the operation
@@ -241,21 +242,24 @@ class GitService:
 
             logger.info(f"Pushing branch to remote: {branch_name}")
 
-            # Get remote origin
-            origin = repo.remote('origin')
+            # Clean the URL (remove any existing auth and normalize)
+            clean_url = repo_url
+            if '@github.com' in clean_url:
+                # Extract the part after @github.com
+                clean_url = 'https://github.com/' + clean_url.split('@github.com/')[-1]
+            
+            # Remove trailing slashes and .git if present, then add .git
+            clean_url = clean_url.rstrip('/')
+            if not clean_url.endswith('.git'):
+                clean_url = clean_url + '.git'
+            
+            authenticated_url = self._add_token_to_url(clean_url, oauth_token)
+            logger.info(f"Authenticated URL (with token masked): {authenticated_url.replace(oauth_token, '***TOKEN***')}")
 
-            # Configure remote URL with token for authentication
-            original_url = origin.url
-            if oauth_token not in original_url:
-                authenticated_url = self._add_token_to_url(original_url, oauth_token)
-                origin.set_url(authenticated_url)
-
-            # Push branch
-            origin.push(refspec=f"{branch_name}:{branch_name}")
-
-            # Reset URL for security
-            if oauth_token in origin.url:
-                origin.set_url(original_url)
+            # Push branch directly to the authenticated URL
+            # This bypasses the remote config and pushes directly to the URL
+            logger.info(f"Pushing {branch_name} to remote using authenticated URL...")
+            repo.git.push(authenticated_url, f"{branch_name}:{branch_name}")
 
             logger.info(f"Successfully pushed branch: {branch_name}")
             return GitOperationResult(
@@ -524,7 +528,16 @@ class GitService:
     def _add_token_to_url(self, url: str, oauth_token: str) -> str:
         """Add OAuth token to GitHub URL."""
         if url.startswith('https://github.com/'):
-            return url.replace('https://github.com/', f'https://{oauth_token}@github.com/')
+            # Remove .git suffix temporarily
+            clean_url = url
+            if clean_url.endswith('.git'):
+                clean_url = clean_url[:-4]
+            
+            # Extract repo path (owner/repo)
+            repo_path = clean_url.replace('https://github.com/', '').rstrip('/')
+            
+            # GitHub requires x-access-token: prefix for OAuth tokens in HTTPS URLs
+            return f'https://x-access-token:{oauth_token}@github.com/{repo_path}.git'
         return url
 
     def _configure_git_user(self, repo: Repo, author_name: Optional[str] = None, author_email: Optional[str] = None):
@@ -551,6 +564,20 @@ class GitService:
             value = repo.config_reader().get_value(section, option)
             return str(value) if value is not None else None
         except:
+            return None
+
+    def get_current_branch(self) -> Optional[str]:
+        """
+        Get the name of the current branch.
+        
+        Returns:
+            Optional[str]: Current branch name or None if unable to determine
+        """
+        try:
+            repo = Repo(self.repo_path)
+            return repo.active_branch.name
+        except Exception as e:
+            logger.error(f"Failed to get current branch: {e}")
             return None
 
     def get_file_commit_history(self, file_path: str, limit: int = 5) -> List[CommitInfo]:
