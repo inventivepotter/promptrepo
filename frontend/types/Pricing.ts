@@ -1,12 +1,32 @@
-export interface ModelPricing {
-  input_cost_per_token: number;
-  output_cost_per_token: number;
-  output_cost_per_reasoning_token?: number;
-  litellm_provider: string;
+// OpenRouter API format
+export interface OpenRouterPricing {
+  prompt: string;        // Cost per token for input (as string)
+  completion: string;    // Cost per token for output (as string)
+  request: string;       // Cost per request
+  image: string;         // Cost per image
+  web_search?: string;   // Cost per web search
+  internal_reasoning?: string; // Cost for internal reasoning tokens
 }
 
+export interface OpenRouterModel {
+  id: string;
+  canonical_slug?: string;
+  name: string;
+  pricing: OpenRouterPricing;
+  context_length?: number;
+}
+
+export interface OpenRouterResponse {
+  data: OpenRouterModel[];
+}
+
+// Normalized pricing data (model ID -> pricing info)
 export interface PricingData {
-  [modelName: string]: ModelPricing;
+  [modelId: string]: {
+    promptCost: number;        // Cost per token for input
+    completionCost: number;    // Cost per token for output
+    reasoningCost?: number;    // Cost per reasoning token
+  };
 }
 
 export interface CostCalculation {
@@ -16,7 +36,6 @@ export interface CostCalculation {
   outputCost: number;
   totalCost: number;
   modelName: string;
-  provider: string;
 }
 
 export interface TokenUsage {

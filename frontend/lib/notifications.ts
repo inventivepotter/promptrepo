@@ -3,12 +3,18 @@ import { toaster } from '@/components/ui/toaster';
 // This utility works with Chakra UI's toaster system
 // It creates and immediately displays notifications
 
+interface NotificationAction {
+  label: string;
+  onClick: () => void;
+}
+
 interface NotificationOptions {
   title: string;
   description?: string;
   status: 'success' | 'error' | 'warning' | 'info';
   duration?: number;
   isClosable?: boolean;
+  action?: NotificationAction;
 }
 
 export const createNotification = (options: NotificationOptions): void => {
@@ -18,16 +24,22 @@ export const createNotification = (options: NotificationOptions): void => {
     type: options.status,
     duration: options.duration || 5000,
     closable: options.isClosable !== false,
+    action: options.action,
   };
   
   toaster.create(notificationConfig);
 };
 
-export const successNotification = (title: string, description?: string): void => {
+export const successNotification = (
+  title: string,
+  description?: string,
+  action?: NotificationAction
+): void => {
   createNotification({
     title,
     description,
     status: 'success',
+    action,
   });
 };
 
