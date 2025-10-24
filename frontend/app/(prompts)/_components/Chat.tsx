@@ -71,6 +71,10 @@ export function Chat({ height = "700px", onMessageSend }: ChatProps) {
   
   // State for showing/hiding chat content
   const [showChatContent, setShowChatContent] = useState(true);
+  // State to track if first message has been sent (to collapse variables after)
+  const [hasStartedChat, setHasStartedChat] = useState(false);
+  // State to control if template variables panel is expanded
+  const [variablesExpanded, setVariablesExpanded] = useState(true);
 
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const bgColor = useColorModeValue('white', 'gray.800');
@@ -97,6 +101,10 @@ export function Chat({ height = "700px", onMessageSend }: ChatProps) {
   };
 
   const handleSendMessage = async (message: string) => {
+    // Mark that chat has started and collapse variables panel
+    setHasStartedChat(true);
+    setVariablesExpanded(false);
+    
     // Resolve template variables if current prompt has variables
     let systemPrompt: string | undefined = undefined;
     
@@ -144,40 +152,35 @@ export function Chat({ height = "700px", onMessageSend }: ChatProps) {
       {/* Collapsible content - Everything except header */}
       <Collapsible.Root open={showChatContent}>
         <Collapsible.Content>
-          <Box
-            height={height}
-            display="flex"
-            flexDirection="column"
-            overflow="hidden"
-          >
-            <VStack gap={0} align="stretch" height="full">
-              {/* Token Stats at the top */}
-              <TokenStats />
+          <VStack gap={0} align="stretch" height={height}>
+            {/* Token Stats at the top */}
+            <TokenStats />
 
-              {/* Messages */}
-              <Box flex={1} overflow="hidden" minHeight="300px">
-                <ChatMessages
-                  messages={messages}
-                  isLoading={isSending}
-                />
-              </Box>
-
-              {/* Input */}
-              <ChatInput
-                onSubmit={handleSendMessage}
-                disabled={!allVariablesFilled}
+            {/* Messages - Takes remaining space */}
+            <Box flex={1} overflow="hidden" minHeight="200px">
+              <ChatMessages
+                messages={messages}
+                isLoading={isSending}
               />
-            </VStack>
-          </Box>
+            </Box>
 
-          {/* Template Variables - Outside height constraint so it grows downwards */}
-          {currentPrompt?.prompt?.prompt && (
-            <TemplateVariables
-              promptTemplate={currentPrompt.prompt.prompt}
-              templateVariables={templateVariables}
-              onUpdateVariable={setTemplateVariable}
+            {/* Template Variables - Collapsible panel */}
+            {currentPrompt?.prompt?.prompt && TemplateUtils.hasVariables(currentPrompt.prompt.prompt) && (
+              <TemplateVariables
+                promptTemplate={currentPrompt.prompt.prompt}
+                templateVariables={templateVariables}
+                onUpdateVariable={setTemplateVariable}
+                isExpanded={variablesExpanded}
+                onToggle={() => setVariablesExpanded(!variablesExpanded)}
+              />
+            )}
+
+            {/* Input - Always visible */}
+            <ChatInput
+              onSubmit={handleSendMessage}
+              disabled={!allVariablesFilled && requiredVariables.length > 0}
             />
-          )}
+          </VStack>
 
           {/* Footer - tools only - Outside height constraint so it gets pushed down */}
           <ChatFooter />

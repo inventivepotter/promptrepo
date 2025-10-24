@@ -10,6 +10,7 @@ import {
   Combobox,
   createListCollection,
   Collapsible,
+  Badge,
 } from '@chakra-ui/react';
 import { LuRefreshCw, LuBot, LuChevronDown, LuChevronUp } from 'react-icons/lu';
 import { FaChevronDown } from 'react-icons/fa';
@@ -34,6 +35,7 @@ export function ChatHeader({
   const [toolSearchValue, setToolSearchValue] = React.useState('');
   const [showAgentSection, setShowAgentSection] = useState(true);
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
+  const accentColor = useColorModeValue('gray.700', 'gray.300');
 
   // Filter tools based on search value
   const filteredTools = availableTools.filter(tool =>
@@ -103,10 +105,20 @@ export function ChatHeader({
 
               {/* Tools Selection */}
               <Box>
-          <Text fontSize="sm" fontWeight="medium" mb={2} color={mutedTextColor}>
-            Available Tools
-          </Text>
-          <Combobox.Root
+                <HStack justify="space-between" align="center" mb={1.5}>
+                  <Text fontSize="sm" fontWeight="medium" color={accentColor}>
+                    Mock Tools
+                  </Text>
+                  <Badge colorPalette="gray" variant="subtle" size="xs">
+                    Optional
+                  </Badge>
+                </HStack>
+
+                <Text fontSize="xs" color={mutedTextColor} mb={2}>
+                  Simulated tools for testing — select to enable
+                </Text>
+
+                <Combobox.Root
             collection={toolsCollection}
             multiple
             value={selectedTools}
@@ -151,8 +163,8 @@ export function ChatHeader({
                   ))
                 )}
               </Combobox.Content>
-            </Combobox.Positioner>
-              </Combobox.Root>
+                </Combobox.Positioner>
+                </Combobox.Root>
               </Box>
             </VStack>
           </Collapsible.Content>

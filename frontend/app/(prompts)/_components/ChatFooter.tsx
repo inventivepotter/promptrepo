@@ -10,6 +10,7 @@ import {
   HStack,
   Button,
   Popover,
+  Badge,
 } from '@chakra-ui/react';
 import { FaChevronDown, FaInfoCircle } from 'react-icons/fa';
 import { useColorModeValue } from '@/components/ui/color-mode';
@@ -20,6 +21,7 @@ export function ChatFooter() {
   const [toolSearchValue, setToolSearchValue] = useState('');
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
   const linkColor = useColorModeValue('blue.500', 'blue.300');
+  const accentColor = useColorModeValue('gray.700', 'gray.300');
 
   // Filter tools based on search value
   const filteredTools = availableTools.filter(tool =>
@@ -42,9 +44,19 @@ export function ChatFooter() {
     >
       {/* Tools Selection */}
       <Box mb={3}>
-        <Text fontSize="xs" fontWeight="medium" mb={1} color={mutedTextColor}>
-          Available Tools
+        <HStack justify="space-between" align="center" mb={1.5}>
+          <Text fontSize="xs" fontWeight="medium" color={accentColor}>
+            Mock Tools
+          </Text>
+          <Badge colorPalette="gray" variant="subtle" size="xs">
+            Optional
+          </Badge>
+        </HStack>
+
+        <Text fontSize="xs" color={mutedTextColor} mb={2}>
+          Simulated tools for testing — select to enable
         </Text>
+
         <Combobox.Root
           collection={toolsCollection}
           multiple

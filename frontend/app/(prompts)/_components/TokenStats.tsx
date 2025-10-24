@@ -8,7 +8,7 @@ import {
   Popover,
 } from '@chakra-ui/react';
 import { useColorModeValue } from '@/components/ui/color-mode';
-import { LuInfo } from 'react-icons/lu';
+import { PiWarning } from 'react-icons/pi';
 import { FaInfoCircle } from 'react-icons/fa';
 import { useTokenStats, useSessionCost } from '@/stores/chatStore/hooks';
 import { pricingService } from '@/services/llm/pricing/pricingService';
@@ -17,7 +17,8 @@ export function TokenStats() {
   const { totalInput, totalOutput } = useTokenStats();
   const totalCost = useSessionCost();
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
-  const bgColor = useColorModeValue('gray.50', 'gray.800');
+  const accentColor = useColorModeValue('gray.700', 'gray.300');
+  const bgColor = useColorModeValue('gray.50', 'gray.700/30');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const linkColor = useColorModeValue('blue.500', 'blue.300');
   const titleColor = useColorModeValue('gray.800', 'gray.200');
@@ -30,7 +31,8 @@ export function TokenStats() {
 
   return (
     <Box
-      p={3}
+      px={3}
+      py={2}
       bg={bgColor}
       borderBottomWidth="1px"
       borderColor={borderColor}
@@ -38,11 +40,11 @@ export function TokenStats() {
     >
       <HStack justify="space-between" align="center">
         <HStack gap={2} align="center">
-          <Text color={mutedTextColor}>Token Usage</Text>
+          <Text fontSize="sm" fontWeight="medium" color={accentColor}>Token Usage</Text>
           <Popover.Root>
             <Popover.Trigger asChild>
               <Box cursor="help" color="gray.500" _hover={{ color: "gray.700" }} _dark={{ color: "gray.400", _hover: { color: "gray.200" } }}>
-                <LuInfo size={12} />
+                <PiWarning size={14} />
               </Box>
             </Popover.Trigger>
             <Popover.Positioner>
