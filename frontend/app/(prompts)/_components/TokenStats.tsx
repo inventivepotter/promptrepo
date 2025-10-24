@@ -10,10 +10,12 @@ import {
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { LuInfo } from 'react-icons/lu';
 import { FaInfoCircle } from 'react-icons/fa';
-import { useTokenStats } from '@/stores/chatStore/hooks';
+import { useTokenStats, useSessionCost } from '@/stores/chatStore/hooks';
+import { pricingService } from '@/services/llm/pricing/pricingService';
 
 export function TokenStats() {
   const { totalInput, totalOutput } = useTokenStats();
+  const totalCost = useSessionCost();
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
   const bgColor = useColorModeValue('gray.50', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
@@ -96,6 +98,11 @@ export function TokenStats() {
           <Text>
             <Text as="span" fontWeight="medium">Output:</Text> {totalOutput.toLocaleString()}
           </Text>
+          {totalCost > 0 && (
+            <Text>
+              <Text as="span" fontWeight="medium">Cost:</Text> {pricingService.formatCost(totalCost)}
+            </Text>
+          )}
         </HStack>
       </HStack>
     </Box>

@@ -2,7 +2,7 @@ import { errorNotification } from '@/lib/notifications';
 import { pricingService } from '@/services/llm/pricing/pricingService';
 import { ChatApi, type ChatCompletionRequest, type ChatMessage as ApiChatMessage } from './api';
 import type { OpenAIMessage, ChatMessage } from '@/app/(prompts)/_types/ChatState';
-import type { ChatCompletionOptions, TokenUsage, UsageWithReasoning } from '@/types/Chat';
+import type { ChatCompletionOptions, UsageWithReasoning } from '@/types/Chat';
 import { isStandardResponse, isErrorResponse } from '@/types/OpenApiResponse';
 import type { TokenUsage as PricingTokenUsage } from '@/types/Pricing';
 
@@ -120,7 +120,7 @@ export class ChatService {
       } : undefined;
 
       // Convert response back to internal ChatMessage format
-      const chatMessage = this.fromOpenAIMessage(assistantMessage, `assistant-${Date.now()}`, usage, options.model);
+      const chatMessage = await this.fromOpenAIMessage(assistantMessage, `assistant-${Date.now()}`, usage, options.model);
 
       // Add inference time from API response
       if (result.data.inference_time_ms) {
@@ -160,12 +160,12 @@ export class ChatService {
   /**
    * Convert OpenAI message to internal ChatMessage format
    */
-  public fromOpenAIMessage(
+  public async fromOpenAIMessage(
     openAIMessage: OpenAIMessage,
     id?: string,
     usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number; reasoning_tokens?: number },
     model?: string
-  ): ChatMessage {
+  ): Promise<ChatMessage> {
     // Handle potential null values for tool_call_id and tool_calls to match OpenAIMessage type
     const processedMessage: OpenAIMessage = {
       ...openAIMessage,
@@ -188,15 +188,21 @@ export class ChatService {
 
     // Calculate cost if usage and model are provided
     if (usage && model && processedMessage.role === 'assistant') {
-      const tokenUsage: TokenUsage = {
+      const tokenUsage: PricingTokenUsage = {
         inputTokens: usage.prompt_tokens || 0,
         outputTokens: usage.completion_tokens || 0,
         reasoningTokens: usage.reasoning_tokens
       };
       
-      const costCalculation = pricingService.calculateCost(model, tokenUsage);
-      if (costCalculation) {
-        message.cost = costCalculation.totalCost;
+      try {
+        // Ensure pricing data is loaded before calculating cost
+        await pricingService.getPricingData();
+        const costCalculation = pricingService.calculateCost(model, tokenUsage);
+        if (costCalculation) {
+          message.cost = costCalculation.totalCost;
+        }
+      } catch (error) {
+        console.warn('Failed to calculate cost for message:', error);
       }
     }
 

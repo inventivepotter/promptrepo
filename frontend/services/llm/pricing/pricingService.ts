@@ -100,13 +100,51 @@ export class PricingService {
   }
 
   /**
-   * Get pricing information for a specific model
+   * Normalize model name for fuzzy matching
+   * Extracts the model identifier from various formats:
+   * - models/gemini-2.5-flash -> gemini-2.5-flash
+   * - google/gemini-2.5-flash -> gemini-2.5-flash
+   * - gemini-2.5-flash -> gemini-2.5-flash
+   */
+  private normalizeModelName(modelName: string): string {
+    // Remove common prefixes like "models/", "google/", "anthropic/", etc.
+    return modelName.split('/').pop() || modelName;
+  }
+
+  /**
+   * Get pricing information for a specific model with fuzzy matching
+   * Tries multiple strategies to find the model:
+   * 1. Exact match
+   * 2. Normalized name match (after last slash)
+   * 3. Search in all keys for normalized match
    */
   private getModelPricing(modelName: string) {
     if (!this.pricingData) {
       return null;
     }
-    return this.pricingData[modelName] || null;
+
+    // Strategy 1: Try exact match first
+    if (this.pricingData[modelName]) {
+      return this.pricingData[modelName];
+    }
+
+    // Strategy 2: Normalize the input model name and try to find a match
+    const normalizedInput = this.normalizeModelName(modelName);
+    
+    // Try to find a key in pricingData that ends with the normalized name
+    for (const [key, value] of Object.entries(this.pricingData)) {
+      const normalizedKey = this.normalizeModelName(key);
+      
+      // Check if normalized names match
+      if (normalizedKey === normalizedInput) {
+        console.log(`[PricingService] Model match found: "${modelName}" -> "${key}"`);
+        return value;
+      }
+    }
+
+    // No match found
+    console.warn(`[PricingService] No pricing found for model: "${modelName}". Tried normalized: "${normalizedInput}"`);
+    return null;
   }
 
   /**
