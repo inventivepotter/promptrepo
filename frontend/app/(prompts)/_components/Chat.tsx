@@ -1,8 +1,10 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import {
   Box,
   VStack,
+  Collapsible,
 } from '@chakra-ui/react';
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { ChatMessages } from './ChatMessages';
@@ -61,19 +63,24 @@ export function Chat({ height = "700px", onMessageSend }: ChatProps) {
   const messages = useMessages();
   const isSending = useIsSending();
   const { sendMessage, clearMessages, clearInput, setAvailableTools, setTemplateVariable, clearTemplateVariables } = useChatActions();
-  const { selectedTools, clearSelectedTools } = useToolsManagement();
+  const { selectedTools, clearSelectedTools, availableTools } = useToolsManagement();
   const templateVariables = useTemplateVariables();
   
   // Use promptStore hooks to get current prompt
   const currentPrompt = useCurrentPrompt();
+  
+  // State for showing/hiding chat content
+  const [showChatContent, setShowChatContent] = useState(true);
 
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const bgColor = useColorModeValue('white', 'gray.800');
   
-  // Initialize tools if not already set
-  if (useToolsManagement().availableTools.length === 0) {
-    setAvailableTools(MOCK_TOOLS);
-  }
+  // Initialize tools on mount using useEffect
+  useEffect(() => {
+    if (availableTools.length === 0) {
+      setAvailableTools(MOCK_TOOLS);
+    }
+  }, [availableTools.length, setAvailableTools]);
   
   // Check if all required variables are filled
   const requiredVariables = currentPrompt?.prompt?.prompt
@@ -126,49 +133,56 @@ export function Chat({ height = "700px", onMessageSend }: ChatProps) {
       bg={bgColor}
       overflow="hidden"
     >
-      <Box
-        height={height}
-        display="flex"
-        flexDirection="column"
-        overflow="hidden"
-      >
-        <VStack gap={0} align="stretch" height="full">
-          {/* Header - Agent title and reset functionality */}
-          <ChatSimpleHeader
-            onReset={handleReset}
-            isLoading={isSending}
-          />
+      {/* Header - Always visible */}
+      <ChatSimpleHeader
+        onReset={handleReset}
+        isLoading={isSending}
+        showContent={showChatContent}
+        onToggleContent={() => setShowChatContent(!showChatContent)}
+      />
 
-          {/* Token Stats at the top */}
-          <TokenStats />
+      {/* Collapsible content - Everything except header */}
+      <Collapsible.Root open={showChatContent}>
+        <Collapsible.Content>
+          <Box
+            height={height}
+            display="flex"
+            flexDirection="column"
+            overflow="hidden"
+          >
+            <VStack gap={0} align="stretch" height="full">
+              {/* Token Stats at the top */}
+              <TokenStats />
 
-          {/* Messages */}
-          <Box flex={1} overflow="hidden" minHeight="300px">
-            <ChatMessages
-              messages={messages}
-              isLoading={isSending}
-            />
+              {/* Messages */}
+              <Box flex={1} overflow="hidden" minHeight="300px">
+                <ChatMessages
+                  messages={messages}
+                  isLoading={isSending}
+                />
+              </Box>
+
+              {/* Input */}
+              <ChatInput
+                onSubmit={handleSendMessage}
+                disabled={!allVariablesFilled}
+              />
+            </VStack>
           </Box>
 
-          {/* Input */}
-          <ChatInput
-            onSubmit={handleSendMessage}
-            disabled={!allVariablesFilled}
-          />
-        </VStack>
-      </Box>
+          {/* Template Variables - Outside height constraint so it grows downwards */}
+          {currentPrompt?.prompt?.prompt && (
+            <TemplateVariables
+              promptTemplate={currentPrompt.prompt.prompt}
+              templateVariables={templateVariables}
+              onUpdateVariable={setTemplateVariable}
+            />
+          )}
 
-      {/* Template Variables - Outside height constraint so it grows downwards */}
-      {currentPrompt?.prompt?.prompt && (
-        <TemplateVariables
-          promptTemplate={currentPrompt.prompt.prompt}
-          templateVariables={templateVariables}
-          onUpdateVariable={setTemplateVariable}
-        />
-      )}
-
-      {/* Footer - tools only - Outside height constraint so it gets pushed down */}
-      <ChatFooter />
+          {/* Footer - tools only - Outside height constraint so it gets pushed down */}
+          <ChatFooter />
+        </Collapsible.Content>
+      </Collapsible.Root>
     </Box>
   );
 }

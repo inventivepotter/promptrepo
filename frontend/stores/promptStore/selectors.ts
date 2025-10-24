@@ -32,10 +32,18 @@ export const selectSortOrder = (state: PromptStore) => state.filters.sortOrder;
 export const selectPagination = (state: PromptStore) => state.pagination;
 export const selectCurrentPage = (state: PromptStore): number => state.pagination.page;
 export const selectPageSize = (state: PromptStore): number => state.pagination.pageSize;
-export const selectTotalPrompts = (state: PromptStore): number => state.pagination.total;
-export const selectTotalPages = (state: PromptStore): number => state.pagination.totalPages;
+export const selectTotalPrompts = (state: PromptStore): number => {
+  // Calculate total based on filtered prompts, not pagination.total
+  const filtered = selectFilteredPrompts(state);
+  return filtered.length;
+};
+export const selectTotalPages = (state: PromptStore): number => {
+  // Calculate total pages based on filtered prompts, not pagination.totalPages
+  const filtered = selectFilteredPrompts(state);
+  return Math.ceil(filtered.length / state.pagination.pageSize);
+};
 export const selectHasNextPage = (state: PromptStore): boolean =>
-  state.pagination.page < state.pagination.totalPages;
+  state.pagination.page < selectTotalPages(state);
 export const selectHasPreviousPage = (state: PromptStore): boolean =>
   state.pagination.page > 1;
 

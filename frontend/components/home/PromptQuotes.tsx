@@ -102,15 +102,12 @@ const renderTextWithStyledPrompts = (text: string) => {
 
 export const PromptQuotes = () => {
   const [currentQuote, setCurrentQuote] = useState(0);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Set a random quote on mount (client-side only)
     setCurrentQuote(Math.floor(Math.random() * quotes.length));
-    setMounted(true);
   }, []);
 
-  // Use first quote during SSR to avoid hydration mismatch
+  // Always render the quote directly; currentQuote starts at 0 to avoid hydration mismatch
   const quote = quotes[currentQuote];
 
   return (

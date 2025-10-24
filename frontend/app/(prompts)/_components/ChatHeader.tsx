@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   HStack,
   VStack,
@@ -9,8 +9,9 @@ import {
   Box,
   Combobox,
   createListCollection,
+  Collapsible,
 } from '@chakra-ui/react';
-import { LuRefreshCw, LuBot } from 'react-icons/lu';
+import { LuRefreshCw, LuBot, LuChevronDown, LuChevronUp } from 'react-icons/lu';
 import { FaChevronDown } from 'react-icons/fa';
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { Tool } from '../_types/ChatState';
@@ -23,14 +24,15 @@ interface ChatHeaderProps {
   isLoading?: boolean;
 }
 
-export function ChatHeader({ 
-  selectedTools, 
-  availableTools, 
-  onToolsChange, 
-  onReset, 
-  isLoading = false 
+export function ChatHeader({
+  selectedTools,
+  availableTools,
+  onToolsChange,
+  onReset,
+  isLoading = false
 }: ChatHeaderProps) {
   const [toolSearchValue, setToolSearchValue] = React.useState('');
+  const [showAgentSection, setShowAgentSection] = useState(true);
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
 
   // Filter tools based on search value
@@ -52,36 +54,55 @@ export function ChatHeader({
       borderBottomWidth="1px"
     >
       <VStack gap={3} align="stretch">
-        {/* Header with just description and reset button */}
+        {/* Header with title and action buttons - Always visible */}
         <HStack justify="space-between" align="center">
-          <VStack align="start">
-            <HStack>
-              <LuBot size={18} />
-              <Text fontSize="lg" fontWeight="semibold">
-                Agent
-              </Text>
-            </HStack>
-            <Text fontSize="xs" color={mutedTextColor}>
-              Your playground to test prompts with AI agents
+          <HStack>
+            <LuBot size={18} />
+            <Text fontSize="lg" fontWeight="semibold">
+              Agent
             </Text>
-          </VStack>
-          <Button
-            size="sm"
-            variant="ghost"
-            colorPalette="red"
-            onClick={onReset}
-            disabled={isLoading}
-            _hover={{ bg: 'red.50' }}
-          >
-            <HStack gap={2}>
-              <LuRefreshCw size={14} />
-              <Text>Reset</Text>
-            </HStack>
-          </Button>
+          </HStack>
+          <HStack gap={2}>
+            <Button
+              variant="ghost"
+              _hover={{ bg: "bg.subtle" }}
+              size="sm"
+              onClick={() => setShowAgentSection(!showAgentSection)}
+              aria-label={showAgentSection ? "Collapse agent section" : "Expand agent section"}
+            >
+              <HStack gap={1}>
+                <Text fontSize="xs" fontWeight="medium">
+                  {showAgentSection ? "Hide" : "Show"}
+                </Text>
+                {showAgentSection ? <LuChevronUp /> : <LuChevronDown />}
+              </HStack>
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              colorPalette="red"
+              onClick={onReset}
+              disabled={isLoading}
+              _hover={{ bg: 'red.50' }}
+            >
+              <HStack gap={2}>
+                <LuRefreshCw size={14} />
+                <Text>Reset</Text>
+              </HStack>
+            </Button>
+          </HStack>
         </HStack>
 
-        {/* Tools Selection */}
-        <Box>
+        {/* Collapsible content - Only this part hides */}
+        <Collapsible.Root open={showAgentSection}>
+          <Collapsible.Content>
+            <VStack gap={3} align="stretch">
+              <Text fontSize="xs" color={mutedTextColor}>
+                Your playground to test prompts with AI agents
+              </Text>
+
+              {/* Tools Selection */}
+              <Box>
           <Text fontSize="sm" fontWeight="medium" mb={2} color={mutedTextColor}>
             Available Tools
           </Text>
@@ -131,8 +152,11 @@ export function ChatHeader({
                 )}
               </Combobox.Content>
             </Combobox.Positioner>
-          </Combobox.Root>
-        </Box>
+              </Combobox.Root>
+              </Box>
+            </VStack>
+          </Collapsible.Content>
+        </Collapsible.Root>
       </VStack>
     </Box>
   );

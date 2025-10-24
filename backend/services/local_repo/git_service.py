@@ -253,11 +253,9 @@ class GitService:
                 clean_url = clean_url + '.git'
             
             authenticated_url = self._add_token_to_url(clean_url, oauth_token)
-            logger.info(f"Authenticated URL (with token masked): {authenticated_url.replace(oauth_token, '***TOKEN***')}")
 
             # Push branch directly to the authenticated URL
             # This bypasses the remote config and pushes directly to the URL
-            logger.info(f"Pushing {branch_name} to remote using authenticated URL...")
             repo.git.push(authenticated_url, f"{branch_name}:{branch_name}")
 
             logger.info(f"Successfully pushed branch: {branch_name}")

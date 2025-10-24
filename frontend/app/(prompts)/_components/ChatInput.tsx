@@ -27,20 +27,19 @@ export function ChatInput({
   const { totalInput, totalOutput } = useTokenStats();
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const bgColor = useColorModeValue('white', 'gray.800');
-  const systemModeBg = useColorModeValue('blue.50', 'blue.900');
-  const systemModeBorder = useColorModeValue('blue.400', 'blue.500');
-  const systemModeTextColor = useColorModeValue('blue.700', 'blue.200');
   const helperTextColor = useColorModeValue('gray.500', 'gray.400');
 
   const handleSubmit = () => {
     const trimmedValue = inputMessage.trim();
     // Allow submission even with empty message
     if (!isSending && !disabled) {
+      // Always call onSubmit if provided, otherwise this is a no-op
+      // This prevents message loss when onSubmit is not provided
       if (onSubmit) {
         // Pass empty string if no message (system-only mode)
         onSubmit(trimmedValue || '');
+        clearInput();
       }
-      clearInput();
     }
   };
 
@@ -55,6 +54,8 @@ export function ChatInput({
     stopStreaming();
   };
 
+  // Fix: canSend should be true only when not sending AND not disabled
+  // This properly reflects when the user can actually send a message
   const canSend = !isSending && !disabled;
 
   return (
@@ -71,7 +72,7 @@ export function ChatInput({
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={inputMessage.trim().length === 0 ? "Type your message (optional) or leave empty to use only the system prompt..." : placeholder}
-            disabled={isSending}
+            disabled={isSending || disabled}
             resize="none"
             minH="40px"
             maxH="120px"

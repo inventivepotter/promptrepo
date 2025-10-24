@@ -8,6 +8,9 @@ from sqlmodel import SQLModel, Session as SQLSession, create_engine
 from sqlalchemy.engine import Engine
 import os
 from urllib.parse import urlparse
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class DatabaseAdapter(ABC):
@@ -76,12 +79,12 @@ class SQLiteAdapter(DatabaseAdapter):
         # Create directory if it doesn't exist
         if database_dir and not os.path.exists(database_dir):
             os.makedirs(database_dir)
-            print(f"Created database directory: {database_dir}")
+            logger.info(f"Created database directory: {database_dir}")
         
         # Create database file if it doesn't exist
         if not os.path.exists(database_path):
             open(database_path, 'a').close()
-            print(f"Created SQLite database file: {database_path}")
+            logger.info(f"Created SQLite database file: {database_path}")
     
     def create_engine(self) -> Engine:
         """Create SQLite engine with appropriate configuration"""
@@ -112,8 +115,7 @@ class PostgreSQLAdapter(DatabaseAdapter):
         PostgreSQL doesn't need file preparation.
         Could be extended to check connection or create database if needed.
         """
-        parsed_url = urlparse(self.database_url)
-        print(f"Preparing PostgreSQL connection to: {parsed_url.hostname}:{parsed_url.port or 5432}")
+        pass
     
     def create_engine(self) -> Engine:
         """Create PostgreSQL engine with appropriate configuration"""
@@ -145,8 +147,7 @@ class MySQLAdapter(DatabaseAdapter):
     
     def prepare_database(self) -> None:
         """MySQL preparation logic"""
-        parsed_url = urlparse(self.database_url)
-        print(f"Preparing MySQL connection to: {parsed_url.hostname}:{parsed_url.port or 3306}")
+        pass
     
     def create_engine(self) -> Engine:
         """Create MySQL engine with appropriate configuration"""

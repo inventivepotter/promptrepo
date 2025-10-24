@@ -36,6 +36,11 @@ export const LoginButton = ({ provider }: LoginButtonProps) => {
   const activeBg = "bg.emphasized";
 
   const config = providerConfig[provider];
+  if (!config) {
+    console.error(`Unknown OAuth provider: ${provider}`);
+    return null;
+  }
+
   const Icon = config.icon;
 
   return (

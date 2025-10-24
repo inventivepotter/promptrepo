@@ -49,7 +49,11 @@ export const AuthSection = (props: AuthSectionProps) => {
       {shouldShowAuth && (
         <>
           {isAuthenticated ? (
-            <LogoutButton />
+            <LogoutButton
+              isCollapsed={props.isCollapsed}
+              hoverBg={props.hoverBg}
+              activeBg={props.activeBg}
+            />
           ) : (
             <>
               {configuredProviders.map((provider) => (

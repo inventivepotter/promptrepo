@@ -14,9 +14,11 @@ import {
   Stack,
   Skeleton,
   EmptyState,
+  Collapsible,
 } from '@chakra-ui/react';
+import { useMemo, useState } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
-import { LuGitBranch } from 'react-icons/lu';
+import { LuGitBranch, LuChevronDown, LuChevronUp } from 'react-icons/lu';
 import {
   useConfig,
   useAvailableRepos,
@@ -34,6 +36,7 @@ interface RepoConfigManagerProps {
 }
 
 export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) => {
+  const [showRepoConfig, setShowRepoConfig] = useState(true);
   const config = useConfig();
   const availableRepos = useAvailableRepos();
   const error = useConfigError();
@@ -136,28 +139,52 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
     repo.full_name.toLowerCase().includes(repoSearchValue.toLowerCase())
   );
   
-  // Filter branches based on search
-  const filteredBranches = availableBranches.filter(branch =>
-    branch.name.toLowerCase().includes(branchSearchValue.toLowerCase())
-  );
+  // Filter branches based on search - but if there's a selected branch, always include it
+  const filteredBranches = useMemo(() => {
+    if (!branchSearchValue) return availableBranches;
+    
+    return availableBranches.filter(branch =>
+      branch.name.toLowerCase().includes(branchSearchValue.toLowerCase()) ||
+      (branch.is_default && `${branch.name} (default)`.toLowerCase().includes(branchSearchValue.toLowerCase()))
+    );
+  }, [availableBranches, branchSearchValue]);
 
   return (
     <Card.Root
       id="repositories"
       borderWidth="1px"
       borderColor={borderColor}
+      overflow="visible"
     >
-      <Card.Body p={8}>
-        <Fieldset.Root size="lg">
-          <Stack>
-            <Fieldset.Legend>Repository Configuration</Fieldset.Legend>
-            <Fieldset.HelperText>
-              Configure repositories containing prompts to access them in the application.
-            </Fieldset.HelperText>
-          </Stack>
+      <Card.Body p={8} overflow="visible">
+        <Fieldset.Root size="lg" overflow="visible">
+          <HStack justify="space-between" align="center">
+            <Stack flex={1}>
+              <Fieldset.Legend>Repository Configuration</Fieldset.Legend>
+              <Fieldset.HelperText>
+                Configure repositories containing prompts to access them in the application.
+              </Fieldset.HelperText>
+            </Stack>
+            <Button
+              variant="ghost"
+              _hover={{ bg: "bg.subtle" }}
+              size="sm"
+              onClick={() => setShowRepoConfig(!showRepoConfig)}
+              aria-label={showRepoConfig ? "Collapse repository configuration" : "Expand repository configuration"}
+            >
+              <HStack gap={1}>
+                <Text fontSize="xs" fontWeight="medium">
+                  {showRepoConfig ? "Hide" : "Show"}
+                </Text>
+                {showRepoConfig ? <LuChevronUp /> : <LuChevronDown />}
+              </HStack>
+            </Button>
+          </HStack>
 
-          <Fieldset.Content>
-            <VStack gap={6} align="stretch">
+          <Fieldset.Content overflow="visible">
+            <Collapsible.Root open={showRepoConfig}>
+              <Collapsible.Content overflow="visible">
+                <VStack gap={6} align="stretch" mt={3}>
         {/* Error display */}
         {error && (
           <Box
@@ -185,8 +212,9 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
               borderWidth="1px"
               borderColor={borderColor}
               width="100%"
+              overflow="visible"
             >
-              <Card.Body p={8}>
+              <Card.Body p={8} overflow="visible">
                 <VStack gap={4}>
                 <HStack gap={4} width="100%" align="end">
                   {/* Repository Combobox */}
@@ -253,10 +281,21 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                           value: b.name
                         }))
                       })}
-                      value={[selectedBranch]}
-                      onValueChange={(e) => setSelectedBranch(e.value?.[0] || '')}
+                      value={selectedBranch ? [selectedBranch] : []}
+                      onValueChange={(e) => {
+                        const branch = e.value?.[0] || '';
+                        setSelectedBranch(branch);
+                      }}
                       inputValue={branchSearchValue}
-                      onInputValueChange={(e) => setBranchSearchValue(e.inputValue)}
+                      onInputValueChange={(e) => {
+                        const newValue = e.inputValue;
+                        setBranchSearchValue(newValue);
+                        
+                        // Clear the selection if input doesn't match the selected branch
+                        if (newValue === '' || (selectedBranch && !newValue.toLowerCase().includes(selectedBranch.toLowerCase()))) {
+                          setSelectedBranch('');
+                        }
+                      }}
                       openOnClick
                       disabled={disabled || isSaving || isLoadingBranches || !selectedRepo}
                       width="100%"
@@ -403,7 +442,9 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
             )}
           </VStack>
         )}
-            </VStack>
+                </VStack>
+              </Collapsible.Content>
+            </Collapsible.Root>
           </Fieldset.Content>
         </Fieldset.Root>
       </Card.Body>

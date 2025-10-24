@@ -1,10 +1,11 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { Box, Stack } from '@chakra-ui/react';
 import { Sidebar } from '@/components/sidebar/Sidebar';
 
-export function LayoutContent({ children }: { children: React.ReactNode }) {
+export function LayoutContent({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   
   // Don't show sidebar on login page
