@@ -10,12 +10,12 @@ import {
   Combobox,
   createListCollection,
   Collapsible,
-  Badge,
 } from '@chakra-ui/react';
 import { LuRefreshCw, LuBot, LuChevronDown, LuChevronUp } from 'react-icons/lu';
 import { FaChevronDown } from 'react-icons/fa';
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { Tool } from '../_types/ChatState';
+import { ToolsHeader } from './ToolsHeader';
 
 interface ChatHeaderProps {
   selectedTools: string[];
@@ -105,18 +105,7 @@ export function ChatHeader({
 
               {/* Tools Selection */}
               <Box>
-                <HStack justify="space-between" align="center" mb={1.5}>
-                  <Text fontSize="sm" fontWeight="medium" color={accentColor}>
-                    Mock Tools
-                  </Text>
-                  <Badge colorPalette="gray" variant="subtle" size="xs">
-                    Optional
-                  </Badge>
-                </HStack>
-
-                <Text fontSize="xs" color={mutedTextColor} mb={2}>
-                  Simulated tools for testing — select to enable
-                </Text>
+                <ToolsHeader accentColor={accentColor} mutedTextColor={mutedTextColor} />
 
                 <Combobox.Root
             collection={toolsCollection}

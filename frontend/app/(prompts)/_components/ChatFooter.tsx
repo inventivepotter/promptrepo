@@ -10,11 +10,11 @@ import {
   HStack,
   Button,
   Popover,
-  Badge,
 } from '@chakra-ui/react';
 import { FaChevronDown, FaInfoCircle } from 'react-icons/fa';
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { useToolsManagement } from '@/stores/chatStore/hooks';
+import { ToolsHeader } from './ToolsHeader';
 
 export function ChatFooter() {
   const { availableTools, selectedTools, setSelectedTools } = useToolsManagement();
@@ -44,18 +44,7 @@ export function ChatFooter() {
     >
       {/* Tools Selection */}
       <Box mb={3}>
-        <HStack justify="space-between" align="center" mb={1.5}>
-          <Text fontSize="xs" fontWeight="medium" color={accentColor}>
-            Mock Tools
-          </Text>
-          <Badge colorPalette="gray" variant="subtle" size="xs">
-            Optional
-          </Badge>
-        </HStack>
-
-        <Text fontSize="xs" color={mutedTextColor} mb={2}>
-          Simulated tools for testing — select to enable
-        </Text>
+        <ToolsHeader accentColor={accentColor} mutedTextColor={mutedTextColor} />
 
         <Combobox.Root
           collection={toolsCollection}
