@@ -95,19 +95,19 @@ class TestUserModel:
 
         original_modified_at = user.modified_at
 
-        # Wait a small amount to ensure timestamp difference
+        # Wait to ensure timestamp difference (at least 1 second for database precision)
         import time
-        time.sleep(0.1)
+        time.sleep(1.1)
 
         # Update user
         user.oauth_name = "Updated Name"
         db_session.commit()
+        
+        # Refresh to get the updated timestamp from database
+        db_session.refresh(user)
 
-        # modified_at should have changed (or at least be >= for systems with low precision)
-        # Allow for timestamp precision issues by checking if it's close enough
-        time_diff = user.modified_at - original_modified_at
-        # Allow for small negative values due to precision issues, but not large ones
-        assert time_diff.total_seconds() >= -1.0  # Allow up to 1 second negative due to precision
+        # modified_at should have changed
+        assert user.modified_at > original_modified_at
 
     def test_user_string_representation(self, db_session: Session):
         """Test user string representation"""
@@ -189,17 +189,14 @@ class TestUserSessionModel:
 
         # Wait a small amount
         import time
-        time.sleep(0.1)
+        time.sleep(0.5)
 
         # Update accessed_at by updating the record
         session.oauth_token = "updated_token"
         db_session.commit()
 
-        # accessed_at should have changed (or at least be >= for systems with low precision)
-        # Allow for timestamp precision issues by checking if it's close enough
-        time_diff = session.accessed_at - original_accessed_at
-        # Allow for small negative values due to precision issues, but not large ones
-        assert time_diff.total_seconds() >= -1.0  # Allow up to 1 second negative due to precision
+        # accessed_at should have changed
+        assert session.accessed_at >= original_accessed_at
 
     def test_session_string_representation(self, db_session: Session):
         """Test session string representation"""

@@ -15,6 +15,7 @@ import { LuRefreshCw, LuBot, LuChevronDown, LuChevronUp } from 'react-icons/lu';
 import { FaChevronDown } from 'react-icons/fa';
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { Tool } from '../_types/ChatState';
+import { ToolsHeader } from './ToolsHeader';
 
 interface ChatHeaderProps {
   selectedTools: string[];
@@ -34,6 +35,7 @@ export function ChatHeader({
   const [toolSearchValue, setToolSearchValue] = React.useState('');
   const [showAgentSection, setShowAgentSection] = useState(true);
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
+  const accentColor = useColorModeValue('gray.700', 'gray.300');
 
   // Filter tools based on search value
   const filteredTools = availableTools.filter(tool =>
@@ -103,10 +105,9 @@ export function ChatHeader({
 
               {/* Tools Selection */}
               <Box>
-          <Text fontSize="sm" fontWeight="medium" mb={2} color={mutedTextColor}>
-            Available Tools
-          </Text>
-          <Combobox.Root
+                <ToolsHeader accentColor={accentColor} mutedTextColor={mutedTextColor} />
+
+                <Combobox.Root
             collection={toolsCollection}
             multiple
             value={selectedTools}
@@ -151,8 +152,8 @@ export function ChatHeader({
                   ))
                 )}
               </Combobox.Content>
-            </Combobox.Positioner>
-              </Combobox.Root>
+                </Combobox.Positioner>
+                </Combobox.Root>
               </Box>
             </VStack>
           </Collapsible.Content>

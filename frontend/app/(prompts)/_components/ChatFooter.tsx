@@ -14,12 +14,14 @@ import {
 import { FaChevronDown, FaInfoCircle } from 'react-icons/fa';
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { useToolsManagement } from '@/stores/chatStore/hooks';
+import { ToolsHeader } from './ToolsHeader';
 
 export function ChatFooter() {
   const { availableTools, selectedTools, setSelectedTools } = useToolsManagement();
   const [toolSearchValue, setToolSearchValue] = useState('');
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
   const linkColor = useColorModeValue('blue.500', 'blue.300');
+  const accentColor = useColorModeValue('gray.700', 'gray.300');
 
   // Filter tools based on search value
   const filteredTools = availableTools.filter(tool =>
@@ -42,9 +44,8 @@ export function ChatFooter() {
     >
       {/* Tools Selection */}
       <Box mb={3}>
-        <Text fontSize="xs" fontWeight="medium" mb={1} color={mutedTextColor}>
-          Available Tools
-        </Text>
+        <ToolsHeader accentColor={accentColor} mutedTextColor={mutedTextColor} />
+
         <Combobox.Root
           collection={toolsCollection}
           multiple

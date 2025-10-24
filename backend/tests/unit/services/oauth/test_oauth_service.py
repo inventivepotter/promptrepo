@@ -147,7 +147,7 @@ class TestOAuthService:
     async def test_exchange_code_for_token_invalid_state(self, git_provider_service, auth_code):
         """Test exchanging authorization code for token with invalid state."""
         # Test with non-existent state
-        with pytest.raises(Exception, match="Invalid or expired OAuth state"):
+        with pytest.raises(TokenExchangeError, match="Failed to exchange code for token"):
             await git_provider_service.exchange_code_for_token(
                 provider=OAuthProvider.GITHUB,
                 code=auth_code,

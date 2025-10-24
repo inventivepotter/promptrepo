@@ -121,16 +121,13 @@ class TestSQLiteAdapter:
                 os.remove(test_db)
     
     def test_sqlite_invalid_url(self):
-        """Test SQLite adapter with invalid URL"""
-        # SQLite adapter can be created with various URLs, it may fail on connection
-        # Instead of testing invalid URL format, test that adapter handles errors gracefully
-        try:
-            adapter = SQLiteAdapter("sqlite:///invalid/path/to/db.db")
-            # If it succeeds, that's acceptable behavior
-            assert adapter is not None
-        except Exception:
-            # If it raises an exception during creation, that's also acceptable
-            pass
+        """Test SQLite adapter handles invalid paths during prepare_database"""
+        adapter = SQLiteAdapter("sqlite:////root/no_permission/db.db")
+        assert adapter is not None
+        
+        # Should fail when trying to prepare database in restricted location
+        with pytest.raises((PermissionError, OSError)):
+            adapter.prepare_database()
 
 
 class TestPostgreSQLAdapter:
