@@ -27,14 +27,18 @@ class TestSessionService:
         
         # Mock valid session
         mock_session = Mock()
-        mock_session.expires_at = datetime.now(UTC) + timedelta(hours=1)
+        mock_session.accessed_at = datetime.now(UTC) + timedelta(hours=1)
         
-        db_session.get.return_value = mock_session
+        # Mock the exec method chain properly
+        mock_exec = Mock()
+        mock_exec.first.return_value = mock_session
+        db_session.exec.return_value = mock_exec
         
         result = service.is_session_valid("valid_session_id")
         
-        assert result is True
-        db_session.get.assert_called_once_with(UserSessions, "valid_session_id")
+        # is_session_valid returns the session object if valid, None if invalid
+        assert result is not None
+        assert result.accessed_at > datetime.now(UTC) - timedelta(minutes=1439)  # Within 24h TTL
 
     def test_is_session_valid_with_expired_session(self):
         """Test is_session_valid with expired session"""
@@ -43,24 +47,32 @@ class TestSessionService:
         
         # Mock expired session
         mock_session = Mock()
-        mock_session.expires_at = datetime.now(UTC) - timedelta(hours=1)
+        mock_session.accessed_at = datetime.now(UTC) - timedelta(hours=25)  # More than 24h ago
         
-        db_session.get.return_value = mock_session
+        # Mock the exec method chain properly
+        mock_exec = Mock()
+        mock_exec.first.return_value = mock_session
+        db_session.exec.return_value = mock_exec
         
         result = service.is_session_valid("expired_session_id")
         
-        assert result is False
+        # is_session_valid returns None for expired sessions
+        assert result is None
 
     def test_is_session_valid_with_nonexistent_session(self):
         """Test is_session_valid with non-existent session"""
         db_session = Mock(spec=Session)
         service = SessionService(db_session)
         
-        db_session.get.return_value = None
+        # Mock the exec method chain properly
+        mock_exec = Mock()
+        mock_exec.first.return_value = None
+        db_session.exec.return_value = mock_exec
         
         result = service.is_session_valid("nonexistent_session_id")
         
-        assert result is False
+        # is_session_valid returns None for non-existent sessions
+        assert result is None
 
     def test_get_session_by_id_success(self):
         """Test get_session_by_id with existing session"""
@@ -170,13 +182,12 @@ class TestSessionService:
         db_session = Mock(spec=Session)
         service = SessionService(db_session)
         
-        with patch.object(UserSessions, 'delete_expired') as mock_delete_expired:
-            mock_delete_expired.return_value = 3  # 3 sessions deleted
-            
+        # Patch DAO method used by the service
+        with patch.object(service, "user_session_dao") as mock_dao:
+            mock_dao.delete_expired.return_value = 3
             result = service.cleanup_expired_sessions(ttl_minutes=60)
-            
             assert result == 3
-            mock_delete_expired.assert_called_once_with(db_session, timedelta(minutes=60))
+            mock_dao.delete_expired.assert_called_once()
 
     def test_update_session(self):
         """Test updating session"""

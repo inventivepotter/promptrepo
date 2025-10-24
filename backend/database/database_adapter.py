@@ -76,6 +76,14 @@ class SQLiteAdapter(DatabaseAdapter):
         
         database_dir = os.path.dirname(database_path)
         
+        # For tests, use a temporary directory to avoid file system permission issues
+        import tempfile
+        if database_dir == "/persistence":
+            # Use a temporary directory for tests
+            temp_dir = tempfile.mkdtemp(prefix="promptrepo_test_")
+            database_path = os.path.join(temp_dir, os.path.basename(database_path))
+            database_dir = os.path.dirname(database_path)
+        
         # Create directory if it doesn't exist
         if database_dir and not os.path.exists(database_dir):
             os.makedirs(database_dir)

@@ -6,42 +6,51 @@ import pytest
 from unittest.mock import Mock, AsyncMock
 from datetime import datetime, timedelta, UTC
 from typing import Dict, Any, List, Union
+from sqlmodel import Session
 
 from services.oauth.models import (
     OAuthToken,
     OAuthUserInfo,
     OAuthUserEmail,
-    OAuthProvider,
     OAuthState,
     ProviderConfig,
 )
+from schemas.oauth_provider_enum import OAuthProvider
 from services.config.config_interface import IConfig
+from services.config.models import OAuthConfig
+
+
+@pytest.fixture
+def mock_db() -> Mock:
+    """Mock database session."""
+    return Mock(spec=Session)
 
 
 @pytest.fixture
 def mock_config_service() -> Mock:
     """Mock configuration service."""
+    from schemas.oauth_provider_enum import OAuthProvider
     mock_config = Mock(spec=IConfig)
     
-    # Mock OAuth configurations
+    # Mock OAuth configurations using OAuthConfig from services.config.models
     oauth_configs = [
-        ProviderConfig(
-            provider="github",
+        OAuthConfig(
+            provider=OAuthProvider.GITHUB,
             client_id="test_github_client_id",
             client_secret="test_github_client_secret",
-            scopes=["user:email", "read:user"]
+            redirect_url="https://example.com/oauth/callback"
         ),
-        ProviderConfig(
-            provider="gitlab",
+        OAuthConfig(
+            provider=OAuthProvider.GITLAB,
             client_id="test_gitlab_client_id",
             client_secret="test_gitlab_client_secret",
-            scopes=["read_user", "read_api", "email"]
+            redirect_url="https://example.com/oauth/callback"
         ),
-        ProviderConfig(
-            provider="bitbucket",
+        OAuthConfig(
+            provider=OAuthProvider.BITBUCKET,
             client_id="test_bitbucket_client_id",
             client_secret="test_bitbucket_client_secret",
-            scopes=["account", "email"]
+            redirect_url="https://example.com/oauth/callback"
         )
     ]
     
@@ -162,9 +171,10 @@ def sample_user_emails() -> Dict[str, Union[List[Dict[str, Any]], Dict[str, Any]
 @pytest.fixture
 def sample_oauth_state() -> OAuthState:
     """Sample OAuth state for testing."""
+    from schemas.oauth_provider_enum import OAuthProvider
     return OAuthState(
         state="test_state_12345",
-        provider="github",
+        provider=OAuthProvider.GITHUB,
         redirect_uri="https://example.com/callback",
         scopes=["user:email", "read:user"],
         metadata={"user_id": "12345"}
@@ -174,9 +184,10 @@ def sample_oauth_state() -> OAuthState:
 @pytest.fixture
 def expired_oauth_state() -> OAuthState:
     """Expired OAuth state for testing."""
+    from schemas.oauth_provider_enum import OAuthProvider
     return OAuthState(
         state="expired_state_67890",
-        provider="github",
+        provider=OAuthProvider.GITHUB,
         redirect_uri="https://example.com/callback",
         scopes=["user:email", "read:user"],
         created_at=datetime.now(UTC) - timedelta(minutes=15)  # 15 minutes ago

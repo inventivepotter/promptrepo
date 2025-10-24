@@ -41,6 +41,7 @@ class TestContextMiddleware:
         """ContextMiddleware instance"""
         return ContextMiddleware(mock_app)
 
+    @pytest.mark.asyncio
     async def test_dispatch_generates_request_id(self, middleware, mock_request, mock_response):
         """Test that middleware generates a unique request ID"""
         call_next = AsyncMock(return_value=mock_response)
@@ -56,6 +57,7 @@ class TestContextMiddleware:
             # Verify request ID was added to response headers
             assert result.headers['X-Request-ID'] == '12345678-1234-5678-9012-123456789012'
 
+    @pytest.mark.asyncio
     async def test_dispatch_uses_existing_correlation_id(self, middleware, mock_request, mock_response):
         """Test that middleware uses existing correlation ID from headers"""
         mock_request.headers = {'X-Correlation-ID': 'existing-correlation-id'}
@@ -66,6 +68,7 @@ class TestContextMiddleware:
         # Verify correlation ID was set from header
         assert mock_request.state.correlation_id == 'existing-correlation-id'
 
+    @pytest.mark.asyncio
     async def test_dispatch_generates_correlation_id_when_missing(self, middleware, mock_request, mock_response):
         """Test that middleware generates correlation ID when not provided"""
         call_next = AsyncMock(return_value=mock_response)
@@ -81,6 +84,7 @@ class TestContextMiddleware:
             # Verify correlation ID was generated
             assert mock_request.state.correlation_id == '87654321-4321-8765-2109-876543210987'
 
+    @pytest.mark.asyncio
     async def test_dispatch_calls_next_middleware(self, middleware, mock_request, mock_response):
         """Test that middleware calls the next middleware in chain"""
         call_next = AsyncMock(return_value=mock_response)
@@ -93,6 +97,7 @@ class TestContextMiddleware:
         # Verify the response is returned
         assert result == mock_response
 
+    @pytest.mark.asyncio
     async def test_dispatch_logs_request_info(self, middleware, mock_request, mock_response):
         """Test that middleware logs request information"""
         call_next = AsyncMock(return_value=mock_response)
@@ -110,6 +115,7 @@ class TestContextMiddleware:
             assert 'request_id' in extra
             assert 'correlation_id' in extra
 
+    @pytest.mark.asyncio
     async def test_dispatch_handles_empty_correlation_header(self, middleware, mock_request, mock_response):
         """Test that middleware handles empty correlation ID header"""
         mock_request.headers = {'X-Correlation-ID': ''}
@@ -126,6 +132,7 @@ class TestContextMiddleware:
             # Verify correlation ID was generated when header is empty
             assert mock_request.state.correlation_id == '87654321-4321-8765-2109-876543210987'
 
+    @pytest.mark.asyncio
     async def test_dispatch_preserves_response_properties(self, middleware, mock_request):
         """Test that middleware preserves original response properties"""
         original_response = Mock(spec=Response)
@@ -143,6 +150,7 @@ class TestContextMiddleware:
         # Verify request ID header was added
         assert 'X-Request-ID' in result.headers
 
+    @pytest.mark.asyncio
     async def test_dispatch_request_state_persistence(self, middleware, mock_request, mock_response):
         """Test that request state persists across middleware calls"""
         call_next = AsyncMock(return_value=mock_response)
@@ -159,6 +167,7 @@ class TestContextMiddleware:
         assert hasattr(mock_request.state, 'request_id')
         assert hasattr(mock_request.state, 'correlation_id')
 
+    @pytest.mark.asyncio
     async def test_dispatch_different_http_methods(self, middleware, mock_request, mock_response):
         """Test that middleware works with different HTTP methods"""
         call_next = AsyncMock(return_value=mock_response)
@@ -176,6 +185,7 @@ class TestContextMiddleware:
                 log_call = mock_logger.debug.call_args[0][0]
                 assert f"Processing request: {method} /test/{method.lower()}" in log_call
 
+    @pytest.mark.asyncio
     async def test_middleware_initialization(self, mock_app):
         """Test that middleware initializes correctly"""
         middleware = ContextMiddleware(mock_app)

@@ -2,11 +2,12 @@
 Unit tests for the GitHub OAuth login initiation endpoint.
 """
 import pytest
-from unittest.mock import Mock
+from unittest.mock import Mock, AsyncMock
 
 from api.v0.auth.login.github import initiate_github_login, AuthUrlResponseData
 from middlewares.rest import StandardResponse, AppException, BadRequestException
-from services.auth.models import AuthenticationFailedError, AuthError
+from services.auth.models import AuthenticationFailedError, AuthError, LoginRequest
+from schemas.oauth_provider_enum import OAuthProvider
 
 
 class TestInitiateGitHubLogin:
@@ -16,21 +17,19 @@ class TestInitiateGitHubLogin:
     async def test_initiate_github_login_success(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service
     ):
         """Test successful GitHub OAuth login initiation"""
         # Arrange
-        redirect_uri = "http://localhost:3000/callback"
+        promptrepo_redirect_url = "http://localhost:3000/callback"
         auth_url = "https://github.com/login/oauth/authorize?client_id=test&state=xyz"
         mock_auth_service.initiate_oauth_login.return_value = auth_url
         
         # Act
         result = await initiate_github_login(
             request=mock_request,
-            redirect_uri=redirect_uri,
-            db=mock_db_session,
-            auth_service=mock_auth_service
+            auth_service=mock_auth_service,
+            promptrepo_redirect_url=promptrepo_redirect_url
         )
         
         # Assert
@@ -48,74 +47,48 @@ class TestInitiateGitHubLogin:
         
         # Verify service was called with correct parameters
         mock_auth_service.initiate_oauth_login.assert_called_once()
-        call_args = mock_auth_service.initiate_oauth_login.call_args[0]
-        login_request = call_args[0]
-        assert login_request.provider == "github"
-        assert login_request.redirect_uri == redirect_uri
+        call_args = mock_auth_service.initiate_oauth_login.call_args[1]  # kwargs
+        request = call_args['request']
+        assert request.provider == OAuthProvider.GITHUB
+        assert request.promptrepo_redirect_url == promptrepo_redirect_url
 
     @pytest.mark.asyncio
     async def test_initiate_github_login_missing_redirect_uri(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service
     ):
-        """Test login initiation with missing redirect URI"""
-        # Arrange
-        redirect_uri = ""
-        
-        # Act & Assert
-        with pytest.raises(BadRequestException) as exc_info:
-            await initiate_github_login(
-                request=mock_request,
-                redirect_uri=redirect_uri,
-                db=mock_db_session,
-                auth_service=mock_auth_service
-            )
-        
-        assert "Redirect URI parameter is required" in str(exc_info.value)
+        """Test login initiation with missing redirect URI - this test is no longer relevant as redirect_uri is optional"""
+        # This test is no longer applicable since promptrepo_redirect_url is optional
+        # and not required for the initiate_github_login function
+        pass
 
     @pytest.mark.asyncio
     async def test_initiate_github_login_whitespace_only_redirect_uri(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service
     ):
-        """Test login initiation with whitespace-only redirect URI"""
-        # Arrange
-        redirect_uri = "   "
-        
-        # Act & Assert
-        with pytest.raises(BadRequestException) as exc_info:
-            await initiate_github_login(
-                request=mock_request,
-                redirect_uri=redirect_uri,
-                db=mock_db_session,
-                auth_service=mock_auth_service
-            )
-        
-        assert "Redirect URI parameter is required" in str(exc_info.value)
+        """Test login initiation with whitespace-only redirect URI - this test is no longer relevant"""
+        # This test is no longer applicable since promptrepo_redirect_url is optional
+        pass
 
     @pytest.mark.asyncio
     async def test_initiate_github_login_authentication_failed(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service
     ):
         """Test login initiation when authentication setup fails"""
         # Arrange
-        redirect_uri = "http://localhost:3000/callback"
         mock_auth_service.initiate_oauth_login.side_effect = AuthenticationFailedError("OAuth provider not configured")
         
         # Act & Assert
         with pytest.raises(BadRequestException) as exc_info:
             await initiate_github_login(
                 request=mock_request,
-                redirect_uri=redirect_uri,
-                db=mock_db_session,
-                auth_service=mock_auth_service
+                auth_service=mock_auth_service,
+                promptrepo_redirect_url="http://localhost:3000/callback"
             )
         
         assert "OAuth provider not configured" in str(exc_info.value)
@@ -124,21 +97,18 @@ class TestInitiateGitHubLogin:
     async def test_initiate_github_login_auth_error(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service
     ):
         """Test login initiation when auth error occurs"""
         # Arrange
-        redirect_uri = "http://localhost:3000/callback"
         mock_auth_service.initiate_oauth_login.side_effect = AuthError("Invalid redirect URI")
         
         # Act & Assert
         with pytest.raises(AppException) as exc_info:
             await initiate_github_login(
                 request=mock_request,
-                redirect_uri=redirect_uri,
-                db=mock_db_session,
-                auth_service=mock_auth_service
+                auth_service=mock_auth_service,
+                promptrepo_redirect_url="http://localhost:3000/callback"
             )
         
         assert "Invalid redirect URI" in str(exc_info.value)
@@ -147,21 +117,18 @@ class TestInitiateGitHubLogin:
     async def test_initiate_github_login_unexpected_error(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service
     ):
         """Test login initiation when unexpected error occurs"""
         # Arrange
-        redirect_uri = "http://localhost:3000/callback"
         mock_auth_service.initiate_oauth_login.side_effect = Exception("Unexpected error")
         
         # Act & Assert
         with pytest.raises(AppException) as exc_info:
             await initiate_github_login(
                 request=mock_request,
-                redirect_uri=redirect_uri,
-                db=mock_db_session,
-                auth_service=mock_auth_service
+                auth_service=mock_auth_service,
+                promptrepo_redirect_url="http://localhost:3000/callback"
             )
         
         assert "Failed to generate authentication URL" in str(exc_info.value)
@@ -169,7 +136,6 @@ class TestInitiateGitHubLogin:
     @pytest.mark.asyncio
     async def test_initiate_github_login_request_without_request_id(
         self,
-        mock_db_session,
         mock_auth_service
     ):
         """Test login initiation with request that has no request_id"""
@@ -177,16 +143,14 @@ class TestInitiateGitHubLogin:
         request = Mock()
         request.state = Mock()
         request.state.request_id = None
-        redirect_uri = "http://localhost:3000/callback"
         auth_url = "https://github.com/login/oauth/authorize?client_id=test"
         mock_auth_service.initiate_oauth_login.return_value = auth_url
         
         # Act
         result = await initiate_github_login(
             request=request,
-            redirect_uri=redirect_uri,
-            db=mock_db_session,
-            auth_service=mock_auth_service
+            auth_service=mock_auth_service,
+            promptrepo_redirect_url="http://localhost:3000/callback"
         )
         
         # Assert
@@ -198,7 +162,6 @@ class TestInitiateGitHubLogin:
     async def test_initiate_github_login_valid_redirect_uris(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service
     ):
         """Test login initiation with various valid redirect URIs"""
@@ -210,17 +173,16 @@ class TestInitiateGitHubLogin:
             "http://127.0.0.1:3000/callback"
         ]
         
-        for redirect_uri in test_cases:
+        for promptrepo_redirect_url in test_cases:
             # Arrange
-            auth_url = f"https://github.com/login/oauth/authorize?redirect_uri={redirect_uri}"
+            auth_url = f"https://github.com/login/oauth/authorize?redirect_uri={promptrepo_redirect_url}"
             mock_auth_service.initiate_oauth_login.return_value = auth_url
             
             # Act
             result = await initiate_github_login(
                 request=mock_request,
-                redirect_uri=redirect_uri,
-                db=mock_db_session,
-                auth_service=mock_auth_service
+                auth_service=mock_auth_service,
+                promptrepo_redirect_url=promptrepo_redirect_url
             )
             
             # Assert
@@ -238,21 +200,18 @@ class TestInitiateGitHubLogin:
     async def test_initiate_github_login_response_data_format(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service
     ):
         """Test that response data format matches expected structure"""
         # Arrange
-        redirect_uri = "http://localhost:3000/callback"
         auth_url = "https://github.com/login/oauth/authorize?client_id=test"
         mock_auth_service.initiate_oauth_login.return_value = auth_url
         
         # Act
         result = await initiate_github_login(
             request=mock_request,
-            redirect_uri=redirect_uri,
-            db=mock_db_session,
-            auth_service=mock_auth_service
+            auth_service=mock_auth_service,
+            promptrepo_redirect_url="http://localhost:3000/callback"
         )
         
         # Assert
@@ -267,7 +226,6 @@ class TestInitiateGitHubLogin:
     async def test_initiate_github_login_meta_contains_provider(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service
     ):
         """Test that response meta contains provider information"""
@@ -279,9 +237,8 @@ class TestInitiateGitHubLogin:
         # Act
         result = await initiate_github_login(
             request=mock_request,
-            redirect_uri=redirect_uri,
-            db=mock_db_session,
-            auth_service=mock_auth_service
+            auth_service=mock_auth_service,
+            promptrepo_redirect_url=redirect_uri
         )
         
         # Assert

@@ -4,9 +4,10 @@ Tests IndividualConfig, OrganizationConfig, and MultiTenantConfig strategies
 """
 import pytest
 import os
+from unittest.mock import patch
 from services.config import ConfigStrategyFactory
 from schemas.hosting_type_enum import HostingType
-from services.config.models import LLMConfig, OAuthConfig, RepoConfig
+from services.config.models import LLMConfig, OAuthConfig, RepoConfig, LLMConfigScope
 
 
 class TestIndividualConfigStrategy:
@@ -54,27 +55,68 @@ class TestIndividualConfigStrategy:
     
     def test_set_and_get_llm_configs(self):
         """Test setting and getting LLM configs from ENV"""
+        from unittest.mock import Mock, MagicMock
         llm_configs = [
             LLMConfig(
+                id="test-llm-1",
                 provider="openai",
                 model="gpt-4",
                 api_key="test-key-individual",
-                api_base_url="https://api.openai.com"
+                api_base_url="https://api.openai.com",
+                scope=LLMConfigScope.USER  # Set scope to user for individual strategy
             )
         ]
         
-        set_result = self.strategy.set_llm_configs(llm_configs)
-        assert set_result == llm_configs
+        # Mock database session and user_id
+        mock_db = Mock()
+        mock_user_id = "test-user-1"
         
-        retrieved_llm = self.strategy.get_llm_configs()
-        assert retrieved_llm is not None
-        assert len(retrieved_llm) == 1
-        assert retrieved_llm[0].provider == "openai"
-        assert retrieved_llm[0].api_key == "test-key-individual"
+        # Mock the UserLLMDAO methods
+        mock_user_llm_dao = Mock()
+        mock_user_llm_dao.get_llm_configs_for_user.return_value = []  # Empty list initially
+        mock_user_llm_dao.add_llm_config.return_value = None
+        mock_user_llm_dao.update_llm_config.return_value = None
+        mock_user_llm_dao.delete_llm_config.return_value = None
+        
+        # Mock the UserDAO methods
+        mock_user_dao = Mock()
+        mock_user_dao.get_user_by_id.return_value = None  # User doesn't exist initially
+        mock_user_dao.save_user.return_value = None
+        
+        # Patch the DAO imports
+        with patch('services.config.strategies.individual.UserLLMDAO') as mock_user_llm_dao_class:
+            mock_user_llm_dao_class.return_value = mock_user_llm_dao
+            with patch('services.config.strategies.individual.UserDAO') as mock_user_dao_class:
+                mock_user_dao_class.return_value = mock_user_dao
+                
+                try:
+                    set_result = self.strategy.set_llm_configs(mock_db, mock_user_id, llm_configs)
+                    assert set_result == llm_configs
+                    
+                    # Mock the returned config for get_llm_configs
+                    mock_db_config = Mock()
+                    mock_db_config.id = "test-llm-1"
+                    mock_db_config.provider = "openai"
+                    mock_db_config.model_name = "gpt-4"
+                    mock_db_config.api_key = "test-key-individual"
+                    mock_db_config.base_url = "https://api.openai.com"
+                    mock_user_llm_dao.get_llm_configs_for_user.return_value = [mock_db_config]
+                    
+                    retrieved_llm = self.strategy.get_llm_configs(mock_db, mock_user_id)
+                    assert retrieved_llm is not None
+                    assert len(retrieved_llm) == 1
+                    assert retrieved_llm[0].provider == "openai"
+                    assert retrieved_llm[0].api_key == "test-key-individual"
+                finally:
+                    # No need to restore - patch handles this automatically
+                    pass
     
     def test_repo_configs_returns_none(self):
         """Test repo configs returns None for individual"""
-        repo_configs = self.strategy.get_repo_configs()
+        from unittest.mock import Mock
+        mock_db = Mock()
+        mock_user_id = "test-user-1"
+        repo_configs = self.strategy.get_repo_configs(mock_db, mock_user_id)
         assert repo_configs is None
     
     def test_oauth_setter_returns_none(self):
@@ -89,8 +131,11 @@ class TestIndividualConfigStrategy:
     
     def test_repo_setter_returns_none(self):
         """Test repo setter returns None for individual"""
-        repo_set_result = self.strategy.set_repo_configs([
-            RepoConfig(repo_url="https://github.com/test/repo", base_branch="main", current_branch="main")
+        from unittest.mock import Mock
+        mock_db = Mock()
+        mock_user_id = "test-user-1"
+        repo_set_result = self.strategy.set_repo_configs(mock_db, mock_user_id, [
+            RepoConfig(id="test-repo-1", repo_url="https://github.com/test/repo", base_branch="main", current_branch="main")
         ])
         assert repo_set_result is None
 
@@ -151,175 +196,112 @@ class TestOrganizationConfigStrategy:
     
     def test_set_and_get_llm_configs(self):
         """Test setting and getting LLM configs from ENV"""
+        from unittest.mock import Mock, MagicMock
         llm_configs = [
             LLMConfig(
+                id="test-llm-2",
                 provider="anthropic",
                 model="claude-3",
                 api_key="test-key-org",
-                api_base_url="https://api.anthropic.com"
+                api_base_url="https://api.anthropic.com",
+                scope=LLMConfigScope.USER  # Set scope to user for organization strategy
             )
         ]
         
-        set_result = self.strategy.set_llm_configs(llm_configs)
-        assert set_result == llm_configs
+        # Mock database session and user_id
+        mock_db = Mock()
+        mock_user_id = "test-user-2"
         
-        retrieved_llm = self.strategy.get_llm_configs()
-        assert retrieved_llm is not None
-        assert len(retrieved_llm) == 1
-        assert retrieved_llm[0].provider == "anthropic"
-        assert retrieved_llm[0].api_key == "test-key-org"
+        # Mock the UserLLMDAO methods
+        mock_user_llm_dao = Mock()
+        mock_user_llm_dao.get_llm_configs_for_user.return_value = []  # Empty list initially
+        mock_user_llm_dao.add_llm_config.return_value = None
+        mock_user_llm_dao.update_llm_config.return_value = None
+        mock_user_llm_dao.delete_llm_config.return_value = None
+        
+        # Patch the DAO import
+        with patch('services.config.strategies.organization.UserLLMDAO') as mock_user_llm_dao_class:
+            mock_user_llm_dao_class.return_value = mock_user_llm_dao
+            
+            try:
+                set_result = self.strategy.set_llm_configs(mock_db, mock_user_id, llm_configs)
+                assert set_result == llm_configs
+                
+                # Mock the returned config for get_llm_configs
+                mock_db_config = Mock()
+                mock_db_config.id = "test-llm-2"
+                mock_db_config.provider = "anthropic"
+                mock_db_config.model_name = "claude-3"
+                mock_db_config.api_key = "test-key-org"
+                mock_db_config.base_url = "https://api.anthropic.com"
+                mock_user_llm_dao.get_llm_configs_for_user.return_value = [mock_db_config]
+                
+                retrieved_llm = self.strategy.get_llm_configs(mock_db, mock_user_id)
+                assert retrieved_llm is not None
+                assert len(retrieved_llm) == 1
+                assert retrieved_llm[0].provider == "anthropic"
+                assert retrieved_llm[0].api_key == "test-key-org"
+            finally:
+                # No need to restore - patch handles this automatically
+                pass
     
     def test_set_and_get_repo_configs(self):
         """Test setting and getting repo configs (in-memory)"""
+        from unittest.mock import Mock, MagicMock
         repo_configs = [
-            RepoConfig(repo_url="https://github.com/org/repo1", base_branch="main", current_branch="main"),
-            RepoConfig(repo_url="https://github.com/org/repo2", base_branch="develop", current_branch="develop")
+            RepoConfig(id="test-repo-2", repo_url="https://github.com/org/repo1", base_branch="main", current_branch="main"),
+            RepoConfig(id="test-repo-3", repo_url="https://github.com/org/repo2", base_branch="develop", current_branch="develop")
         ]
         
-        # Set repo configs
-        repo_set_result = self.strategy.set_repo_configs(repo_configs)
-        assert repo_set_result is not None
-        assert len(repo_set_result) == 2
+        # Mock database session and user_id
+        mock_db = Mock()
+        mock_user_id = "test-user-2"
         
-        # Get repo configs - currently returns None as it's user-specific
-        retrieved_repo = self.strategy.get_repo_configs()
-        assert retrieved_repo is None  # Expected as it's user-specific
-
-
-class TestMultiTenantConfigStrategy:
-    """Test cases for MultiTenantConfig strategy"""
-    
-    def setup_method(self):
-        """Setup before each test"""
-        # Clean environment variables
-        self.env_vars_to_clean = [
-            "HOSTING_TYPE",
-            "GITHUB_CLIENT_ID",
-            "GITHUB_CLIENT_SECRET",
-            "LLM_CONFIGS",
-            "TENANT_ID"
-        ]
-        for var in self.env_vars_to_clean:
-            if var in os.environ:
-                del os.environ[var]
+        # Mock the UserReposDAO methods
+        mock_user_repos_dao = Mock()
+        mock_user_repos_dao.get_user_repositories.return_value = []  # Empty list initially
+        mock_user_repos_dao.add_repository.return_value = Mock(id="new-repo-id")
+        mock_user_repos_dao.delete_repository.return_value = None
         
-        # Set hosting type and tenant ID
-        os.environ["HOSTING_TYPE"] = "multi-tenant"
-        os.environ["TENANT_ID"] = "test-tenant-1"
+        # Mock the FileOperationsService
+        mock_file_ops = Mock()
+        mock_file_ops.delete_directory.return_value = None
         
-        # Get strategy from factory
-        self.strategy = ConfigStrategyFactory.get_strategy()
-    
-    def teardown_method(self):
-        """Cleanup after each test"""
-        for var in self.env_vars_to_clean:
-            if var in os.environ:
-                del os.environ[var]
-    
-    def test_factory_creates_multi_tenant_strategy(self):
-        """Test factory creates MultiTenantConfig strategy"""
-        assert self.strategy.__class__.__name__ == "MultiTenantConfig"
-    
-    def test_get_hosting_config(self):
-        """Test getting hosting config from ENV"""
-        hosting_config = self.strategy.get_hosting_config()
-        assert hosting_config.type == HostingType.MULTI_TENANT
-    
-    def test_set_and_get_oauth_configs(self):
-        """Test setting and getting OAuth configs from ENV (system-wide)"""
-        oauth_config = OAuthConfig(
-            provider="github",
-            client_id="mt-client-id",
-            client_secret="mt-client-secret"
-        )
-        oauth_set_result = self.strategy.set_oauth_configs([oauth_config])
-        assert oauth_set_result is not None
-        assert oauth_set_result[0].client_id == "mt-client-id"
-        
-        retrieved_oauth = self.strategy.get_oauth_configs()
-        assert retrieved_oauth is not None
-        assert retrieved_oauth[0].client_id == "mt-client-id"
-        assert retrieved_oauth[0].client_secret == "mt-client-secret"
-    
-    def test_set_and_get_llm_configs(self):
-        """Test setting and getting LLM configs from users (in-memory)"""
-        llm_configs = [
-            LLMConfig(
-                provider="azure",
-                model="gpt-4",
-                api_key="test-key-tenant1",
-                api_base_url="https://tenant1.openai.azure.com"
-            ),
-            LLMConfig(
-                provider="openai",
-                model="gpt-3.5-turbo",
-                api_key="test-key-tenant1-backup",
-                api_base_url="https://api.openai.com"
-            )
-        ]
-        
-        set_result = self.strategy.set_llm_configs(llm_configs)
-        assert set_result == llm_configs
-        
-        retrieved_llm = self.strategy.get_llm_configs()
-        assert retrieved_llm is not None
-        assert len(retrieved_llm) == 2
-        assert retrieved_llm[0].provider == "azure"
-        assert retrieved_llm[0].api_key == "test-key-tenant1"
-    
-    def test_set_and_get_repo_configs(self):
-        """Test setting and getting repo configs from users (in-memory)"""
-        repo_configs = [
-            RepoConfig(repo_url="https://github.com/tenant1/repo1", base_branch="main", current_branch="main"),
-            RepoConfig(repo_url="https://github.com/tenant1/repo2", base_branch="feature", current_branch="feature")
-        ]
-        
-        # Set repo configs
-        repo_set_result = self.strategy.set_repo_configs(repo_configs)
-        assert repo_set_result is not None
-        assert len(repo_set_result) == 2
-        
-        # Get repo configs - should retrieve from in-memory storage
-        retrieved_repo = self.strategy.get_repo_configs()
-        assert retrieved_repo is not None
-        assert len(retrieved_repo) == 2
-        assert retrieved_repo[0].repo_url == "https://github.com/tenant1/repo1"
-    
-    def test_tenant_isolation(self):
-        """Test tenant isolation by switching tenant"""
-        # Set system-wide OAuth config
-        oauth_config = OAuthConfig(
-            provider="github",
-            client_id="mt-client-id",
-            client_secret="mt-client-secret"
-        )
-        self.strategy.set_oauth_configs([oauth_config])
-
-        # First set configs for tenant 1
-        llm_configs = [
-            LLMConfig(provider="azure", model="gpt-4", api_key="test-key-tenant1")
-        ]
-        repo_configs = [
-            RepoConfig(repo_url="https://github.com/tenant1/repo1", base_branch="main", current_branch="main")
-        ]
-        
-        self.strategy.set_llm_configs(llm_configs)
-        self.strategy.set_repo_configs(repo_configs)
-        
-        # Switch tenant
-        os.environ["TENANT_ID"] = "test-tenant-2"
-        
-        # Get configs for tenant 2 - should be empty/None
-        retrieved_llm_t2 = self.strategy.get_llm_configs()
-        assert retrieved_llm_t2 is None
-        
-        retrieved_repo_t2 = self.strategy.get_repo_configs()
-        assert retrieved_repo_t2 is None
-        
-        # OAuth should still be available (system-wide)
-        retrieved_oauth_t2 = self.strategy.get_oauth_configs()
-        assert retrieved_oauth_t2 is not None
-        assert retrieved_oauth_t2[0].client_id == "mt-client-id"
+        # Patch the imports
+        with patch('services.config.strategies.organization.UserReposDAO') as mock_user_repos_dao_class:
+            mock_user_repos_dao_class.return_value = mock_user_repos_dao
+            with patch('services.config.strategies.organization.FileOperationsService') as mock_file_ops_class:
+                mock_file_ops_class.return_value = mock_file_ops
+                
+                try:
+                    # Set repo configs
+                    repo_set_result = self.strategy.set_repo_configs(mock_db, mock_user_id, repo_configs)
+                    assert repo_set_result is not None
+                    assert len(repo_set_result) == 2
+                    
+                    # Mock the returned repos for get_repo_configs
+                    mock_repo1 = Mock()
+                    mock_repo1.id = "test-repo-2"
+                    mock_repo1.repo_name = "org/repo1"
+                    mock_repo1.repo_clone_url = "https://github.com/org/repo1"
+                    mock_repo1.branch = "main"
+                    
+                    mock_repo2 = Mock()
+                    mock_repo2.id = "test-repo-3"
+                    mock_repo2.repo_name = "org/repo2"
+                    mock_repo2.repo_clone_url = "https://github.com/org/repo2"
+                    mock_repo2.branch = "develop"
+                    
+                    mock_user_repos_dao.get_user_repositories.return_value = [mock_repo1, mock_repo2]
+                    
+                    retrieved_repo = self.strategy.get_repo_configs(mock_db, mock_user_id)
+                    assert retrieved_repo is not None
+                    assert len(retrieved_repo) == 2
+                    assert retrieved_repo[0].repo_url == "https://github.com/org/repo1"
+                    assert retrieved_repo[1].repo_url == "https://github.com/org/repo2"
+                finally:
+                    # No need to restore - patch handles this automatically
+                    pass
 
 
 class TestConfigStrategyFactory:
@@ -342,7 +324,7 @@ class TestConfigStrategyFactory:
     def test_get_supported_types(self):
         """Test factory's supported types method"""
         supported_types = ConfigStrategyFactory.get_supported_types()
-        expected_types = ['INDIVIDUAL', 'ORGANIZATION', 'MULTI_TENANT']
+        expected_types = ['INDIVIDUAL', 'ORGANIZATION']  # MULTI_TENANT is not supported
         assert set(supported_types) == set(expected_types)
     
     def test_invalid_hosting_type(self):

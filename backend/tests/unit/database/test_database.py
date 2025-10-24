@@ -4,8 +4,10 @@ Tests both SQLite and PostgreSQL adapters using pytest conventions
 """
 import pytest
 import os
+from sqlmodel import select
 from database.database_factory import DatabaseFactory, DatabaseManager
 from database.models.user import User
+from schemas.oauth_provider_enum import OAuthProvider
 
 
 class TestDatabaseAdapterPattern:
@@ -33,17 +35,17 @@ class TestDatabaseAdapterPattern:
                 oauth_username="test_user",
                 oauth_name="Test User",
                 oauth_email="test@example.com",
-                oauth_provider="github",
-                oauth_user_id=12345
+                oauth_provider=OAuthProvider.GITHUB,
+                oauth_user_id="12345"
             )
             session.add(test_user)
             session.commit()
             
             # Verify user was created
-            saved_user = session.query(User).filter_by(username="test_user").first()
+            saved_user = session.exec(select(User).where(User.oauth_username == "test_user")).first()
             assert saved_user is not None
-            assert saved_user.username == "test_user"
-            assert saved_user.email == "test@example.com"
+            assert saved_user.oauth_username == "test_user"
+            assert saved_user.oauth_email == "test@example.com"
             
             # Clean up
             session.delete(test_user)

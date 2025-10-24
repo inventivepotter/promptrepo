@@ -68,9 +68,6 @@ class TestGetBearerToken:
         assert result == ""
 
 
-class TestVerifySession:
-    """Tests for verify session endpoint"""
-
     @pytest.mark.asyncio
     async def test_verify_session_success(
         self,
@@ -101,8 +98,8 @@ class TestVerifySession:
         # Data is serialized as dict by success_response function
         response_data = result.data
         assert isinstance(response_data, dict)
-        assert response_data["username"] == "testuser"
-        assert response_data["email"] == "test@example.com"
+        assert response_data["oauth_username"] == "testuser"
+        assert response_data["oauth_email"] == "test@example.com"
         
         # Verify service was called with correct parameters
         mock_auth_service.verify_session.assert_called_once()
@@ -129,7 +126,7 @@ class TestVerifySession:
                 auth_service=mock_auth_service
             )
         
-        assert "Invalid or expired session token" in str(exc_info.value)
+        assert "Authentication required" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_verify_session_token_validation_error(
@@ -150,7 +147,7 @@ class TestVerifySession:
                 auth_service=mock_auth_service
             )
         
-        assert "OAuth token has been revoked" in str(exc_info.value)
+        assert "Authentication failed" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_verify_session_auth_error(
@@ -268,9 +265,9 @@ class TestVerifySession:
         user = result.data
         assert isinstance(user, dict)
         assert 'id' in user
-        assert 'username' in user
-        assert 'name' in user
-        assert 'email' in user
-        assert 'avatar_url' in user
+        assert 'oauth_username' in user
+        assert 'oauth_name' in user
+        assert 'oauth_email' in user
+        assert 'oauth_avatar_url' in user
         assert 'oauth_user_id' in user
-        assert 'html_url' in user
+        assert 'oauth_profile_url' in user

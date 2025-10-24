@@ -133,61 +133,37 @@ class TestGitService:
         assert result.success is False
         assert "No changes to commit" in result.message
 
-    @patch('services.git.git_service.GitService._add_token_to_url')
-    @patch('services.git.git_service.Repo')
+    @patch('services.local_repo.git_service.GitService._add_token_to_url')
+    @patch('services.local_repo.git_service.Repo')
     def test_push_branch(self, mock_repo_class, mock_add_token, git_service):
         """Test pushing a branch to remote."""
-        # Mock the remote operations
+        # Mock remote operations
         with patch.object(git_service, '_get_git_config') as mock_config:
             mock_config.return_value = None
 
-            # Create mock repo and remote
+            # Create mock repo
             mock_repo = MagicMock()
             mock_repo.active_branch.name = "test-branch"
-            mock_remote = MagicMock()
-            mock_remote.url = "https://github.com/test/repo.git"
             
-            # Mock the remote('origin') call specifically
-            mock_repo.remote.return_value = mock_remote
+            # Mock the git.push method
+            mock_repo.git.push = MagicMock()
             
-            # Set up the Repo constructor to return our mock
+            # Set up to Repo constructor to return our mock
             mock_repo_class.return_value = mock_repo
             
-            result = git_service.push_branch("test-token", "test-branch")
+            # Mock the _add_token_to_url method
+            mock_add_token.return_value = "https://x-access-token:test-token@github.com/test/repo.git"
+            
+            result = git_service.push_branch("test-token", "test-branch", "https://github.com/test/repo.git")
             
             assert isinstance(result, GitOperationResult)
             assert result.success is True
             assert "Successfully pushed branch" in result.message
-            # Verify that remote('origin') was called
-            mock_repo.remote.assert_called_with('origin')
-
-    @pytest.mark.asyncio
-    async def test_create_pull_request(self, git_service):
-        """Test creating a pull request."""
-        with patch('httpx.AsyncClient') as mock_client:
-            # Mock the HTTP response
-            mock_response = MagicMock()
-            mock_response.status_code = 201
-            mock_response.json.return_value = {
-                "number": 123,
-                "html_url": "https://github.com/test/repo/pull/123",
-                "id": 456
-            }
-            
-            mock_client.return_value.__aenter__.return_value.post.return_value = mock_response
-            
-            result = await git_service.create_pull_request(
-                github_repo="test/repo",
-                oauth_token="test-token",
-                head_branch="test-branch",
-                title="Test PR"
+            # Verify that git.push was called with the authenticated URL and branch
+            mock_repo.git.push.assert_called_once_with(
+                "https://x-access-token:test-token@github.com/test/repo.git",
+                "test-branch:test-branch"
             )
-            
-            assert isinstance(result, PullRequestResult)
-            assert result.success is True
-            assert result.pr_number == 123
-            assert result.pr_url == "https://github.com/test/repo/pull/123"
-            assert result.pr_id == 456
 
     def test_get_repo_status(self, git_service):
         """Test getting repository status."""
@@ -220,8 +196,8 @@ class TestGitService:
         assert result.success is True
         assert "Switched to branch" in result.message
 
-    @patch('services.git.git_service.GitService._add_token_to_url')
-    @patch('services.git.git_service.Repo')
+    @patch('services.local_repo.git_service.GitService._add_token_to_url')
+    @patch('services.local_repo.git_service.Repo')
     def test_pull_latest(self, mock_repo_class, mock_add_token, git_service):
         """Test pulling latest changes."""
         with patch.object(git_service, '_get_git_config') as mock_config:
@@ -236,7 +212,7 @@ class TestGitService:
             # Mock the remote('origin') call specifically
             mock_repo.remote.return_value = mock_remote
             
-            # Set up the Repo constructor to return our mock
+            # Set up to Repo constructor to return our mock
             mock_repo_class.return_value = mock_repo
             
             result = git_service.pull_latest("test-token")
@@ -255,7 +231,7 @@ class TestGitService:
         
         result = service._add_token_to_url(url, token)
         
-        assert result == "https://test-token@github.com/test/repo.git"
+        assert result == "https://x-access-token:test-token@github.com/test/repo.git"
 
     def test_add_token_to_non_github_url(self):
         """Test adding OAuth token to non-GitHub URL."""

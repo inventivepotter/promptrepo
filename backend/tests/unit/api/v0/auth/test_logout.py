@@ -3,7 +3,7 @@ Unit tests for the logout endpoint.
 """
 import pytest
 from unittest.mock import Mock, patch
-from fastapi import status
+from fastapi import status, Response
 
 from api.v0.auth.logout import logout
 from middlewares.rest import StandardResponse, AppException, AuthenticationException
@@ -27,8 +27,10 @@ class TestLogout:
         mock_auth_service.logout.return_value = sample_logout_response
         
         # Act
+        mock_response = Mock()
         result = await logout(
             request=mock_request,
+            response=mock_response,
             token=token,
             auth_service=mock_auth_service
         )
@@ -54,20 +56,21 @@ class TestLogout:
     async def test_logout_session_not_found(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service
     ):
         """Test logout when session is not found"""
         # Arrange
         token = "invalid_session_token"
         mock_auth_service.logout.side_effect = SessionNotFoundError("Session not found")
+        mock_response = Mock(spec=Response)
         
         # Act & Assert
         with pytest.raises(AuthenticationException) as exc_info:
             await logout(
                 request=mock_request,
-                token=token,
-                auth_service=mock_auth_service
+                response=mock_response,
+                auth_service=mock_auth_service,
+                token=token
             )
         
         assert "Session not found" in str(exc_info.value)
@@ -76,20 +79,21 @@ class TestLogout:
     async def test_logout_auth_error(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service
     ):
         """Test logout when auth error occurs"""
         # Arrange
         token = "session_token"
         mock_auth_service.logout.side_effect = AuthError("Auth service error")
+        mock_response = Mock(spec=Response)
         
         # Act & Assert
         with pytest.raises(AppException) as exc_info:
             await logout(
                 request=mock_request,
-                token=token,
-                auth_service=mock_auth_service
+                response=mock_response,
+                auth_service=mock_auth_service,
+                token=token
             )
         
         assert "Auth service error" in str(exc_info.value)
@@ -98,20 +102,21 @@ class TestLogout:
     async def test_logout_unexpected_error(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service
     ):
         """Test logout when unexpected error occurs"""
         # Arrange
         token = "session_token"
         mock_auth_service.logout.side_effect = Exception("Unexpected error")
+        mock_response = Mock(spec=Response)
         
         # Act & Assert
         with pytest.raises(AppException) as exc_info:
             await logout(
                 request=mock_request,
-                token=token,
-                auth_service=mock_auth_service
+                response=mock_response,
+                auth_service=mock_auth_service,
+                token=token
             )
         
         assert "Failed to logout" in str(exc_info.value)
@@ -120,7 +125,6 @@ class TestLogout:
     async def test_logout_empty_token(
         self,
         mock_request,
-        mock_db_session,
         mock_auth_service,
         sample_logout_response
     ):
@@ -128,12 +132,14 @@ class TestLogout:
         # Arrange
         token = ""
         mock_auth_service.logout.return_value = sample_logout_response
+        mock_response = Mock(spec=Response)
         
         # Act
         result = await logout(
             request=mock_request,
-            token=token,
-            auth_service=mock_auth_service
+            response=mock_response,
+            auth_service=mock_auth_service,
+            token=token
         )
         
         # Assert
@@ -141,10 +147,9 @@ class TestLogout:
         # Verify service was still called - controller doesn't validate token format
         mock_auth_service.logout.assert_called_once()
 
-    @pytest.mark.asyncio 
+    @pytest.mark.asyncio
     async def test_logout_request_without_request_id(
         self,
-        mock_db_session,
         mock_auth_service,
         sample_logout_response
     ):
@@ -155,12 +160,14 @@ class TestLogout:
         request.state.request_id = None
         token = "session_token"
         mock_auth_service.logout.return_value = sample_logout_response
+        mock_response = Mock(spec=Response)
         
         # Act
         result = await logout(
             request=request,
-            token=token,
-            auth_service=mock_auth_service
+            response=mock_response,
+            auth_service=mock_auth_service,
+            token=token
         )
         
         # Assert

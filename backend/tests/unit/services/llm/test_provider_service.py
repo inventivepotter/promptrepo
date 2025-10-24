@@ -144,7 +144,7 @@ class TestProviderService:
         assert isinstance(result, ProvidersResponse)
         assert len(result.providers) == 0
 
-    @patch('services.llm.provider_service.LLMProvider')
+    @patch('services.llm.llm_provider_service.LLMProvider')
     def test_get_available_providers_success(self, mock_llm_provider):
         """Test getting all available providers"""
         config_service = Mock(spec=ConfigService)
@@ -158,7 +158,7 @@ class TestProviderService:
         }
         mock_llm_provider.__iter__ = lambda self: iter(['openai', 'anthropic', 'google'])
         
-        with patch('services.llm.provider_service.PROVIDER_NAMES_MAP', {
+        with patch('services.llm.llm_provider_service.PROVIDER_NAMES_MAP', {
             'openai': {'name': 'OpenAI', 'custom_api_base': False},
             'anthropic': {'name': 'Anthropic', 'custom_api_base': False},
             'google': {'name': 'Google', 'custom_api_base': True}
@@ -172,7 +172,7 @@ class TestProviderService:
         assert openai_provider['name'] == 'OpenAI'
         assert openai_provider['custom_api_base'] is False
 
-    @patch('services.llm.provider_service.LLMProvider')
+    @patch('services.llm.llm_provider_service.LLMProvider')
     def test_get_available_providers_exception_handling(self, mock_llm_provider):
         """Test exception handling in get_available_providers"""
         config_service = Mock(spec=ConfigService)
@@ -185,15 +185,12 @@ class TestProviderService:
         assert isinstance(result, list)
         assert len(result) == 0
 
-    @patch('services.llm.provider_service.list_models')
-    @patch('services.llm.provider_service.LLMProvider')
-    def test_fetch_models_by_provider_success(self, mock_llm_provider, mock_list_models):
+    @patch('services.llm.llm_provider_service.alist_models')
+    @pytest.mark.asyncio
+    async def test_fetch_models_by_provider_success(self, mock_alist_models):
         """Test successfully fetching models for a provider"""
         config_service = Mock(spec=ConfigService)
         service = LLMProviderService(config_service)
-        
-        # Mock provider validation - use simpler approach
-        mock_llm_provider.__members__.values.return_value = ['openai']
         
         # Mock models from API
         mock_model1 = Mock()
@@ -204,9 +201,9 @@ class TestProviderService:
         mock_model2.id = "gpt-3.5-turbo"
         mock_model2.object = "model"
         
-        mock_list_models.return_value = [mock_model1, mock_model2]
+        mock_alist_models.return_value = [mock_model1, mock_model2]
         
-        result = service.fetch_models_by_provider("openai", "api_key_123", "")
+        result = await service.fetch_models_by_provider("openai", "api_key_123", "")
         
         assert isinstance(result, list)
         assert len(result) == 2
@@ -214,64 +211,56 @@ class TestProviderService:
         assert result[0].id == "gpt-4"
         assert result[1].id == "gpt-3.5-turbo"
         
-        mock_list_models.assert_called_once_with("openai", "api_key_123", api_base=None)
+        mock_alist_models.assert_called_once_with("openai", "api_key_123", api_base="")
 
-    @patch('services.llm.provider_service.list_models')
-    @patch('services.llm.provider_service.LLMProvider')
-    def test_fetch_models_by_provider_with_api_base(self, mock_llm_provider, mock_list_models):
+    @patch('services.llm.llm_provider_service.alist_models')
+    @pytest.mark.asyncio
+    async def test_fetch_models_by_provider_with_api_base(self, mock_alist_models):
         """Test fetching models with custom API base URL"""
         config_service = Mock(spec=ConfigService)
         service = LLMProviderService(config_service)
         
-        mock_llm_provider.__members__.values.return_value = ['openai']
-        
         mock_model = Mock()
         mock_model.id = "custom-model"
         mock_model.object = "model"
-        mock_list_models.return_value = [mock_model]
+        mock_alist_models.return_value = [mock_model]
         
-        result = service.fetch_models_by_provider("openai", "api_key_123", "https://custom.api.com")
+        result = await service.fetch_models_by_provider("openai", "api_key_123", "https://custom.api.com")
         
         assert len(result) == 1
-        mock_list_models.assert_called_once_with("openai", "api_key_123", api_base="https://custom.api.com")
+        mock_alist_models.assert_called_once_with("openai", "api_key_123", api_base="https://custom.api.com")
 
-    @patch('services.llm.provider_service.LLMProvider')
-    def test_fetch_models_by_provider_unsupported_provider(self, mock_llm_provider):
+    @pytest.mark.asyncio
+    async def test_fetch_models_by_provider_unsupported_provider(self):
         """Test fetching models for unsupported provider"""
         config_service = Mock(spec=ConfigService)
         service = LLMProviderService(config_service)
         
-        mock_llm_provider.__members__.values.return_value = ['openai']
-        
-        result = service.fetch_models_by_provider("unsupported_provider", "api_key_123", "")
+        result = await service.fetch_models_by_provider("unsupported_provider", "api_key_123", "")
         
         assert isinstance(result, list)
         assert len(result) == 0
 
-    @patch('services.llm.provider_service.list_models')
-    @patch('services.llm.provider_service.LLMProvider')
-    def test_fetch_models_by_provider_api_exception(self, mock_llm_provider, mock_list_models):
+    @patch('services.llm.llm_provider_service.alist_models')
+    @pytest.mark.asyncio
+    async def test_fetch_models_by_provider_api_exception(self, mock_alist_models):
         """Test handling API exceptions when fetching models"""
         config_service = Mock(spec=ConfigService)
         service = LLMProviderService(config_service)
         
-        mock_llm_provider.__members__.values.return_value = ['openai']
+        mock_alist_models.side_effect = Exception("API Error")
         
-        mock_list_models.side_effect = Exception("API Error")
-        
-        result = service.fetch_models_by_provider("openai", "api_key_123", "")
+        result = await service.fetch_models_by_provider("openai", "api_key_123", "")
         
         assert isinstance(result, list)
         assert len(result) == 0
 
-    @patch('services.llm.provider_service.list_models')
-    @patch('services.llm.provider_service.LLMProvider')
-    def test_fetch_models_by_provider_filters_invalid_models(self, mock_llm_provider, mock_list_models):
+    @patch('services.llm.llm_provider_service.alist_models')
+    @pytest.mark.asyncio
+    async def test_fetch_models_by_provider_filters_invalid_models(self, mock_alist_models):
         """Test that invalid models are filtered out"""
         config_service = Mock(spec=ConfigService)
         service = LLMProviderService(config_service)
-        
-        mock_llm_provider.__members__.values.return_value = ['openai']
         
         # Mock models with various validity states
         valid_model = Mock()
@@ -286,9 +275,9 @@ class TestProviderService:
         invalid_model_wrong_object.id = "gpt-3.5"
         invalid_model_wrong_object.object = "not_model"
         
-        mock_list_models.return_value = [valid_model, invalid_model_no_id, invalid_model_wrong_object]
+        mock_alist_models.return_value = [valid_model, invalid_model_no_id, invalid_model_wrong_object]
         
-        result = service.fetch_models_by_provider("openai", "api_key_123", "")
+        result = await service.fetch_models_by_provider("openai", "api_key_123", "")
         
         assert len(result) == 1  # Only valid model
         assert result[0].id == "gpt-4"

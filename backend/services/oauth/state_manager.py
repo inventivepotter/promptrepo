@@ -74,7 +74,7 @@ class StateManager:
             raise ValueError("State must be a non-empty string")
         
         if not provider or not isinstance(provider, OAuthProvider):
-            raise ValueError("Provider must be a non-empty string")
+            raise ValueError("Provider must be a valid OAuthProvider enum")
         
         if not redirect_uri or not isinstance(redirect_uri, str):
             raise ValueError("Redirect URI must be a non-empty string")
