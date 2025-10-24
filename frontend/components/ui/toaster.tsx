@@ -63,7 +63,7 @@ const ToastItem = ({ toast }: ToastItemProps) => {
         {toast.title && (
           <Toast.Title
             fontSize={toast.type === "success" ? "sm" : "md"}
-            fontWeight={toast.type === "success" ? "normal" : "bold"}
+            fontWeight="bold"
           >
             {toast.title}
           </Toast.Title>

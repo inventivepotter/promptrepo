@@ -84,8 +84,9 @@ export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (
   
   // Message Operations
   sendMessage: async (content: string, options = {}) => {
-    const state = get();
-    let currentSession = state.sessions.find(s => s.id === state.currentSessionId);
+    // Get initial state at the start
+    const initialState = get();
+    let currentSession = initialState.sessions.find(s => s.id === initialState.currentSessionId);
     
     // Create a new session if none exists
     if (!currentSession) {
@@ -93,7 +94,7 @@ export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (
     }
     
     // Create system message if systemPrompt is provided and it's the first message
-    const isFirstMessage = state.messages.length === 0;
+    const isFirstMessage = initialState.messages.length === 0;
     let systemMessage = null;
     if (options.systemPrompt && isFirstMessage) {
       systemMessage = chatService.createSystemMessage(options.systemPrompt);
@@ -129,10 +130,14 @@ export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (
     }, false, 'chat/send-message-start');
     
     try {
-      // Prepare completion options
-      const modelConfig = options.modelConfig 
-        ? { ...currentSession.modelConfig, ...options.modelConfig }
-        : currentSession.modelConfig;
+      // Get fresh state and session for model config
+      const freshState = get();
+      const freshSession = freshState.sessions.find(s => s.id === freshState.currentSessionId);
+      
+      // Prepare completion options using fresh session data
+      const modelConfig = options.modelConfig
+        ? { ...(freshSession?.modelConfig || freshState.defaultModelConfig), ...options.modelConfig }
+        : (freshSession?.modelConfig || freshState.defaultModelConfig);
         
       const completionOptions: ChatCompletionOptions = {
         provider: modelConfig.provider,
@@ -233,6 +238,7 @@ export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (
   },
   
   regenerateMessage: async (messageId: string) => {
+    // Get fresh state
     const state = get();
     const messageIndex = state.messages.findIndex(m => m.id === messageId);
     
@@ -305,7 +311,8 @@ export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (
   },
   
   saveEditedMessage: async () => {
-    const state = get();
+    // Get fresh state
+    let state = get();
     const { editingMessageId, editingContent } = state;
     
     if (!editingMessageId || !editingContent) return;
@@ -317,6 +324,9 @@ export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (
     
     // Update the message content
     get().updateMessage(editingMessageId, { content: editingContent });
+    
+    // Refresh state after update
+    state = get();
     
     // If it's a user message, regenerate the response
     if (editedMessage.role === 'user') {

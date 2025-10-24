@@ -95,16 +95,20 @@ class FileOperationsService:
             logger.error(f"Failed to create directory {dir_path}: {e}", exc_info=True)
             return False
     
-    def save_yaml_file(self, path: Union[str, Path], data: Dict[str, Any]) -> bool:
+    def save_yaml_file(self, path: Union[str, Path], data: Dict[str, Any], exclusive: bool = False) -> bool:
         """
         Save data to a YAML file.
         
         Args:
             path: Path to the YAML file
             data: Data to save as YAML
+            exclusive: If True, fail if file already exists (atomic creation)
             
         Returns:
             bool: True if save was successful, False otherwise
+            
+        Raises:
+            FileExistsError: If exclusive=True and file already exists
         """
         file_path = Path(path) if isinstance(path, str) else path
         
@@ -112,12 +116,16 @@ class FileOperationsService:
             # Create parent directories if they don't exist
             file_path.parent.mkdir(parents=True, exist_ok=True)
             
-            # Write YAML file
-            with open(file_path, 'w') as f:
+            # Write YAML file with exclusive mode if requested
+            mode = 'x' if exclusive else 'w'
+            with open(file_path, mode) as f:
                 yaml.safe_dump(data, f)
             
             logger.info(f"Saved YAML file: {file_path}")
             return True
+        except FileExistsError:
+            logger.warning(f"File already exists (exclusive mode): {file_path}")
+            raise
         except Exception as e:
             logger.error(f"Failed to save YAML file {file_path}: {e}", exc_info=True)
             return False

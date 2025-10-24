@@ -11,9 +11,13 @@ import {
   Fieldset,
   Stack,
   IconButton,
+  Button,
+  Collapsible,
+  Text,
 } from '@chakra-ui/react';
 import { useState } from 'react';
 import { FaTimes } from 'react-icons/fa';
+import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
 import { useCurrentPrompt, usePromptActions } from '@/stores/promptStore/hooks';
 import { FaGitAlt, FaFolder } from 'react-icons/fa';
 
@@ -26,6 +30,7 @@ export function PromptFieldGroup({ repoName, filePath }: PromptFieldGroupProps) 
   const currentPrompt = useCurrentPrompt();
   const { setCurrentPrompt } = usePromptActions();
   const [tagInput, setTagInput] = useState('');
+  const [showPromptDetails, setShowPromptDetails] = useState(true);
 
   if (!currentPrompt) {
     return null;
@@ -69,14 +74,30 @@ export function PromptFieldGroup({ repoName, filePath }: PromptFieldGroupProps) 
       <Card.Body pt={6}>
         <Fieldset.Root>
           <HStack justify="space-between" align="center">
-            <Stack>
+            <Stack flex={1}>
               <Fieldset.Legend>Prompt Details</Fieldset.Legend>
               <Fieldset.HelperText>Configure the basic prompt information and content</Fieldset.HelperText>
             </Stack>
+            <Button
+              variant="ghost"
+              _hover={{ bg: "bg.subtle" }}
+              size="sm"
+              onClick={() => setShowPromptDetails(!showPromptDetails)}
+              aria-label={showPromptDetails ? "Collapse prompt details" : "Expand prompt details"}
+            >
+              <HStack gap={1}>
+                <Text fontSize="xs" fontWeight="medium">
+                  {showPromptDetails ? "Hide" : "Show"}
+                </Text>
+                {showPromptDetails ? <LuChevronUp /> : <LuChevronDown />}
+              </HStack>
+            </Button>
           </HStack>
 
           <Fieldset.Content>
-            <VStack gap={4} align="stretch">
+            <Collapsible.Root open={showPromptDetails}>
+              <Collapsible.Content>
+                <VStack gap={4} align="stretch" mt={3}>
           {/* Name - Primary Field */}
           <Field.Root required>
             <Field.Label fontSize="xs" fontWeight="medium">Name <Field.RequiredIndicator /></Field.Label>
@@ -163,7 +184,9 @@ export function PromptFieldGroup({ repoName, filePath }: PromptFieldGroupProps) 
               </HStack>
             )}
           </Field.Root>
-          </VStack>
+                </VStack>
+              </Collapsible.Content>
+            </Collapsible.Root>
           </Fieldset.Content>
         </Fieldset.Root>
       </Card.Body>

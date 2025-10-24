@@ -50,7 +50,6 @@ import {
   selectIsToolSelected,
   selectTotalInputTokens,
   selectTotalOutputTokens,
-  selectTokenStats,
 } from './selectors';
 
 // Session Hooks
@@ -139,14 +138,15 @@ export const useTotalOutputTokens = () => useChatStore(selectTotalOutputTokens);
 export const useTokenStats = () => {
   const totalInput = useTotalInputTokens();
   const totalOutput = useTotalOutputTokens();
+  const totalTokens = useTotalTokensUsed();
   
   return useMemo(
     () => ({
       totalInput,
       totalOutput,
-      total: totalInput + totalOutput,
+      totalTokens,
     }),
-    [totalInput, totalOutput]
+    [totalInput, totalOutput, totalTokens]
   );
 };
 

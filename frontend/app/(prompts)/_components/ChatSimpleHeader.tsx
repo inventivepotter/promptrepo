@@ -7,7 +7,7 @@ import {
   Button,
   Box,
 } from '@chakra-ui/react';
-import { LuRefreshCw, LuBot, LuDollarSign } from 'react-icons/lu';
+import { LuRefreshCw, LuBot, LuDollarSign, LuChevronDown, LuChevronUp } from 'react-icons/lu';
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { pricingService } from '@/services/llm/pricing/pricingService';
 import { useSessionCost } from '@/stores/chatStore/hooks';
@@ -15,11 +15,15 @@ import { useSessionCost } from '@/stores/chatStore/hooks';
 interface ChatSimpleHeaderProps {
   onReset: () => void;
   isLoading?: boolean;
+  showContent?: boolean;
+  onToggleContent?: () => void;
 }
 
 export function ChatSimpleHeader({
   onReset,
   isLoading = false,
+  showContent = true,
+  onToggleContent,
 }: ChatSimpleHeaderProps) {
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
   const totalCost = useSessionCost();
@@ -30,9 +34,9 @@ export function ChatSimpleHeader({
       borderBottomWidth="1px"
     >
       <VStack gap={3} align="stretch">
-        {/* Header with just description and reset button */}
+        {/* Header with title and action buttons - Always visible */}
         <HStack justify="space-between" align="center">
-          <VStack align="start">
+          <VStack align="start" gap={0}>
             <HStack>
               <LuBot size={18} />
               <Text fontSize="lg" fontWeight="semibold">
@@ -51,19 +55,37 @@ export function ChatSimpleHeader({
               Your playground to test prompts with AI agents
             </Text>
           </VStack>
-          <Button
-            size="sm"
-            variant="ghost"
-            colorPalette="red"
-            onClick={onReset}
-            disabled={isLoading}
-            _hover={{ bg: 'red.50' }}
-          >
-            <HStack gap={2}>
-              <LuRefreshCw size={14} />
-              <Text>Reset</Text>
-            </HStack>
-          </Button>
+          <HStack gap={2}>
+            <Button
+              variant="ghost"
+              _hover={{ bg: "bg.subtle" }}
+              size="sm"
+              colorPalette="red"
+              onClick={onReset}
+              disabled={isLoading}
+            >
+              <HStack gap={1}>
+                <LuRefreshCw size={14} />
+                <Text fontSize="xs" fontWeight="medium">Reset</Text>
+              </HStack>
+            </Button>
+            {onToggleContent && (
+              <Button
+                variant="ghost"
+                _hover={{ bg: "bg.subtle" }}
+                size="sm"
+                onClick={onToggleContent}
+                aria-label={showContent ? "Collapse agent section" : "Expand agent section"}
+              >
+                <HStack gap={1}>
+                  <Text fontSize="xs" fontWeight="medium">
+                    {showContent ? "Hide" : "Show"}
+                  </Text>
+                  {showContent ? <LuChevronUp /> : <LuChevronDown />}
+                </HStack>
+              </Button>
+            )}
+          </HStack>
         </HStack>
       </VStack>
     </Box>

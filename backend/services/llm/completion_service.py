@@ -81,10 +81,6 @@ class ChatCompletionService:
         # Build completion parameters
         completion_params = self.build_completion_params(request, api_key, api_base_url, stream=True)
         
-        # Debug logging
-        self.logger.info(f"Calling any-llm completion with params: {completion_params}")
-        self.logger.info(f"Provider: '{request.provider}', Model: '{request.model}', Model Identifier: '{completion_params['model']}'")
-
         try:
             # Call any-llm completion with streaming
             stream_response = await acompletion(**completion_params)
@@ -228,17 +224,6 @@ class ChatCompletionService:
         # Build completion parameters
         completion_params = self.build_completion_params(request, api_key, api_base_url, stream=False)
         
-        # Debug logging - DETAILED CONFIG BEFORE SENDING REQUEST
-        self.logger.info(f"=" * 80)
-        self.logger.info(f"COMPLETION REQUEST CONFIG:")
-        self.logger.info(f"  Provider: '{request.provider}'")
-        self.logger.info(f"  Model: '{request.model}'")
-        self.logger.info(f"  API Key: '{api_key[:10]}...' (length: {len(api_key) if api_key else 0})")
-        self.logger.info(f"  API Base URL: '{api_base_url}'")
-        self.logger.info(f"  Model Identifier: '{completion_params['model']}'")
-        self.logger.info(f"  Full Params: {completion_params}")
-        self.logger.info(f"=" * 80)
-
         # Track inference timing
         start_time = time.time()
         
@@ -250,9 +235,6 @@ class ChatCompletionService:
         
         response = cast(ChatCompletion, completion_result)  # Safe because stream=False
         
-        # Debug logging to understand response structure
-        self.logger.info(f"Response type: {type(response)}")
-        
         # Handle response - any-llm follows OpenAI format for non-streaming
         content = ""
         finish_reason = None
@@ -260,11 +242,9 @@ class ChatCompletionService:
         # any-llm returns ChatCompletion object with choices[0].message.content
         if hasattr(response, 'choices') and response.choices and len(response.choices) > 0:
             choice = response.choices[0]
-            self.logger.info(f"Choice found: {choice}")
             
             if hasattr(choice, 'message') and hasattr(choice.message, 'content'):
                 content = choice.message.content or ""
-                self.logger.info(f"Extracted content: {repr(content[:200])}")
                 
             if hasattr(choice, 'finish_reason'):
                 finish_reason = choice.finish_reason

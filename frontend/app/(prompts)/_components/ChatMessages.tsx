@@ -10,7 +10,6 @@ import {
   Card,
 } from '@chakra-ui/react';
 import { LuBot, LuUser, LuSettings, LuWrench } from 'react-icons/lu';
-import { useColorModeValue } from '../../../components/ui/color-mode';
 import { ChatMessage } from '../_types/ChatState';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { pricingService } from '@/services/llm/pricing/pricingService';
@@ -24,27 +23,27 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
   const scrollAreaRef = React.useRef<HTMLDivElement>(null);
   
   // Colors
-  const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
-  const timestampColor = useColorModeValue('gray.500', 'gray.500');
+  const mutedTextColor = "fg.muted";
+  const timestampColor = "fg.muted";
   
   // AI Message (left side)
-  const aiMessageBg = useColorModeValue('white', 'gray.800');
-  const aiMessageBorder = useColorModeValue('blue.200', 'blue.600');
+  const aiMessageBg = "bg.subtle";
+  const aiMessageBorder = "border";
   
-  // User Message (right side)
-  const userMessageBg = "bg";
-  const userMessageBorder = "bg.muted";
+  // User Message (right side - hollow style)
+  const userMessageBg = "transparent";
+  const userMessageBorder = "border";
   
   // System Message (right side, muted)
-  const systemMessageBg = useColorModeValue('gray.50', 'gray.700');
-  const systemMessageBorder = useColorModeValue('gray.300', 'gray.500');
+  const systemMessageBg = "bg.subtle";
+  const systemMessageBorder = "border";
   
   // Tool Message (log style)
-  const toolMessageBg = useColorModeValue('yellow.50', 'yellow.900');
-  const toolMessageBorder = useColorModeValue('yellow.300', 'yellow.600');
+  const toolMessageBg = "bg.muted";
+  const toolMessageBorder = "border";
   
   // Tool result background
-  const toolResultBg = useColorModeValue('gray.50', 'gray.800');
+  const toolResultBg = "bg.subtle";
 
   // Auto scroll to bottom when new messages arrive
   React.useEffect(() => {
@@ -146,6 +145,7 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
                 borderWidth="1px"
                 size="sm"
                 ml="auto"
+                variant="outline"
               >
                 <Card.Body p={3}>
                   <Text fontSize="sm" whiteSpace="pre-wrap">
@@ -295,9 +295,9 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
                   >
                     <Card.Body p={3}>
                       <HStack gap={1}>
-                        <Box w={2} h={2} bg="blue.400" borderRadius="full" animation="pulse 1.5s ease-in-out infinite" />
-                        <Box w={2} h={2} bg="blue.400" borderRadius="full" animation="pulse 1.5s ease-in-out infinite" animationDelay="0.2s" />
-                        <Box w={2} h={2} bg="blue.400" borderRadius="full" animation="pulse 1.5s ease-in-out infinite" animationDelay="0.4s" />
+                        <Box w={2} h={2} bg="primary.solid" borderRadius="full" animation="pulse 1.5s ease-in-out infinite" />
+                        <Box w={2} h={2} bg="primary.solid" borderRadius="full" animation="pulse 1.5s ease-in-out infinite" animationDelay="0.2s" />
+                        <Box w={2} h={2} bg="primary.solid" borderRadius="full" animation="pulse 1.5s ease-in-out infinite" animationDelay="0.4s" />
                       </HStack>
                     </Card.Body>
                   </Card.Root>

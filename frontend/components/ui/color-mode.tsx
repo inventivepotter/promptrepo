@@ -11,7 +11,13 @@ export type ColorModeProviderProps = ThemeProviderProps;
 
 export function ColorModeProvider(props: ColorModeProviderProps) {
   return (
-    <ThemeProvider attribute="class" disableTransitionOnChange {...props} />
+    <ThemeProvider
+      attribute="class"
+      disableTransitionOnChange
+      enableSystem={false}
+      storageKey="promptrepo-theme"
+      {...props}
+    />
   )
 }
 

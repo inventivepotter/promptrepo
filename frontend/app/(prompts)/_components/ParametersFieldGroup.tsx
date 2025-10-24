@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import {
-  Box,
   VStack,
   HStack,
   NumberInput,
@@ -16,7 +15,7 @@ import {
   Stack,
 } from '@chakra-ui/react';
 import { Tooltip } from '@/components/ui/tooltip';
-import { LuInfo, LuChevronDown, LuChevronUp } from 'react-icons/lu';
+import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
 import { useCurrentPrompt, useUpdateCurrentPromptField } from '@/stores/promptStore/hooks';
 
 export function ParametersFieldGroup() {
@@ -114,9 +113,17 @@ export function ParametersFieldGroup() {
                       <NumberInput.Root
                         size="sm"
                         inputMode="decimal"
-                        onValueChange={(e) => {
-                          const value = e.value ? parseFloat(e.value) : null;
-                          updateField('presence_penalty', value);
+                        onValueChange={(details: { value: string; valueAsNumber: number }) => {
+                          if (details.value === '') {
+                            updateField('presence_penalty', null);
+                            return;
+                          }
+
+                          if (Number.isNaN(details.valueAsNumber)) {
+                            return;
+                          }
+
+                          updateField('presence_penalty', details.valueAsNumber);
                         }}
                         min={-2}
                         max={2}
@@ -133,9 +140,17 @@ export function ParametersFieldGroup() {
                       <NumberInput.Root
                         size="sm"
                         inputMode="decimal"
-                        onValueChange={(e) => {
-                          const value = e.value ? parseFloat(e.value) : null;
-                          updateField('frequency_penalty', value);
+                        onValueChange={(details: { value: string; valueAsNumber: number }) => {
+                          if (details.value === '') {
+                            updateField('frequency_penalty', null);
+                            return;
+                          }
+
+                          if (Number.isNaN(details.valueAsNumber)) {
+                            return;
+                          }
+
+                          updateField('frequency_penalty', details.valueAsNumber);
                         }}
                         min={-2}
                         max={2}
@@ -151,9 +166,17 @@ export function ParametersFieldGroup() {
                       <Field.Label fontSize="xs">Seed</Field.Label>
                       <NumberInput.Root
                         size="sm"
-                        onValueChange={(e) => {
-                          const value = e.value ? parseInt(e.value) : null;
-                          updateField('seed', value);
+                        onValueChange={(details: { value: string; valueAsNumber: number }) => {
+                          if (details.value === '') {
+                            updateField('seed', null);
+                            return;
+                          }
+
+                          if (Number.isNaN(details.valueAsNumber)) {
+                            return;
+                          }
+
+                          updateField('seed', Math.trunc(details.valueAsNumber));
                         }}
                         value={prompt.seed?.toString() || ''}
                       >
@@ -166,9 +189,17 @@ export function ParametersFieldGroup() {
                       <Field.Label fontSize="xs">Max Completion Tokens</Field.Label>
                       <NumberInput.Root
                         size="sm"
-                        onValueChange={(e) => {
-                          const value = e.value ? parseInt(e.value) : null;
-                          updateField('max_completion_tokens', value);
+                        onValueChange={(details: { value: string; valueAsNumber: number }) => {
+                          if (details.value === '') {
+                            updateField('max_completion_tokens', null);
+                            return;
+                          }
+
+                          if (Number.isNaN(details.valueAsNumber)) {
+                            return;
+                          }
+
+                          updateField('max_completion_tokens', Math.trunc(details.valueAsNumber));
                         }}
                         min={1}
                         max={100000}
@@ -187,9 +218,17 @@ export function ParametersFieldGroup() {
                         <Field.Label fontSize="xs">Top Log Probs</Field.Label>
                         <NumberInput.Root
                           size="sm"
-                          onValueChange={(e) => {
-                            const value = e.value ? parseInt(e.value) : null;
-                            updateField('top_logprobs', value);
+                          onValueChange={(details: { value: string; valueAsNumber: number }) => {
+                            if (details.value === '') {
+                              updateField('top_logprobs', null);
+                              return;
+                            }
+
+                            if (Number.isNaN(details.valueAsNumber)) {
+                              return;
+                            }
+
+                            updateField('top_logprobs', Math.trunc(details.valueAsNumber));
                           }}
                           min={0}
                           max={20}

@@ -78,9 +78,21 @@ class PromptService(IPromptService):
             # Use multi_user_repo_path with user scoping for organization
             return Path(settings.multi_user_repo_path) / user_id
         
-    def _save_prompt_file(self, file_path: Union[str, Path], data: Dict[str, Any]) -> bool:
-        """Save prompt data to a YAML file using FileOperationsService."""
-        return self.file_ops.save_yaml_file(file_path, data)
+    def _save_prompt_file(self, file_path: Union[str, Path], data: Dict[str, Any], exclusive: bool = False) -> bool:
+        """Save prompt data to a YAML file using FileOperationsService.
+        
+        Args:
+            file_path: Path to the YAML file
+            data: Data to save as YAML
+            exclusive: If True, fail atomically if file already exists
+            
+        Returns:
+            bool: True if save was successful, False otherwise
+            
+        Raises:
+            FileExistsError: If exclusive=True and file already exists
+        """
+        return self.file_ops.save_yaml_file(file_path, data, exclusive=exclusive)
     
     def _load_prompt_file(self, file_path: Union[str, Path]) -> Optional[Dict[str, Any]]:
         """Load prompt data from a YAML file using FileOperationsService."""
@@ -118,14 +130,6 @@ class PromptService(IPromptService):
                 identifier=repo_name
             )
         
-        # Check if file already exists
-        full_file_path = repo_path / file_path
-        if full_file_path.exists():
-            raise ConflictException(
-                message=f"Prompt file already exists at {file_path}",
-                context={"repo_name": repo_name, "file_path": file_path}
-            )
-        
         # Set user field in organization mode
         if self.config_service.get_hosting_config().type == HostingType.ORGANIZATION:
             prompt_data.user = user_id
@@ -146,12 +150,19 @@ class PromptService(IPromptService):
         if isinstance(prompt_content.get("updated_at"), datetime):
             prompt_content["updated_at"] = prompt_content["updated_at"].isoformat()
         
-        # Save to file (full_file_path already defined above)
-        success = self._save_prompt_file(full_file_path, prompt_content)
+        # Build file path and attempt exclusive creation (atomic operation)
+        full_file_path = repo_path / file_path
         
-        if not success:
-            raise AppException(
-                message=f"Failed to save prompt to {file_path}"
+        try:
+            success = self._save_prompt_file(full_file_path, prompt_content, exclusive=True)
+            if not success:
+                raise AppException(
+                    message=f"Failed to save prompt to {file_path}"
+                )
+        except FileExistsError:
+            raise ConflictException(
+                message=f"Prompt file already exists at {file_path}",
+                context={"repo_name": repo_name, "file_path": file_path}
             )
         
         recent_commits = self._get_file_commit_history(repo_path, file_path)

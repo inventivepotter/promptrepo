@@ -12,23 +12,35 @@ export class TemplateUtils {
   static extractVariables(template: string): string[] {
     if (!template) return [];
     
-    // Match both {{ variable }} and { variable } patterns
-    const doublePattern = /\{\{\s*(\w+(?:\.\w+)*)\s*\}\}/g;
-    const singlePattern = /\{(\w+)\}/g;
     const variables = new Set<string>();
     let match;
     
-    // Extract {{ variable }} style
+    // First, extract and track {{ variable }} style to avoid collision
+    const doublePattern = /\{\{\s*(\w+(?:\.\w+)*)\s*\}\}/g;
+    const doubleBraceMatches: Array<{ start: number; end: number }> = [];
+    
     while ((match = doublePattern.exec(template)) !== null) {
       const variable = match[1];
       const rootVariable = variable.split('.')[0];
       variables.add(rootVariable);
+      // Track position to avoid collision with single brace pattern
+      doubleBraceMatches.push({ start: match.index, end: match.index + match[0].length });
     }
     
-    // Extract { variable } style
+    // Then extract { variable } style, but skip positions already matched by double braces
+    const singlePattern = /\{(\w+)\}/g;
     while ((match = singlePattern.exec(template)) !== null) {
-      const variable = match[1];
-      variables.add(variable);
+      // Check if this match overlaps with any double brace match
+      const matchStart = match.index;
+      const matchEnd = match.index + match[0].length;
+      const isOverlapping = doubleBraceMatches.some(
+        dbMatch => matchStart < dbMatch.end && matchEnd > dbMatch.start
+      );
+      
+      if (!isOverlapping) {
+        const variable = match[1];
+        variables.add(variable);
+      }
     }
     
     return Array.from(variables).sort();
@@ -42,20 +54,22 @@ export class TemplateUtils {
     if (!template) return '';
     
     try {
-      // First, replace { variable } style with simple string replacement
-      let resolved = template;
-      Object.entries(variables).forEach(([key, value]) => {
-        const singleBracePattern = new RegExp(`\\{${key}\\}`, 'g');
-        resolved = resolved.replace(singleBracePattern, value);
-      });
-      
-      // Then use nunjucks for {{ variable }} style
+      // First use nunjucks for {{ variable }} style (more specific pattern)
       const env = new nunjucks.Environment(null, {
         autoescape: false,
         throwOnUndefined: false
       });
       
-      resolved = env.renderString(resolved, variables);
+      let resolved = env.renderString(template, variables);
+      
+      // Then replace remaining { variable } style patterns that weren't part of {{ }}
+      // This avoids collision by processing double-braces first
+      Object.entries(variables).forEach(([key, value]) => {
+        // Only match { variable } that is NOT preceded or followed by another brace
+        // NOTE: Requires ES2018+ for negative lookbehind/lookahead support
+        const singleBracePattern = new RegExp(`(?<!\\{)\\{${key}\\}(?!\\})`, 'g');
+        resolved = resolved.replace(singleBracePattern, value);
+      });
       
       return resolved;
     } catch (error) {

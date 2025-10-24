@@ -4,12 +4,15 @@ Following the Factory Pattern and Open/Closed Principle
 """
 from typing import Optional
 from urllib.parse import urlparse
+import logging
 from .database_adapter import (
     DatabaseAdapter,
     SQLiteAdapter,
     PostgreSQLAdapter,
     MySQLAdapter
 )
+
+logger = logging.getLogger(__name__)
 
 
 class DatabaseFactory:
@@ -60,7 +63,7 @@ class DatabaseFactory:
         
         # Create and return the adapter instance
         adapter = adapter_class(database_url, echo)
-        print(f"Created {adapter_class.__name__} for database: {scheme}")
+        logger.info(f"Created {adapter_class.__name__} for database: {scheme}")
         
         return adapter
 

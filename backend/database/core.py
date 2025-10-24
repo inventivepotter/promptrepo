@@ -4,8 +4,11 @@ using the adapter pattern based on the DATABASE_URL
 """
 from typing import Generator
 from sqlmodel import Session as SQLSession
+import logging
 from .database_factory import DatabaseManager
 from settings import settings
+
+logger = logging.getLogger(__name__)
 
 
 # Initialize the database manager singleton with settings
@@ -30,7 +33,7 @@ def create_db_and_tables() -> None:
     from database.models import User, UserSessions, UserRepos, OAuthState
     
     db_manager.create_tables()
-    print("Database tables created successfully")
+    logger.info("Database tables created successfully")
 
 def get_engine():
     """

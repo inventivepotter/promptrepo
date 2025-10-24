@@ -26,18 +26,32 @@ export default function LoginPage() {
   // Redirect to prompts if already logged in
   useEffect(() => {
     if (isInitialized && isAuthenticated) {
-      router.push('/prompts');
+      router.replace('/prompts');
     }
   }, [isInitialized, isAuthenticated, router]);
 
   // Initialize config on mount
   useEffect(() => {
+    let isMounted = true;
+
     const loadConfig = async () => {
       setLoading(true);
-      await initializeConfig(true, false);
-      setLoading(false);
+      try {
+        await initializeConfig(true, false);
+      } catch (error) {
+        console.error('Failed to initialize config', error);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     };
-    loadConfig();
+
+    void loadConfig();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Get all configured OAuth providers

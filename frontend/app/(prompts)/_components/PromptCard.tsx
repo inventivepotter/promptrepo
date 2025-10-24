@@ -50,7 +50,7 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
               <Text fontSize="lg" fontWeight="semibold" lineClamp={1}>
                 {prompt.prompt?.name || 'Untitled Prompt'}
               </Text>
-              <Text fontSize="sm"opacity={0.6} lineClamp={2}>
+              <Text fontSize="sm" opacity={0.6} lineClamp={2}>
                 {truncateText(prompt.prompt?.description || 'No description provided', 120)}
               </Text>
             </VStack>
@@ -104,7 +104,7 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
               )}
             </HStack>
 
-            <HStack gap={1} fontSize="xs"opacity={0.6}>
+            <HStack gap={1} fontSize="xs" opacity={0.6}>
               <LuClock size={12} />
               <Text>
                 {prompt.recent_commits && prompt.recent_commits.length > 0
@@ -124,7 +124,7 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
               borderLeft="3px solid"
               borderColor="bg.emphasized"
             >
-              <Text fontSize="sm"opacity={0.6} lineClamp={3}>
+              <Text fontSize="sm" opacity={0.6} lineClamp={3}>
                 {truncateText(prompt.prompt.prompt, 150)}
               </Text>
             </Box>

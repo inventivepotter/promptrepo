@@ -15,10 +15,11 @@ import {
   Stack,
   Skeleton,
   EmptyState,
+  Collapsible,
 } from '@chakra-ui/react'
 import { FaChevronDown } from 'react-icons/fa';
-import { LuCpu } from 'react-icons/lu';
-import { useEffect } from 'react';
+import { LuCpu, LuChevronDown, LuChevronUp } from 'react-icons/lu';
+import { useEffect, useState } from 'react';
 import type { components } from '@/types/generated/api';
 import { useConfig, useConfigActions, useAvailableProviders, useLLMFormState, useLLMFormUIState, useConfigStore, useIsLoadingConfig, useIsSavingRepo } from '@/stores/configStore';
 
@@ -33,6 +34,7 @@ interface LLMConfigManagerProps {
 export default function LLMConfigManager({
   disabled = false
 }: LLMConfigManagerProps) {
+  const [showLLMConfig, setShowLLMConfig] = useState(true);
   const config = useConfig();
   const {
     addLLMConfig,
@@ -146,25 +148,45 @@ export default function LLMConfigManager({
     <Card.Root
       borderWidth="1px"
       borderColor={borderColor}
+      overflow="visible"
     >
-      <Card.Body p={8}>
-        <Fieldset.Root size="lg">
-          <Stack>
-            <Fieldset.Legend>LLM Provider Configuration</Fieldset.Legend>
-            <Fieldset.HelperText>
-              Setup your AI provider and API key first, then select from available models.
-            </Fieldset.HelperText>
-          </Stack>
+      <Card.Body p={8} overflow="visible">
+        <Fieldset.Root size="lg" overflow="visible">
+          <HStack justify="space-between" align="center">
+            <Stack flex={1}>
+              <Fieldset.Legend>LLM Provider Configuration</Fieldset.Legend>
+              <Fieldset.HelperText>
+                Setup your AI provider and API key first, then select from available models.
+              </Fieldset.HelperText>
+            </Stack>
+            <Button
+              variant="ghost"
+              _hover={{ bg: "bg.subtle" }}
+              size="sm"
+              onClick={() => setShowLLMConfig(!showLLMConfig)}
+              aria-label={showLLMConfig ? "Collapse LLM configuration" : "Expand LLM configuration"}
+            >
+              <HStack gap={1}>
+                <Text fontSize="xs" fontWeight="medium">
+                  {showLLMConfig ? "Hide" : "Show"}
+                </Text>
+                {showLLMConfig ? <LuChevronUp /> : <LuChevronDown />}
+              </HStack>
+            </Button>
+          </HStack>
 
-          <Fieldset.Content>
-            <VStack gap={6} align="stretch">
+          <Fieldset.Content overflow="visible">
+            <Collapsible.Root open={showLLMConfig}>
+              <Collapsible.Content overflow="visible">
+                <VStack gap={6} align="stretch" mt={3}>
         {/* Add new LLM configuration */}
         <Card.Root
           bg="transparent"
           borderWidth="1px"
           borderColor={borderColor}
+          overflow="visible"
         >
-          <Card.Body p={8}>
+          <Card.Body p={8} overflow="visible">
           <VStack gap={4} width="100%">
             {/* Step 1: Provider and API Key on same line */}
             <Box width="100%">
@@ -440,7 +462,9 @@ export default function LLMConfigManager({
             </Card.Body>
           </Card.Root>
         )}
-            </VStack>
+                </VStack>
+              </Collapsible.Content>
+            </Collapsible.Root>
           </Fieldset.Content>
         </Fieldset.Root>
       </Card.Body>

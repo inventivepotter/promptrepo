@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Box,
   HStack,
@@ -13,10 +13,13 @@ import {
   NativeSelect,
   Fieldset,
   Stack,
+  Button,
+  Collapsible,
+  Text,
 } from '@chakra-ui/react';
 import { Tooltip } from '@/components/ui/tooltip';
 import { FaChevronDown } from 'react-icons/fa';
-import { LuInfo } from 'react-icons/lu';
+import { LuInfo, LuChevronDown, LuChevronUp } from 'react-icons/lu';
 import {
   useCurrentPrompt,
   usePromptActions,
@@ -106,7 +109,7 @@ function ModelCombobox({
             <FaChevronDown size={10} />
           </Combobox.Trigger>
         </Combobox.Control>
-        <Combobox.Positioner>
+        <Combobox.Positioner style={{ zIndex: 50 }}>
           <Combobox.Content>
             {filteredModels.map(opt => (
               <Combobox.Item key={opt.value} item={opt.value}>
@@ -126,6 +129,7 @@ export function ModelFieldGroup() {
   const { setCurrentPrompt } = usePromptActions();
   const updateField = useUpdateCurrentPromptField();
   const config = useConfigStore(state => state.config);
+  const [showModelConfig, setShowModelConfig] = useState(true);
   
   const primaryModelSearch = usePrimaryModelSearch();
   const failoverModelSearch = useFailoverModelSearch();
@@ -152,18 +156,36 @@ export function ModelFieldGroup() {
   const failoverModelValue = prompt.failover_model || '';
 
   return (
-    <Card.Root>
-      <Card.Body>
-        <Fieldset.Root>
-          <Stack>
-            <Fieldset.Legend>Model Configuration</Fieldset.Legend>
-            <Fieldset.HelperText>
-              Select primary and failover models, and configure generation parameters
-            </Fieldset.HelperText>
-          </Stack>
+    <Card.Root overflow="visible">
+      <Card.Body overflow="visible">
+        <Fieldset.Root overflow="visible">
+          <HStack justify="space-between" align="center">
+            <Stack flex={1}>
+              <Fieldset.Legend>Model Configuration</Fieldset.Legend>
+              <Fieldset.HelperText>
+                Select primary and failover models, and configure generation parameters
+              </Fieldset.HelperText>
+            </Stack>
+            <Button
+              variant="ghost"
+              _hover={{ bg: "bg.subtle" }}
+              size="sm"
+              onClick={() => setShowModelConfig(!showModelConfig)}
+              aria-label={showModelConfig ? "Collapse model configuration" : "Expand model configuration"}
+            >
+              <HStack gap={1}>
+                <Text fontSize="xs" fontWeight="medium">
+                  {showModelConfig ? "Hide" : "Show"}
+                </Text>
+                {showModelConfig ? <LuChevronUp /> : <LuChevronDown />}
+              </HStack>
+            </Button>
+          </HStack>
 
-          <Fieldset.Content>
-            <VStack gap={4} align="stretch">
+          <Fieldset.Content overflow="visible">
+            <Collapsible.Root open={showModelConfig}>
+              <Collapsible.Content overflow="visible">
+                <VStack gap={4} align="stretch" mt={3}>
           <HStack gap={4} align="start">
             <ModelCombobox
               modelOptions={modelOptions}
@@ -313,7 +335,9 @@ export function ModelFieldGroup() {
               </NativeSelect.Root>
             </Field.Root>
             </HStack>
-          </VStack>
+                </VStack>
+              </Collapsible.Content>
+            </Collapsible.Root>
           </Fieldset.Content>
         </Fieldset.Root>
       </Card.Body>
