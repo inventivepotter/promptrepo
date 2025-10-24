@@ -24,12 +24,22 @@ export class PricingService {
     const normalizedData: PricingData = {};
     
     for (const model of openRouterData.data) {
+      const p = model.pricing;
+      if (!p) continue; // Skip models without pricing data
+      
+      const prompt = parseFloat(p.prompt as unknown as string);
+      const completion = parseFloat(p.completion as unknown as string);
+      const reasoning = p.internal_reasoning != null
+        ? parseFloat(p.internal_reasoning as unknown as string)
+        : undefined;
+      
+      // Skip models with invalid pricing data
+      if (!Number.isFinite(prompt) || !Number.isFinite(completion)) continue;
+      
       normalizedData[model.id] = {
-        promptCost: parseFloat(model.pricing.prompt),
-        completionCost: parseFloat(model.pricing.completion),
-        reasoningCost: model.pricing.internal_reasoning
-          ? parseFloat(model.pricing.internal_reasoning)
-          : undefined
+        promptCost: prompt,
+        completionCost: completion,
+        reasoningCost: Number.isFinite(reasoning!) ? reasoning : undefined
       };
     }
     
