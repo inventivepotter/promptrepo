@@ -7,10 +7,8 @@ import {
   Button,
   Box,
 } from '@chakra-ui/react';
-import { LuRefreshCw, LuBot, LuDollarSign, LuChevronDown, LuChevronUp } from 'react-icons/lu';
+import { LuRefreshCw, LuBot, LuChevronDown, LuChevronUp } from 'react-icons/lu';
 import { useColorModeValue } from '@/components/ui/color-mode';
-import { pricingService } from '@/services/llm/pricing/pricingService';
-import { useSessionCost } from '@/stores/chatStore/hooks';
 
 interface ChatSimpleHeaderProps {
   onReset: () => void;
@@ -26,7 +24,6 @@ export function ChatSimpleHeader({
   onToggleContent,
 }: ChatSimpleHeaderProps) {
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
-  const totalCost = useSessionCost();
 
   return (
     <Box
@@ -36,20 +33,12 @@ export function ChatSimpleHeader({
       <VStack gap={3} align="stretch">
         {/* Header with title and action buttons - Always visible */}
         <HStack justify="space-between" align="center">
-          <VStack align="start" gap={0}>
+          <VStack align="start" gap={1}>
             <HStack>
               <LuBot size={18} />
               <Text fontSize="lg" fontWeight="semibold">
                 Agent
               </Text>
-              {totalCost > 0 && (
-                <HStack gap={1} fontSize="xs" color="green.600" _dark={{ color: "green.400" }}>
-                  <LuDollarSign size={12} />
-                  <Text fontFamily="mono" fontWeight="medium">
-                    {pricingService.formatCost(totalCost)}
-                  </Text>
-                </HStack>
-              )}
             </HStack>
             <Text fontSize="xs" color={mutedTextColor}>
               Your playground to test prompts with AI agents

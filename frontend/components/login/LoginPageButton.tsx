@@ -1,5 +1,4 @@
 'use client';
-import { usePathname } from 'next/navigation';
 import { Button } from '@chakra-ui/react';
 import { SiGitlab, SiBitbucket, SiGithub } from 'react-icons/si';
 import { useAuthActions } from '@/stores/authStore';
@@ -37,7 +36,6 @@ const providerConfig = {
 
 export const LoginPageButton = ({ provider }: LoginPageButtonProps) => {
   const { login } = useAuthActions();
-  const pathname = usePathname();
 
   const config = providerConfig[provider];
   if (!config) {
@@ -53,7 +51,7 @@ export const LoginPageButton = ({ provider }: LoginPageButtonProps) => {
       size="sm"
       p={2}
       transition="all 0.4s ease"
-      onClick={() => login(pathname)}
+      onClick={() => login('/prompts')}
       bg={config.bgColor}
       color={config.textColor}
       _hover={{

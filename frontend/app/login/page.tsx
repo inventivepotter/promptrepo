@@ -11,7 +11,7 @@ import { ConfigService } from '@/services/config/configService';
 import type { components } from '@/types/generated/api';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthState } from '@/stores/authStore';
+import { useIsAuthenticated, useIsInitialized, useAuthActions } from '@/stores/authStore';
 
 type OAuthProvider = components['schemas']['OAuthProvider'];
 
@@ -19,9 +19,16 @@ export default function LoginPage() {
   const config = useConfigStore((state) => state.config);
   const hostingType = config?.hosting_config?.type;
   const { initializeConfig } = useConfigStore.getState();
+  const { initializeAuth } = useAuthActions();
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const { isAuthenticated, isInitialized } = useAuthState();
+  const isAuthenticated = useIsAuthenticated();
+  const isInitialized = useIsInitialized();
+
+  // Initialize auth to check if already logged in
+  useEffect(() => {
+    void initializeAuth();
+  }, [initializeAuth]);
 
   // Redirect to prompts if already logged in
   useEffect(() => {
@@ -210,14 +217,6 @@ export default function LoginPage() {
           {"}"}
         </Box>
         <VStack gap={6} position="relative" zIndex={1}>
-          <Text
-            fontSize={{ base: "4xl", md: "5xl", lg: "6xl" }}
-            fontWeight="extrabold"
-            color={{ _light: "primary.600", _dark: "primary.300" }}
-            lineHeight="1.1"
-          >
-            Craft Better Prompts
-          </Text>
           <Box>
             <PromptQuotes />
           </Box>

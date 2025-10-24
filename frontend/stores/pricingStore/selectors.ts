@@ -1,6 +1,5 @@
 // Selectors for Pricing Store
-import type { PricingStore } from './types';
-import type { ModelPricing } from '@/types/Pricing';
+import type { PricingStore, ModelPricingInfo } from './types';
 
 // Data Selectors
 export const selectPricingData = (state: PricingStore) => state.pricingData;
@@ -23,7 +22,7 @@ export const selectIsCacheStale = (state: PricingStore) => {
 };
 
 // Model Selectors (using higher-order selectors)
-export const selectModelPricing = (modelName: string) => (state: PricingStore): ModelPricing | null => {
+export const selectModelPricing = (modelName: string) => (state: PricingStore): ModelPricingInfo | null => {
   return state.getModelPricing(modelName);
 };
 

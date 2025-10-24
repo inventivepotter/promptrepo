@@ -34,7 +34,18 @@ export const createUpdateConfigAction: StateCreator<
         usePromptStore.getState().invalidateCache();
         console.log('Configuration updated - invalidated prompt cache');
         
-        successNotification('Configuration Updated', 'Your configuration has been successfully updated.');
+        successNotification(
+          'Configuration Updated',
+          'Your configuration has been successfully updated.',
+          {
+            label: 'View Prompts',
+            onClick: () => {
+              if (typeof window !== 'undefined') {
+                window.location.href = '/prompts';
+              }
+            }
+          }
+        );
       } catch (error) {
         const storeError = handleStoreError(error, 'updateConfig');
         console.error('Update config error:', error);

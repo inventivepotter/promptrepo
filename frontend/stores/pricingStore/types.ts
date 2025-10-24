@@ -1,4 +1,4 @@
-import type { PricingData, ModelPricing } from '@/types/Pricing';
+import type { PricingData } from '@/types/Pricing';
 
 export interface PricingState {
   // Data
@@ -11,8 +11,14 @@ export interface PricingState {
   
   // Cache management
   lastFetched: number | null;
-  cacheExpiry: number; // 1 hour in milliseconds
+  cacheExpiry: number; // 24 hours in milliseconds
 }
+
+export type ModelPricingInfo = {
+  promptCost: number;
+  completionCost: number;
+  reasoningCost?: number;
+};
 
 export interface PricingActions {
   // Data fetching
@@ -20,9 +26,9 @@ export interface PricingActions {
   getPricingData: (maxAge?: number) => PricingData | null;
   
   // Model queries
-  getModelPricing: (modelName: string) => ModelPricing | null;
-  searchModels: (query: string) => Array<{ name: string; pricing: ModelPricing }>;
-  getAllModels: () => Array<{ name: string; pricing: ModelPricing }>;
+  getModelPricing: (modelName: string) => ModelPricingInfo | null;
+  searchModels: (query: string) => Array<{ name: string; pricing: ModelPricingInfo }>;
+  getAllModels: () => Array<{ name: string; pricing: ModelPricingInfo }>;
   
   // Utilities
   downloadPricingFile: () => void;

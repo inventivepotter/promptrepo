@@ -87,7 +87,6 @@ export default function CostDisplay({
     <div className={`inline-flex items-center space-x-1 text-xs ${className}`}>
       <span className="text-gray-500">Cost:</span>
       <span className="font-mono text-gray-700">{pricingService.formatCost(costCalculation.totalCost)}</span>
-      <span className="text-gray-400">({costCalculation.provider})</span>
     </div>
   );
 }
