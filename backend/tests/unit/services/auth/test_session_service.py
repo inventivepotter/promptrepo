@@ -182,15 +182,12 @@ class TestSessionService:
         db_session = Mock(spec=Session)
         service = SessionService(db_session)
         
-        # Mock the exec method to return expired sessions list
-        mock_exec = Mock()
-        mock_expired_sessions = [Mock(), Mock(), Mock()]  # 3 expired sessions
-        mock_exec.all.return_value = mock_expired_sessions
-        db_session.exec.return_value = mock_exec
-        
-        result = service.cleanup_expired_sessions(ttl_minutes=60)
-        
-        assert result == 3
+        # Patch DAO method used by the service
+        with patch.object(service, "user_session_dao") as mock_dao:
+            mock_dao.delete_expired.return_value = 3
+            result = service.cleanup_expired_sessions(ttl_minutes=60)
+            assert result == 3
+            mock_dao.delete_expired.assert_called_once()
 
     def test_update_session(self):
         """Test updating session"""

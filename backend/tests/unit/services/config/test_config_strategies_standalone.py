@@ -266,15 +266,14 @@ class TestOrganizationConfigStrategyStandalone:
             
         # Mock the get_llm_configs method as well
         with patch('services.config.strategies.organization.UserLLMDAO') as mock_dao_class, \
-             patch('os.environ.get', return_value="[]"):
+             patch.dict(os.environ, {"DEFAULT_LLM_CONFIGS": "[]"}, clear=False):
             mock_dao = Mock()
             mock_dao_class.return_value = mock_dao
             mock_dao.get_llm_configs_for_user.return_value = []
             
             retrieved_llm = self.strategy.get_llm_configs(mock_db, mock_user_id)
-            # For organization strategy, LLM configs come from environment, not database
-            # So the mock database won't affect the result
-            # The strategy returns None when no configs are found
+            # Organization strategy reads DEFAULT_LLM_CONFIGS from ENV; when set to "[]", expect empty list.
+            # The strategy returns None when no configs are found (empty list)
             assert retrieved_llm is None or retrieved_llm == []
     
     def test_set_and_get_repo_configs(self):
@@ -338,39 +337,6 @@ class TestOrganizationConfigStrategyStandalone:
             assert retrieved_repo[0].repo_name == "org/repo1"
             assert retrieved_repo[1].repo_name == "org/repo2"
 
-
-class TestMultiTenantConfigStrategyStandalone:
-    """Test cases for MultiTenantConfig strategy (standalone) - SKIP as MULTI_TENANT is not supported"""
-    
-    @pytest.mark.skip(reason="MULTI_TENANT hosting type is not supported in current implementation")
-    def test_factory_creates_multi_tenant_strategy(self):
-        """Test factory creates MultiTenantConfig strategy"""
-        pass
-    
-    @pytest.mark.skip(reason="MULTI_TENANT hosting type is not supported in current implementation")
-    def test_get_hosting_config(self):
-        """Test getting hosting config from ENV"""
-        pass
-    
-    @pytest.mark.skip(reason="MULTI_TENANT hosting type is not supported in current implementation")
-    def test_set_and_get_oauth_configs(self):
-        """Test setting and getting OAuth configs from ENV (system-wide)"""
-        pass
-    
-    @pytest.mark.skip(reason="MULTI_TENANT hosting type is not supported in current implementation")
-    def test_set_and_get_llm_configs(self):
-        """Test setting and getting LLM configs from users (in-memory)"""
-        pass
-    
-    @pytest.mark.skip(reason="MULTI_TENANT hosting type is not supported in current implementation")
-    def test_set_and_get_repo_configs(self):
-        """Test setting and getting repo configs from users (in-memory)"""
-        pass
-    
-    @pytest.mark.skip(reason="MULTI_TENANT hosting type is not supported in current implementation")
-    def test_tenant_isolation(self):
-        """Test tenant isolation by switching tenant"""
-        pass
 
 
 class TestConfigStrategyFactoryStandalone:

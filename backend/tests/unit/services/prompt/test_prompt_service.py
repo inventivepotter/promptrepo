@@ -478,7 +478,7 @@ class TestUpdatePrompt:
         
         assert result is not None
         # update_prompt returns a tuple (PromptMeta, PRInfo)
-        updated_prompt, pr_info = result
+        updated_prompt, _pr_info = result
         assert updated_prompt is not None
         assert updated_prompt.prompt.name == "New Name"
 

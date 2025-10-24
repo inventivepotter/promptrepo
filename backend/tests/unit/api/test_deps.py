@@ -246,7 +246,11 @@ class TestAuthenticationDependencies:
             mock_config.type = HostingType.ORGANIZATION
             mock_config_service.get_hosting_config.return_value = mock_config
             mock_get_session.return_value = "test-session-id"
-            mock_session_service.is_session_valid.return_value = True
+            
+            # Create a mock session object for is_session_valid to return
+            mock_session = Mock(spec=UserSessions)
+            mock_session.user_id = "test-user-123"
+            mock_session_service.is_session_valid.return_value = mock_session
             mock_session_service.get_session_by_id.return_value = None
             
             result = await get_optional_user(

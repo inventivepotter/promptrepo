@@ -4,7 +4,7 @@ Tests for OAuth service.
 
 import pytest
 from unittest.mock import Mock, AsyncMock, patch
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 from services.oauth.oauth_service import OAuthService
 from services.oauth.oauth_factory import OAuthProviderFactory
@@ -19,6 +19,7 @@ from services.oauth.models import (
     TokenExchangeError,
     OAuthError,
 )
+from middlewares.rest.exceptions import AppException
 from schemas.oauth_provider_enum import OAuthProvider
 from services.oauth.providers.github_provider import GitHubOAuthProvider
 from services.oauth.providers.gitlab_provider import GitLabOAuthProvider
@@ -92,7 +93,7 @@ class TestOAuthService:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("provider,expected_error,exception_type", [
         ("", "Provider name must be a non-empty string", ValueError),
-        ("unknown", "No OAuth configurations found", Exception)
+        ("unknown", "No OAuth configurations found", AppException)
     ])
     async def test_get_authorization_url_validation(self, git_provider_service, provider, expected_error, exception_type):
         """Test getting authorization URL with invalid parameters and unknown providers."""
@@ -107,7 +108,6 @@ class TestOAuthService:
         """Test successful token exchange."""
         # Mock the state manager to return valid state
         from database.models import OAuthState as DBOAuthState
-        from datetime import datetime, UTC, timedelta
         
         mock_state = DBOAuthState(
             state_token=test_state,
@@ -115,7 +115,7 @@ class TestOAuthService:
             redirect_uri=redirect_uri,
             scopes="user:email,read:user",
             meta_data={},
-            expires_at=datetime.now(UTC) + timedelta(minutes=10)
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=10)
         )
         
         with patch.object(git_provider_service.state_manager, 'validate_state', return_value=True), \
@@ -161,7 +161,6 @@ class TestOAuthService:
         """Test exchanging authorization code for token with error response."""
         # Mock the state manager to return valid state
         from database.models import OAuthState as DBOAuthState
-        from datetime import datetime, UTC, timedelta
         
         mock_state = DBOAuthState(
             state_token=test_state,
@@ -169,7 +168,7 @@ class TestOAuthService:
             redirect_uri=redirect_uri,
             scopes="user:email,read:user",
             meta_data={},
-            expires_at=datetime.now(UTC) + timedelta(minutes=10)
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=10)
         )
         
         with patch.object(git_provider_service.state_manager, 'validate_state', return_value=True), \
@@ -387,7 +386,7 @@ class TestOAuthService:
                 # Clear providers to simulate unknown provider
                 OAuthProviderFactory.clear_registry()
                 method = getattr(git_provider_service, method_name)
-                with pytest.raises(Exception):  # Will raise ProviderNotFoundError
+                with pytest.raises(ProviderNotFoundError):
                     await method(provider=test_provider, **kwargs)
                 
                 # Re-register providers for other tests
@@ -398,7 +397,7 @@ class TestOAuthService:
             # Clear providers to simulate unknown provider
             OAuthProviderFactory.clear_registry()
             method = getattr(git_provider_service, method_name)
-            with pytest.raises(Exception):  # Will raise ProviderNotFoundError or AppException
+            with pytest.raises(ProviderNotFoundError):
                 await method(provider=test_provider, **kwargs)
             
             # Re-register providers for other tests

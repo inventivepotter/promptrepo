@@ -304,40 +304,6 @@ class TestOrganizationConfigStrategy:
                     pass
 
 
-class TestMultiTenantConfigStrategy:
-    """Test cases for MultiTenantConfig strategy - SKIP as MULTI_TENANT is not supported"""
-    
-    @pytest.mark.skip(reason="MULTI_TENANT hosting type is not supported in the current implementation")
-    def test_factory_creates_multi_tenant_strategy(self):
-        """Test factory creates MultiTenantConfig strategy"""
-        pass
-    
-    @pytest.mark.skip(reason="MULTI_TENANT hosting type is not supported in the current implementation")
-    def test_get_hosting_config(self):
-        """Test getting hosting config from ENV"""
-        pass
-    
-    @pytest.mark.skip(reason="MULTI_TENANT hosting type is not supported in the current implementation")
-    def test_set_and_get_oauth_configs(self):
-        """Test setting and getting OAuth configs from ENV (system-wide)"""
-        pass
-    
-    @pytest.mark.skip(reason="MULTI_TENANT hosting type is not supported in the current implementation")
-    def test_set_and_get_llm_configs(self):
-        """Test setting and getting LLM configs from users (in-memory)"""
-        pass
-    
-    @pytest.mark.skip(reason="MULTI_TENANT hosting type is not supported in the current implementation")
-    def test_set_and_get_repo_configs(self):
-        """Test setting and getting repo configs from users (in-memory)"""
-        pass
-    
-    @pytest.mark.skip(reason="MULTI_TENANT hosting type is not supported in the current implementation")
-    def test_tenant_isolation(self):
-        """Test tenant isolation by switching tenant"""
-        pass
-
-
 class TestConfigStrategyFactory:
     """Test cases for ConfigStrategyFactory"""
     

@@ -367,19 +367,6 @@ class TestDatabaseManager:
             if os.path.exists(test_db):
                 os.remove(test_db)
     
-    @pytest.mark.skip(reason="DatabaseManager doesn't implement __str__ method")
-    def test_manager_string_representation(self):
-        """Test manager string representation"""
-        sqlite_url = "sqlite:///test_str.db"
-        manager = DatabaseManager(sqlite_url, echo=False)
-        
-        str_repr = str(manager)
-        assert "DatabaseManager" in str_repr
-        assert sqlite_url in str_repr
-        
-        # Clean up
-        if os.path.exists("test_str.db"):
-            os.remove("test_str.db")
     
     def test_manager_property_access(self):
         """Test manager property access"""

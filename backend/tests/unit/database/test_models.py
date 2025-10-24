@@ -354,34 +354,6 @@ class TestUserReposModel:
         assert db_session.exec(select(UserRepos).where(UserRepos.user_id == user1.id)).first() is not None
         assert db_session.exec(select(UserRepos).where(UserRepos.user_id == user2.id)).first() is not None
 
-    @pytest.mark.skip(reason="Unique constraint test depends on database configuration")
-    def test_repository_unique_constraint(self, db_session: Session):
-        """Test unique constraint on user_id + repo_name"""
-        # Create user
-        user = User(oauth_username="unique_repo_user", oauth_provider=OAuthProvider.GITHUB, oauth_user_id="111")
-        db_session.add(user)
-        db_session.commit()
-
-        # Create first repository
-        repo1 = UserRepos(
-            user_id=user.id,
-            repo_clone_url="https://github.com/user/unique.git",
-            repo_name="user/unique"
-        )
-        db_session.add(repo1)
-        db_session.commit()
-
-        # Try to create second repository with same name for same user
-        repo2 = UserRepos(
-            user_id=user.id,
-            repo_clone_url="https://github.com/user/unique-different.git",
-            repo_name="user/unique"  # Same repo name
-        )
-        db_session.add(repo2)
-
-        # Should raise integrity error
-        with pytest.raises(Exception):
-            db_session.commit()
 
     def test_repository_query_by_status(self, db_session: Session):
         """Test querying repositories by status"""
