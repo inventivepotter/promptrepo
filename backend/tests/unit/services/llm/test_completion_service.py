@@ -350,6 +350,7 @@ class TestChatCompletionService:
         result = self.service.process_usage_stats(mock_usage)
         assert result is None
     
+    @pytest.mark.asyncio
     async def test_process_streaming_chunk_with_choices(self):
         """Test _process_streaming_chunk with choices format"""
         # Mock chunk with choices
@@ -370,6 +371,7 @@ class TestChatCompletionService:
         assert "completion_123" in result
         assert "gpt-4" in result
     
+    @pytest.mark.asyncio
     async def test_process_streaming_chunk_with_content(self):
         """Test _process_streaming_chunk with direct content format"""
         mock_chunk = Mock()
@@ -384,6 +386,7 @@ class TestChatCompletionService:
         assert "data: " in result
         assert "Direct content" in result
     
+    @pytest.mark.asyncio
     async def test_process_streaming_chunk_malformed(self):
         """Test _process_streaming_chunk with malformed chunk"""
         mock_chunk = Mock()
@@ -396,6 +399,7 @@ class TestChatCompletionService:
         
         assert result == ""
     
+    @pytest.mark.asyncio
     async def test_process_streaming_chunk_exception(self):
         """Test _process_streaming_chunk when exception occurs"""
         mock_chunk = Mock()
@@ -409,6 +413,7 @@ class TestChatCompletionService:
         assert result == ""
     
     @patch('services.llm.completion_service.acompletion')
+    @pytest.mark.asyncio
     async def test_execute_non_streaming_completion_success(self, mock_acompletion):
         """Test execute_non_streaming_completion with successful response"""
         # Setup mocks
@@ -471,6 +476,7 @@ class TestChatCompletionService:
         assert call_args["api_key"] == "test-key"
     
     @patch('services.llm.completion_service.acompletion')
+    @pytest.mark.asyncio
     async def test_execute_non_streaming_completion_no_content(self, mock_acompletion):
         """Test execute_non_streaming_completion when no content is returned"""
         # Setup mocks
@@ -503,6 +509,7 @@ class TestChatCompletionService:
         assert "Unexpected response format" in str(exc_info.value.detail)
     
     @patch('services.llm.completion_service.acompletion')
+    @pytest.mark.asyncio
     async def test_stream_completion_success(self, mock_acompletion):
         """Test stream_completion with successful streaming"""
         # Setup mocks
@@ -564,6 +571,7 @@ class TestChatCompletionService:
         assert call_args["stream"] is True
     
     @patch('services.llm.completion_service.acompletion')
+    @pytest.mark.asyncio
     async def test_stream_completion_exception(self, mock_acompletion):
         """Test stream_completion when any-llm raises exception"""
         # Setup mocks
@@ -592,6 +600,7 @@ class TestChatCompletionService:
         
         assert "Completion error" in str(exc_info.value)
     
+    @pytest.mark.asyncio
     async def test_stream_completion_invalid_system_message(self):
         """Test stream_completion with invalid system message"""
         request = ChatCompletionRequest(
@@ -612,6 +621,7 @@ class TestChatCompletionService:
             async for _ in self.service.stream_completion(request, "user123", "completion_123"):
                 pass
     
+    @pytest.mark.asyncio
     async def test_execute_non_streaming_completion_invalid_system_message(self):
         """Test execute_non_streaming_completion with invalid system message"""
         request = ChatCompletionRequest(

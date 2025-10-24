@@ -9,6 +9,7 @@ from datetime import datetime, UTC, timedelta
 from database.daos.user.user_repos_dao import UserReposDAO
 from database.models import UserRepos, RepoStatus
 from database.models.user import User
+from schemas.oauth_provider_enum import OAuthProvider
 
 
 @pytest.fixture
@@ -16,7 +17,7 @@ def sample_user(db_session: Session) -> User:
     """Fixture to create a sample user for testing."""
     user = User(
         id=str(uuid4()),
-        oauth_provider="github",
+        oauth_provider=OAuthProvider.GITHUB,
         oauth_username="testuser",
         oauth_email="test@example.com"
     )
@@ -178,7 +179,7 @@ def test_get_repositories_by_status_specific_user(user_repos_dao: UserReposDAO, 
     # Create another user
     user2 = User(
         id=str(uuid4()),
-        oauth_provider="github",
+        oauth_provider=OAuthProvider.GITHUB,
         oauth_username="user2",
         oauth_email="user2@example.com"
     )
@@ -380,8 +381,8 @@ def test_update_repository_path_not_found(user_repos_dao: UserReposDAO):
 
 def test_add_repository_exception_handling(user_repos_dao: UserReposDAO, sample_repo_data: dict, mocker):
     """Test exception handling when adding a repository fails."""
-    # Mock the database session to raise an exception
-    mocker.patch.object(user_repos_dao.db, 'exec', side_effect=Exception("Database error"))
+    # Mock the database session to raise an exception during add
+    mocker.patch.object(user_repos_dao.db, 'add', side_effect=Exception("Database error"))
     
     # This should raise an exception
     with pytest.raises(Exception) as exc_info:

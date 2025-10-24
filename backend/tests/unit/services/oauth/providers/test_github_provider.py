@@ -59,7 +59,7 @@ class TestGitHubOAuthProvider:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("scopes,expected_scope", [
         (["user:email", "read:user"], "user%3Aemail+read%3Auser"),
-        ([], "user%3Aemail+read%3Auser")  # Default scopes
+        ([], "repo+user%3Aemail+read%3Auser")  # Default scopes include repo
     ])
     async def test_generate_auth_url(self, github_provider, redirect_uri, scopes, expected_scope, test_state):
         """Test generating authorization URL with different scope scenarios."""
