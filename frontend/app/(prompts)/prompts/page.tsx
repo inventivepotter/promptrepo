@@ -73,7 +73,7 @@ export default function PromptsPage() {
   
   // Use config store to check if repositories are configured
   const config = useConfigStore((state) => state.config);
-  const hasConfiguredRepos = config.repo_configs && config.repo_configs.length > 0;
+  const hasConfiguredRepos = Boolean(config?.repo_configs?.length);
 
   // Delete dialog state from store
   const deleteDialogOpen = useDeleteDialogOpen();

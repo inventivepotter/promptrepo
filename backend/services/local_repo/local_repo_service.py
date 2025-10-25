@@ -408,7 +408,7 @@ class LocalRepoService:
         2. Pull the latest changes from remote
         3. Return success status
         
-        Any local changes will be discarded.
+        Any local changes will be stashed before pulling.
         
         Args:
             user_id: ID of the user
