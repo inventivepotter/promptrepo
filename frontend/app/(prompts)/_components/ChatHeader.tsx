@@ -12,7 +12,6 @@ import {
   Collapsible,
 } from '@chakra-ui/react';
 import { LuRefreshCw, LuBot, LuChevronDown, LuChevronUp } from 'react-icons/lu';
-import { FaChevronDown } from 'react-icons/fa';
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { Tool } from '../_types/ChatState';
 import { ToolsHeader } from './ToolsHeader';
@@ -127,7 +126,7 @@ export function ChatHeader({
                 fontSize="sm"
               />
               <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
-                <FaChevronDown size={10} />
+                <LuChevronDown size={16} />
               </Combobox.Trigger>
             </Combobox.Control>
             <Combobox.Positioner>

@@ -502,11 +502,11 @@ class TestChatCompletionService:
             stop=None
         )
         
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(ServiceUnavailableException) as exc_info:
             await self.service.execute_non_streaming_completion(request, "user123")
         
-        assert exc_info.value.status_code == 500
-        assert "Unexpected response format" in str(exc_info.value.detail)
+        assert "Completion error" in str(exc_info.value)
+        assert "Unexpected response format from completion API" in str(exc_info.value)
     
     @patch('services.llm.completion_service.acompletion')
     @pytest.mark.asyncio

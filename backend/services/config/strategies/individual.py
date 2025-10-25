@@ -137,6 +137,7 @@ class IndividualConfig(IConfig):
                         model=config.get("model"),
                         api_key=config.get("api_key"),
                         api_base_url=config.get("api_base_url") or "",
+                        label=config.get("label") or "",  # Parse label from ENV config
                         scope=LLMConfigScope.USER
                     )
                     for config in llm_configs_data

@@ -17,7 +17,6 @@ import {
   Collapsible,
 } from '@chakra-ui/react';
 import { useMemo, useState } from 'react';
-import { FaChevronDown } from 'react-icons/fa';
 import { LuGitBranch, LuChevronDown, LuChevronUp } from 'react-icons/lu';
 import {
   useConfig,
@@ -243,7 +242,7 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                           paddingRight="2rem"
                         />
                         <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
-                          <FaChevronDown size={10} />
+                          <LuChevronDown size={16} />
                         </Combobox.Trigger>
                       </Combobox.Control>
                       <Combobox.Positioner style={{ zIndex: 50 }}>
@@ -307,7 +306,7 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                           disabled={disabled || isSaving || isLoadingBranches || !selectedRepo}
                         />
                         <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
-                          <FaChevronDown size={10} />
+                          <LuChevronDown size={16} />
                         </Combobox.Trigger>
                       </Combobox.Control>
                       <Combobox.Positioner style={{ zIndex: 50 }}>

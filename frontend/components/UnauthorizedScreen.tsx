@@ -1,11 +1,13 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import {
   Box,
   Text,
   VStack,
   HStack,
+  Link as ChakraLink,
 } from '@chakra-ui/react';
 
 export function UnauthorizedScreen() {
@@ -42,7 +44,7 @@ export function UnauthorizedScreen() {
             </Text>
 
             <Text fontSize="xs">
-              Please log in to access this page.
+              Please <ChakraLink as={Link} href="/login" textDecoration="underline" color="blue.500">log in</ChakraLink> to access this page.
             </Text>
           </VStack>
         </HStack>

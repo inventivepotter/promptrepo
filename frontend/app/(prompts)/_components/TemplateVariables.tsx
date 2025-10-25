@@ -11,8 +11,8 @@ import {
   Collapsible,
 } from '@chakra-ui/react';
 import { useColorModeValue } from '@/components/ui/color-mode';
+import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
 import { TemplateUtils } from '@/services/prompts';
-import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 
 interface TemplateVariablesProps {
   promptTemplate: string;
@@ -83,7 +83,7 @@ export function TemplateVariables({
             }}
             transition="color 0.2s"
           >
-            {isExpanded ? <FaChevronUp size={10} /> : <FaChevronDown size={10} />}
+            {isExpanded ? <LuChevronUp size={16} /> : <LuChevronDown size={16} />}
           </Box>
         )}
       </HStack>

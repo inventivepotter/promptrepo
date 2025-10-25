@@ -264,6 +264,7 @@ class OrganizationConfig(IConfig):
                         model=config.get("model"),
                         api_key=config.get("api_key"),
                         api_base_url=config.get("api_base_url") or "",
+                        label=config.get("label") or "",  # Parse label from ENV config
                         scope=LLMConfigScope.ORGANIZATION  # ENV configs have organization scope
                     )
                     for config in llm_configs_data

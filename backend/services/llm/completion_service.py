@@ -17,6 +17,8 @@ from services.llm.models import (
     PromptTokensDetails,
     CompletionTokensDetails
 )
+from services.llm.providers.zai_llm_provider import ZAILlmProvider
+from services.llm.providers.litellm_provider import LiteLLMProvider
 from middlewares.rest.exceptions import (
     BadRequestException,
     ServiceUnavailableException
@@ -78,18 +80,38 @@ class ChatCompletionService:
 
         api_key, api_base_url = self._get_api_details(request.provider, request.model, user_id=user_id)
 
-        # Build completion parameters
-        completion_params = self.build_completion_params(request, api_key, api_base_url, stream=True)
-        
         try:
-            # Call any-llm completion with streaming
-            stream_response = await acompletion(**completion_params)
-            stream_iterator = cast(AsyncIterator[ChatCompletionChunk], stream_response)
-            
-            async for chunk in stream_iterator:
-                processed_chunk = await self._process_streaming_chunk(chunk, completion_id, request.model)
-                if processed_chunk:  # Only yield non-empty chunks
-                    yield processed_chunk
+            # Handle Z.AI provider separately
+            if request.provider == "zai":
+                zai_service = ZAILlmProvider(
+                    api_key=api_key,
+                    api_base=api_base_url or "https://api.z.ai/api/coding/paas/v4"
+                )
+                async for chunk in zai_service.create_streaming_completion(request):
+                    yield chunk
+            elif request.provider == "litellm":
+                # Handle LiteLLM provider separately
+                if not api_base_url:
+                    raise ServiceUnavailableException(
+                        message="API base URL is required for LiteLLM provider",
+                        context={"provider": request.provider}
+                    )
+                litellm_service = LiteLLMProvider(
+                    api_key=api_key,
+                    api_base=api_base_url
+                )
+                async for chunk in litellm_service.create_streaming_completion(request):
+                    yield chunk
+            else:
+                # Handle other providers with any-llm
+                completion_params = self.build_completion_params(request, api_key, api_base_url, stream=True)
+                stream_response = await acompletion(**completion_params)
+                stream_iterator = cast(AsyncIterator[ChatCompletionChunk], stream_response)
+                
+                async for chunk in stream_iterator:
+                    processed_chunk = await self._process_streaming_chunk(chunk, completion_id, request.model)
+                    if processed_chunk:  # Only yield non-empty chunks
+                        yield processed_chunk
                     
         except Exception as e:
             self.logger.error(f"Error in streaming completion: {e}")
@@ -221,47 +243,111 @@ class ChatCompletionService:
 
         api_key, api_base_url = self._get_api_details(request.provider, request.model, user_id=user_id)
         
-        # Build completion parameters
-        completion_params = self.build_completion_params(request, api_key, api_base_url, stream=False)
-        
-        # Track inference timing
-        start_time = time.time()
-        
-        # Call any-llm completion (non-streaming)
-        completion_result = await acompletion(**completion_params)
-        
-        # Calculate inference time in milliseconds
-        inference_time_ms = (time.time() - start_time) * 1000
-        
-        response = cast(ChatCompletion, completion_result)  # Safe because stream=False
-        
-        # Handle response - any-llm follows OpenAI format for non-streaming
-        content = ""
-        finish_reason = None
-        
-        # any-llm returns ChatCompletion object with choices[0].message.content
-        if hasattr(response, 'choices') and response.choices and len(response.choices) > 0:
-            choice = response.choices[0]
-            
-            if hasattr(choice, 'message') and hasattr(choice.message, 'content'):
-                content = choice.message.content or ""
+        try:
+            # Handle Z.AI provider separately
+            if request.provider == "zai":
+                zai_service = ZAILlmProvider(
+                    api_key=api_key,
+                    api_base=api_base_url or "https://api.z.ai/api/coding/paas/v4"
+                )
+                response = await zai_service.create_completion(request, stream=False)
                 
-            if hasattr(choice, 'finish_reason'):
-                finish_reason = choice.finish_reason
-        else:
-            self.logger.error(f"No choices in response or choices is empty. Response: {response}")
-        
-        if not content:
-            self.logger.error(f"No content extracted from response")
-            raise HTTPException(
-                status_code=500,
-                detail="Unexpected response format from completion API"
+                # Extract content and finish reason from Z.AI response
+                content = ""
+                finish_reason = None
+                
+                if response.choices and len(response.choices) > 0:
+                    choice = response.choices[0]
+                    content = choice.message.content or ""
+                    finish_reason = choice.finish_reason
+                
+                if not content:
+                    self.logger.error(f"No content extracted from Z.AI response")
+                    raise HTTPException(
+                        status_code=500,
+                        detail="Unexpected response format from Z.AI completion API"
+                    )
+                
+                return content, finish_reason, response.usage, response.inference_time_ms or 0.0
+            elif request.provider == "litellm":
+                # Handle LiteLLM provider separately
+                if not api_base_url:
+                    raise ServiceUnavailableException(
+                        message="API base URL is required for LiteLLM provider",
+                        context={"provider": request.provider}
+                    )
+                litellm_service = LiteLLMProvider(
+                    api_key=api_key,
+                    api_base=api_base_url
+                )
+                response = await litellm_service.create_completion(request, stream=False)
+                
+                # Extract content and finish reason from LiteLLM response
+                content = ""
+                finish_reason = None
+                
+                if response.choices and len(response.choices) > 0:
+                    choice = response.choices[0]
+                    content = choice.message.content or ""
+                    finish_reason = choice.finish_reason
+                
+                if not content:
+                    self.logger.error(f"No content extracted from LiteLLM response")
+                    raise HTTPException(
+                        status_code=500,
+                        detail="Unexpected response format from LiteLLM completion API"
+                    )
+                
+                return content, finish_reason, response.usage, response.inference_time_ms or 0.0
+            else:
+                # Handle other providers with any-llm
+                completion_params = self.build_completion_params(request, api_key, api_base_url, stream=False)
+                
+                # Track inference timing
+                start_time = time.time()
+                
+                # Call any-llm completion (non-streaming)
+                completion_result = await acompletion(**completion_params)
+                
+                # Calculate inference time in milliseconds
+                inference_time_ms = (time.time() - start_time) * 1000
+                
+                response = cast(ChatCompletion, completion_result)  # Safe because stream=False
+                
+                # Handle response - any-llm follows OpenAI format for non-streaming
+                content = ""
+                finish_reason = None
+                
+                # any-llm returns ChatCompletion object with choices[0].message.content
+                if hasattr(response, 'choices') and response.choices and len(response.choices) > 0:
+                    choice = response.choices[0]
+                    
+                    if hasattr(choice, 'message') and hasattr(choice.message, 'content'):
+                        content = choice.message.content or ""
+                        
+                    if hasattr(choice, 'finish_reason'):
+                        finish_reason = choice.finish_reason
+                else:
+                    self.logger.error(f"No choices in response or choices is empty. Response: {response}")
+                
+                if not content:
+                    self.logger.error(f"No content extracted from response")
+                    raise HTTPException(
+                        status_code=500,
+                        detail="Unexpected response format from completion API"
+                    )
+                
+                # Process usage statistics
+                usage_stats = self.process_usage_stats(response.usage)
+                
+                return content, finish_reason, usage_stats, inference_time_ms
+                
+        except Exception as e:
+            self.logger.error(f"Error in non-streaming completion: {e}")
+            raise ServiceUnavailableException(
+                message=f"Completion error: {str(e)}",
+                context={"provider": request.provider, "model": request.model}
             )
-        
-        # Process usage statistics
-        usage_stats = self.process_usage_stats(response.usage)
-        
-        return content, finish_reason, usage_stats, inference_time_ms
 
     def _validate_system_message(self, messages: list[ChatMessage]) -> None:
         """Validate that the first message is a system message."""
