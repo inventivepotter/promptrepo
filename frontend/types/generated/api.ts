@@ -735,6 +735,12 @@ export interface components {
              */
             api_base_url: string;
             /**
+             * Label
+             * @description Custom label for the LLM configuration (used for organization-scoped configs)
+             * @default
+             */
+            label: string;
+            /**
              * @description Scope of the LLM config: 'organization' for ENV configs, 'user' for user-specific configs
              * @default organization
              */

@@ -12,7 +12,7 @@ import {
   createListCollection,
   Box,
 } from '@chakra-ui/react';
-import { FaChevronDown } from 'react-icons/fa';
+import { LuChevronDown } from 'react-icons/lu';
 import { useNewPromptForm } from '@/stores/promptStore';
 
 interface CreatePromptModalProps {
@@ -110,7 +110,7 @@ export function CreatePromptModal({ open, onOpenChange }: CreatePromptModalProps
                       paddingRight="2rem"
                     />
                     <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
-                      <FaChevronDown size={10} />
+                      <LuChevronDown size={16} />
                     </Combobox.Trigger>
                   </Combobox.Control>
                   <Combobox.Positioner style={{ zIndex: 50 }}>

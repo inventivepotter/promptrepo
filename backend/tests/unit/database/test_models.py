@@ -194,6 +194,9 @@ class TestUserSessionModel:
         # Update accessed_at by updating the record
         session.oauth_token = "updated_token"
         db_session.commit()
+        
+        # Refresh to get the updated timestamp from database
+        db_session.refresh(session)
 
         # accessed_at should have changed
         assert session.accessed_at >= original_accessed_at

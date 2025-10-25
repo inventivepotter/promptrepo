@@ -11,7 +11,8 @@ import {
   Button,
   Popover,
 } from '@chakra-ui/react';
-import { FaChevronDown, FaInfoCircle } from 'react-icons/fa';
+import { FaInfoCircle } from 'react-icons/fa';
+import { LuChevronDown } from 'react-icons/lu';
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { useToolsManagement } from '@/stores/chatStore/hooks';
 import { ToolsHeader } from './ToolsHeader';
@@ -66,7 +67,7 @@ export function ChatFooter() {
               fontSize="sm"
             />
             <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
-              <FaChevronDown size={10} />
+              <LuChevronDown size={16} />
             </Combobox.Trigger>
           </Combobox.Control>
           <Combobox.Positioner>

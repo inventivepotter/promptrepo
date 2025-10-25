@@ -18,8 +18,7 @@ import {
   Text,
 } from '@chakra-ui/react';
 import { Tooltip } from '@/components/ui/tooltip';
-import { FaChevronDown } from 'react-icons/fa';
-import { LuInfo, LuChevronDown, LuChevronUp } from 'react-icons/lu';
+import { LuInfo, LuChevronDown, LuChevronUp, LuPlus } from 'react-icons/lu';
 import {
   useCurrentPrompt,
   usePromptActions,
@@ -106,7 +105,7 @@ function ModelCombobox({
             paddingRight="2rem"
           />
           <Combobox.Trigger position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
-            <FaChevronDown size={10} />
+            <LuChevronDown size={16} />
           </Combobox.Trigger>
         </Combobox.Control>
         <Combobox.Positioner style={{ zIndex: 50 }}>
@@ -130,6 +129,10 @@ export function ModelFieldGroup() {
   const updateField = useUpdateCurrentPromptField();
   const config = useConfigStore(state => state.config);
   const [showModelConfig, setShowModelConfig] = useState(true);
+
+  const handleNavigateToConfig = () => {
+    window.open('/config#llm-config', '_blank');
+  };
   
   const primaryModelSearch = usePrimaryModelSearch();
   const failoverModelSearch = useFailoverModelSearch();
@@ -166,20 +169,36 @@ export function ModelFieldGroup() {
                 Select primary and failover models, and configure generation parameters
               </Fieldset.HelperText>
             </Stack>
-            <Button
-              variant="ghost"
-              _hover={{ bg: "bg.subtle" }}
-              size="sm"
-              onClick={() => setShowModelConfig(!showModelConfig)}
-              aria-label={showModelConfig ? "Collapse model configuration" : "Expand model configuration"}
-            >
-              <HStack gap={1}>
-                <Text fontSize="xs" fontWeight="medium">
-                  {showModelConfig ? "Hide" : "Show"}
-                </Text>
-                {showModelConfig ? <LuChevronUp /> : <LuChevronDown />}
-              </HStack>
-            </Button>
+            <HStack gap={2}>
+              <Button
+                variant="ghost"
+                _hover={{ bg: "bg.subtle" }}
+                size="sm"
+                onClick={handleNavigateToConfig}
+                aria-label="Navigate to LLM configuration"
+              >
+                <HStack gap={1}>
+                  <LuPlus size="xs" />
+                  <Text fontSize="xs" fontWeight="medium">
+                    Add LLM Provider
+                  </Text>
+                </HStack>
+              </Button>
+              <Button
+                variant="ghost"
+                _hover={{ bg: "bg.subtle" }}
+                size="sm"
+                onClick={() => setShowModelConfig(!showModelConfig)}
+                aria-label={showModelConfig ? "Collapse model configuration" : "Expand model configuration"}
+              >
+                <HStack gap={1}>
+                  <Text fontSize="xs" fontWeight="medium">
+                    {showModelConfig ? "Hide" : "Show"}
+                  </Text>
+                  {showModelConfig ? <LuChevronUp /> : <LuChevronDown />}
+                </HStack>
+              </Button>
+            </HStack>
           </HStack>
 
           <Fieldset.Content overflow="visible">

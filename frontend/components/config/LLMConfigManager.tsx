@@ -17,7 +17,6 @@ import {
   EmptyState,
   Collapsible,
 } from '@chakra-ui/react'
-import { FaChevronDown } from 'react-icons/fa';
 import { LuCpu, LuChevronDown, LuChevronUp } from 'react-icons/lu';
 import { useEffect, useState } from 'react';
 import type { components } from '@/types/generated/api';
@@ -104,7 +103,8 @@ export default function LLMConfigManager({
       model: llmModel,
       api_key: apiKey,
       api_base_url: requiresApiBase ? apiBaseUrl : '',
-      scope: 'user'
+      scope: 'user',
+      label: '',
     };
     
     addLLMConfig(newConfig);
@@ -146,6 +146,7 @@ export default function LLMConfigManager({
 
   return (
     <Card.Root
+      id="llm-config"
       borderWidth="1px"
       borderColor={borderColor}
       overflow="visible"
@@ -217,7 +218,7 @@ export default function LLMConfigManager({
                       />
                       <Combobox.IndicatorGroup position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
                         <Combobox.Trigger>
-                          <FaChevronDown size={10} />
+                          <LuChevronDown size={16} />
                         </Combobox.Trigger>
                       </Combobox.IndicatorGroup>
                     </Combobox.Control>
@@ -307,7 +308,7 @@ export default function LLMConfigManager({
                       />
                       <Combobox.IndicatorGroup position="absolute" right="0.5rem" top="50%" transform="translateY(-50%)">
                         <Combobox.Trigger>
-                          <FaChevronDown size={10} />
+                          <LuChevronDown size={16} />
                         </Combobox.Trigger>
                       </Combobox.IndicatorGroup>
                     </Combobox.Control>
@@ -415,7 +416,7 @@ export default function LLMConfigManager({
                               borderColor="border.subtle"
                             >
                               <Text fontSize="xs" fontWeight="normal" color="fg.muted">
-                                Organization Scoped
+                                {config.label || "Organization Scoped"}
                               </Text>
                             </Box>
                           )}

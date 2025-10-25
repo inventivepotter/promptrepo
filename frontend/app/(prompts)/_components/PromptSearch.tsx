@@ -11,8 +11,7 @@ import {
   Combobox,
   createListCollection,
 } from '@chakra-ui/react';
-import { LuSearch, LuArrowUp, LuArrowDown } from 'react-icons/lu';
-import { FaChevronDown } from 'react-icons/fa';
+import { LuSearch, LuArrowUp, LuArrowDown, LuChevronDown } from 'react-icons/lu';
 
 interface PromptSearchProps {
   searchQuery: string;
@@ -138,7 +137,7 @@ export function PromptSearch({
                       transform="translateY(-50%)"
                       color="fg.muted"
                     >
-                      <FaChevronDown size={10} />
+                      <LuChevronDown size={16} />
                     </Combobox.Trigger>
                   </Combobox.Control>
                   <Combobox.Positioner>

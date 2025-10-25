@@ -109,6 +109,7 @@ class ConfigService:
                     model=config.model,
                     api_key="",  # Strip api_key
                     api_base_url="",  # Strip api_base_url
+                    label=config.label,  # Keep label for display
                     scope=config.scope
                 )
                 configs.llm_configs.append(sanitized_config)

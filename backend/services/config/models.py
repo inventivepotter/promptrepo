@@ -66,6 +66,10 @@ class LLMConfig(BaseModel):
         default="",
         description="LLM API base URL"
     )
+    label: str = Field(
+        default="",
+        description="Custom label for the LLM configuration (used for organization-scoped configs)"
+    )
     scope: LLMConfigScope = Field(
         default=LLMConfigScope.ORGANIZATION,
         description="Scope of the LLM config: 'organization' for ENV configs, 'user' for user-specific configs"
