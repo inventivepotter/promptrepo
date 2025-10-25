@@ -7,6 +7,7 @@ from fastapi import APIRouter
 from .get_repos_available import router as available_router
 from .get_configured import router as configured_router
 from .get_branches import router as branches_router
+from .get_latest import router as get_latest_router
 
 # Create main repos router
 router = APIRouter()
@@ -15,3 +16,4 @@ router = APIRouter()
 router.include_router(available_router)
 router.include_router(configured_router)
 router.include_router(branches_router)
+router.include_router(get_latest_router)

@@ -36,4 +36,14 @@ export default class ReposApi {
   static async getBranches(owner: string, repo: string): Promise<OpenApiResponse<RepositoryBranchesResponse>> {
     return await httpClient.get<RepositoryBranchesResponse>(`/api/v0/repos/branches?owner=${owner}&repo=${repo}`);
   }
+
+  /**
+   * Get latest content from base branch
+   * @param repoName The repository name
+   * @returns OpenAPI response with success status
+   */
+  static async getLatestFromBaseBranch(repoName: string): Promise<OpenApiResponse<components['schemas']['StandardResponse_dict_']>> {
+    const searchParams = new URLSearchParams({ repo_name: repoName });
+    return await httpClient.post<components['schemas']['StandardResponse_dict_']>(`/api/v0/repos/get_latest?${searchParams.toString()}`);
+  }
 }

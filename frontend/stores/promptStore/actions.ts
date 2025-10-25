@@ -1,6 +1,7 @@
 // Combined prompt store actions
 import type { StateCreator } from '@/lib/zustand';
 import { promptsService } from '@/services/prompts/promptsService';
+import ReposApi from '@/services/repos/api';
 import { useConfigStore } from '@/stores/configStore/configStore';
 import type { PromptStore, PromptActions, PromptFilters } from './types';
 import type { PromptMeta, PromptDataUpdate } from '@/services/prompts/api';
@@ -422,6 +423,45 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
       draft.error = null;
     // @ts-expect-error - Immer middleware supports 3 params
     }, false, 'prompts/clear-error');
+  },
+
+  // Get Latest from Base Branch
+  getLatestFromBaseBranch: async (repoName: string) => {
+    set((draft) => {
+      draft.isLoading = true;
+      draft.error = null;
+    // @ts-expect-error - Immer middleware supports 3 params
+    }, false, 'prompts/get-latest-start');
+
+    try {
+      const result = await ReposApi.getLatestFromBaseBranch(repoName);
+      
+      set((draft) => {
+        draft.isLoading = false;
+        // Invalidate prompts cache to force refresh
+        draft.prompts = {};
+        draft.lastSyncTimestamp = null;
+        // @ts-expect-error - Immer middleware supports 3 params
+      }, false, 'prompts/get-latest-success');
+      
+      // Refresh prompts after getting latest
+      await get().discoverAllPromptsFromRepos();
+      
+      // If there's a current prompt open from the same repo, reload it to get the latest version
+      const currentPrompt = get().currentPrompt;
+      if (currentPrompt && currentPrompt.repo_name === repoName) {
+        await get().fetchPromptById(currentPrompt.repo_name, currentPrompt.file_path);
+      }
+      
+      return result;
+    } catch (error) {
+      set((draft) => {
+        draft.isLoading = false;
+        draft.error = error instanceof Error ? error.message : 'Failed to get latest from base branch';
+        // @ts-expect-error - Immer middleware supports 3 params
+      }, false, 'prompts/get-latest-error');
+      throw error;
+    }
   },
 
 });

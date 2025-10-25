@@ -308,6 +308,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v0/repos/get_latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fetch latest prompt from base branch
+         * @description Fetch the latest version of a prompt from the configured base branch, discarding any local changes. This will reset the prompt to the latest version from the remote repository.
+         */
+        post: operations["get_latest_prompt_api_v0_repos_get_latest_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v0/info": {
         parameters: {
             query?: never;
@@ -2905,6 +2925,71 @@ export interface operations {
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
                      *       "detail": "Failed to retrieve repository branches"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_latest_prompt_api_v0_repos_get_latest_post: {
+        parameters: {
+            query: {
+                repo_name: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_dict_"];
+                };
+            };
+            /** @description Prompt not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Prompt Not Found",
+                     *       "detail": "Prompt with ID 'xxx' not found or access denied"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to fetch latest prompt"
                      *     }
                      */
                     "application/json": unknown;

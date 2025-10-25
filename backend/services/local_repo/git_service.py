@@ -341,23 +341,24 @@ class GitService:
                 message=f"Failed to switch to branch {branch_name}: {e}"
             )
 
-    def pull_latest(self, oauth_token: Optional[str] = None, branch_name: Optional[str] = None) -> GitOperationResult:
+    def pull_latest(self, oauth_token: Optional[str] = None, branch_name: Optional[str] = None, force: bool = False) -> GitOperationResult:
         """
         Pull latest changes from remote.
 
         Args:
             oauth_token: GitHub OAuth token for authentication (optional)
             branch_name: Branch to pull (default: current branch)
+            force: Whether to force pull and discard local changes (default: False)
 
         Returns:
             GitOperationResult: Result of the operation
         """
         try:
             repo = Repo(self.repo_path)
-
             if branch_name:
                 repo.git.checkout(branch_name)
 
+            current_branch = repo.active_branch.name
             origin = repo.remote('origin')
 
             # Use OAuth token if provided
@@ -367,6 +368,11 @@ class GitService:
                     authenticated_url = self._add_token_to_url(original_url, oauth_token)
                     origin.set_url(authenticated_url)
 
+            # Force pull if requested (discards local changes)
+            if force:
+                # Stash local changes first
+                repo.git.stash('-u', '-m', 'Stashing local changes before getting latest')
+
             origin.pull()
 
             # Reset URL for security
@@ -374,11 +380,10 @@ class GitService:
             if oauth_token and oauth_token in origin.url:
                 origin.set_url(original_url)
 
-            current_branch = repo.active_branch.name
-            logger.info(f"Pulled latest changes for branch: {current_branch}")
+            action = "Force pulled" if force else "Pulled"
             return GitOperationResult(
                 success=True,
-                message=f"Pulled latest changes for branch: {current_branch}"
+                message=f"{action} latest changes for branch: {current_branch}"
             )
 
         except Exception as e:
