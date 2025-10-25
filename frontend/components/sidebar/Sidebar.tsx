@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import {
   Box,
-  HStack,
   Button,
   Separator,
   Stack,
@@ -51,10 +50,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       zIndex={10}
     >
       {/* Header with branding */}
-      <Box px={isCollapsed ? 2 : 4} py={6}>
-        <HStack justify="space-between" align="center" minH="46px">
-          <Branding collapsed={isCollapsed} />
-        </HStack>
+      <Box px={isCollapsed ? 2 : 4} py={6} display="flex" justifyContent="center" alignItems="center" minH="60px">
+        <Branding collapsed={isCollapsed} />
       </Box>
       <Separator borderColor="bg.muted" mx={2} />
       {/* Navigation Menu */}
