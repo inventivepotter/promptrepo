@@ -97,6 +97,9 @@ export interface PromptActions {
   
   // Error Handling
   clearError: () => void;
+  
+  // Get Latest from Base Branch
+  getLatestFromBaseBranch: (repoName: string) => Promise<unknown>;
 }
 
 export interface PromptStore extends PromptState, PromptActions {}

@@ -393,3 +393,67 @@ class LocalRepoService:
         except Exception as e:
             logger.error(f"Error in git workflow after save: {e}", exc_info=True)
             return None
+    
+    async def get_latest_base_branch_content(
+        self,
+        user_id: str,
+        repo_name: str,
+        oauth_token: Optional[str] = None
+    ) -> dict:
+        """
+        Get the latest content from the base branch of a repository.
+        
+        This method will:
+        1. Switch to the base branch
+        2. Pull the latest changes from remote
+        3. Return success status
+        
+        Any local changes will be stashed before pulling.
+        
+        Args:
+            user_id: ID of the user
+            repo_name: Name of the repository
+            oauth_token: OAuth token for authentication
+            
+        Returns:
+            dict: Result of the operation
+        """
+        try:
+            # Get base branch from config
+            base_branch = self.config_service.get_base_branch_for_repo(user_id, repo_name)
+            
+            # Get repository path
+            repo_base_path = self._get_repo_base_path(user_id)
+            repo_path = repo_base_path / repo_name
+            
+            if not (repo_path.exists() and (repo_path / ".git").exists()):
+                logger.warning(f"Repository {repo_name} not found at {repo_path}")
+                return {"success": False, "message": f"Repository {repo_name} not found or not a git repository"}
+            
+            # Initialize git service
+            git_service = GitService(repo_path)
+            
+            # Get current branch
+            current_branch = git_service.get_current_branch()
+            if not current_branch:
+                logger.warning(f"Could not determine current branch for {repo_name}")
+                return {"success": False, "message": "Could not determine current branch"}
+            
+            # Switch to base branch if not already on it
+            if current_branch != base_branch:
+                switch_result = git_service.switch_branch(base_branch)
+                if not switch_result.success:
+                    logger.error(f"Failed to switch to base branch {base_branch}: {switch_result.message}")
+                    return {"success": False, "message": f"Failed to switch to base branch: {switch_result.message}"}
+            
+            # Pull latest changes from base branch (force to discard local changes)
+            pull_result = git_service.pull_latest(oauth_token=oauth_token, branch_name=base_branch, force=True)
+            if not pull_result.success:
+                logger.error(f"Failed to pull latest changes: {pull_result.message}")
+                return {"success": False, "message": f"Failed to pull latest changes: {pull_result.message}"}
+            
+            return {"success": True, "message": f"Successfully fetched latest content from {repo_name}"}
+            
+        except Exception as e:
+            logger.error(f"Error getting latest base branch content for {repo_name}: {e}", exc_info=True)
+            return {"success": False, "message": f"Error: {str(e)}"}

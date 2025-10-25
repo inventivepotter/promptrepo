@@ -187,6 +187,9 @@ export const usePromptActions = () => {
     
     // Error Handling
     clearError: store.clearError,
+    
+    // Get Latest from Base Branch
+    getLatestFromBaseBranch: store.getLatestFromBaseBranch,
   };
 };
 

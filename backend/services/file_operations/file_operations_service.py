@@ -149,7 +149,6 @@ class FileOperationsService:
         try:
             with open(file_path, 'r') as f:
                 data = yaml.safe_load(f)
-            logger.info(f"Loaded YAML file: {file_path}")
             return data
         except Exception as e:
             logger.error(f"Failed to load YAML file {file_path}: {e}", exc_info=True)

@@ -40,7 +40,7 @@ export function PromptEditor() {
     toaster.promise(savePromise, {
       loading: {
         title: 'Saving...',
-        description: 'Committing changes and creating PR...',
+        description: 'Creating a PR for your changes.',
       },
       success: (data) => {
         const prInfo = data?.pr_info as { pr_url?: string; pr_number?: number } | null | undefined;
@@ -51,7 +51,7 @@ export function PromptEditor() {
           return {
             title: 'Successfully saved!',
             description: `Pull Request #${prNumber} created`,
-            duration: 60000, // Sticky notification - 1 minute
+            duration: 30000, // Sticky notification - 30 seconds
             action: {
               label: 'View PR',
               onClick: () => {

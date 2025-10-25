@@ -10,7 +10,7 @@ import {
 } from '@chakra-ui/react';
 import { LuSend, LuSquare } from 'react-icons/lu';
 import { useColorModeValue } from '@/components/ui/color-mode';
-import { useChatInput, useIsSending, useChatActions, useTokenStats } from '@/stores/chatStore/hooks';
+import { useChatInput, useIsSending, useChatActions } from '@/stores/chatStore/hooks';
 
 interface ChatInputProps {
   onSubmit?: (message: string) => void;
@@ -28,10 +28,8 @@ export function ChatInput({
   const { inputMessage, setInputMessage } = useChatInput();
   const isSending = useIsSending();
   const { stopStreaming, clearInput } = useChatActions();
-  const { totalInput, totalOutput } = useTokenStats();
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const bgColor = useColorModeValue('white', 'gray.800');
-  const helperTextColor = useColorModeValue('gray.500', 'gray.400');
   const disabledBgColor = useColorModeValue('orange.50', 'orange.900/20');
   const disabledBorderColor = useColorModeValue('orange.200', 'orange.700');
   const disabledTextColor = useColorModeValue('orange.700', 'orange.300');
@@ -171,20 +169,6 @@ export function ChatInput({
           )}
         </HStack>
         
-        {/* Token stats */}
-        {(totalInput > 0 || totalOutput > 0) && (
-          <HStack
-            fontSize="xs"
-            color={helperTextColor}
-            justifyContent="flex-end"
-            px={1}
-            gap={4}
-            fontWeight="medium"
-          >
-            <Text>Input: {totalInput.toLocaleString()}</Text>
-            <Text>Output: {totalOutput.toLocaleString()}</Text>
-          </HStack>
-        )}
       </VStack>
     </Box>
   );

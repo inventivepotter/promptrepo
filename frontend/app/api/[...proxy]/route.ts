@@ -20,6 +20,7 @@ const PUBLIC_ENDPOINTS = new Set([
   '/api/v0/repos/available',
   '/api/v0/repos/configured',
   '/api/v0/repos/branches',
+  '/api/v0/repos/get_latest',
   '/api/v0/llm/providers/configured',
   '/api/v0/prompts',
   '/api/v0/llm/completions',

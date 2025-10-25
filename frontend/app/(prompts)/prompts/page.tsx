@@ -14,7 +14,8 @@ import {
   Button,
   ButtonGroup,
 } from '@chakra-ui/react';
-import { HiColorSwatch } from 'react-icons/hi';
+import { PiBracketsCurlyDuotone } from "react-icons/pi";
+import { FaGitAlt } from 'react-icons/fa';
 import type { PromptMeta } from '@/services/prompts/api';
 import {
   useFilteredPrompts,
@@ -33,6 +34,7 @@ import {
   useIsDeleting,
   useIsLoading,
 } from '@/stores/promptStore';
+import { useConfigStore } from '@/stores/configStore/configStore';
 import { PromptSearch } from '../_components/PromptSearch';
 import { PromptCard } from '../_components/PromptCard';
 import { Pagination } from '../_components/Pagination';
@@ -68,6 +70,10 @@ export default function PromptsPage() {
     closeDeleteDialog,
     confirmDelete,
   } = usePromptActions();
+  
+  // Use config store to check if repositories are configured
+  const config = useConfigStore((state) => state.config);
+  const hasConfiguredRepos = Boolean(config?.repo_configs?.length);
 
   // Delete dialog state from store
   const deleteDialogOpen = useDeleteDialogOpen();
@@ -190,17 +196,25 @@ export default function PromptsPage() {
               <EmptyState.Root>
                 <EmptyState.Content>
                   <EmptyState.Indicator>
-                    <HiColorSwatch />
+                    {hasConfiguredRepos ? <PiBracketsCurlyDuotone /> : <FaGitAlt />}
                   </EmptyState.Indicator>
                   <VStack textAlign="center">
-                    <EmptyState.Title>Start adding prompts</EmptyState.Title>
+                    <EmptyState.Title>
+                      {hasConfiguredRepos ? 'Create your first prompt' : 'Connect your first repository'}
+                    </EmptyState.Title>
                     <EmptyState.Description>
-                      Add repositories or create a new prompt to get started
+                      {hasConfiguredRepos
+                        ? 'You have repositories configured. Create your first prompt to begin managing your AI prompts.'
+                        : 'Configure a repository first to discover and manage your AI prompts effectively.'
+                      }
                     </EmptyState.Description>
                   </VStack>
                   <ButtonGroup>
-                    <Button onClick={handleAddRepositories}>Add Repositories</Button>
-                    <Button variant="outline" onClick={handleNewPrompt}>New Prompt</Button>
+                    {hasConfiguredRepos ? (
+                      <Button onClick={handleNewPrompt}>Create New Prompt</Button>
+                    ) : (
+                      <Button onClick={handleAddRepositories}>Add Repository</Button>
+                    )}
                   </ButtonGroup>
                 </EmptyState.Content>
               </EmptyState.Root>

@@ -341,45 +341,49 @@ class GitService:
                 message=f"Failed to switch to branch {branch_name}: {e}"
             )
 
-    def pull_latest(self, oauth_token: Optional[str] = None, branch_name: Optional[str] = None) -> GitOperationResult:
+    def pull_latest(self, oauth_token: Optional[str] = None, branch_name: Optional[str] = None, force: bool = False) -> GitOperationResult:
         """
         Pull latest changes from remote.
 
         Args:
             oauth_token: GitHub OAuth token for authentication (optional)
             branch_name: Branch to pull (default: current branch)
+            force: Whether to force pull and discard local changes (default: False)
 
         Returns:
             GitOperationResult: Result of the operation
         """
         try:
             repo = Repo(self.repo_path)
-
             if branch_name:
                 repo.git.checkout(branch_name)
 
+            current_branch = repo.active_branch.name
             origin = repo.remote('origin')
+            original_url = origin.url  # Capture original URL before any modifications
 
-            # Use OAuth token if provided
-            if oauth_token:
-                original_url = origin.url
-                if oauth_token not in original_url:
+            try:
+                # Use OAuth token if provided
+                if oauth_token and oauth_token not in original_url:
                     authenticated_url = self._add_token_to_url(original_url, oauth_token)
                     origin.set_url(authenticated_url)
 
-            origin.pull()
+                # Force pull if requested (discards local changes)
+                if force:
+                    # Stash local changes first
+                    repo.git.stash('-u', '-m', 'Stashing local changes before getting latest')
 
-            # Reset URL for security
-            original_url = origin.url  # Ensure original_url is defined
-            if oauth_token and oauth_token in origin.url:
-                origin.set_url(original_url)
+                origin.pull()
 
-            current_branch = repo.active_branch.name
-            logger.info(f"Pulled latest changes for branch: {current_branch}")
-            return GitOperationResult(
-                success=True,
-                message=f"Pulled latest changes for branch: {current_branch}"
-            )
+                action = "Force pulled" if force else "Pulled"
+                return GitOperationResult(
+                    success=True,
+                    message=f"{action} latest changes for branch: {current_branch}"
+                )
+            finally:
+                # Always restore original URL for security (only if we set it earlier)
+                if oauth_token and origin.url != original_url:
+                    origin.set_url(original_url)
 
         except Exception as e:
             logger.error(f"Failed to pull latest changes: {e}")
