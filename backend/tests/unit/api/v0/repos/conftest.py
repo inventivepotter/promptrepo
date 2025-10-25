@@ -36,7 +36,7 @@ def mock_local_repo_service():
 def mock_user_session():
     """Mock user session with OAuth token"""
     session = Mock()
-    session.oauth_token = "test_oauth_token"
+    session.oauth_token = "test_oauth_token"  # noqa: S105
     return session
 
 

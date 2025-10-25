@@ -426,9 +426,9 @@ class LocalRepoService:
             repo_base_path = self._get_repo_base_path(user_id)
             repo_path = repo_base_path / repo_name
             
-            if not repo_path.exists():
+            if not (repo_path.exists() and (repo_path / ".git").exists()):
                 logger.warning(f"Repository {repo_name} not found at {repo_path}")
-                return {"success": False, "message": f"Repository {repo_name} not found"}
+                return {"success": False, "message": f"Repository {repo_name} not found or not a git repository"}
             
             # Initialize git service
             git_service = GitService(repo_path)

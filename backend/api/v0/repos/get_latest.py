@@ -1,7 +1,7 @@
 """
 Get Latest Repository Content Endpoint
 
-This endpoint handles fetching the latest version of a prompt from the base branch,
+This endpoint handles fetching the latest version of repository content from the base branch,
 discarding any local changes.
 """
 
@@ -26,14 +26,14 @@ router = APIRouter()
     status_code=status.HTTP_200_OK,
     responses={
         404: {
-            "description": "Prompt not found",
+            "description": "Repository not found",
             "content": {
                 "application/json": {
                     "example": {
                         "status": "error",
                         "type": "/errors/not-found",
-                        "title": "Prompt Not Found",
-                        "detail": "Prompt with ID 'xxx' not found or access denied"
+                        "title": "Repository Not Found",
+                        "detail": "Repository 'xxx' not found or access denied"
                     }
                 }
             }
@@ -46,16 +46,16 @@ router = APIRouter()
                         "status": "error",
                         "type": "/errors/internal-server-error",
                         "title": "Internal Server Error",
-                        "detail": "Failed to fetch latest prompt"
+                        "detail": "Failed to fetch latest repository content"
                     }
                 }
             }
         }
     },
-    summary="Fetch latest prompt from base branch",
-    description="Fetch the latest version of a prompt from the configured base branch, discarding any local changes. This will reset the prompt to the latest version from the remote repository.",
+    summary="Fetch latest repository content from base branch",
+    description="Fetch the latest version of repository content from the configured base branch, discarding any local changes. This will reset the repository to the latest version from the remote repository.",
 )
-async def get_latest_prompt(
+async def get_latest_repo_content(
     request: Request,
     user_id: CurrentUserDep,
     local_repo_service: LocalRepoServiceDep,
@@ -63,18 +63,18 @@ async def get_latest_prompt(
     repo_name: str = Query(...)
 ) -> StandardResponse[dict]:
     """
-    Fetch the latest version of a prompt from the base branch.
+    Fetch the latest version of repository content from the base branch.
     
     This operation will:
     1. Switch to the base branch
     2. Pull the latest changes from the remote
-    3. Load the prompt from the base branch
+    3. Load the repository content from the base branch
     
     Any local changes will be discarded.
     
     Raises:
-        NotFoundException: When the prompt is not found or access is denied
-        AppException: When fetching the latest prompt fails
+        NotFoundException: When the repository is not found or access is denied
+        AppException: When fetching the latest repository content fails
     """
     request_id = request.state.request_id
     
@@ -84,21 +84,29 @@ async def get_latest_prompt(
             extra={"request_id": request_id, "user_id": user_id}
         )
         
-        # Fetch latest prompts from base branch
+        # Fetch latest repository content from base branch
         result = await local_repo_service.get_latest_base_branch_content(
             user_id=user_id,
             repo_name=repo_name,
             oauth_token=user_session.oauth_token
         )
         
+        # Check if service operation was successful
+        if not result.get("success", False):
+            raise AppException(
+                message="Failed to fetch latest repository content",
+                detail=result.get("message", "Unknown error"),
+                context={"repo_name": repo_name}
+            )
+        
         logger.info(
-            f"Successfully fetched latest prompts from {repo_name}",
+            f"Successfully fetched latest repository content from {repo_name}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
         return success_response(
             data=result,
-            message="Latest prompts fetched successfully",
+            message="Latest repository content fetched successfully",
             meta={"request_id": request_id}
         )
         
@@ -107,11 +115,11 @@ async def get_latest_prompt(
         raise
     except Exception as e:
         logger.error(
-            f"Failed to fetch latest prompts from {repo_name}: {str(e)}",
+            f"Failed to fetch latest repository content from {repo_name}: {str(e)}",
             exc_info=True,
             extra={"request_id": request_id, "user_id": user_id}
         )
         raise AppException(
-            message="Failed to fetch latest prompts",
+            message="Failed to fetch latest repository content",
             detail=str(e)
         )

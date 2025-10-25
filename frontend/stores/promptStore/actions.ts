@@ -436,21 +436,29 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
     try {
       const result = await ReposApi.getLatestFromBaseBranch(repoName);
       
-      set((draft) => {
-        draft.isLoading = false;
-        // Invalidate prompts cache to force refresh
-        draft.prompts = {};
-        draft.lastSyncTimestamp = null;
-        // @ts-expect-error - Immer middleware supports 3 params
-      }, false, 'prompts/get-latest-success');
-      
-      // Refresh prompts after getting latest
-      await get().discoverAllPromptsFromRepos();
-      
+      // Check for backend soft failures
+      const responseData = result as { data?: { status?: string; data?: { success?: boolean; message?: string | undefined } } };
+      const status = responseData?.data?.status;
+      const op = responseData?.data?.data; // service dict
+      if (status !== 'success' || op?.success === false) {
+        throw new Error(op?.message || responseData?.data?.data?.message || 'Get latest failed');
+      }
+
+      // Fully invalidate persisted + memory cache
+      await get().invalidateCache();
+
       // If there's a current prompt open from the same repo, reload it to get the latest version
       const currentPrompt = get().currentPrompt;
       if (currentPrompt && currentPrompt.repo_name === repoName) {
-        await get().fetchPromptById(currentPrompt.repo_name, currentPrompt.file_path);
+        try {
+          await get().fetchPromptById(currentPrompt.repo_name, currentPrompt.file_path);
+        } catch {
+          // If the file moved/deleted upstream, redirect to prompts page
+          // Note: Can't use useRouter in store action, use window.location instead
+          if (typeof window !== 'undefined') {
+            window.location.href = '/prompts';
+          }
+        }
       }
       
       return result;
