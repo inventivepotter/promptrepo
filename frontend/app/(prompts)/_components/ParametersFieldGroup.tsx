@@ -36,7 +36,7 @@ export function ParametersFieldGroup() {
           <HStack justify="space-between" align="center">
             <Stack flex={1}>
               <Fieldset.Legend>Advanced Parameters</Fieldset.Legend>
-              <Fieldset.HelperText>
+              <Fieldset.HelperText color="text.tertiary">
                 Fine-tune model behavior with optional advanced settings
               </Fieldset.HelperText>
             </Stack>

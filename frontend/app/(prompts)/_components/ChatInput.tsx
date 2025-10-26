@@ -28,7 +28,7 @@ export function ChatInput({
   const { inputMessage, setInputMessage } = useChatInput();
   const isSending = useIsSending();
   const { stopStreaming, clearInput } = useChatActions();
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const borderColor = "bg.muted";
   const bgColor = useColorModeValue('white', 'gray.800');
   const disabledBgColor = useColorModeValue('orange.50', 'orange.900/20');
   const disabledBorderColor = useColorModeValue('orange.200', 'orange.700');

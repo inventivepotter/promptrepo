@@ -99,8 +99,13 @@ export const filterPrompts = (data: ReturnType<typeof selectFilteredPromptsData>
     if (sortBy === 'name') {
       comparison = (a.prompt.name || '').localeCompare(b.prompt.name || '');
     } else if (sortBy === 'updated_at') {
-      const aTime = a.prompt?.updated_at ? new Date(a.prompt.updated_at).getTime() : 0;
-      const bTime = b.prompt?.updated_at ? new Date(b.prompt.updated_at).getTime() : 0;
+      // Use updated_at if available, otherwise fall back to created_at, or use current time for proper sorting
+      const aTime = a.prompt?.updated_at
+        ? new Date(a.prompt.updated_at).getTime()
+        : (a.prompt?.created_at ? new Date(a.prompt.created_at).getTime() : Date.now());
+      const bTime = b.prompt?.updated_at
+        ? new Date(b.prompt.updated_at).getTime()
+        : (b.prompt?.created_at ? new Date(b.prompt.created_at).getTime() : Date.now());
       comparison = aTime - bTime;
     }
     

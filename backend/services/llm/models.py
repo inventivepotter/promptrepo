@@ -15,7 +15,8 @@ class ChatCompletionRequest(BaseModel):
     messages: List[ChatMessage] = Field(default_factory=list, description="List of messages (can be empty for system-only prompts)")
     provider: str = Field(..., description="LLM provider (e.g., openai, mistral, anthropic)")
     model: str = Field(..., description="Model name (e.g., gpt-3.5-turbo, claude-3)")
-    prompt_id: Optional[str] = Field(None, description="Optional prompt ID for context")
+    prompt_id: Optional[str] = Field(None, description="Optional prompt ID for context (format: repo_name:file_path)")
+    repo_name: Optional[str] = Field(None, description="Repository name for loading tool definitions (fallback if prompt_id not provided)")
     stream: Optional[bool] = Field(False, description="Whether to stream the response")
     temperature: Optional[Annotated[float, Field(ge=0.0, le=2.0)]] = Field(None, description="Sampling temperature")
     max_tokens: Optional[Annotated[int, Field(gt=0)]] = Field(None, description="Maximum tokens to generate")
@@ -23,6 +24,7 @@ class ChatCompletionRequest(BaseModel):
     frequency_penalty: Optional[Annotated[float, Field(ge=-2.0, le=2.0)]] = Field(None, description="Frequency penalty")
     presence_penalty: Optional[Annotated[float, Field(ge=-2.0, le=2.0)]] = Field(None, description="Presence penalty")
     stop: Optional[List[str]] = Field(None, description="Stop sequences")
+    tools: Optional[List[Dict[str, Any]]] = Field(None, description="Tools available for the model to call (OpenAI function format with optional mock_data)")
 
 
 class PromptTokensDetails(BaseModel):
@@ -62,6 +64,7 @@ class ChatCompletionResponse(BaseModel):
     choices: List[ChatCompletionChoice]
     usage: Optional[UsageStats] = None
     inference_time_ms: Optional[float] = None  # Inference time in milliseconds
+    tool_responses: Optional[List[ChatMessage]] = Field(default=None, description="Auto-generated tool responses for static mocks")
 
 
 class ChatCompletionStreamChoice(BaseModel):

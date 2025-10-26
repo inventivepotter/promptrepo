@@ -82,11 +82,11 @@ def sample_prompt_data():
     )
 
 
-class TestCreatePrompt:
-    """Tests for create_prompt method."""
+class TestSavePromptCreate:
+    """Tests for save_prompt method when creating new prompts."""
     
     @pytest.mark.asyncio
-    async def test_create_prompt_success(self, prompt_service, mock_file_ops_service, sample_prompt_data):
+    async def test_save_prompt_create_success(self, prompt_service, mock_file_ops_service, sample_prompt_data):
         """Test successful prompt creation with all fields provided."""
         repo_name = "test-repo"
         file_path = "prompts/test.yaml"
@@ -104,14 +104,26 @@ class TestCreatePrompt:
             # Mock file save success
             mock_file_ops_service.save_yaml_file.return_value = True
             
-            # Mock git service
+            # Mock git service and workflow
             with patch.object(prompt_service, '_get_file_commit_history', return_value=[]):
-                result = await prompt_service.create_prompt(
-                    user_id=user_id,
-                    repo_name=repo_name,
-                    file_path=file_path,
-                    prompt_data=sample_prompt_data
-                )
+                with patch.object(prompt_service.local_repo_service, 'handle_git_workflow_after_save', new_callable=AsyncMock) as mock_workflow:
+                    with patch.object(prompt_service, 'get_prompt') as mock_get:
+                        # Mock the get_prompt call to return the saved prompt
+                        mock_get.return_value = PromptMeta(
+                            prompt=sample_prompt_data,
+                            repo_name=repo_name,
+                            file_path=file_path,
+                            recent_commits=[],
+                            pr_info=None
+                        )
+                        mock_workflow.return_value = None
+                        
+                        result, pr_info = await prompt_service.save_prompt(
+                            user_id=user_id,
+                            repo_name=repo_name,
+                            file_path=file_path,
+                            prompt_data=sample_prompt_data
+                        )
         
         # Assertions
         assert isinstance(result, PromptMeta)
@@ -121,13 +133,13 @@ class TestCreatePrompt:
         mock_file_ops_service.save_yaml_file.assert_called_once()
     
     @pytest.mark.asyncio
-    async def test_create_prompt_with_defaults(self, prompt_service, mock_file_ops_service):
+    async def test_save_prompt_create_with_defaults(self, prompt_service, mock_file_ops_service):
         """Test prompt creation with default values for new 'Untitled Prompt'."""
         repo_name = "test-repo"
         file_path = "prompts/untitled.yaml"
         user_id = "test-user"
         
-        # Create prompt data with defaults
+        # Create prompt data with minimal fields
         prompt_data = PromptData(
             failover_model=None,
             tool_choice=None,
@@ -167,26 +179,78 @@ class TestCreatePrompt:
             mock_file_ops_service.save_yaml_file.return_value = True
             
             with patch.object(prompt_service, '_get_file_commit_history', return_value=[]):
-                result = await prompt_service.create_prompt(
-                    user_id=user_id,
-                    repo_name=repo_name,
-                    file_path=file_path,
-                    prompt_data=prompt_data
-                )
+                with patch.object(prompt_service.local_repo_service, 'handle_git_workflow_after_save', new_callable=AsyncMock) as mock_workflow:
+                    with patch.object(prompt_service, 'get_prompt') as mock_get:
+                        # Create expected prompt with defaults
+                        expected_prompt = PromptData(
+                            id=f"{repo_name}:{file_path}",
+                            name="Untitled Prompt",
+                            description="",
+                            provider="",
+                            model="",
+                            prompt="",
+                            failover_model=None,
+                            tool_choice=None,
+                            temperature=0.7,
+                            top_p=1.0,
+                            max_tokens=1000,
+                            response_format=None,
+                            stream=False,
+                            n_completions=1,
+                            stop=None,
+                            presence_penalty=0.0,
+                            frequency_penalty=0.0,
+                            seed=None,
+                            api_key=None,
+                            api_base=None,
+                            user=None,
+                            parallel_tool_calls=None,
+                            logprobs=False,
+                            top_logprobs=None,
+                            logit_bias=None,
+                            stream_options=None,
+                            max_completion_tokens=None,
+                            reasoning_effort=None,
+                            extra_args=None,
+                            tags=[]
+                        )
+                        mock_get.return_value = PromptMeta(
+                            prompt=expected_prompt,
+                            repo_name=repo_name,
+                            file_path=file_path,
+                            recent_commits=[],
+                            pr_info=None
+                        )
+                        mock_workflow.return_value = None
+                        
+                        result, pr_info = await prompt_service.save_prompt(
+                            user_id=user_id,
+                            repo_name=repo_name,
+                            file_path=file_path,
+                            prompt_data=prompt_data
+                        )
         
         # Verify defaults were applied
         assert result.prompt.name == "Untitled Prompt"
         assert result.prompt.description == ""
-        assert result.prompt.provider == "openai"
-        assert result.prompt.model == "gpt-4"
+        assert result.prompt.provider == ""
+        assert result.prompt.model == ""
         assert result.prompt.prompt == ""
     
     @pytest.mark.asyncio
-    async def test_create_prompt_file_exists(self, prompt_service, sample_prompt_data):
-        """Test that ConflictException is raised when file already exists."""
+    async def test_save_prompt_update_existing(self, prompt_service, mock_file_ops_service, sample_prompt_data):
+        """Test that save_prompt updates when file already exists."""
         repo_name = "test-repo"
         file_path = "prompts/existing.yaml"
         user_id = "test-user"
+        
+        existing_data = {
+            "id": "test-repo:prompts/existing.yaml",
+            "name": "Old Name",
+            "provider": "openai",
+            "model": "gpt-4",
+            "prompt": "Old content"
+        }
         
         # Mock repository exists and file exists
         with patch('services.prompt.prompt_service.Path') as mock_path_class:
@@ -207,21 +271,27 @@ class TestCreatePrompt:
             mock_file_path.exists.return_value = True  # File already exists
             mock_repo_path.__truediv__.return_value = mock_file_path
             
-            # Mock the file operations service to raise FileExistsError
-            prompt_service.file_ops.save_yaml_file.side_effect = FileExistsError("File already exists")
+            # Mock file operations
+            mock_file_ops_service.load_yaml_file.return_value = existing_data
+            mock_file_ops_service.save_yaml_file.return_value = True
             
-            with pytest.raises(ConflictException) as exc_info:
-                await prompt_service.create_prompt(
-                    user_id=user_id,
-                    repo_name=repo_name,
-                    file_path=file_path,
-                    prompt_data=sample_prompt_data
-                )
+            with patch.object(prompt_service, '_get_file_commit_history', return_value=[]):
+                with patch.object(prompt_service.local_repo_service, 'handle_git_workflow_after_save', new_callable=AsyncMock) as mock_workflow:
+                    mock_workflow.return_value = None
+                    
+                    result, pr_info = await prompt_service.save_prompt(
+                        user_id=user_id,
+                        repo_name=repo_name,
+                        file_path=file_path,
+                        prompt_data=sample_prompt_data
+                    )
             
-            assert "already exists" in str(exc_info.value.message)
+            # Should update successfully
+            assert result is not None
+            assert result.prompt.name == "Test Prompt"
     
     @pytest.mark.asyncio
-    async def test_create_prompt_repo_not_found(self, prompt_service, sample_prompt_data):
+    async def test_save_prompt_repo_not_found(self, prompt_service, sample_prompt_data):
         """Test that NotFoundException is raised when repository doesn't exist."""
         repo_name = "nonexistent-repo"
         file_path = "prompts/test.yaml"
@@ -234,7 +304,7 @@ class TestCreatePrompt:
             mock_path.return_value.__truediv__ = Mock(return_value=mock_repo_path)
             
             with pytest.raises(NotFoundException) as exc_info:
-                await prompt_service.create_prompt(
+                await prompt_service.save_prompt(
                     user_id=user_id,
                     repo_name=repo_name,
                     file_path=file_path,
@@ -244,7 +314,7 @@ class TestCreatePrompt:
             assert "Repository" in str(exc_info.value.message)
     
     @pytest.mark.asyncio
-    async def test_create_prompt_save_fails(self, prompt_service, mock_file_ops_service, sample_prompt_data):
+    async def test_save_prompt_save_fails(self, prompt_service, mock_file_ops_service, sample_prompt_data):
         """Test that AppException is raised when file save fails."""
         repo_name = "test-repo"
         file_path = "prompts/test.yaml"
@@ -263,7 +333,7 @@ class TestCreatePrompt:
             mock_file_ops_service.save_yaml_file.return_value = False
             
             with pytest.raises(AppException) as exc_info:
-                await prompt_service.create_prompt(
+                await prompt_service.save_prompt(
                     user_id=user_id,
                     repo_name=repo_name,
                     file_path=file_path,
@@ -326,11 +396,11 @@ class TestGetPrompt:
         assert result is None
 
 
-class TestUpdatePrompt:
-    """Tests for update_prompt method."""
+class TestSavePromptUpdate:
+    """Tests for save_prompt method when updating existing prompts."""
     
     @pytest.mark.asyncio
-    async def test_update_prompt_success(self, prompt_service, mock_file_ops_service):
+    async def test_save_prompt_update_success(self, prompt_service, mock_file_ops_service):
         """Test successful prompt update."""
         repo_name = "test-repo"
         file_path = "prompts/test.yaml"
@@ -386,101 +456,19 @@ class TestUpdatePrompt:
             mock_file_ops_service.save_yaml_file.return_value = True
             
             with patch.object(prompt_service, '_get_file_commit_history', return_value=[]):
-                with patch.object(prompt_service, 'get_prompt') as mock_get:
-                    # First call returns existing prompt, second call returns updated
-                    mock_get.side_effect = [
-                        PromptMeta(
-                            prompt=PromptData(
-                                id=existing_data["id"],
-                                name=existing_data["name"],
-                                provider=existing_data["provider"],
-                                model=existing_data["model"],
-                                prompt=existing_data["prompt"],
-                                failover_model=None,
-                                tool_choice=None,
-                                temperature=0.7,
-                                top_p=1.0,
-                                max_tokens=1000,
-                                response_format=None,
-                                stream=False,
-                                n_completions=1,
-                                stop=None,
-                                presence_penalty=0.0,
-                                frequency_penalty=0.0,
-                                seed=None,
-                                api_key=None,
-                                api_base=None,
-                                user=None,
-                                parallel_tool_calls=None,
-                                logprobs=False,
-                                top_logprobs=None,
-                                logit_bias=None,
-                                stream_options=None,
-                                max_completion_tokens=None,
-                                reasoning_effort=None,
-                                extra_args=None,
-                                tags=[]
-                            ),
-                            repo_name=repo_name,
-                            file_path=file_path,
-                            recent_commits=[],
-                            pr_info=None
-                        ),
-                        PromptMeta(
-                            prompt=PromptData(
-                                id=existing_data["id"],
-                                name="New Name",
-                                provider="openai",
-                                model="gpt-4",
-                                prompt="New content",
-                                failover_model=None,
-                                tool_choice=None,
-                                temperature=0.7,
-                                top_p=1.0,
-                                max_tokens=1000,
-                                response_format=None,
-                                stream=False,
-                                n_completions=1,
-                                stop=None,
-                                presence_penalty=0.0,
-                                frequency_penalty=0.0,
-                                seed=None,
-                                api_key=None,
-                                api_base=None,
-                                user=None,
-                                parallel_tool_calls=None,
-                                logprobs=False,
-                                top_logprobs=None,
-                                logit_bias=None,
-                                stream_options=None,
-                                max_completion_tokens=None,
-                                reasoning_effort=None,
-                                extra_args=None,
-                                tags=[]
-                            ),
-                            repo_name=repo_name,
-                            file_path=file_path,
-                            recent_commits=[],
-                            pr_info=None
-                        )
-                    ]
-                    
-                    # Mock the async method properly
-                    with patch.object(prompt_service.local_repo_service, 'handle_git_workflow_after_save', new_callable=AsyncMock) as mock_workflow:
-                        mock_workflow.return_value = None
-                    
-                        result = await prompt_service.update_prompt(
-                            user_id=user_id,
-                            repo_name=repo_name,
-                            file_path=file_path,
-                            prompt_data=update_data
-                        )
+                with patch.object(prompt_service.local_repo_service, 'handle_git_workflow_after_save', new_callable=AsyncMock) as mock_workflow:
+                    mock_workflow.return_value = None
+                
+                    result, pr_info = await prompt_service.save_prompt(
+                        user_id=user_id,
+                        repo_name=repo_name,
+                        file_path=file_path,
+                        prompt_data=update_data
+                    )
         
         assert result is not None
-        # update_prompt returns a tuple (PromptMeta, PRInfo)
-        updated_prompt, _pr_info = result
-        assert updated_prompt is not None
-        assert updated_prompt.prompt.name == "New Name"
+        # save_prompt returns a tuple (PromptMeta, PRInfo)
+        assert result.prompt.name == "New Name"
 
 
 class TestDeletePrompt:

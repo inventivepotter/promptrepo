@@ -52,61 +52,19 @@ export class PromptsService {
   }
 
   /**
-   * Create a new prompt
-   */
-  async createPrompt(promptMeta: PromptMeta): Promise<PromptMeta> {
-    try {
-      const result = await promptsApi.createPrompt(
-        promptMeta.repo_name,
-        promptMeta.file_path,
-        promptMeta.prompt
-      );
-
-      if (isErrorResponse(result)) {
-        errorNotification(
-          result.title || 'Prompt Creation Failed',
-          result.detail || 'Unable to create prompt on server.'
-        );
-        throw new Error(result.detail || 'Prompt creation failed');
-      }
-
-      if (!isStandardResponse(result) || !result.data) {
-        errorNotification(
-          'Unexpected Response',
-          'Received an unexpected response from the server.'
-        );
-        throw new Error('Unexpected response format');
-      }
-
-      successNotification(
-        'Prompt Created',
-        'Your prompt has been created successfully.'
-      );
-
-      return result.data;
-    } catch (error: unknown) {
-      errorNotification(
-        'Connection Error',
-        'Unable to connect to prompt service.'
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Update a prompt
+   * Save a prompt (create or update)
    * Handles error notifications and validation
    */
-  async updatePrompt(repoName: string, filePath: string, updates: PromptDataUpdate): Promise<PromptMeta> {
+  async savePrompt(repoName: string, filePath: string, promptData: PromptDataUpdate): Promise<PromptMeta> {
     try {
-      const result = await promptsApi.updatePrompt(repoName, filePath, updates);
+      const result = await promptsApi.savePrompt(repoName, filePath, promptData);
 
       if (isErrorResponse(result)) {
         errorNotification(
-          result.title || 'Prompt Update Failed',
-          result.detail || 'Unable to update prompt on server.'
+          result.title || 'Prompt Save Failed',
+          result.detail || 'Unable to save prompt on server.'
         );
-        throw new Error(result.detail || 'Prompt update failed');
+        throw new Error(result.detail || 'Prompt save failed');
       }
 
       if (!isStandardResponse(result) || !result.data) {

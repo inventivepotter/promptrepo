@@ -22,6 +22,8 @@ import {
 } from '@/stores/chatStore/hooks';
 import { useCurrentPrompt } from '@/stores/promptStore/hooks';
 import { TemplateUtils } from '@/services/prompts';
+import { ToolsService } from '@/services/tools';
+import type { ToolSummary } from '@/types/tools';
 
 interface ChatProps {
   // Optional props for customization
@@ -29,34 +31,6 @@ interface ChatProps {
   onMessageSend?: (message: string, tools: string[]) => void;
 }
 
-// Mock tools data - in real implementation this would come from API
-const MOCK_TOOLS = [
-  {
-    id: 'search_files',
-    name: 'Search Files',
-    description: 'Search for text patterns across files in the project'
-  },
-  {
-    id: 'read_file',
-    name: 'Read File',
-    description: 'Read the contents of a specific file'
-  },
-  {
-    id: 'write_to_file',
-    name: 'Write to File',
-    description: 'Create or modify files with new content'
-  },
-  {
-    id: 'execute_command',
-    name: 'Execute Command',
-    description: 'Run terminal commands and scripts'
-  },
-  {
-    id: 'browser_action',
-    name: 'Browser Action',
-    description: 'Interact with web pages using a browser'
-  },
-];
 
 export function Chat({ height = "700px", onMessageSend }: ChatProps) {
   // Use chatStore hooks
@@ -75,16 +49,41 @@ export function Chat({ height = "700px", onMessageSend }: ChatProps) {
   const [hasStartedChat, setHasStartedChat] = useState(false);
   // State to control if template variables panel is expanded
   const [variablesExpanded, setVariablesExpanded] = useState(true);
+  const [isLoadingTools, setIsLoadingTools] = useState(false);
 
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const borderColor = "bg.muted";
   const bgColor = useColorModeValue('white', 'gray.800');
   
-  // Initialize tools on mount using useEffect
+  // Load tools from backend when current prompt's repository changes
   useEffect(() => {
-    if (availableTools.length === 0) {
-      setAvailableTools(MOCK_TOOLS);
-    }
-  }, [availableTools.length, setAvailableTools]);
+    const loadTools = async () => {
+      // Don't load if no current prompt or repo name
+      if (!currentPrompt?.repo_name) {
+        setAvailableTools([]);
+        return;
+      }
+      
+      setIsLoadingTools(true);
+      try {
+        const toolsList = await ToolsService.listTools(currentPrompt.repo_name);
+        // Convert ToolSummary to Tool format expected by chat store
+        const tools = toolsList.map((tool: ToolSummary) => ({
+          id: tool.name,
+          name: tool.name,
+          description: tool.description
+        }));
+        setAvailableTools(tools);
+      } catch (error) {
+        console.error('Failed to load tools:', error);
+        // Set empty array on error to prevent infinite retries
+        setAvailableTools([]);
+      } finally {
+        setIsLoadingTools(false);
+      }
+    };
+    
+    loadTools();
+  }, [currentPrompt?.repo_name, setAvailableTools]);
   
   // Check if all required variables are filled
   const requiredVariables = currentPrompt?.prompt?.prompt
@@ -127,9 +126,19 @@ export function Chat({ height = "700px", onMessageSend }: ChatProps) {
       temperature: currentPrompt.prompt.temperature,
     } : undefined;
     
+    // Create promptId from repo_name and file_path (format: repo_name:file_path)
+    const promptId = currentPrompt?.repo_name && currentPrompt?.file_path
+      ? `${currentPrompt.repo_name}:${currentPrompt.file_path}`
+      : undefined;
+    
+    // Get repo_name to send separately for tool loading
+    const repoName = currentPrompt?.repo_name;
+    
     await sendMessage(message, {
       systemPrompt,
       modelConfig,
+      promptId,
+      repoName,
     });
   };
 

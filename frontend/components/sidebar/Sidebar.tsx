@@ -10,6 +10,7 @@ import {
 import {
   LuSettings,
   LuFileText,
+  LuWrench,
 } from 'react-icons/lu'
 import { useSidebarCollapsed, useSidebarHasHydrated } from '@/stores/sidebarStore'
 import { Branding } from '../Branding'
@@ -102,6 +103,32 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
               {!isCollapsed && (
                 <span style={{ marginLeft: 12, fontSize: '14px', fontWeight: 500 }}>
                   Prompts
+                </span>
+              )}
+            </Button>
+          </Link>
+        </Box>
+
+        {/* Tools */}
+        <Box as="span" width="100%">
+          <Link href="/tools" style={{ textDecoration: 'none' }}>
+            <Button
+              variant="ghost"
+              justifyContent={isCollapsed ? "center" : "flex-start"}
+              size="sm"
+              _hover={{ bg: hoverBg, transform: "translateX(2px)" }}
+              px={isCollapsed ? 2 : 3}
+              py={2}
+              height="36px"
+              borderRadius="2px"
+              fontWeight="500"
+              transition="all 0.15s ease"
+              width="100%"
+            >
+              <LuWrench size={16} />
+              {!isCollapsed && (
+                <span style={{ marginLeft: 12, fontSize: '14px', fontWeight: 500 }}>
+                  Tools
                 </span>
               )}
             </Button>

@@ -20,13 +20,17 @@ export class ChatService {
    * @param promptId - Optional prompt ID
    * @param options - Chat completion options
    * @param systemMessage - Optional system message to prepend
+   * @param tools - Optional tools in OpenAI function format
    * @returns The assistant's message or null if an error occurs
    */
   async sendChatCompletion(
     messages: OpenAIMessage[],
     promptId?: string,
     options?: ChatCompletionOptions,
-    systemMessage?: string
+    systemMessage?: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tools?: any[],
+    repoName?: string
   ): Promise<ChatMessage | null> {
     try {
       // Validate completion options
@@ -69,13 +73,15 @@ export class ChatService {
         provider: options.provider,
         model: options.model,
         prompt_id: promptId || null,
+        repo_name: repoName || null,
         stream: options.stream || false,
         temperature: options.temperature || null,
         max_tokens: options.max_tokens || null,
         top_p: options.top_p || null,
         frequency_penalty: options.frequency_penalty || null,
         presence_penalty: options.presence_penalty || null,
-        stop: options.stop || null
+        stop: options.stop || null,
+        tools: tools || null
       };
 
       const result = await ChatApi.chatCompletion(request);
@@ -125,6 +131,12 @@ export class ChatService {
       // Add inference time from API response
       if (result.data.inference_time_ms) {
         chatMessage.inferenceTimeMs = result.data.inference_time_ms;
+      }
+
+      // Store tool responses in the message for the store to process
+      if (result.data.tool_responses && Array.isArray(result.data.tool_responses)) {
+        // Add tool_responses to the message
+        chatMessage.tool_responses = result.data.tool_responses as OpenAIMessage[];
       }
 
       return chatMessage;

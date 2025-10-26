@@ -76,7 +76,7 @@ export function PromptFieldGroup({ repoName, filePath }: PromptFieldGroupProps) 
           <HStack justify="space-between" align="center">
             <Stack flex={1}>
               <Fieldset.Legend>Prompt Details</Fieldset.Legend>
-              <Fieldset.HelperText>Configure the basic prompt information and content</Fieldset.HelperText>
+              <Fieldset.HelperText color="text.tertiary">Configure the basic prompt information and content</Fieldset.HelperText>
             </Stack>
             <Button
               variant="ghost"

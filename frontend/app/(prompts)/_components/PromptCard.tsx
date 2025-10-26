@@ -122,7 +122,7 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
               bg="bg"
               borderRadius="md"
               borderLeft="3px solid"
-              borderColor="bg.emphasized"
+              borderColor="bg.muted"
             >
               <Text fontSize="sm" opacity={0.6} lineClamp={3}>
                 {truncateText(prompt.prompt.prompt, 150)}

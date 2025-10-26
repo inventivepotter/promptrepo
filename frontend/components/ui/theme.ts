@@ -30,6 +30,10 @@ const config = defineConfig({
     "*": {
       colorPalette: "primary",
     },
+    "input::placeholder, textarea::placeholder": {
+      color: { _light: "{colors.gray.500}", _dark: "{colors.gray.500}" },
+      opacity: 1,
+    },
   },
   theme: {
     tokens: {
@@ -118,13 +122,13 @@ const config = defineConfig({
             value: { _light: "{colors.primary.800}", _dark: "{colors.primary.200}" },
           },
           tertiary: {
-            value: { _light: "{colors.primary.700}", _dark: "{colors.primary.300}" },
+            value: { _light: "{colors.gray.600}", _dark: "{colors.gray.400}" },
           },
           disabled: {
             value: { _light: "{colors.primary.400}", _dark: "{colors.primary.600}" },
           },
           placeholder: {
-            value: { _light: "{colors.primary.500}", _dark: "{colors.primary.500}" },
+            value: { _light: "{colors.gray.500}", _dark: "{colors.gray.500}" },
           },
           inverse: {
             value: { _light: "{colors.primary.50}", _dark: "{colors.primary.950}" },

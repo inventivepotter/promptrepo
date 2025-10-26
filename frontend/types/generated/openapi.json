@@ -1,0 +1,5562 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "PromptRepo API",
+    "description": "Backend API for PromptRepo application with GitHub OAuth",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/v0/auth/verify": {
+      "get": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Verify session",
+        "description": "Verify current session and return user information",
+        "operationId": "verify_session_api_v0_auth_verify_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_User_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/authentication-required",
+                  "title": "Authentication required",
+                  "detail": "Invalid or expired session token"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v0/auth/logout": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Logout user",
+        "description": "Logout user and invalidate session",
+        "operationId": "logout_api_v0_auth_logout_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_dict_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v0/auth/refresh": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Refresh session",
+        "description": "Refresh session token to extend expiry",
+        "operationId": "refresh_session_api_v0_auth_refresh_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_NoneType_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/authentication-required",
+                  "title": "Authentication required",
+                  "detail": "Invalid session token"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/internal-server-error",
+                  "title": "Internal Server Error",
+                  "detail": "Failed to refresh session"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v0/auth/health": {
+      "get": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Authentication health check",
+        "description": "Health check specifically for auth routes",
+        "operationId": "auth_health_check_api_v0_auth_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_dict_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v0/auth/login/github/": {
+      "get": {
+        "tags": [
+          "authentication",
+          "github"
+        ],
+        "summary": "Initiate GitHub OAuth login",
+        "description": "Start GitHub OAuth flow and get authorization URL",
+        "operationId": "initiate_github_login_api_v0_auth_login_github__get",
+        "parameters": [
+          {
+            "name": "promptrepo_redirect_url",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "PromptRepo app URL to redirect after login",
+              "title": "Promptrepo Redirect Url"
+            },
+            "description": "PromptRepo app URL to redirect after login"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_AuthUrlResponseData_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/bad-request",
+                  "title": "Bad request",
+                  "detail": "Redirect URI parameter is required"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Provider not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/not-found",
+                  "title": "Provider not found",
+                  "detail": "OAuth provider 'github' is not supported"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/service-unavailable",
+                  "title": "Service unavailable",
+                  "detail": "OAuth provider is not properly configured"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/internal-server-error",
+                  "title": "Internal Server Error",
+                  "detail": "Failed to generate authentication URL"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v0/auth/callback/github/": {
+      "get": {
+        "tags": [
+          "authentication",
+          "github"
+        ],
+        "summary": "GitHub OAuth callback",
+        "description": "Handle GitHub OAuth callback and create user session",
+        "operationId": "github_oauth_callback_api_v0_auth_callback_github__get",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Authorization code from GitHub",
+              "title": "Code"
+            },
+            "description": "Authorization code from GitHub"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "State parameter for CSRF verification",
+              "title": "State"
+            },
+            "description": "State parameter for CSRF verification"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_LoginResponseData_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/bad-request",
+                  "title": "Bad request",
+                  "detail": "Invalid or expired state parameter"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/authentication-failed",
+                  "title": "Authentication failed",
+                  "detail": "Failed to exchange authorization code for token"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/internal-server-error",
+                  "title": "Internal Server Error",
+                  "detail": "Authentication failed due to server error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v0/llm/providers/configured": {
+      "get": {
+        "tags": [
+          "llm"
+        ],
+        "summary": "Get configured providers",
+        "description": "Get configured LLM providers and their database.models based on AppConfig",
+        "operationId": "get_configured_providers_api_v0_llm_providers_configured_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_ProvidersResponse_"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/internal-server-error",
+                  "title": "Internal Server Error",
+                  "detail": "Failed to retrieve configured providers"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v0/llm/providers/available": {
+      "get": {
+        "tags": [
+          "llm"
+        ],
+        "summary": "Get available providers",
+        "description": "Get all available LLM providers without requiring API keys",
+        "operationId": "get_available_providers_api_v0_llm_providers_available_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_BasicProvidersResponse_"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/internal-server-error",
+                  "title": "Internal Server Error",
+                  "detail": "Failed to retrieve available providers"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v0/llm/provider/{provider_id}/models": {
+      "post": {
+        "tags": [
+          "llm"
+        ],
+        "summary": "Fetch database.models by provider",
+        "description": "Fetch available database.models for a specific provider using API key",
+        "operationId": "fetch_models_by_provider_api_v0_llm_provider__provider_id__models_post",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FetchModelsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_ModelsResponse_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/bad-request",
+                  "title": "Bad request",
+                  "detail": "Provider ID mismatch"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/internal-server-error",
+                  "title": "Internal Server Error",
+                  "detail": "Failed to fetch models"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v0/llm/completions": {
+      "post": {
+        "tags": [
+          "llm"
+        ],
+        "summary": "Create chat completion",
+        "description": "Create a chat completion using any-llm. Supports both streaming and non-streaming responses.",
+        "operationId": "chat_completions_api_v0_llm_completions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatCompletionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_ChatCompletionResponse_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/bad-request",
+                  "title": "Bad request",
+                  "detail": "Invalid provider or model"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/internal-server-error",
+                  "title": "Internal Server Error",
+                  "detail": "Completion failed"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v0/llm/health": {
+      "get": {
+        "tags": [
+          "llm"
+        ],
+        "summary": "Chat service health check",
+        "description": "Health check for chat endpoints",
+        "operationId": "chat_health_check_api_v0_llm_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_dict_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v0/config/": {
+      "get": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Get configuration",
+        "description": "Retrieve current application configuration. Returns public config when unauthenticated.",
+        "operationId": "get_config_api_v0_config__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_AppConfig_"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/internal-server-error",
+                  "title": "Internal Server Error",
+                  "detail": "Failed to retrieve configuration"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Update configuration",
+        "description": "Update application configuration including LLM and repository configurations (partial update).",
+        "operationId": "update_config_api_v0_config__patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppConfig-Input"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_AppConfig_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid configuration data",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/bad-request",
+                  "title": "Bad request",
+                  "detail": "Invalid configuration parameters"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/validation-failed",
+                  "title": "Validation Error",
+                  "detail": "The request contains invalid data"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/internal-server-error",
+                  "title": "Internal Server Error",
+                  "detail": "Failed to update configuration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v0/repos/available": {
+      "get": {
+        "tags": [
+          "repos"
+        ],
+        "summary": "Get available repositories",
+        "description": "Get list of available repositories",
+        "operationId": "get_available_repositories_api_v0_repos_available_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_RepositoryList_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/authentication-required",
+                  "title": "Authentication required",
+                  "detail": "Session not found or invalid"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/internal-server-error",
+                  "title": "Internal Server Error",
+                  "detail": "Failed to retrieve repositories"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v0/repos/configured": {
+      "get": {
+        "tags": [
+          "repos"
+        ],
+        "summary": "Get configured repositories",
+        "description": "Get list of configured repositories for the authenticated user",
+        "operationId": "get_configured_repositories_api_v0_repos_configured_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_ConfiguredReposResponse_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/authentication-required",
+                  "title": "Authentication required",
+                  "detail": "Valid session required"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/internal-server-error",
+                  "title": "Internal Server Error",
+                  "detail": "Failed to retrieve configured repositories"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v0/repos/branches": {
+      "get": {
+        "tags": [
+          "repos"
+        ],
+        "summary": "Get repository branches",
+        "description": "Get list of branches for a specific repository",
+        "operationId": "get_repository_branches_api_v0_repos_branches_get",
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Repository owner/organization",
+              "title": "Owner"
+            },
+            "description": "Repository owner/organization"
+          },
+          {
+            "name": "repo",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Repository name",
+              "title": "Repo"
+            },
+            "description": "Repository name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_RepositoryBranchesResponse_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/authentication-required",
+                  "title": "Authentication required",
+                  "detail": "Session not found or invalid"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Repository not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/not-found",
+                  "title": "Not Found",
+                  "detail": "Repository not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/internal-server-error",
+                  "title": "Internal Server Error",
+                  "detail": "Failed to retrieve repository branches"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v0/repos/get_latest": {
+      "post": {
+        "tags": [
+          "repos"
+        ],
+        "summary": "Fetch latest repository content from base branch",
+        "description": "Fetch the latest version of repository content from the configured base branch, discarding any local changes. This will reset the repository to the latest version from the remote repository.",
+        "operationId": "get_latest_repo_content_api_v0_repos_get_latest_post",
+        "parameters": [
+          {
+            "name": "repo_name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Repo Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_dict_"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Repository not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/not-found",
+                  "title": "Repository Not Found",
+                  "detail": "Repository 'xxx' not found or access denied"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/internal-server-error",
+                  "title": "Internal Server Error",
+                  "detail": "Failed to fetch latest repository content"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v0/info": {
+      "get": {
+        "tags": [
+          "info",
+          "info"
+        ],
+        "summary": "API information",
+        "description": "Get basic information about the API",
+        "operationId": "get_api_info_api_v0_info_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_APIInfo_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v0/prompts/": {
+      "get": {
+        "tags": [
+          "prompts"
+        ],
+        "summary": "Get prompt",
+        "description": "Get a specific prompt by repository name and file path. Checks user permissions based on hosting type.",
+        "operationId": "get_prompt_api_v0_prompts__get",
+        "parameters": [
+          {
+            "name": "repo_name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Repo Name"
+            }
+          },
+          {
+            "name": "file_path",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_PromptMeta_"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Prompt not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/not-found",
+                  "title": "Prompt Not Found",
+                  "detail": "Prompt with ID 'xxx' not found or access denied"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/internal-server-error",
+                  "title": "Internal Server Error",
+                  "detail": "Failed to retrieve prompt"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "prompts"
+        ],
+        "summary": "Create prompt",
+        "description": "Create a new prompt. The prompt will be saved to the specified repository and file path.",
+        "operationId": "create_prompt_api_v0_prompts__post",
+        "parameters": [
+          {
+            "name": "repo_name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Repo Name"
+            }
+          },
+          {
+            "name": "file_path",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Path"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromptData"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_PromptMeta_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid prompt data",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/validation-failed",
+                  "title": "Validation Error",
+                  "detail": "Invalid prompt data"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Prompt file already exists",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/conflict",
+                  "title": "Conflict",
+                  "detail": "Prompt file already exists at the specified path"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/internal-server-error",
+                  "title": "Internal Server Error",
+                  "detail": "Failed to create prompt"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "prompts"
+        ],
+        "summary": "Update prompt",
+        "description": "Update an existing prompt. All fields in the update are optional.",
+        "operationId": "update_prompt_api_v0_prompts__put",
+        "parameters": [
+          {
+            "name": "repo_name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Repo Name"
+            }
+          },
+          {
+            "name": "file_path",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Path"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromptDataUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_PromptMeta_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid prompt data",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/validation-failed",
+                  "title": "Validation Error",
+                  "detail": "Invalid prompt data"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Prompt not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/not-found",
+                  "title": "Prompt Not Found",
+                  "detail": "Prompt with ID 'xxx' not found or access denied"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/internal-server-error",
+                  "title": "Internal Server Error",
+                  "detail": "Failed to update prompt"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "prompts"
+        ],
+        "summary": "Delete prompt",
+        "description": "Delete a prompt. Removes the prompt file from the repository.",
+        "operationId": "delete_prompt_api_v0_prompts__delete",
+        "parameters": [
+          {
+            "name": "repo_name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Repo Name"
+            }
+          },
+          {
+            "name": "file_path",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_NoneType_"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Prompt not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/not-found",
+                  "title": "Prompt Not Found",
+                  "detail": "Prompt with ID 'xxx' not found or access denied"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/internal-server-error",
+                  "title": "Internal Server Error",
+                  "detail": "Failed to delete prompt"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v0/prompts/discover": {
+      "post": {
+        "tags": [
+          "prompts"
+        ],
+        "summary": "Discover repository prompts",
+        "description": "Discover prompts from one or more repositories. Scans and retrieves all prompt YAML/YML files from the specified repositories.",
+        "operationId": "discover_repository_prompts_api_v0_prompts_discover_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscoverRepositoriesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_List_PromptMeta__"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request or all repositories failed to discover prompts",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/bad-request",
+                  "title": "Bad Request",
+                  "detail": "Failed to discover prompts from all repositories"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/internal-server-error",
+                  "title": "Internal Server Error",
+                  "detail": "Failed to discover prompts"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v0/tools/": {
+      "get": {
+        "tags": [
+          "tools"
+        ],
+        "summary": "List all tools",
+        "description": "Retrieve a list of all tools in a repository.",
+        "operationId": "list_tools_api_v0_tools__get",
+        "parameters": [
+          {
+            "name": "repo_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Repository name",
+              "default": "default",
+              "title": "Repo Name"
+            },
+            "description": "Repository name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_List_ToolSummary__"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/internal-server-error",
+                  "title": "Internal Server Error",
+                  "detail": "Failed to retrieve tools"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "tools"
+        ],
+        "summary": "Create or update tool",
+        "description": "Create a new tool or update an existing tool definition.",
+        "operationId": "create_tool_api_v0_tools__post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateToolRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_ToolSaveResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/validation-error",
+                  "title": "Validation Error",
+                  "detail": "Tool validation failed"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/internal-server-error",
+                  "title": "Internal Server Error",
+                  "detail": "Failed to create tool"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v0/tools/{tool_name}": {
+      "get": {
+        "tags": [
+          "tools"
+        ],
+        "summary": "Get tool definition",
+        "description": "Retrieve a specific tool definition by name.",
+        "operationId": "get_tool_api_v0_tools__tool_name__get",
+        "parameters": [
+          {
+            "name": "tool_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tool Name"
+            }
+          },
+          {
+            "name": "repo_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Repository name",
+              "default": "default",
+              "title": "Repo Name"
+            },
+            "description": "Repository name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_ToolDefinition_"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tool not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/not-found",
+                  "title": "Not Found",
+                  "detail": "Tool not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/internal-server-error",
+                  "title": "Internal Server Error",
+                  "detail": "Failed to retrieve tool"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "tools"
+        ],
+        "summary": "Delete tool",
+        "description": "Delete a tool definition from the repository.",
+        "operationId": "delete_tool_api_v0_tools__tool_name__delete",
+        "parameters": [
+          {
+            "name": "tool_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tool Name"
+            }
+          },
+          {
+            "name": "repo_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Repository name",
+              "default": "default",
+              "title": "Repo Name"
+            },
+            "description": "Repository name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_dict_"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tool not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/not-found",
+                  "title": "Not Found",
+                  "detail": "Tool not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/internal-server-error",
+                  "title": "Internal Server Error",
+                  "detail": "Failed to delete tool"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v0/tools/{tool_name}/validate": {
+      "post": {
+        "tags": [
+          "tools"
+        ],
+        "summary": "Validate tool definition",
+        "description": "Validate a tool definition for correctness.",
+        "operationId": "validate_tool_api_v0_tools__tool_name__validate_post",
+        "parameters": [
+          {
+            "name": "tool_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tool Name"
+            }
+          },
+          {
+            "name": "repo_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Repository name",
+              "default": "default",
+              "title": "Repo Name"
+            },
+            "description": "Repository name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_dict_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/validation-error",
+                  "title": "Validation Error",
+                  "detail": "Tool validation failed"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tool not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/not-found",
+                  "title": "Not Found",
+                  "detail": "Tool not found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v0/tools/{tool_name}/mock": {
+      "post": {
+        "tags": [
+          "tools"
+        ],
+        "summary": "Execute mock response",
+        "description": "Execute mock response for a tool with given parameters.",
+        "operationId": "execute_mock_api_v0_tools__tool_name__mock_post",
+        "parameters": [
+          {
+            "name": "tool_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tool Name"
+            }
+          },
+          {
+            "name": "repo_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Repository name",
+              "default": "default",
+              "title": "Repo Name"
+            },
+            "description": "Repository name"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MockExecutionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_MockExecutionResponse_"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tool not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/not-found",
+                  "title": "Not Found",
+                  "detail": "Tool not found"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Mock execution disabled",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "type": "/errors/bad-request",
+                  "title": "Bad Request",
+                  "detail": "Mock execution is disabled for this tool"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "APIInfo": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "documentation": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Documentation"
+          },
+          "endpoints": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Endpoints"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "version",
+          "description",
+          "documentation",
+          "endpoints"
+        ],
+        "title": "APIInfo",
+        "description": "API information model."
+      },
+      "AppConfig-Input": {
+        "properties": {
+          "hosting_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HostingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Hosting-specific configuration settings"
+          },
+          "oauth_configs": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/OAuthConfig"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oauth Configs",
+            "description": "List of OAuth provider configurations"
+          },
+          "llm_configs": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/LLMConfig"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Configs",
+            "description": "List of LLM provider configurations"
+          },
+          "repo_configs": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/RepoConfig"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo Configs",
+            "description": "List of repository configurations"
+          }
+        },
+        "type": "object",
+        "title": "AppConfig",
+        "description": "Main application configuration"
+      },
+      "AppConfig-Output": {
+        "properties": {
+          "hosting_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HostingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Hosting-specific configuration settings"
+          },
+          "oauth_configs": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/OAuthConfig"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oauth Configs",
+            "description": "List of OAuth provider configurations"
+          },
+          "llm_configs": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/LLMConfig"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Configs",
+            "description": "List of LLM provider configurations"
+          },
+          "repo_configs": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/RepoConfig"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo Configs",
+            "description": "List of repository configurations"
+          }
+        },
+        "type": "object",
+        "title": "AppConfig",
+        "description": "Main application configuration"
+      },
+      "AuthUrlResponseData": {
+        "properties": {
+          "authUrl": {
+            "type": "string",
+            "title": "Authurl"
+          }
+        },
+        "type": "object",
+        "required": [
+          "authUrl"
+        ],
+        "title": "AuthUrlResponseData"
+      },
+      "BasicProviderInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "custom_api_base": {
+            "type": "boolean",
+            "title": "Custom Api Base",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "BasicProviderInfo",
+        "description": "Basic provider info without models"
+      },
+      "BasicProvidersResponse": {
+        "properties": {
+          "providers": {
+            "items": {
+              "$ref": "#/components/schemas/BasicProviderInfo"
+            },
+            "type": "array",
+            "title": "Providers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "providers"
+        ],
+        "title": "BasicProvidersResponse",
+        "description": "Response for basic providers endpoint"
+      },
+      "BranchInfo": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Branch name"
+          },
+          "is_default": {
+            "type": "boolean",
+            "title": "Is Default",
+            "description": "Whether this is the default branch",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "BranchInfo",
+        "description": "Information about a repository branch"
+      },
+      "ChatCompletionChoice": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "message": {
+            "$ref": "#/components/schemas/ChatMessage"
+          },
+          "finish_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finish Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "message"
+        ],
+        "title": "ChatCompletionChoice",
+        "description": "Choice in chat completion response"
+      },
+      "ChatCompletionRequest": {
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "type": "array",
+            "title": "Messages",
+            "description": "List of messages (can be empty for system-only prompts)"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "description": "LLM provider (e.g., openai, mistral, anthropic)"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "Model name (e.g., gpt-3.5-turbo, claude-3)"
+          },
+          "prompt_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt Id",
+            "description": "Optional prompt ID for context"
+          },
+          "stream": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stream",
+            "description": "Whether to stream the response",
+            "default": false
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 2.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature",
+            "description": "Sampling temperature"
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens",
+            "description": "Maximum tokens to generate"
+          },
+          "top_p": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top P",
+            "description": "Top-p sampling parameter"
+          },
+          "frequency_penalty": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 2.0,
+                "minimum": -2.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frequency Penalty",
+            "description": "Frequency penalty"
+          },
+          "presence_penalty": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 2.0,
+                "minimum": -2.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Presence Penalty",
+            "description": "Presence penalty"
+          },
+          "stop": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stop",
+            "description": "Stop sequences"
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools",
+            "description": "Tools available for the model to call (OpenAI function format)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider",
+          "model"
+        ],
+        "title": "ChatCompletionRequest",
+        "description": "Request model for chat completions"
+      },
+      "ChatCompletionResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "object": {
+            "type": "string",
+            "title": "Object",
+            "default": "chat.completion"
+          },
+          "created": {
+            "type": "integer",
+            "title": "Created"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/ChatCompletionChoice"
+            },
+            "type": "array",
+            "title": "Choices"
+          },
+          "usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UsageStats"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "inference_time_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inference Time Ms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created",
+          "model",
+          "choices"
+        ],
+        "title": "ChatCompletionResponse",
+        "description": "Response model for chat completions"
+      },
+      "ChatMessage": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "system",
+              "user",
+              "assistant",
+              "tool"
+            ],
+            "title": "Role"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content",
+            "description": "Message content (can be empty for system-only prompts)",
+            "default": ""
+          },
+          "tool_call_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Call Id"
+          },
+          "tool_calls": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Calls"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "title": "ChatMessage",
+        "description": "OpenAI-compatible message format"
+      },
+      "CommitInfo": {
+        "properties": {
+          "commit_id": {
+            "type": "string",
+            "title": "Commit Id"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "author": {
+            "type": "string",
+            "title": "Author"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "commit_id",
+          "message",
+          "author",
+          "timestamp"
+        ],
+        "title": "CommitInfo",
+        "description": "Represents information about a commit."
+      },
+      "CompletionTokensDetails": {
+        "properties": {
+          "accepted_prediction_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted Prediction Tokens"
+          },
+          "audio_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Tokens"
+          },
+          "reasoning_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning Tokens"
+          },
+          "rejected_prediction_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejected Prediction Tokens"
+          }
+        },
+        "type": "object",
+        "title": "CompletionTokensDetails",
+        "description": "Breakdown of tokens used in a completion"
+      },
+      "ConfiguredReposResponse": {
+        "properties": {
+          "repositories": {
+            "items": {
+              "$ref": "#/components/schemas/RepoConfig"
+            },
+            "type": "array",
+            "title": "Repositories",
+            "description": "List of configured repositories"
+          }
+        },
+        "type": "object",
+        "required": [
+          "repositories"
+        ],
+        "title": "ConfiguredReposResponse",
+        "description": "Response for configured repositories endpoint"
+      },
+      "CreateToolRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Tool name in function-name format"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Human-readable description"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/ParametersDefinition-Input",
+            "description": "OpenAI-compatible parameters"
+          },
+          "mock": {
+            "$ref": "#/components/schemas/MockConfig",
+            "description": "Mock configuration"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolMetadata"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional metadata"
+          },
+          "repo_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo Name",
+            "description": "Repository name",
+            "default": "default"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "mock"
+        ],
+        "title": "CreateToolRequest",
+        "description": "Request model for creating/updating a tool."
+      },
+      "DiscoverRepositoriesRequest": {
+        "properties": {
+          "repo_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Repo Names",
+            "description": "List of repository names to discover prompts from (supports 'owner/repo' or 'repo' format)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "repo_names"
+        ],
+        "title": "DiscoverRepositoriesRequest",
+        "description": "Request model for discovering prompts from repositories."
+      },
+      "FetchModelsRequest": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          },
+          "api_base": {
+            "type": "string",
+            "title": "Api Base",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key"
+        ],
+        "title": "FetchModelsRequest",
+        "description": "Request model for fetching models from a provider"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HostingConfig": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/HostingType",
+            "description": "Hosting type: individual, organization",
+            "default": "individual"
+          }
+        },
+        "type": "object",
+        "title": "HostingConfig",
+        "description": "Hosting-specific configuration settings"
+      },
+      "HostingType": {
+        "type": "string",
+        "enum": [
+          "individual",
+          "organization"
+        ],
+        "title": "HostingType"
+      },
+      "LLMConfig": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique identifier for the llm configuration"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "description": "LLM provider name",
+            "default": ""
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "LLM model name",
+            "default": ""
+          },
+          "api_key": {
+            "type": "string",
+            "title": "Api Key",
+            "description": "LLM API key",
+            "default": ""
+          },
+          "api_base_url": {
+            "type": "string",
+            "title": "Api Base Url",
+            "description": "LLM API base URL",
+            "default": ""
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Custom label for the LLM configuration (used for organization-scoped configs)",
+            "default": ""
+          },
+          "scope": {
+            "$ref": "#/components/schemas/LLMConfigScope",
+            "description": "Scope of the LLM config: 'organization' for ENV configs, 'user' for user-specific configs",
+            "default": "organization"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "LLMConfig",
+        "description": "LLM Provider configuration settings"
+      },
+      "LLMConfigScope": {
+        "type": "string",
+        "enum": [
+          "organization",
+          "user"
+        ],
+        "title": "LLMConfigScope"
+      },
+      "LoginResponseData": {
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/User"
+          },
+          "expiresAt": {
+            "type": "string",
+            "title": "Expiresat"
+          },
+          "promptrepoRedirectUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Promptreporedirecturl"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user",
+          "expiresAt"
+        ],
+        "title": "LoginResponseData"
+      },
+      "MockConfig": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "Whether mock is enabled",
+            "default": true
+          },
+          "response": {
+            "type": "string",
+            "title": "Response",
+            "description": "Mock response string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "response"
+        ],
+        "title": "MockConfig",
+        "description": "Simplified mock configuration for tool."
+      },
+      "MockExecutionRequest": {
+        "properties": {
+          "parameters": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Parameters",
+            "description": "Parameters to pass to the mock execution"
+          }
+        },
+        "type": "object",
+        "title": "MockExecutionRequest",
+        "description": "Request model for executing mock response with parameters."
+      },
+      "MockExecutionResponse": {
+        "properties": {
+          "response": {
+            "type": "string",
+            "title": "Response",
+            "description": "Mock response string"
+          },
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name",
+            "description": "Name of the tool executed"
+          },
+          "parameters_used": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Parameters Used",
+            "description": "Parameters that were used in execution"
+          }
+        },
+        "type": "object",
+        "required": [
+          "response",
+          "tool_name"
+        ],
+        "title": "MockExecutionResponse",
+        "description": "Response model for mock execution."
+      },
+      "ModelInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ModelInfo",
+        "description": "Information about a specific model"
+      },
+      "ModelsResponse": {
+        "properties": {
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/ModelInfo"
+            },
+            "type": "array",
+            "title": "Models"
+          }
+        },
+        "type": "object",
+        "required": [
+          "models"
+        ],
+        "title": "ModelsResponse",
+        "description": "Response for database.models endpoint"
+      },
+      "OAuthConfig": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "description": "OAuth provider name (e.g., 'github', 'google', 'microsoft')",
+            "default": ""
+          },
+          "client_id": {
+            "type": "string",
+            "title": "Client Id",
+            "description": "OAuth client ID",
+            "default": ""
+          },
+          "client_secret": {
+            "type": "string",
+            "title": "Client Secret",
+            "description": "OAuth client secret",
+            "default": ""
+          },
+          "redirect_url": {
+            "type": "string",
+            "title": "Redirect Url",
+            "description": "OAuth redirect URL",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "OAuthConfig",
+        "description": "Authentication-specific configuration settings"
+      },
+      "OAuthProvider": {
+        "type": "string",
+        "enum": [
+          "github",
+          "gitlab",
+          "bitbucket"
+        ],
+        "title": "OAuthProvider",
+        "description": "Supported OAuth providers"
+      },
+      "ParameterSchema": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/ToolParameterType",
+            "description": "Parameter type"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Parameter description"
+          },
+          "enum": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enum",
+            "description": "Allowed values"
+          },
+          "default": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default",
+            "description": "Default value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "description"
+        ],
+        "title": "ParameterSchema",
+        "description": "Individual parameter property schema for OpenAI compatibility."
+      },
+      "ParametersDefinition-Input": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "object",
+            "title": "Type",
+            "description": "Always 'object' for OpenAI compatibility",
+            "default": "object"
+          },
+          "properties": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ParameterSchema"
+            },
+            "type": "object",
+            "title": "Properties",
+            "description": "Parameter properties"
+          },
+          "required": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required",
+            "description": "Required parameter names"
+          }
+        },
+        "type": "object",
+        "title": "ParametersDefinition",
+        "description": "Parameters definition following OpenAI function schema."
+      },
+      "ParametersDefinition-Output": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "object",
+            "title": "Type",
+            "description": "Always 'object' for OpenAI compatibility",
+            "default": "object"
+          },
+          "properties": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ParameterSchema"
+            },
+            "type": "object",
+            "title": "Properties",
+            "description": "Parameter properties"
+          },
+          "required": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required",
+            "description": "Required parameter names"
+          }
+        },
+        "type": "object",
+        "title": "ParametersDefinition",
+        "description": "Parameters definition following OpenAI function schema."
+      },
+      "PromptData": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique identifier for the prompt",
+            "default": ""
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Prompt name",
+            "default": "Untitled Prompt"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Prompt description",
+            "default": ""
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "description": "LLM provider (e.g., openai, anthropic)",
+            "default": "openai"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "Model name (e.g., gpt-4, claude-3)",
+            "default": "gpt-4"
+          },
+          "failover_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failover Model",
+            "description": "Backup model if primary fails"
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt",
+            "description": "Combined prompt content",
+            "default": ""
+          },
+          "tool_choice": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Choice",
+            "description": "Tool choice configuration"
+          },
+          "temperature": {
+            "type": "number",
+            "maximum": 2.0,
+            "minimum": 0.0,
+            "title": "Temperature",
+            "description": "Sampling temperature",
+            "default": 0.0
+          },
+          "top_p": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top P",
+            "description": "Top-p sampling parameter"
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens",
+            "description": "Maximum tokens to generate"
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "Response format configuration"
+          },
+          "stream": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stream",
+            "description": "Whether to stream the response"
+          },
+          "n_completions": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N Completions",
+            "description": "Number of completions to generate"
+          },
+          "stop": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stop",
+            "description": "Stop sequences"
+          },
+          "presence_penalty": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 2.0,
+                "minimum": -2.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Presence Penalty",
+            "description": "Presence penalty"
+          },
+          "frequency_penalty": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 2.0,
+                "minimum": -2.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frequency Penalty",
+            "description": "Frequency penalty"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Random seed for reproducibility"
+          },
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key",
+            "description": "API key override"
+          },
+          "api_base": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Base",
+            "description": "API base URL override"
+          },
+          "user": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User",
+            "description": "User identifier for tracking"
+          },
+          "parallel_tool_calls": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parallel Tool Calls",
+            "description": "Enable parallel tool calls"
+          },
+          "logprobs": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logprobs",
+            "description": "Return log probabilities"
+          },
+          "top_logprobs": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 20.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Logprobs",
+            "description": "Number of top log probabilities"
+          },
+          "logit_bias": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logit Bias",
+            "description": "Logit bias adjustments"
+          },
+          "stream_options": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stream Options",
+            "description": "Streaming options"
+          },
+          "max_completion_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Completion Tokens",
+            "description": "Maximum completion tokens"
+          },
+          "reasoning_effort": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "minimal",
+                  "low",
+                  "medium",
+                  "high",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning Effort",
+            "description": "Reasoning effort level",
+            "default": "auto"
+          },
+          "extra_args": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extra Args",
+            "description": "Additional provider-specific arguments"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags",
+            "description": "Tags for prompt categorization"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "Last update timestamp"
+          }
+        },
+        "type": "object",
+        "title": "PromptData",
+        "description": "Core prompt data model with all fields that get saved to YAML files.\nThis model represents the complete prompt configuration including LLM parameters."
+      },
+      "PromptDataUpdate": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id",
+            "description": "Unique identifier for the prompt"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Prompt name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Prompt description"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider",
+            "description": "LLM provider (e.g., openai, anthropic)"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Model name (e.g., gpt-4, claude-3)"
+          },
+          "failover_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failover Model",
+            "description": "Backup model if primary fails"
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt",
+            "description": "Combined prompt content"
+          },
+          "tool_choice": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Choice",
+            "description": "Tool choice configuration"
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 2.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature",
+            "description": "Sampling temperature"
+          },
+          "top_p": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top P",
+            "description": "Top-p sampling parameter"
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens",
+            "description": "Maximum tokens to generate"
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "Response format configuration"
+          },
+          "stream": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stream",
+            "description": "Whether to stream the response"
+          },
+          "n_completions": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N Completions",
+            "description": "Number of completions to generate"
+          },
+          "stop": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stop",
+            "description": "Stop sequences"
+          },
+          "presence_penalty": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 2.0,
+                "minimum": -2.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Presence Penalty",
+            "description": "Presence penalty"
+          },
+          "frequency_penalty": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 2.0,
+                "minimum": -2.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frequency Penalty",
+            "description": "Frequency penalty"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Random seed for reproducibility"
+          },
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key",
+            "description": "API key override"
+          },
+          "api_base": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Base",
+            "description": "API base URL override"
+          },
+          "user": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User",
+            "description": "User identifier for tracking"
+          },
+          "parallel_tool_calls": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parallel Tool Calls",
+            "description": "Enable parallel tool calls"
+          },
+          "logprobs": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logprobs",
+            "description": "Return log probabilities"
+          },
+          "top_logprobs": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 20.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Logprobs",
+            "description": "Number of top log probabilities"
+          },
+          "logit_bias": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logit Bias",
+            "description": "Logit bias adjustments"
+          },
+          "stream_options": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stream Options",
+            "description": "Streaming options"
+          },
+          "max_completion_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Completion Tokens",
+            "description": "Maximum completion tokens"
+          },
+          "reasoning_effort": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "minimal",
+                  "low",
+                  "medium",
+                  "high",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning Effort",
+            "description": "Reasoning effort level"
+          },
+          "extra_args": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extra Args",
+            "description": "Additional provider-specific arguments"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "Tags for prompt categorization"
+          }
+        },
+        "type": "object",
+        "title": "PromptDataUpdate",
+        "description": "Partial model for updating prompt data.\nAll fields from PromptData are optional to allow partial updates.\nThis is essentially Partial<PromptData> for update operations."
+      },
+      "PromptMeta": {
+        "properties": {
+          "prompt": {
+            "$ref": "#/components/schemas/PromptData",
+            "description": "Complete prompt data"
+          },
+          "recent_commits": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CommitInfo"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recent Commits",
+            "description": "Recent 5 commits for this prompt file"
+          },
+          "repo_name": {
+            "type": "string",
+            "title": "Repo Name",
+            "description": "Repository name where prompt is stored"
+          },
+          "file_path": {
+            "type": "string",
+            "title": "File Path",
+            "description": "File path within the repository"
+          },
+          "pr_info": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pr Info",
+            "description": "Pull request information when applicable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "prompt",
+          "repo_name",
+          "file_path"
+        ],
+        "title": "PromptMeta",
+        "description": "Prompt metadata model that wraps PromptData with repository information."
+      },
+      "PromptTokensDetails": {
+        "properties": {
+          "audio_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Tokens"
+          },
+          "cached_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cached Tokens"
+          }
+        },
+        "type": "object",
+        "title": "PromptTokensDetails",
+        "description": "Breakdown of tokens used in the prompt"
+      },
+      "ProviderInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/ModelInfo"
+            },
+            "type": "array",
+            "title": "Models"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "models"
+        ],
+        "title": "ProviderInfo",
+        "description": "Information about an LLM provider"
+      },
+      "ProvidersResponse": {
+        "properties": {
+          "providers": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderInfo"
+            },
+            "type": "array",
+            "title": "Providers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "providers"
+        ],
+        "title": "ProvidersResponse",
+        "description": "Response for configured providers endpoint"
+      },
+      "RepoConfig": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique identifier for the repository configuration"
+          },
+          "repo_name": {
+            "type": "string",
+            "title": "Repo Name",
+            "description": "Repository name (e.g., 'owner/repo-name')",
+            "default": ""
+          },
+          "repo_url": {
+            "type": "string",
+            "title": "Repo Url",
+            "description": "Repository URL",
+            "default": ""
+          },
+          "base_branch": {
+            "type": "string",
+            "title": "Base Branch",
+            "description": "Repository base branch",
+            "default": "main"
+          },
+          "current_branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Branch",
+            "description": "Repository current branch",
+            "default": "main"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "RepoConfig",
+        "description": "Repository management settings"
+      },
+      "RepoInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "clone_url": {
+            "type": "string",
+            "title": "Clone Url"
+          },
+          "owner": {
+            "type": "string",
+            "title": "Owner"
+          },
+          "private": {
+            "type": "boolean",
+            "title": "Private",
+            "default": false
+          },
+          "default_branch": {
+            "type": "string",
+            "title": "Default Branch",
+            "default": "main"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "size": {
+            "type": "integer",
+            "title": "Size",
+            "default": 0
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "all_branches": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "All Branches"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "full_name",
+          "clone_url",
+          "owner"
+        ],
+        "title": "RepoInfo"
+      },
+      "RepositoryBranchesResponse": {
+        "properties": {
+          "branches": {
+            "items": {
+              "$ref": "#/components/schemas/BranchInfo"
+            },
+            "type": "array",
+            "title": "Branches",
+            "description": "List of repository branches"
+          },
+          "default_branch": {
+            "type": "string",
+            "title": "Default Branch",
+            "description": "The default branch name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "branches",
+          "default_branch"
+        ],
+        "title": "RepositoryBranchesResponse",
+        "description": "Response for repository branches endpoint"
+      },
+      "RepositoryList": {
+        "properties": {
+          "repositories": {
+            "items": {
+              "$ref": "#/components/schemas/RepoInfo"
+            },
+            "type": "array",
+            "title": "Repositories"
+          }
+        },
+        "type": "object",
+        "required": [
+          "repositories"
+        ],
+        "title": "RepositoryList",
+        "description": "Pydantic model for a list of repositories."
+      },
+      "ResponseMeta": {
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp",
+            "description": "UTC timestamp of the response"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id",
+            "description": "Unique request identifier for tracing"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "description": "API version",
+            "default": "1.0.0"
+          },
+          "correlation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correlation Id",
+            "description": "Correlation ID for distributed tracing"
+          }
+        },
+        "type": "object",
+        "title": "ResponseMeta",
+        "description": "Metadata included with all responses."
+      },
+      "ResponseStatus": {
+        "type": "string",
+        "enum": [
+          "success",
+          "error",
+          "partial"
+        ],
+        "title": "ResponseStatus",
+        "description": "Standard response status values."
+      },
+      "StandardResponse_APIInfo_": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "description": "Response status indicator",
+            "default": "success"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "description": "HTTP status code",
+            "default": 200
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/APIInfo"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Response payload"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Human-readable message about the response"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta",
+            "description": "Response metadata"
+          }
+        },
+        "type": "object",
+        "title": "StandardResponse[APIInfo]",
+        "example": {
+          "data": {
+            "id": 1,
+            "name": "Example"
+          },
+          "message": "Operation completed successfully",
+          "meta": {
+            "request_id": "req_123",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "version": "1.0.0"
+          },
+          "status": "success"
+        }
+      },
+      "StandardResponse_AppConfig_": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "description": "Response status indicator",
+            "default": "success"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "description": "HTTP status code",
+            "default": 200
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AppConfig-Output"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Response payload"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Human-readable message about the response"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta",
+            "description": "Response metadata"
+          }
+        },
+        "type": "object",
+        "title": "StandardResponse[AppConfig]",
+        "example": {
+          "data": {
+            "id": 1,
+            "name": "Example"
+          },
+          "message": "Operation completed successfully",
+          "meta": {
+            "request_id": "req_123",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "version": "1.0.0"
+          },
+          "status": "success"
+        }
+      },
+      "StandardResponse_AuthUrlResponseData_": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "description": "Response status indicator",
+            "default": "success"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "description": "HTTP status code",
+            "default": 200
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuthUrlResponseData"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Response payload"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Human-readable message about the response"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta",
+            "description": "Response metadata"
+          }
+        },
+        "type": "object",
+        "title": "StandardResponse[AuthUrlResponseData]",
+        "example": {
+          "data": {
+            "id": 1,
+            "name": "Example"
+          },
+          "message": "Operation completed successfully",
+          "meta": {
+            "request_id": "req_123",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "version": "1.0.0"
+          },
+          "status": "success"
+        }
+      },
+      "StandardResponse_BasicProvidersResponse_": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "description": "Response status indicator",
+            "default": "success"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "description": "HTTP status code",
+            "default": 200
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BasicProvidersResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Response payload"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Human-readable message about the response"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta",
+            "description": "Response metadata"
+          }
+        },
+        "type": "object",
+        "title": "StandardResponse[BasicProvidersResponse]",
+        "example": {
+          "data": {
+            "id": 1,
+            "name": "Example"
+          },
+          "message": "Operation completed successfully",
+          "meta": {
+            "request_id": "req_123",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "version": "1.0.0"
+          },
+          "status": "success"
+        }
+      },
+      "StandardResponse_ChatCompletionResponse_": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "description": "Response status indicator",
+            "default": "success"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "description": "HTTP status code",
+            "default": 200
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatCompletionResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Response payload"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Human-readable message about the response"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta",
+            "description": "Response metadata"
+          }
+        },
+        "type": "object",
+        "title": "StandardResponse[ChatCompletionResponse]",
+        "example": {
+          "data": {
+            "id": 1,
+            "name": "Example"
+          },
+          "message": "Operation completed successfully",
+          "meta": {
+            "request_id": "req_123",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "version": "1.0.0"
+          },
+          "status": "success"
+        }
+      },
+      "StandardResponse_ConfiguredReposResponse_": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "description": "Response status indicator",
+            "default": "success"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "description": "HTTP status code",
+            "default": 200
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConfiguredReposResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Response payload"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Human-readable message about the response"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta",
+            "description": "Response metadata"
+          }
+        },
+        "type": "object",
+        "title": "StandardResponse[ConfiguredReposResponse]",
+        "example": {
+          "data": {
+            "id": 1,
+            "name": "Example"
+          },
+          "message": "Operation completed successfully",
+          "meta": {
+            "request_id": "req_123",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "version": "1.0.0"
+          },
+          "status": "success"
+        }
+      },
+      "StandardResponse_List_PromptMeta__": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "description": "Response status indicator",
+            "default": "success"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "description": "HTTP status code",
+            "default": 200
+          },
+          "data": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PromptMeta"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "description": "Response payload"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Human-readable message about the response"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta",
+            "description": "Response metadata"
+          }
+        },
+        "type": "object",
+        "title": "StandardResponse[List[PromptMeta]]",
+        "example": {
+          "data": {
+            "id": 1,
+            "name": "Example"
+          },
+          "message": "Operation completed successfully",
+          "meta": {
+            "request_id": "req_123",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "version": "1.0.0"
+          },
+          "status": "success"
+        }
+      },
+      "StandardResponse_List_ToolSummary__": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "description": "Response status indicator",
+            "default": "success"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "description": "HTTP status code",
+            "default": 200
+          },
+          "data": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ToolSummary"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "description": "Response payload"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Human-readable message about the response"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta",
+            "description": "Response metadata"
+          }
+        },
+        "type": "object",
+        "title": "StandardResponse[List[ToolSummary]]",
+        "example": {
+          "data": {
+            "id": 1,
+            "name": "Example"
+          },
+          "message": "Operation completed successfully",
+          "meta": {
+            "request_id": "req_123",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "version": "1.0.0"
+          },
+          "status": "success"
+        }
+      },
+      "StandardResponse_LoginResponseData_": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "description": "Response status indicator",
+            "default": "success"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "description": "HTTP status code",
+            "default": 200
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LoginResponseData"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Response payload"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Human-readable message about the response"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta",
+            "description": "Response metadata"
+          }
+        },
+        "type": "object",
+        "title": "StandardResponse[LoginResponseData]",
+        "example": {
+          "data": {
+            "id": 1,
+            "name": "Example"
+          },
+          "message": "Operation completed successfully",
+          "meta": {
+            "request_id": "req_123",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "version": "1.0.0"
+          },
+          "status": "success"
+        }
+      },
+      "StandardResponse_MockExecutionResponse_": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "description": "Response status indicator",
+            "default": "success"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "description": "HTTP status code",
+            "default": 200
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MockExecutionResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Response payload"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Human-readable message about the response"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta",
+            "description": "Response metadata"
+          }
+        },
+        "type": "object",
+        "title": "StandardResponse[MockExecutionResponse]",
+        "example": {
+          "data": {
+            "id": 1,
+            "name": "Example"
+          },
+          "message": "Operation completed successfully",
+          "meta": {
+            "request_id": "req_123",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "version": "1.0.0"
+          },
+          "status": "success"
+        }
+      },
+      "StandardResponse_ModelsResponse_": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "description": "Response status indicator",
+            "default": "success"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "description": "HTTP status code",
+            "default": 200
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelsResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Response payload"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Human-readable message about the response"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta",
+            "description": "Response metadata"
+          }
+        },
+        "type": "object",
+        "title": "StandardResponse[ModelsResponse]",
+        "example": {
+          "data": {
+            "id": 1,
+            "name": "Example"
+          },
+          "message": "Operation completed successfully",
+          "meta": {
+            "request_id": "req_123",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "version": "1.0.0"
+          },
+          "status": "success"
+        }
+      },
+      "StandardResponse_NoneType_": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "description": "Response status indicator",
+            "default": "success"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "description": "HTTP status code",
+            "default": 200
+          },
+          "data": {
+            "type": "null",
+            "title": "Data",
+            "description": "Response payload"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Human-readable message about the response"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta",
+            "description": "Response metadata"
+          }
+        },
+        "type": "object",
+        "title": "StandardResponse[NoneType]",
+        "example": {
+          "data": {
+            "id": 1,
+            "name": "Example"
+          },
+          "message": "Operation completed successfully",
+          "meta": {
+            "request_id": "req_123",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "version": "1.0.0"
+          },
+          "status": "success"
+        }
+      },
+      "StandardResponse_PromptMeta_": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "description": "Response status indicator",
+            "default": "success"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "description": "HTTP status code",
+            "default": 200
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PromptMeta"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Response payload"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Human-readable message about the response"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta",
+            "description": "Response metadata"
+          }
+        },
+        "type": "object",
+        "title": "StandardResponse[PromptMeta]",
+        "example": {
+          "data": {
+            "id": 1,
+            "name": "Example"
+          },
+          "message": "Operation completed successfully",
+          "meta": {
+            "request_id": "req_123",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "version": "1.0.0"
+          },
+          "status": "success"
+        }
+      },
+      "StandardResponse_ProvidersResponse_": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "description": "Response status indicator",
+            "default": "success"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "description": "HTTP status code",
+            "default": 200
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProvidersResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Response payload"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Human-readable message about the response"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta",
+            "description": "Response metadata"
+          }
+        },
+        "type": "object",
+        "title": "StandardResponse[ProvidersResponse]",
+        "example": {
+          "data": {
+            "id": 1,
+            "name": "Example"
+          },
+          "message": "Operation completed successfully",
+          "meta": {
+            "request_id": "req_123",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "version": "1.0.0"
+          },
+          "status": "success"
+        }
+      },
+      "StandardResponse_RepositoryBranchesResponse_": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "description": "Response status indicator",
+            "default": "success"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "description": "HTTP status code",
+            "default": 200
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RepositoryBranchesResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Response payload"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Human-readable message about the response"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta",
+            "description": "Response metadata"
+          }
+        },
+        "type": "object",
+        "title": "StandardResponse[RepositoryBranchesResponse]",
+        "example": {
+          "data": {
+            "id": 1,
+            "name": "Example"
+          },
+          "message": "Operation completed successfully",
+          "meta": {
+            "request_id": "req_123",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "version": "1.0.0"
+          },
+          "status": "success"
+        }
+      },
+      "StandardResponse_RepositoryList_": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "description": "Response status indicator",
+            "default": "success"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "description": "HTTP status code",
+            "default": 200
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RepositoryList"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Response payload"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Human-readable message about the response"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta",
+            "description": "Response metadata"
+          }
+        },
+        "type": "object",
+        "title": "StandardResponse[RepositoryList]",
+        "example": {
+          "data": {
+            "id": 1,
+            "name": "Example"
+          },
+          "message": "Operation completed successfully",
+          "meta": {
+            "request_id": "req_123",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "version": "1.0.0"
+          },
+          "status": "success"
+        }
+      },
+      "StandardResponse_ToolDefinition_": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "description": "Response status indicator",
+            "default": "success"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "description": "HTTP status code",
+            "default": 200
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolDefinition"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Response payload"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Human-readable message about the response"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta",
+            "description": "Response metadata"
+          }
+        },
+        "type": "object",
+        "title": "StandardResponse[ToolDefinition]",
+        "example": {
+          "data": {
+            "id": 1,
+            "name": "Example"
+          },
+          "message": "Operation completed successfully",
+          "meta": {
+            "request_id": "req_123",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "version": "1.0.0"
+          },
+          "status": "success"
+        }
+      },
+      "StandardResponse_ToolSaveResponse_": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "description": "Response status indicator",
+            "default": "success"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "description": "HTTP status code",
+            "default": 200
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolSaveResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Response payload"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Human-readable message about the response"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta",
+            "description": "Response metadata"
+          }
+        },
+        "type": "object",
+        "title": "StandardResponse[ToolSaveResponse]",
+        "example": {
+          "data": {
+            "id": 1,
+            "name": "Example"
+          },
+          "message": "Operation completed successfully",
+          "meta": {
+            "request_id": "req_123",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "version": "1.0.0"
+          },
+          "status": "success"
+        }
+      },
+      "StandardResponse_User_": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "description": "Response status indicator",
+            "default": "success"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "description": "HTTP status code",
+            "default": 200
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/User"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Response payload"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Human-readable message about the response"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta",
+            "description": "Response metadata"
+          }
+        },
+        "type": "object",
+        "title": "StandardResponse[User]",
+        "example": {
+          "data": {
+            "id": 1,
+            "name": "Example"
+          },
+          "message": "Operation completed successfully",
+          "meta": {
+            "request_id": "req_123",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "version": "1.0.0"
+          },
+          "status": "success"
+        }
+      },
+      "StandardResponse_dict_": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ResponseStatus",
+            "description": "Response status indicator",
+            "default": "success"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "description": "HTTP status code",
+            "default": 200
+          },
+          "data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "description": "Response payload"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "Human-readable message about the response"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta",
+            "description": "Response metadata"
+          }
+        },
+        "type": "object",
+        "title": "StandardResponse[dict]",
+        "example": {
+          "data": {
+            "id": 1,
+            "name": "Example"
+          },
+          "message": "Operation completed successfully",
+          "meta": {
+            "request_id": "req_123",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "version": "1.0.0"
+          },
+          "status": "success"
+        }
+      },
+      "ToolDefinition": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Tool name in function-name format"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Human-readable description"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/ParametersDefinition-Output",
+            "description": "OpenAI-compatible parameters"
+          },
+          "mock": {
+            "$ref": "#/components/schemas/MockConfig",
+            "description": "Mock configuration"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolMetadata"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "mock"
+        ],
+        "title": "ToolDefinition",
+        "description": "Complete tool definition following simplified design."
+      },
+      "ToolMetadata": {
+        "properties": {
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version",
+            "description": "Tool version"
+          },
+          "author": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author",
+            "description": "Tool author"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags",
+            "description": "Tool tags"
+          }
+        },
+        "type": "object",
+        "title": "ToolMetadata",
+        "description": "Optional metadata for tool."
+      },
+      "ToolParameterType": {
+        "type": "string",
+        "enum": [
+          "string",
+          "number",
+          "boolean",
+          "array",
+          "object"
+        ],
+        "title": "ToolParameterType",
+        "description": "Parameter types for tool parameters."
+      },
+      "ToolSaveResponse": {
+        "properties": {
+          "tool": {
+            "$ref": "#/components/schemas/ToolDefinition",
+            "description": "The saved tool definition"
+          },
+          "pr_info": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pr Info",
+            "description": "Pull request information if PR was created"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tool"
+        ],
+        "title": "ToolSaveResponse",
+        "description": "Response model for tool save operation with git workflow."
+      },
+      "ToolSummary": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Tool name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Tool description"
+          },
+          "mock_enabled": {
+            "type": "boolean",
+            "title": "Mock Enabled",
+            "description": "Whether mock is enabled"
+          },
+          "parameter_count": {
+            "type": "integer",
+            "title": "Parameter Count",
+            "description": "Number of parameters"
+          },
+          "required_count": {
+            "type": "integer",
+            "title": "Required Count",
+            "description": "Number of required parameters"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags",
+            "description": "Tool tags"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "mock_enabled",
+          "parameter_count",
+          "required_count"
+        ],
+        "title": "ToolSummary",
+        "description": "Tool summary for listing."
+      },
+      "UsageStats": {
+        "properties": {
+          "prompt_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt Tokens"
+          },
+          "completion_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion Tokens"
+          },
+          "total_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Tokens"
+          },
+          "prompt_tokens_details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PromptTokensDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completion_tokens_details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompletionTokensDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "UsageStats",
+        "description": "Usage statistics for chat completion"
+      },
+      "User": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique user identifier"
+          },
+          "oauth_provider": {
+            "$ref": "#/components/schemas/OAuthProvider",
+            "description": "OAuth provider, e.g., 'github'"
+          },
+          "oauth_username": {
+            "type": "string",
+            "title": "Oauth Username",
+            "description": "OAuth username"
+          },
+          "oauth_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oauth Name",
+            "description": "OAuth display name"
+          },
+          "oauth_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oauth Email",
+            "description": "OAuth email"
+          },
+          "oauth_avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oauth Avatar Url",
+            "description": "OAuth avatar URL"
+          },
+          "oauth_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oauth User Id",
+            "description": "OAuth user ID"
+          },
+          "oauth_profile_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oauth Profile Url",
+            "description": "OAuth profile URL"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "When the user was created"
+          },
+          "modified_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Modified At",
+            "description": "When the user was last modified"
+          }
+        },
+        "type": "object",
+        "required": [
+          "oauth_provider",
+          "oauth_username"
+        ],
+        "title": "User",
+        "description": "User table model representing authenticated users."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "authentication",
+      "description": "Authentication and authorization operations"
+    },
+    {
+      "name": "config",
+      "description": "Configuration management operations"
+    },
+    {
+      "name": "llm",
+      "description": "LLM provider and chat operations"
+    },
+    {
+      "name": "monitoring",
+      "description": "Health checks and monitoring endpoints"
+    },
+    {
+      "name": "info",
+      "description": "API information endpoints"
+    }
+  ]
+}

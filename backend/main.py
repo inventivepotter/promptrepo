@@ -29,6 +29,7 @@ from api.v0.repos import router as repos_router
 from api.v0.health import router as health_router
 from api.v0.info import router as info_router
 from api.v0.prompts import router as prompts_router
+from api.v0.tools import router as tools_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -89,6 +90,12 @@ app.include_router(
     prompts_router,
     prefix="/api/v0/prompts",
     tags=["prompts"]
+)
+
+app.include_router(
+    tools_router,
+    prefix="/api/v0/tools",
+    tags=["tools"]
 )
 
 

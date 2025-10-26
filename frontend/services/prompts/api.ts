@@ -26,13 +26,13 @@ export const promptsApi = {
   },
 
   /**
-   * Create a new prompt
+   * Save a prompt (create or update)
    * POST /api/v0/prompts?repo_name=...&file_path=...
    */
-  createPrompt: async (
+  savePrompt: async (
     repoName: string,
     filePath: string,
-    promptData: PromptData
+    promptData: PromptDataUpdate
   ): Promise<OpenApiResponse<PromptMeta>> => {
     const searchParams = new URLSearchParams();
     searchParams.append('repo_name', repoName);
@@ -41,25 +41,6 @@ export const promptsApi = {
     return await httpClient.post<PromptMeta>(
       `/api/v0/prompts/?${searchParams.toString()}`,
       promptData
-    );
-  },
-
-  /**
-   * Update a prompt
-   * PUT /api/v0/prompts?repo_name=...&file_path=...
-   */
-  updatePrompt: async (
-    repoName: string,
-    filePath: string,
-    updates: PromptDataUpdate
-  ): Promise<OpenApiResponse<PromptMeta>> => {
-    const searchParams = new URLSearchParams();
-    searchParams.append('repo_name', repoName);
-    searchParams.append('file_path', filePath);
-    
-    return await httpClient.put<PromptMeta>(
-      `/api/v0/prompts/?${searchParams.toString()}`,
-      updates
     );
   },
 

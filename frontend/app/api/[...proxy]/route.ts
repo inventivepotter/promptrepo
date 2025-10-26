@@ -24,14 +24,17 @@ const PUBLIC_ENDPOINTS = new Set([
   '/api/v0/llm/providers/configured',
   '/api/v0/prompts',
   '/api/v0/llm/completions',
-  '/api/v0/prompts/'
+  '/api/v0/prompts/',
+  // Tools endpoints
+  '/api/v0/tools'
 ]);
 
 // Define public endpoint prefixes that should be matched with startsWith
 const PUBLIC_ENDPOINT_PREFIXES = [
   // TODO: Make sure to only allow prompts/:id here not other endpoints
   '/api/v0/prompts/',
-  '/api/v0/llm/provider/'
+  '/api/v0/llm/provider/',
+  '/api/v0/tools/'
 ];
 
 function isPublicEndpoint(path: string): boolean {

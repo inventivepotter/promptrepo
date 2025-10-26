@@ -29,7 +29,7 @@ export function TemplateVariables({
   isExpanded = true,
   onToggle,
 }: TemplateVariablesProps) {
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const borderColor = "bg.muted";
   const bgColor = useColorModeValue('white', 'gray.800');
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
   const accentColor = useColorModeValue('gray.700', 'gray.300');

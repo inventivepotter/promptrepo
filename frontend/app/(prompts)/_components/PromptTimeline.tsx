@@ -28,7 +28,7 @@ function TimelineNodeCompact({ commit, isLatest }: { commit: CommitInfo & { id?:
           borderRadius="full"
           bg="bg.emphasized"
           border="2px solid"
-          borderColor="gray.200"
+          borderColor="bg.muted"
           animation={isLatest ? "pulse 1s infinite" : undefined}
           flexShrink={0}
           mt="2px"

@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Dict, Any, Union, Tuple
 
+from schemas.artifact_type_enum import ArtifactType
 from schemas.hosting_type_enum import HostingType
 from services.config.config_interface import IConfig
 from services.local_repo.git_service import GitService
@@ -112,17 +113,40 @@ class PromptService(IPromptService):
             logger.warning(f"Failed to get commit history for {file_path}: {e}")
             return []
     
-    async def create_prompt(
+    async def save_prompt(
         self,
         user_id: str,
         repo_name: str,
         file_path: str,
-        prompt_data: PromptData
-    ) -> PromptMeta:
-        """Create a new prompt in the specified repository."""
+        prompt_data: Union[PromptData, PromptDataUpdate],
+        oauth_token: Optional[str] = None,
+        author_name: Optional[str] = None,
+        author_email: Optional[str] = None,
+        user_session = None
+    ) -> Tuple[PromptMeta, Optional[PRInfo]]:
+        """
+        Save a prompt (create or update).
+        
+        If the file doesn't exist, creates a new prompt.
+        If the file exists, updates the existing prompt.
+        
+        Args:
+            user_id: User ID
+            repo_name: Repository name
+            file_path: File path relative to repository root
+            prompt_data: Prompt data (PromptData for creation, PromptDataUpdate for updates)
+            oauth_token: Optional OAuth token for git operations
+            author_name: Optional git commit author name
+            author_email: Optional git commit author email
+            user_session: Optional user session for PR creation
+            
+        Returns:
+            Tuple[PromptMeta, Optional[PRInfo]]: Saved prompt and PR info if created
+        """
         # Get repository base path
         repo_base_path = self._get_repo_base_path(user_id)
         repo_path = repo_base_path / repo_name
+        full_file_path = repo_path / file_path
         
         if not repo_path.exists():
             raise NotFoundException(
@@ -130,54 +154,107 @@ class PromptService(IPromptService):
                 identifier=repo_name
             )
         
-        # Set user field in organization mode
-        if self.config_service.get_hosting_config().type == HostingType.ORGANIZATION:
-            prompt_data.user = user_id
+        # Check if file exists to determine create vs update
+        is_update = full_file_path.exists()
         
-        # Set timestamps
-        prompt_data.created_at = datetime.utcnow()
-        prompt_data.updated_at = datetime.utcnow()
-        
-        # Generate ID based on repo and file path
-        prompt_data.id = self._generate_prompt_id(repo_name, file_path)
-        
-        # Convert PromptData to dict for YAML serialization
-        prompt_content = prompt_data.model_dump(exclude_none=True, by_alias=False)
-        
-        # Convert datetime objects to ISO strings for YAML
-        if isinstance(prompt_content.get("created_at"), datetime):
-            prompt_content["created_at"] = prompt_content["created_at"].isoformat()
-        if isinstance(prompt_content.get("updated_at"), datetime):
-            prompt_content["updated_at"] = prompt_content["updated_at"].isoformat()
-        
-        # Build file path and attempt exclusive creation (atomic operation)
-        full_file_path = repo_path / file_path
-        
-        try:
-            success = self._save_prompt_file(full_file_path, prompt_content, exclusive=True)
+        if is_update:
+            # Update existing prompt
+            existing_data = self._load_prompt_file(full_file_path)
+            
+            if not existing_data:
+                logger.error(f"Could not load existing prompt file at {full_file_path}")
+                raise AppException(
+                    message=f"Failed to load existing prompt file at {file_path}"
+                )
+            
+            # Update existing data with non-None values from prompt_data
+            update_dict = prompt_data.model_dump(exclude_none=True, by_alias=False)
+            existing_data.update(update_dict)
+            
+            # Update timestamp
+            existing_data["updated_at"] = datetime.utcnow().isoformat()
+            
+            # Save updated content
+            success = self._save_prompt_file(full_file_path, existing_data)
+            
+            if not success:
+                logger.error(f"Failed to save updated prompt to {full_file_path}")
+                raise AppException(
+                    message=f"Failed to save updated prompt to {file_path}"
+                )
+        else:
+            # Create new prompt
+            # Ensure we have PromptData (not PromptDataUpdate) for creation
+            if isinstance(prompt_data, PromptDataUpdate):
+                # Convert PromptDataUpdate to PromptData by filling in required fields
+                prompt_data = PromptData(
+                    id="",  # Will be generated
+                    name=prompt_data.name or "Untitled Prompt",
+                    description=prompt_data.description or "",
+                    provider=prompt_data.provider or "",
+                    model=prompt_data.model or "",
+                    prompt=prompt_data.prompt or "",
+                    temperature=prompt_data.temperature if prompt_data.temperature is not None else 1.0,
+                    top_p=prompt_data.top_p if prompt_data.top_p is not None else 1.0,
+                    **prompt_data.model_dump(exclude_none=True, exclude={"name", "description", "provider", "model", "prompt", "temperature", "top_p"})
+                )
+            
+            # Set user field in organization mode
+            if self.config_service.get_hosting_config().type == HostingType.ORGANIZATION:
+                prompt_data.user = user_id
+            
+            # Set timestamps
+            prompt_data.created_at = datetime.utcnow()
+            prompt_data.updated_at = datetime.utcnow()
+            
+            # Generate ID based on repo and file path
+            prompt_data.id = self._generate_prompt_id(repo_name, file_path)
+            
+            # Convert PromptData to dict for YAML serialization
+            prompt_content = prompt_data.model_dump(exclude_none=True, by_alias=False)
+            
+            # Convert datetime objects to ISO strings for YAML
+            if isinstance(prompt_content.get("created_at"), datetime):
+                prompt_content["created_at"] = prompt_content["created_at"].isoformat()
+            if isinstance(prompt_content.get("updated_at"), datetime):
+                prompt_content["updated_at"] = prompt_content["updated_at"].isoformat()
+            
+            # Save the file
+            success = self._save_prompt_file(full_file_path, prompt_content)
+            
             if not success:
                 raise AppException(
                     message=f"Failed to save prompt to {file_path}"
                 )
-        except FileExistsError:
-            raise ConflictException(
-                message=f"Prompt file already exists at {file_path}",
-                context={"repo_name": repo_name, "file_path": file_path}
-            )
         
-        recent_commits = self._get_file_commit_history(repo_path, file_path)
-
-        # Create PromptMeta object
-        prompt_meta = PromptMeta(
-            prompt=prompt_data,
+        # Handle git workflow (branch, commit, push, PR creation)
+        pr_info = await self.local_repo_service.handle_git_workflow_after_save(
+            user_id=user_id,
             repo_name=repo_name,
             file_path=file_path,
-            recent_commits=recent_commits,
-            pr_info=None
+            artifact_type=ArtifactType.PROMPT,
+            oauth_token=oauth_token,
+            author_name=author_name,
+            author_email=author_email,
+            user_session=user_session
         )
         
-        logger.info(f"Created prompt {prompt_data.id} for user {user_id}")
-        return prompt_meta
+        # Reload the prompt to get the latest state
+        updated_prompt = await self.get_prompt(user_id, repo_name, file_path)
+        
+        if not updated_prompt:
+            raise AppException(
+                message=f"Failed to load saved prompt from {file_path}"
+            )
+        
+        # Attach PR info to the PromptMeta if available
+        if pr_info:
+            updated_prompt.pr_info = pr_info.model_dump(mode='json')
+        
+        action = "Updated" if is_update else "Created"
+        logger.info(f"{action} prompt {repo_name}:{file_path} for user {user_id}")
+        
+        return updated_prompt, pr_info
     
     async def get_prompt(
         self,
@@ -226,8 +303,8 @@ class PromptService(IPromptService):
                 failover_model=yaml_data.get("failover_model"),
                 prompt=yaml_data.get("prompt", ""),
                 tool_choice=yaml_data.get("tool_choice"),
-                temperature=yaml_data.get("temperature", 0.0),
-                top_p=yaml_data.get("top_p"),
+                temperature=yaml_data.get("temperature", 1.0),
+                top_p=yaml_data.get("top_p", 1.0),
                 max_tokens=yaml_data.get("max_tokens"),
                 response_format=yaml_data.get("response_format"),
                 stream=yaml_data.get("stream"),
@@ -266,85 +343,6 @@ class PromptService(IPromptService):
             logger.error(f"Failed to get prompt {repo_name}:{file_path}: {e}")
             return None
     
-    async def update_prompt(
-        self,
-        user_id: str,
-        repo_name: str,
-        file_path: str,
-        prompt_data: PromptDataUpdate,
-        oauth_token: Optional[str] = None,
-        author_name: Optional[str] = None,
-        author_email: Optional[str] = None,
-        user_session = None
-    ) -> Tuple[Optional[PromptMeta], Optional[PRInfo]]:
-        """
-        Update an existing prompt.
-        
-        Args:
-            user_id: User ID
-            repo_name: Repository name
-            file_path: File path relative to repository root
-            prompt_data: Prompt data to update
-            oauth_token: Optional OAuth token for git operations
-            author_name: Optional git commit author name
-            author_email: Optional git commit author email
-            user_session: Optional user session for PR creation
-            
-        Returns:
-            Tuple[Optional[PromptMeta], Optional[PRInfo]]: Updated prompt and PR info if created
-        """
-        # Get existing prompt
-        prompt_meta = await self.get_prompt(user_id, repo_name, file_path)
-        
-        if not prompt_meta:
-            return None, None
-        
-        # Get repository base path
-        repo_base_path = self._get_repo_base_path(user_id)
-        repo_path = repo_base_path / repo_name
-        full_file_path = repo_path / file_path
-        
-        # Load existing content
-        existing_data = self._load_prompt_file(full_file_path)
-        
-        if not existing_data:
-            logger.error(f"Could not load existing prompt file at {full_file_path}")
-            return None, None
-        
-        # Update existing data with non-None values from prompt_data
-        update_dict = prompt_data.model_dump(exclude_none=True, by_alias=False)
-        existing_data.update(update_dict)
-        
-        # Update timestamp
-        existing_data["updated_at"] = datetime.utcnow().isoformat()
-        
-        # Save updated content
-        success = self._save_prompt_file(full_file_path, existing_data)
-        
-        if not success:
-            logger.error(f"Failed to save updated prompt to {full_file_path}")
-            return None, None
-        
-        # Handle git workflow (branch, commit, push, PR creation)
-        pr_info = await self.local_repo_service.handle_git_workflow_after_save(
-            user_id=user_id,
-            repo_name=repo_name,
-            file_path=file_path,
-            oauth_token=oauth_token,
-            author_name=author_name,
-            author_email=author_email,
-            user_session=user_session
-        )
-        
-        # Return updated prompt with PR info attached
-        logger.info(f"Updated prompt {repo_name}:{file_path} for user {user_id}")
-        updated_prompt = await self.get_prompt(user_id, repo_name, file_path)
-        
-        # Attach PR info to the PromptMeta if available
-        if updated_prompt and pr_info:
-            updated_prompt.pr_info = pr_info.model_dump(mode='json')
-        
-        return updated_prompt, pr_info
     
     async def delete_prompt(
         self,
@@ -378,50 +376,29 @@ class PromptService(IPromptService):
         user_id: str,
         repo_name: str
     ) -> List[PromptMeta]:
-        """Discover prompt files in a repository by scanning for YAML/YML files and converting them to PromptMeta."""
-        # Get repository base path
-        repo_base_path = self._get_repo_base_path(user_id)
-        repo_path = repo_base_path / repo_name
+        """
+        Discover prompt files in a repository using the generalized artifact discovery.
         
-        # Check if repository exists, if not return empty list instead of raising exception
-        # This prevents infinite loops when repos haven't been cloned yet
-        if not repo_path.exists():
-            logger.warning(f"Repository {repo_name} not found at {repo_path}, returning empty list")
-            return []
+        Uses LocalRepoService.discover_artifacts() to find all .prompt.yaml files
+        in a single efficient scan.
+        """
+        # Use the generalized discovery from LocalRepoService
+        discovery_result = self.local_repo_service.discover_artifacts(user_id, repo_name)
         
-        # Scan for all YAML/YML files
+        # Get prompt file paths
+        prompt_files = discovery_result.get_files_by_type(ArtifactType.PROMPT)
+        
+        # Convert file paths to PromptMeta objects
         prompt_metas = []
-        for ext in ['.yaml', '.yml']:
-            pattern = f"**/*{ext}"
-            for file_path in repo_path.glob(pattern):
-                # Skip hidden files and directories
-                if any(part.startswith('.') for part in file_path.parts):
-                    continue
-                
-                try:
-                    # Get relative path
-                    relative_path = str(file_path.relative_to(repo_path))
-                    
-                    # Load YAML file to validate it has required prompt fields
-                    yaml_data = self._load_prompt_file(file_path)
-                    if not yaml_data:
-                        continue
-                    
-                    # Check for mandatory prompt fields
-                    required_fields = ['name', 'provider', 'model', 'prompt']
-                    has_required_fields = all(yaml_data.get(field) for field in required_fields)
-                    
-                    if not has_required_fields:
-                        logger.debug(f"Skipping {relative_path}: missing required prompt fields")
-                        continue
-                    
-                    # Get the prompt using the existing get_prompt method
-                    prompt_meta = await self.get_prompt(user_id, repo_name, relative_path)
-                    if prompt_meta:
-                        prompt_metas.append(prompt_meta)
-                except Exception as e:
-                    logger.warning(f"Failed to load prompt {file_path}: {e}")
-                    continue
+        for file_path in prompt_files:
+            try:
+                # Get the prompt using the existing get_prompt method
+                prompt_meta = await self.get_prompt(user_id, repo_name, file_path)
+                if prompt_meta:
+                    prompt_metas.append(prompt_meta)
+            except Exception as e:
+                logger.warning(f"Failed to load prompt {file_path}: {e}")
+                continue
         
         logger.info(f"Discovered {len(prompt_metas)} prompts in {repo_name} for user {user_id}")
         return prompt_metas

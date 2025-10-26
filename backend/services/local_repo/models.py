@@ -1,13 +1,14 @@
 """
 Git Service Data Models
 
-This module contains Pydantic database.models for all Git-related data structures,
+This module contains Pydantic models for all Git-related data structures,
 ensuring type safety and consistent data validation across the Git service.
 """
 
 from typing import Optional, Dict, Any, List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
+from schemas.artifact_type_enum import ArtifactType
 
 
 class GitOperationResult(BaseModel):
@@ -70,3 +71,30 @@ class PRInfo(BaseModel):
             }
         }
     }
+
+
+class ArtifactFile(BaseModel):
+    """Represents a discovered artifact file."""
+    file_path: str
+    artifact_type: ArtifactType
+    
+    
+class ArtifactDiscoveryResult(BaseModel):
+    """Result of artifact discovery operation grouped by type."""
+    prompts: List[str] = Field(default_factory=list)
+    tools: List[str] = Field(default_factory=list)
+    
+    def get_files_by_type(self, artifact_type: ArtifactType) -> List[str]:
+        """Get files for a specific artifact type."""
+        if artifact_type == ArtifactType.PROMPT:
+            return self.prompts
+        elif artifact_type == ArtifactType.TOOL:
+            return self.tools
+        return []
+    
+    def add_file(self, file_path: str, artifact_type: ArtifactType) -> None:
+        """Add a file to the appropriate list based on artifact type."""
+        if artifact_type == ArtifactType.PROMPT:
+            self.prompts.append(file_path)
+        elif artifact_type == ArtifactType.TOOL:
+            self.tools.append(file_path)

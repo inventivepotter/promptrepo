@@ -66,7 +66,7 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
   } = useRepoFormState();
 
   // Theme values - called at top level
-  const borderColor = "border.elevated";
+  const borderColor = "bg.muted";
   const errorBg = { _light: 'red.50', _dark: 'red.900' };
 
 
@@ -160,7 +160,7 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
           <HStack justify="space-between" align="center">
             <Stack flex={1}>
               <Fieldset.Legend>Repository Configuration</Fieldset.Legend>
-              <Fieldset.HelperText>
+              <Fieldset.HelperText color="text.tertiary">
                 Configure repositories containing prompts to access them in the application.
               </Fieldset.HelperText>
             </Stack>
@@ -377,10 +377,10 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                           width="100%"
                           bg="bg.panel"
                           borderWidth="1px"
-                          borderColor="border.subtle"
+                          borderColor="bg.muted"
                           transition="all 0.2s"
                           _hover={{
-                            borderColor: "border.emphasized",
+                            borderColor: "bg.muted",
                             shadow: "sm"
                           }}
                         >

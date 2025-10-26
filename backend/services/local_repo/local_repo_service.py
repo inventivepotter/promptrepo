@@ -2,7 +2,7 @@
 Local Repository Service
 
 This service handles git workflow operations for local repositories,
-including automatic branch creation, commits, and pushes when saving prompts.
+including automatic branch creation, commits, and pushes when saving artifacts.
 Also handles repository cloning and ensuring repositories are available.
 """
 
@@ -12,12 +12,13 @@ from pathlib import Path
 from typing import List, Optional, TYPE_CHECKING
 import uuid
 
-from services.local_repo.models import PRInfo
+from services.local_repo.models import PRInfo, ArtifactDiscoveryResult
 
 from sqlmodel import Session
 from database.daos.user.user_repos_dao import UserReposDAO
 from database.models.user_repos import RepoStatus
 from middlewares.rest.exceptions import AppException, NotFoundException
+from schemas.artifact_type_enum import ArtifactType
 from services.config.config_service import ConfigService
 from services.config.models import RepoConfig
 from services.local_repo.git_service import GitService
@@ -226,16 +227,17 @@ class LocalRepoService:
         user_id: str,
         repo_name: str,
         file_path: str,
+        artifact_type: ArtifactType,
         oauth_token: Optional[str] = None,
         author_name: Optional[str] = None,
         author_email: Optional[str] = None,
         user_session = None
     ) -> Optional[PRInfo]:
         """
-        Handle git workflow after saving a prompt file.
+        Handle git workflow after saving an artifact file (prompt, tool, etc.).
         
         If current branch is same as base branch:
-        1. Create a new branch (with prompt name in branch name)
+        1. Create a new branch (with artifact name in branch name)
         2. Stage the file
         3. Commit changes
         4. Push to remote
@@ -251,6 +253,7 @@ class LocalRepoService:
             user_id: User ID
             repo_name: Repository name
             file_path: File path relative to repository root
+            artifact_type: Type of artifact being saved (e.g., ArtifactType.PROMPT, ArtifactType.TOOL)
             oauth_token: Optional OAuth token for authentication
             author_name: Optional git commit author name
             author_email: Optional git commit author email
@@ -277,17 +280,23 @@ class LocalRepoService:
                 logger.warning(f"Could not determine current branch for {repo_name}")
                 return None
             
-            # Extract prompt name from file path (remove extension and path)
-            prompt_name = Path(file_path).stem.replace('_', '-').replace(' ', '-')
+            # Extract artifact name from file path (strip known artifact suffix and slugify)
+            filename = Path(file_path).name
+            suffix = self.ARTIFACT_EXTENSION_PATTERNS.get(artifact_type)
+            if suffix and filename.endswith(suffix):
+                base = filename[:-len(suffix)]
+            else:
+                base = Path(file_path).stem
+            artifact_name = base.replace('_', '-').replace(' ', '-')
             
             # Check if current branch is same as base branch
             if current_branch == base_branch:
                 logger.info(f"Current branch '{current_branch}' is same as base branch, creating new branch and committing changes")
                 
-                # Generate new branch name with prompt name
+                # Generate new branch name with artifact type and name
                 timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
                 short_uuid = str(uuid.uuid4())[:8]
-                new_branch_name = f"update-{prompt_name}-{timestamp}-{short_uuid}"
+                new_branch_name = f"update-{artifact_type.value}-{artifact_name}-{timestamp}-{short_uuid}"
                 
                 # Create and checkout new branch
                 branch_result = git_service.checkout_new_branch(
@@ -313,7 +322,7 @@ class LocalRepoService:
                 return None
             
             # Commit changes with user information
-            commit_message = f"Update prompt: {file_path}"
+            commit_message = f"Update {artifact_type.value}: {file_path}"
             commit_result = git_service.commit_changes(
                 commit_message=commit_message,
                 author_name=author_name,
@@ -357,8 +366,8 @@ class LocalRepoService:
                         owner, repo = repo_parts
                         
                         # Generate PR title and body
-                        pr_title = f"Update {file_path}"
-                        pr_body = f"Automated update to prompt file: {file_path}"
+                        pr_title = f"Update {artifact_type.value}: {file_path}"
+                        pr_body = f"Automated update to {artifact_type.value} file: {file_path}"
                         
                         # Create PR if it doesn't exist
                         pr_result = await self.remote_repo_service.create_pull_request_if_not_exists(
@@ -457,3 +466,75 @@ class LocalRepoService:
         except Exception as e:
             logger.error(f"Error getting latest base branch content for {repo_name}: {e}", exc_info=True)
             return {"success": False, "message": f"Error: {str(e)}"}
+
+
+    # Artifact file extension patterns
+    ARTIFACT_EXTENSION_PATTERNS = {
+        ArtifactType.PROMPT: ".prompt.yaml",
+        ArtifactType.TOOL: ".tool.yaml"
+    }
+    
+    def discover_artifacts(
+        self,
+        user_id: str,
+        repo_name: str
+    ) -> ArtifactDiscoveryResult:
+        """
+        Discover all artifacts in a repository by file extension patterns.
+        
+        This method performs a single repository scan to find all artifact types,
+        optimizing performance by avoiding multiple scans.
+        
+        Args:
+            user_id: User ID
+            repo_name: Repository name
+            
+        Returns:
+            ArtifactDiscoveryResult: Discovered artifacts grouped by type
+        """
+        # Get repository path
+        repo_base_path = self._get_repo_base_path(user_id)
+        repo_path = repo_base_path / repo_name
+        
+        # Initialize result
+        result = ArtifactDiscoveryResult()
+        
+        # Check if repository exists
+        if not repo_path.exists():
+            logger.warning(f"Repository {repo_name} not found at {repo_path}, returning empty result")
+            return result
+        
+        # Scan repository for all YAML files
+        for yaml_file in repo_path.glob("**/*.yaml"):
+            # Skip hidden files and directories, but allow .promptrepo directory
+            relative_path_obj = yaml_file.relative_to(repo_path)
+            skip = False
+            for part in relative_path_obj.parts:
+                # Skip if part starts with . but is not .promptrepo
+                if part.startswith('.') and part != '.promptrepo':
+                    skip = True
+                    break
+            
+            if skip:
+                continue
+            
+            try:
+                # Get relative path
+                relative_path = str(relative_path_obj)
+                
+                # Check file extension against patterns
+                for artifact_type, extension in self.ARTIFACT_EXTENSION_PATTERNS.items():
+                    if yaml_file.name.endswith(extension):
+                        result.add_file(relative_path, artifact_type)
+                        logger.debug(f"Found {artifact_type.value}: {relative_path}")
+                        break
+                        
+            except Exception as e:
+                logger.warning(f"Failed to process file {yaml_file}: {e}")
+                continue
+        
+        logger.info(
+            f"Discovered artifacts in {repo_name}: "
+            f"{len(result.prompts)} prompts, {len(result.tools)} tools"
+        )
+        return result

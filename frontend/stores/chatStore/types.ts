@@ -1,4 +1,4 @@
-import type { ChatMessage, OpenAIMessage, Tool } from '@/app/(prompts)/_types/ChatState';
+import type { ChatMessage, Tool } from '@/app/(prompts)/_types/ChatState';
 
 // Model configuration for chat sessions
 export interface ModelConfig {
@@ -82,10 +82,11 @@ export interface ChatActions {
   
   // Message Operations
   sendMessage: (
-    content: string, 
+    content: string,
     options?: {
       systemPrompt?: string;
       promptId?: string;
+      repoName?: string;
       modelConfig?: Partial<ModelConfig>;
       onStream?: (chunk: string) => void;
     }

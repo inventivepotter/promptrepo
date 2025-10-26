@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   VStack,
@@ -25,9 +25,7 @@ import {
   usePromptSearch,
   usePromptSortBy,
   usePromptSortOrder,
-  usePromptRepository,
   usePromptActions,
-  useUniqueRepositories,
   usePageSize,
   useDeleteDialogOpen,
   usePromptToDelete,
@@ -35,16 +33,15 @@ import {
   useIsLoading,
 } from '@/stores/promptStore';
 import { useConfigStore } from '@/stores/configStore/configStore';
+import { useSelectedRepository } from '@/stores/repositoryFilterStore';
 import { PromptSearch } from '../_components/PromptSearch';
 import { PromptCard } from '../_components/PromptCard';
 import { Pagination } from '../_components/Pagination';
 import { PromptsHeader } from '@/components/PromptsHeader';
 import { DeletePromptDialog } from '@/components/DeletePromptDialog';
-import { CreatePromptModal } from '@/components/CreatePromptModal';
 
 export default function PromptsPage() {
   const router = useRouter();
-  const [isNewPromptModalOpen, setIsNewPromptModalOpen] = useState(false);
   
   // Use prompt store hooks
   const isLoading = useIsLoading();
@@ -55,9 +52,11 @@ export default function PromptsPage() {
   const searchQuery = usePromptSearch();
   const sortBy = usePromptSortBy();
   const sortOrder = usePromptSortOrder();
-  const repoFilter = usePromptRepository();
-  const availableRepos = useUniqueRepositories();
   const itemsPerPage = usePageSize();
+  
+  // Use shared repository filter store
+  const selectedRepository = useSelectedRepository();
+  
   const {
     fetchPrompts,
     setCurrentPrompt,
@@ -89,6 +88,11 @@ export default function PromptsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array ensures this runs only once on mount
 
+  // Sync shared repository filter to prompt store
+  useEffect(() => {
+    setRepository(selectedRepository);
+  }, [selectedRepository, setRepository]);
+
   const handleEditPrompt = (prompt: PromptMeta) => {
     setCurrentPrompt(prompt);
     router.push(`/editor?repo_name=${encodeURIComponent(prompt.repo_name)}&file_path=${encodeURIComponent(prompt.file_path)}`);
@@ -113,7 +117,9 @@ export default function PromptsPage() {
   };
 
   const handleNewPrompt = () => {
-    setIsNewPromptModalOpen(true);
+    if (selectedRepository) {
+      router.push(`/editor?mode=new&repo=${encodeURIComponent(selectedRepository)}`);
+    }
   };
 
   return (
@@ -149,9 +155,6 @@ export default function PromptsPage() {
             sortOrder={sortOrder || 'desc'}
             onSortChange={handleSortChange}
             totalPrompts={totalPrompts}
-            repoFilter={repoFilter}
-            onRepoFilterChange={setRepository}
-            availableRepos={availableRepos}
           />
 
           {/* Prompts grid */}
@@ -266,12 +269,6 @@ export default function PromptsPage() {
           promptName={promptToDelete?.name || 'this prompt'}
           onConfirm={confirmDelete}
           isDeleting={isDeleting}
-        />
-
-        {/* Create Prompt Modal */}
-        <CreatePromptModal
-          open={isNewPromptModalOpen}
-          onOpenChange={setIsNewPromptModalOpen}
         />
       </Box>
   );

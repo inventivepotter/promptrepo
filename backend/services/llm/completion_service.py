@@ -3,7 +3,7 @@ Chat completion service with class-based architecture.
 """
 import time
 import logging
-from typing import AsyncGenerator, cast, AsyncIterator
+from typing import AsyncGenerator, cast, AsyncIterator, Optional, List, Dict, Any
 from any_llm import acompletion
 from any_llm.types.completion import ChatCompletion, ChatCompletionChunk
 from fastapi import HTTPException
@@ -29,6 +29,11 @@ logger = logging.getLogger(__name__)
 
 class ChatCompletionService:
     """Service class for handling chat completions with any-llm."""
+    
+    def __init__(self, config_service: ConfigService, tool_service=None):
+        self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+        self.config_service = config_service
+        self.tool_service = tool_service
     
     def build_completion_params(
         self,
@@ -65,6 +70,8 @@ class ChatCompletionService:
             completion_params["presence_penalty"] = request.presence_penalty
         if request.stop is not None:
             completion_params["stop"] = request.stop
+        if request.tools is not None and len(request.tools) > 0:
+            completion_params["tools"] = request.tools
         
         return completion_params
     
@@ -119,10 +126,6 @@ class ChatCompletionService:
                 message=f"Completion error: {str(e)}",
                 context={"provider": request.provider, "model": request.model}
             )
-
-    def __init__(self, config_service: ConfigService):
-        self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-        self.config_service = config_service
 
     def _get_api_details(self, provider: str, model: str, user_id: str) -> tuple[str, str | None]:
         llm_configs = self.config_service.get_llm_configs(user_id=user_id) or []
@@ -236,8 +239,8 @@ class ChatCompletionService:
         self,
         request: ChatCompletionRequest,
         user_id: str
-    ) -> tuple[str, str | None, UsageStats | None, float]:
-        """Execute non-streaming completion and return content, finish_reason, usage stats, and inference time."""
+    ) -> tuple[str, str | None, UsageStats | None, float, Optional[List[Dict[str, Any]]]]:
+        """Execute non-streaming completion and return content, finish_reason, usage stats, inference time, and tool_calls."""
         # Validate system message is present
         self._validate_system_message(request.messages)
 
@@ -252,23 +255,32 @@ class ChatCompletionService:
                 )
                 response = await zai_service.create_completion(request, stream=False)
                 
-                # Extract content and finish reason from Z.AI response
+                # Extract content, finish reason, and tool_calls from Z.AI response
                 content = ""
                 finish_reason = None
+                tool_calls_list: Optional[List[Dict[str, Any]]] = None
                 
                 if response.choices and len(response.choices) > 0:
                     choice = response.choices[0]
                     content = choice.message.content or ""
                     finish_reason = choice.finish_reason
+                    # Convert tool_calls to dict format
+                    if hasattr(choice.message, 'tool_calls') and choice.message.tool_calls:
+                        tool_calls_list = []
+                        for tc in choice.message.tool_calls:
+                            if hasattr(tc, 'model_dump'):
+                                tool_calls_list.append(tc.model_dump())  # type: ignore
+                            else:
+                                tool_calls_list.append(dict(tc))  # type: ignore
                 
-                if not content:
-                    self.logger.error(f"No content extracted from Z.AI response")
+                if not content and not tool_calls_list:
+                    self.logger.error(f"No content or tool_calls extracted from Z.AI response")
                     raise HTTPException(
                         status_code=500,
                         detail="Unexpected response format from Z.AI completion API"
                     )
                 
-                return content, finish_reason, response.usage, response.inference_time_ms or 0.0
+                return content, finish_reason, response.usage, response.inference_time_ms or 0.0, tool_calls_list
             elif request.provider == "litellm":
                 # Handle LiteLLM provider separately
                 if not api_base_url:
@@ -282,23 +294,32 @@ class ChatCompletionService:
                 )
                 response = await litellm_service.create_completion(request, stream=False)
                 
-                # Extract content and finish reason from LiteLLM response
+                # Extract content, finish reason, and tool_calls from LiteLLM response
                 content = ""
                 finish_reason = None
+                tool_calls_list: Optional[List[Dict[str, Any]]] = None
                 
                 if response.choices and len(response.choices) > 0:
                     choice = response.choices[0]
                     content = choice.message.content or ""
                     finish_reason = choice.finish_reason
+                    # Convert tool_calls to dict format
+                    if hasattr(choice.message, 'tool_calls') and choice.message.tool_calls:
+                        tool_calls_list = []
+                        for tc in choice.message.tool_calls:
+                            if hasattr(tc, 'model_dump'):
+                                tool_calls_list.append(tc.model_dump())  # type: ignore
+                            else:
+                                tool_calls_list.append(dict(tc))  # type: ignore
                 
-                if not content:
-                    self.logger.error(f"No content extracted from LiteLLM response")
+                if not content and not tool_calls_list:
+                    self.logger.error(f"No content or tool_calls extracted from LiteLLM response")
                     raise HTTPException(
                         status_code=500,
                         detail="Unexpected response format from LiteLLM completion API"
                     )
                 
-                return content, finish_reason, response.usage, response.inference_time_ms or 0.0
+                return content, finish_reason, response.usage, response.inference_time_ms or 0.0, tool_calls_list
             else:
                 # Handle other providers with any-llm
                 completion_params = self.build_completion_params(request, api_key, api_base_url, stream=False)
@@ -317,6 +338,7 @@ class ChatCompletionService:
                 # Handle response - any-llm follows OpenAI format for non-streaming
                 content = ""
                 finish_reason = None
+                tool_calls_list: Optional[List[Dict[str, Any]]] = None
                 
                 # any-llm returns ChatCompletion object with choices[0].message.content
                 if hasattr(response, 'choices') and response.choices and len(response.choices) > 0:
@@ -324,14 +346,23 @@ class ChatCompletionService:
                     
                     if hasattr(choice, 'message') and hasattr(choice.message, 'content'):
                         content = choice.message.content or ""
+                    
+                    if hasattr(choice, 'message') and hasattr(choice.message, 'tool_calls') and choice.message.tool_calls:
+                        # Convert tool_calls to dict format
+                        tool_calls_list = []
+                        for tc in choice.message.tool_calls:
+                            if hasattr(tc, 'model_dump'):
+                                tool_calls_list.append(tc.model_dump())  # type: ignore
+                            else:
+                                tool_calls_list.append(dict(tc))  # type: ignore
                         
                     if hasattr(choice, 'finish_reason'):
                         finish_reason = choice.finish_reason
                 else:
                     self.logger.error(f"No choices in response or choices is empty. Response: {response}")
                 
-                if not content:
-                    self.logger.error(f"No content extracted from response")
+                if not content and not tool_calls_list:
+                    self.logger.error(f"No content or tool_calls extracted from response")
                     raise HTTPException(
                         status_code=500,
                         detail="Unexpected response format from completion API"
@@ -340,7 +371,7 @@ class ChatCompletionService:
                 # Process usage statistics
                 usage_stats = self.process_usage_stats(response.usage)
                 
-                return content, finish_reason, usage_stats, inference_time_ms
+                return content, finish_reason, usage_stats, inference_time_ms, tool_calls_list
                 
         except Exception as e:
             self.logger.error(f"Error in non-streaming completion: {e}")

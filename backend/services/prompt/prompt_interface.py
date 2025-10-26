@@ -6,7 +6,7 @@ must follow, supporting both individual and organization hosting types.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 from pathlib import Path
 
 from .models import (
@@ -29,27 +29,39 @@ class IPromptService(ABC):
     """
     
     @abstractmethod
-    async def create_prompt(
+    async def save_prompt(
         self,
         user_id: str,
         repo_name: str,
         file_path: str,
-        prompt_data: PromptData
-    ) -> PromptMeta:
+        prompt_data: Union[PromptData, PromptDataUpdate],
+        oauth_token: Optional[str] = None,
+        author_name: Optional[str] = None,
+        author_email: Optional[str] = None,
+        user_session = None
+    ) -> Tuple[PromptMeta, Optional[PRInfo]]:
         """
-        Create a new prompt in the specified repository.
+        Save a prompt (create or update).
+        
+        If the file doesn't exist, creates a new prompt.
+        If the file exists, updates the existing prompt.
         
         Args:
-            user_id: ID of the user creating the prompt
+            user_id: ID of the user saving the prompt
             repo_name: Repository name where prompt will be stored
             file_path: File path within the repository
-            prompt_data: Data for creating the prompt
+            prompt_data: Prompt data (PromptData for creation, PromptDataUpdate for updates)
+            oauth_token: Optional OAuth token for git operations
+            author_name: Optional git commit author name
+            author_email: Optional git commit author email
+            user_session: Optional user session for PR creation
             
         Returns:
-            Created PromptMeta object
+            Tuple[PromptMeta, Optional[PRInfo]]: Saved prompt and PR info if created
             
         Raises:
-            ValueError: If repository doesn't exist or user lacks permission
+            NotFoundException: If repository doesn't exist
+            AppException: If save operation fails
         """
         pass
     
@@ -61,47 +73,15 @@ class IPromptService(ABC):
         file_path: str,
     ) -> Optional[PromptMeta]:
         """
-        Get a single prompt by ID.
+        Get a single prompt by repo_name and file_path.
         
         Args:
             user_id: ID of the user requesting the prompt
-            prompt_id: ID of the prompt to retrieve
+            repo_name: Repository name
+            file_path: File path within the repository
             
         Returns:
             Prompt object if found and user has access, None otherwise
-        """
-        pass
-    
-    @abstractmethod
-    async def update_prompt(
-        self,
-        user_id: str,
-        repo_name: str,
-        file_path: str,
-        prompt_data: PromptDataUpdate,
-        oauth_token: Optional[str] = None,
-        author_name: Optional[str] = None,
-        author_email: Optional[str] = None,
-        user_session = None
-    ) -> Tuple[Optional[PromptMeta], Optional[PRInfo]]:
-        """
-        Update an existing prompt.
-        
-        Args:
-            user_id: ID of the user updating the prompt
-            repo_name: Repository name
-            file_path: File path relative to repository root
-            prompt_data: Updated data for the prompt
-            oauth_token: Optional OAuth token for git operations
-            author_name: Optional git commit author name
-            author_email: Optional git commit author email
-            user_session: Optional user session for PR creation
-            
-        Returns:
-            Tuple[Optional[PromptMeta], Optional[PRInfo]]: Updated prompt and PR info if created
-            
-        Raises:
-            ValueError: If user lacks permission to update
         """
         pass
     

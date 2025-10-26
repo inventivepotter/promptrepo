@@ -83,7 +83,7 @@ export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (
   },
   
   // Message Operations
-  sendMessage: async (content: string, options = {}) => {
+  sendMessage: async (content: string, options: { systemPrompt?: string; modelConfig?: Partial<ChatStore['defaultModelConfig']>; promptId?: string; repoName?: string; onStream?: (content: string) => void } = {}) => {
     // Get initial state at the start
     const initialState = get();
     let currentSession = initialState.sessions.find(s => s.id === initialState.currentSessionId);
@@ -153,23 +153,90 @@ export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (
       // Convert messages to OpenAI format
       const messages = chatService.toOpenAIMessages(get().messages);
       
+      // Get selected tools and convert to OpenAI function format
+      const selectedToolIds = get().selectedTools;
+      const availableTools = get().availableTools;
+      const toolsForCompletion = selectedToolIds.length > 0
+        ? selectedToolIds.map(toolId => {
+            const tool = availableTools.find(t => t.id === toolId);
+            if (!tool) return null;
+            return {
+              type: 'function',
+              function: {
+                name: tool.id,
+                description: tool.description,
+                parameters: {
+                  type: 'object',
+                  properties: {},
+                  required: []
+                }
+              }
+            };
+          }).filter(Boolean)
+        : undefined;
+      
       // Send to chat service
       const assistantMessage = await chatService.sendChatCompletion(
         messages,
         options.promptId,
         completionOptions,
-        options.systemPrompt || currentSession.systemPrompt
+        options.systemPrompt || currentSession.systemPrompt,
+        toolsForCompletion,
+        options.repoName
       );
       
       if (assistantMessage) {
         set((draft) => {
-          // Add assistant message to session
           const session = draft.sessions.find(s => s.id === draft.currentSessionId);
-          if (session) {
-            session.messages.push(assistantMessage);
-            session.updatedAt = new Date();
+          
+          // If there are tool responses, this means the backend executed the tool loop
+          // We need to reconstruct the message order: tool_calls message -> tool responses -> final answer
+          if (assistantMessage.tool_responses && Array.isArray(assistantMessage.tool_responses) && assistantMessage.tool_responses.length > 0) {
+            // Create the initial assistant message with tool_calls (if tool_calls exist in the response)
+            // The backend should have returned tool_calls in the message even after executing the loop
+            if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+              const toolCallMessage = chatService.createAssistantMessage('', assistantMessage.tool_calls);
+              if (session) {
+                session.messages.push(toolCallMessage);
+                session.updatedAt = new Date();
+              }
+              draft.messages.push(toolCallMessage);
+            }
+            
+            // Add tool response messages
+            for (const toolResponse of assistantMessage.tool_responses) {
+              const toolMessage = chatService.createToolMessage(
+                toolResponse.content,
+                toolResponse.tool_call_id || ''
+              );
+              
+              if (session) {
+                session.messages.push(toolMessage);
+              }
+              draft.messages.push(toolMessage);
+            }
+            
+            // Create final answer message (without tool_calls)
+            const finalAnswerMessage = chatService.createAssistantMessage(assistantMessage.content);
+            // Copy over metadata
+            if (assistantMessage.usage) finalAnswerMessage.usage = assistantMessage.usage;
+            if (assistantMessage.cost) finalAnswerMessage.cost = assistantMessage.cost;
+            if (assistantMessage.model) finalAnswerMessage.model = assistantMessage.model;
+            if (assistantMessage.inferenceTimeMs) finalAnswerMessage.inferenceTimeMs = assistantMessage.inferenceTimeMs;
+            
+            if (session) {
+              session.messages.push(finalAnswerMessage);
+              session.updatedAt = new Date();
+            }
+            draft.messages.push(finalAnswerMessage);
+          } else {
+            // No tool loop executed, just add the assistant message as-is
+            if (session) {
+              session.messages.push(assistantMessage);
+              session.updatedAt = new Date();
+            }
+            draft.messages.push(assistantMessage);
           }
-          draft.messages.push(assistantMessage);
           
           // Update statistics if available
           if (assistantMessage.usage) {

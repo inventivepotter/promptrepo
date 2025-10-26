@@ -14,7 +14,6 @@ from middlewares.rest import (
     AppException,
     NotFoundException,
     ValidationException,
-    ConflictException
 )
 from services.prompt.models import PromptMeta, PromptData, PromptDataUpdate
 
@@ -125,126 +124,6 @@ async def get_prompt(
 @router.post(
     "/",
     response_model=StandardResponse[PromptMeta],
-    status_code=status.HTTP_201_CREATED,
-    responses={
-        400: {
-            "description": "Invalid prompt data",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "status": "error",
-                        "type": "/errors/validation-failed",
-                        "title": "Validation Error",
-                        "detail": "Invalid prompt data"
-                    }
-                }
-            }
-        },
-        409: {
-            "description": "Prompt file already exists",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "status": "error",
-                        "type": "/errors/conflict",
-                        "title": "Conflict",
-                        "detail": "Prompt file already exists at the specified path"
-                    }
-                }
-            }
-        },
-        500: {
-            "description": "Internal server error",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "status": "error",
-                        "type": "/errors/internal-server-error",
-                        "title": "Internal Server Error",
-                        "detail": "Failed to create prompt"
-                    }
-                }
-            }
-        }
-    },
-    summary="Create prompt",
-    description="Create a new prompt. The prompt will be saved to the specified repository and file path.",
-)
-async def create_prompt(
-    request: Request,
-    user_id: CurrentUserDep,
-    prompt_service: PromptServiceDep,
-    prompt_data: PromptData,
-    repo_name: str = Query(...),
-    file_path: str = Query(...)
-) -> StandardResponse[PromptMeta]:
-    """
-    Create a new prompt.
-    
-    The prompt will be saved to the specified repository and file path.
-    
-    Returns:
-        StandardResponse[PromptMeta]: Standardized response containing the created prompt
-    
-    Raises:
-        ValidationException: When prompt validation fails
-        ConflictException: When prompt file already exists
-        NotFoundException: When repository is not found
-        AppException: When prompt creation fails
-    """
-    request_id = request.state.request_id
-    
-    try:
-        logger.info(
-            f"Creating prompt in repository {repo_name}",
-            extra={"request_id": request_id, "user_id": user_id}
-        )
-        
-        prompt = await prompt_service.create_prompt(
-            user_id=user_id,
-            repo_name=repo_name,
-            file_path=file_path,
-            prompt_data=prompt_data
-        )
-        
-        logger.info(
-            f"Successfully created prompt {prompt.prompt.id}",
-            extra={"request_id": request_id, "user_id": user_id}
-        )
-        
-        return success_response(
-            data=prompt.model_dump(mode='json'),
-            message="Prompt created successfully",
-            meta={"request_id": request_id}
-        )
-        
-    except ValueError as e:
-        raise ValidationException(
-            message="Invalid prompt data",
-            errors=[{
-                "code": "VALIDATION_ERROR",
-                "message": str(e),
-                "field": "prompt_data"
-            }]
-        )
-    except (ValidationException, ConflictException, NotFoundException, AppException):
-        # These will be handled by the global exception handlers
-        raise
-    except Exception as e:
-        logger.error(
-            f"Failed to create prompt: {str(e)}",
-            exc_info=True,
-            extra={"request_id": request_id, "user_id": user_id}
-        )
-        raise AppException(
-            message="Failed to create prompt",
-            detail=str(e)
-        )
-
-
-@router.put(
-    "/",
-    response_model=StandardResponse[PromptMeta],
     status_code=status.HTTP_200_OK,
     responses={
         400: {
@@ -261,14 +140,14 @@ async def create_prompt(
             }
         },
         404: {
-            "description": "Prompt not found",
+            "description": "Repository not found",
             "content": {
                 "application/json": {
                     "example": {
                         "status": "error",
                         "type": "/errors/not-found",
-                        "title": "Prompt Not Found",
-                        "detail": "Prompt with ID 'xxx' not found or access denied"
+                        "title": "Repository Not Found",
+                        "detail": "Repository 'xxx' not found or access denied"
                     }
                 }
             }
@@ -281,16 +160,16 @@ async def create_prompt(
                         "status": "error",
                         "type": "/errors/internal-server-error",
                         "title": "Internal Server Error",
-                        "detail": "Failed to update prompt"
+                        "detail": "Failed to save prompt"
                     }
                 }
             }
         }
     },
-    summary="Update prompt",
-    description="Update an existing prompt. All fields in the update are optional.",
+    summary="Save prompt",
+    description="Save a prompt (create or update). If the file doesn't exist, creates a new prompt. If it exists, updates it.",
 )
-async def update_prompt(
+async def save_prompt(
     request: Request,
     user_id: CurrentUserDep,
     user_session: CurrentSessionDep,
@@ -300,23 +179,24 @@ async def update_prompt(
     file_path: str = Query(...)
 ) -> StandardResponse[PromptMeta]:
     """
-    Update an existing prompt.
+    Save a prompt (create or update).
     
-    All fields in the update are optional.
+    If the file doesn't exist, creates a new prompt.
+    If the file exists, updates the existing prompt.
     
     Returns:
-        StandardResponse[PromptMeta]: Standardized response containing the updated prompt
+        StandardResponse[PromptMeta]: Standardized response containing the saved prompt
     
     Raises:
-        NotFoundException: When prompt is not found or access denied
         ValidationException: When prompt validation fails
-        AppException: When prompt update fails
+        NotFoundException: When repository is not found
+        AppException: When save operation fails
     """
     request_id = request.state.request_id
     
     try:
         logger.info(
-            f"Updating prompt {repo_name}:{file_path}",
+            f"Saving prompt {repo_name}:{file_path}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
@@ -328,7 +208,7 @@ async def update_prompt(
         author_name = user.oauth_name or user.oauth_username if user else None
         author_email = user.oauth_email if user else None
         
-        prompt, pr_info = await prompt_service.update_prompt(
+        prompt, pr_info = await prompt_service.save_prompt(
             user_id=user_id,
             repo_name=repo_name,
             file_path=file_path,
@@ -339,21 +219,15 @@ async def update_prompt(
             user_session=user_session
         )
         
-        if not prompt:
-            raise NotFoundException(
-                resource="Prompt",
-                identifier=f"{repo_name}:{file_path}"
-            )
-        
         logger.info(
-            f"Successfully updated prompt {repo_name}:{file_path}",
+            f"Successfully saved prompt {repo_name}:{file_path}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
         # PR info is already attached to the prompt data object
         return success_response(
             data=prompt.model_dump(mode='json'),
-            message="Prompt updated successfully",
+            message="Prompt saved successfully",
             meta={"request_id": request_id}
         )
         
@@ -366,17 +240,17 @@ async def update_prompt(
                 "field": "prompt_data"
             }]
         )
-    except (NotFoundException, ValidationException, AppException):
+    except (ValidationException, NotFoundException, AppException):
         # These will be handled by the global exception handlers
         raise
     except Exception as e:
         logger.error(
-            f"Failed to update prompt {repo_name}:{file_path}: {str(e)}",
+            f"Failed to save prompt {repo_name}:{file_path}: {str(e)}",
             exc_info=True,
             extra={"request_id": request_id, "user_id": user_id}
         )
         raise AppException(
-            message="Failed to update prompt",
+            message="Failed to save prompt",
             detail=str(e)
         )
 
