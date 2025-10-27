@@ -118,7 +118,6 @@ class TestExecutionService:
                     template_variables=test_def.template_variables,
                     actual_output="",
                     expected_output=test_def.expected_output,
-                    retrieval_context=test_def.retrieval_context,
                     metric_results=[],
                     overall_passed=False,
                     execution_time_ms=0,
@@ -268,11 +267,14 @@ class TestExecutionService:
             # Only evaluate metrics if they are defined
             metric_results = []
             if test_def.metrics:
+                # Extract retrieval_context from template_variables if present
+                retrieval_context = test_def.template_variables.get("retrieval_context")
+                
                 test_case = self.deepeval_adapter.create_test_case(
                     input_text=str(input_text),
                     actual_output=actual_output,
                     expected_output=test_def.expected_output,
-                    retrieval_context=test_def.retrieval_context
+                    retrieval_context=retrieval_context
                 )
                 
                 # Create DeepEval metrics from configs
@@ -299,7 +301,6 @@ class TestExecutionService:
                 template_variables=test_def.template_variables,
                 actual_output=actual_output,
                 expected_output=test_def.expected_output,
-                retrieval_context=test_def.retrieval_context,
                 metric_results=metric_results,
                 overall_passed=overall_passed,
                 execution_time_ms=execution_time_ms,

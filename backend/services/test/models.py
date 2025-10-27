@@ -36,16 +36,13 @@ class UnitTestDefinition(BaseModel):
     """Individual test case definition"""
     name: str = Field(description="Unique test name within suite")
     description: Optional[str] = Field(default="", description="Test description")
+    test_suite_name: str = Field(description="Name of the test suite this test belongs to")
     prompt_reference: str = Field(description="Reference to prompt file path")
     template_variables: Dict[str, Any] = Field(
         default_factory=dict,
         description="Template variables for prompt execution"
     )
     expected_output: Optional[str] = Field(default=None, description="Expected output for comparison")
-    retrieval_context: Optional[List[str]] = Field(
-        default=None,
-        description="Context for RAG evaluation metrics"
-    )
     metrics: List[MetricConfig] = Field(default_factory=list, description="DeepEval metrics to evaluate")
     enabled: bool = Field(default=True, description="Whether test is enabled")
 
@@ -91,7 +88,6 @@ class UnitTestExecutionResult(BaseModel):
     template_variables: Dict[str, Any]
     actual_output: str = Field(description="Output from prompt execution")
     expected_output: Optional[str] = None
-    retrieval_context: Optional[List[str]] = None
     metric_results: List[MetricResult] = Field(description="Results from all metrics")
     overall_passed: bool = Field(description="Whether all metrics passed")
     execution_time_ms: int = Field(description="Execution duration in milliseconds")

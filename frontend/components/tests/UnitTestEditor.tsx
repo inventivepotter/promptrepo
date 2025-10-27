@@ -32,17 +32,9 @@ export function UnitTestEditor({ open, onOpenChange, test, onSave, repoName, isS
     test?.template_variables || {}
   );
   const [expectedOutput, setExpectedOutput] = useState(test?.expected_output || '');
-  const [retrievalContext, setRetrievalContext] = useState<string>(
-    test?.retrieval_context?.join('\n') || ''
-  );
   const [metrics, setMetrics] = useState(test?.metrics || []);
 
   const handleSave = () => {
-    const retrievalContextArray = retrievalContext
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0);
-
     // Merge user_message into template variables
     const allVariables = {
       ...templateVariables,
@@ -52,10 +44,10 @@ export function UnitTestEditor({ open, onOpenChange, test, onSave, repoName, isS
     const updatedTest: UnitTestDefinition = {
       name: name.trim(),
       description: description.trim() || undefined,
+      test_suite_name: '', // Will be set by parent component or page
       prompt_reference: promptReference.trim(),
       template_variables: allVariables,
       expected_output: expectedOutput.trim() || null,
-      retrieval_context: retrievalContextArray.length > 0 ? retrievalContextArray : null,
       metrics,
       enabled: test?.enabled ?? true,
     };
@@ -145,7 +137,7 @@ export function UnitTestEditor({ open, onOpenChange, test, onSave, repoName, isS
                   <Tabs.List>
                     <Tabs.Trigger value="variables">Template Variables</Tabs.Trigger>
                     <Tabs.Trigger value="metrics">Metrics</Tabs.Trigger>
-                    <Tabs.Trigger value="expected">Expected Output & Context</Tabs.Trigger>
+                    <Tabs.Trigger value="expected">Expected Output</Tabs.Trigger>
                   </Tabs.List>
 
                   <Tabs.Content value="variables" pt={4}>
@@ -160,35 +152,19 @@ export function UnitTestEditor({ open, onOpenChange, test, onSave, repoName, isS
                   </Tabs.Content>
 
                   <Tabs.Content value="expected" pt={4}>
-                    <VStack align="stretch" gap={4}>
-                      <Field.Root>
-                        <Field.Label>Expected Output (Optional)</Field.Label>
-                        <Textarea
-                          value={expectedOutput}
-                          onChange={(e) => setExpectedOutput(e.target.value)}
-                          placeholder="The expected response from the prompt..."
-                          rows={4}
-                          disabled={isSaving}
-                        />
-                        <Field.HelperText>
-                          Used for comparison metrics like faithfulness
-                        </Field.HelperText>
-                      </Field.Root>
-
-                      <Field.Root>
-                        <Field.Label>Retrieval Context (Optional)</Field.Label>
-                        <Textarea
-                          value={retrievalContext}
-                          onChange={(e) => setRetrievalContext(e.target.value)}
-                          placeholder="Context item 1&#10;Context item 2&#10;Context item 3"
-                          rows={4}
-                          disabled={isSaving}
-                        />
-                        <Field.HelperText>
-                          One context item per line. Required for RAG evaluation metrics.
-                        </Field.HelperText>
-                      </Field.Root>
-                    </VStack>
+                    <Field.Root>
+                      <Field.Label>Expected Output (Optional)</Field.Label>
+                      <Textarea
+                        value={expectedOutput}
+                        onChange={(e) => setExpectedOutput(e.target.value)}
+                        placeholder="The expected response from the prompt..."
+                        rows={6}
+                        disabled={isSaving}
+                      />
+                      <Field.HelperText>
+                        Used for comparison metrics like faithfulness. For RAG applications, you can include retrieval context as a template variable.
+                      </Field.HelperText>
+                    </Field.Root>
                   </Tabs.Content>
                 </Tabs.Root>
               </VStack>

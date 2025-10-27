@@ -41,14 +41,14 @@ export interface UnitTestDefinition {
   name: string;
   /** Test description */
   description?: string;
+  /** Name of the test suite this test belongs to */
+  test_suite_name: string;
   /** Reference to prompt file path */
   prompt_reference: string;
   /** Template variables for prompt execution */
   template_variables: Record<string, unknown>;
   /** Expected output for comparison */
   expected_output?: string | null;
-  /** Context for RAG evaluation metrics */
-  retrieval_context?: string[] | null;
   /** DeepEval metrics to evaluate */
   metrics?: MetricConfig[];
   /** Whether test is enabled */
@@ -112,8 +112,6 @@ export interface UnitTestExecutionResult {
   actual_output: string;
   /** Expected output for comparison */
   expected_output?: string | null;
-  /** Retrieval context used */
-  retrieval_context?: string[] | null;
   /** Results from all metrics */
   metric_results: MetricResult[];
   /** Whether all metrics passed */

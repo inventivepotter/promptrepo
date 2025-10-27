@@ -54,9 +54,15 @@ export function TestsHeader() {
     [availableRepos]
   );
 
-  const handleCreateNew = () => {
+  const handleCreateNewSuite = () => {
     if (selectedRepository) {
       router.push(`/tests/new?repo_name=${encodeURIComponent(selectedRepository)}`);
+    }
+  };
+
+  const handleCreateNewTest = () => {
+    if (selectedRepository) {
+      router.push(`/tests/create?repo_name=${encodeURIComponent(selectedRepository)}`);
     }
   };
 
@@ -131,11 +137,18 @@ export function TestsHeader() {
               disabled={availableRepos.length === 0 || !selectedRepository}
             />
             <Button
-              variant="solid"
-              onClick={handleCreateNew}
+              variant="outline"
+              onClick={handleCreateNewTest}
               disabled={availableRepos.length === 0 || !selectedRepository}
             >
-              <LuPlus /> New Test Suite
+              <LuPlus /> Add Test
+            </Button>
+            <Button
+              variant="solid"
+              onClick={handleCreateNewSuite}
+              disabled={availableRepos.length === 0 || !selectedRepository}
+            >
+              <LuPlus /> Add Test Suite
             </Button>
           </HStack>
         </HStack>

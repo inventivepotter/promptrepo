@@ -12,13 +12,6 @@ interface MetricConfigFormProps {
   onChange: (config: MetricConfig) => void;
 }
 
-interface ModelOption {
-  label: string;
-  value: string;
-  provider: string;
-  model: string;
-}
-
 export function MetricConfigForm({ config, onChange }: MetricConfigFormProps) {
   const configStore = useConfigStore(state => state.config);
   const [modelSearch, setModelSearch] = useState('');

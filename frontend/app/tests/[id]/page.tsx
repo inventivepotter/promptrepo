@@ -6,18 +6,16 @@ import {
   VStack,
   HStack,
   Box,
-  Container,
   ScrollArea,
   Spinner,
   Text,
   Button,
   IconButton,
   Heading,
-  Badge,
   Collapsible,
   Card,
 } from '@chakra-ui/react';
-import { FaArrowLeft, FaSave, FaTrash, FaPlus, FaChevronDown, FaChevronRight } from 'react-icons/fa';
+import { FaTrash, FaPlus, FaChevronDown, FaChevronRight } from 'react-icons/fa';
 import { LuArrowLeft } from 'react-icons/lu';
 import { useTestStore } from '@/stores/testStore/testStore';
 import { useSelectedRepository } from '@/stores/repositoryFilterStore';
@@ -316,10 +314,16 @@ export default function TestSuiteDetailPage() {
         repoName={repoName || ''}
         onSave={(test) => {
           const isNew = !currentSuite.test_suite.tests.find(t => t.name === editingTest?.name);
+          // Set test_suite_name to current suite name
+          const testWithSuite = {
+            ...test,
+            test_suite_name: currentSuite.test_suite.name
+          };
+          
           const updatedTests = isNew
-            ? [...currentSuite.test_suite.tests, test]
+            ? [...currentSuite.test_suite.tests, testWithSuite]
             : currentSuite.test_suite.tests.map(t =>
-                t.name === editingTest?.name ? test : t
+                t.name === editingTest?.name ? testWithSuite : t
               );
           
           setCurrentSuite({

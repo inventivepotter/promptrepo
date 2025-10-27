@@ -170,28 +170,6 @@ export function TestResults({ execution }: TestResultsProps) {
                           </Box>
                         )}
 
-                        {/* Retrieval Context */}
-                        {testResult.retrieval_context && testResult.retrieval_context.length > 0 && (
-                          <Box>
-                            <Text fontSize="sm" fontWeight="semibold" mb={2}>
-                              Retrieval Context
-                            </Text>
-                            <VStack align="stretch" gap={1}>
-                              {testResult.retrieval_context.map((context, idx) => (
-                                <Box
-                                  key={idx}
-                                  p={2}
-                                  bg="bg.subtle"
-                                  borderRadius="md"
-                                  fontSize="sm"
-                                >
-                                  {context}
-                                </Box>
-                              ))}
-                            </VStack>
-                          </Box>
-                        )}
-
                         {/* Metrics */}
                         <TestMetrics results={testResult.metric_results} />
 
