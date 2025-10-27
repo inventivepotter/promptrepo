@@ -61,9 +61,11 @@ export function UnitTestList({ tests, onEdit, onDelete, onRun, onToggleEnabled }
                   <Badge variant="outline" colorPalette="blue">
                     Prompt: {test.prompt_reference}
                   </Badge>
-                  <Badge variant="outline" colorPalette="purple">
-                    {test.metrics.length} {test.metrics.length === 1 ? 'metric' : 'metrics'}
-                  </Badge>
+                  {test.metrics && test.metrics.length > 0 && (
+                    <Badge variant="outline" colorPalette="purple">
+                      {test.metrics.length} {test.metrics.length === 1 ? 'metric' : 'metrics'}
+                    </Badge>
+                  )}
                   {Object.keys(test.template_variables).length > 0 && (
                     <Badge variant="outline" colorPalette="green">
                       {Object.keys(test.template_variables).length} variables

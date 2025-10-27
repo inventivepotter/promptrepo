@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   VStack,
@@ -10,7 +10,10 @@ import {
   Textarea,
   Heading,
   Field,
+  Collapsible,
+  IconButton,
 } from '@chakra-ui/react';
+import { FaChevronDown, FaChevronRight } from 'react-icons/fa';
 import type { TestSuiteDefinition } from '@/types/test';
 
 export interface TestSuiteEditorProps {
@@ -19,6 +22,7 @@ export interface TestSuiteEditorProps {
 }
 
 export function TestSuiteEditor({ suite, onChange }: TestSuiteEditorProps) {
+  const [isOpen, setIsOpen] = useState(true);
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange({
       ...suite,
@@ -46,10 +50,23 @@ export function TestSuiteEditor({ suite, onChange }: TestSuiteEditorProps) {
 
   return (
     <Card.Root>
-      <Card.Header>
-        <Heading size="md">Test Suite Information</Heading>
-      </Card.Header>
-      <Card.Body>
+      <Collapsible.Root open={isOpen} onOpenChange={(e) => setIsOpen(e.open)}>
+        <Card.Header>
+          <HStack justify="space-between" width="100%">
+            <Heading size="md">Test Suite Information</Heading>
+            <Collapsible.Trigger asChild>
+              <IconButton
+                aria-label="Toggle suite info"
+                variant="ghost"
+                size="sm"
+              >
+                {isOpen ? <FaChevronDown /> : <FaChevronRight />}
+              </IconButton>
+            </Collapsible.Trigger>
+          </HStack>
+        </Card.Header>
+        <Collapsible.Content>
+          <Card.Body>
         <VStack gap={4} align="stretch">
           <Field.Root required>
             <Field.Label>Suite Name <Field.RequiredIndicator /></Field.Label>
@@ -91,7 +108,9 @@ export function TestSuiteEditor({ suite, onChange }: TestSuiteEditorProps) {
             </VStack>
           </HStack>
         </VStack>
-      </Card.Body>
+          </Card.Body>
+        </Collapsible.Content>
+      </Collapsible.Root>
     </Card.Root>
   );
 }

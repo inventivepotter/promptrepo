@@ -10,8 +10,10 @@ import {
   Checkbox,
   Text,
   Badge,
+  Collapsible,
+  IconButton,
 } from '@chakra-ui/react';
-import { FaPlay } from 'react-icons/fa';
+import { FaPlay, FaChevronDown, FaChevronRight } from 'react-icons/fa';
 import type { UnitTestDefinition } from '@/types/test';
 
 interface TestExecutorProps {
@@ -30,6 +32,7 @@ export function TestExecutor({
   isExecuting,
 }: TestExecutorProps) {
   const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set());
+  const [isOpen, setIsOpen] = useState(true);
 
   const enabledTests = tests.filter(test => test.enabled);
   const allSelected = enabledTests.length > 0 && selectedTests.size === enabledTests.length;
@@ -62,15 +65,28 @@ export function TestExecutor({
 
   return (
     <Card.Root>
-      <Card.Header>
-        <HStack justify="space-between">
-          <Heading size="md">Test Execution</Heading>
-          <Badge colorScheme={isExecuting ? 'yellow' : 'gray'}>
-            {isExecuting ? 'Running...' : 'Ready'}
-          </Badge>
-        </HStack>
-      </Card.Header>
-      <Card.Body>
+      <Collapsible.Root open={isOpen} onOpenChange={(e) => setIsOpen(e.open)}>
+        <Card.Header>
+          <HStack justify="space-between" width="100%">
+            <HStack gap={2}>
+              <Heading size="md">Test Execution</Heading>
+              <Badge colorScheme={isExecuting ? 'yellow' : 'gray'}>
+                {isExecuting ? 'Running...' : 'Ready'}
+              </Badge>
+            </HStack>
+            <Collapsible.Trigger asChild>
+              <IconButton
+                aria-label="Toggle test executor"
+                variant="ghost"
+                size="sm"
+              >
+                {isOpen ? <FaChevronDown /> : <FaChevronRight />}
+              </IconButton>
+            </Collapsible.Trigger>
+          </HStack>
+        </Card.Header>
+        <Collapsible.Content>
+          <Card.Body>
         <VStack gap={4} align="stretch">
           <HStack justify="space-between">
             <Checkbox.Root
@@ -120,9 +136,11 @@ export function TestExecutor({
                   <Checkbox.Label>
                     <HStack gap={2}>
                       <Text>{test.name}</Text>
-                      <Badge variant="outline" size="sm">
-                        {test.metrics.length} metrics
-                      </Badge>
+                      {test.metrics && test.metrics.length > 0 && (
+                        <Badge variant="outline" size="sm">
+                          {test.metrics.length} metrics
+                        </Badge>
+                      )}
                     </HStack>
                   </Checkbox.Label>
                 </Checkbox.Root>
@@ -130,7 +148,9 @@ export function TestExecutor({
             </VStack>
           )}
         </VStack>
-      </Card.Body>
+          </Card.Body>
+        </Collapsible.Content>
+      </Collapsible.Root>
     </Card.Root>
   );
 }

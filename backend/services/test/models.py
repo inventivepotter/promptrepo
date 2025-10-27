@@ -27,7 +27,7 @@ class MetricConfig(BaseModel):
     """Configuration for a single DeepEval metric"""
     type: MetricType = Field(description="Type of DeepEval metric")
     threshold: float = Field(default=0.7, ge=0.0, le=1.0, description="Minimum passing score")
-    model: str = Field(default="gpt-4", description="LLM model for metric evaluation")
+    model: str = Field(default="", description="LLM model for metric evaluation in format 'provider:model'")
     include_reason: bool = Field(default=True, description="Include reasoning in results")
     strict_mode: bool = Field(default=False, description="Enable strict evaluation mode")
 
@@ -46,7 +46,7 @@ class UnitTestDefinition(BaseModel):
         default=None,
         description="Context for RAG evaluation metrics"
     )
-    metrics: List[MetricConfig] = Field(description="DeepEval metrics to evaluate")
+    metrics: List[MetricConfig] = Field(default_factory=list, description="DeepEval metrics to evaluate")
     enabled: bool = Field(default=True, description="Whether test is enabled")
 
 

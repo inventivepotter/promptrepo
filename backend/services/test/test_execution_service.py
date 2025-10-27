@@ -265,26 +265,30 @@ class TestExecutionService:
                 test_def.template_variables.get("input", prompt_text)
             )
             
-            test_case = self.deepeval_adapter.create_test_case(
-                input_text=str(input_text),
-                actual_output=actual_output,
-                expected_output=test_def.expected_output,
-                retrieval_context=test_def.retrieval_context
-            )
-            
-            # Create DeepEval metrics from configs
-            metrics = [
-                self.deepeval_adapter.create_metric(metric_config)
-                for metric_config in test_def.metrics
-            ]
-            
-            # Evaluate metrics
-            metric_results = await self.deepeval_adapter.evaluate_metrics(
-                test_case, metrics, test_def.metrics
-            )
+            # Only evaluate metrics if they are defined
+            metric_results = []
+            if test_def.metrics:
+                test_case = self.deepeval_adapter.create_test_case(
+                    input_text=str(input_text),
+                    actual_output=actual_output,
+                    expected_output=test_def.expected_output,
+                    retrieval_context=test_def.retrieval_context
+                )
+                
+                # Create DeepEval metrics from configs
+                metrics = [
+                    self.deepeval_adapter.create_metric(metric_config)
+                    for metric_config in test_def.metrics
+                ]
+                
+                # Evaluate metrics
+                metric_results = await self.deepeval_adapter.evaluate_metrics(
+                    test_case, metrics, test_def.metrics
+                )
             
             # Determine overall pass/fail
-            overall_passed = all(result.passed for result in metric_results)
+            # If no metrics, test passes if it executes successfully
+            overall_passed = all(result.passed for result in metric_results) if metric_results else True
             
             end_time = time.time()
             execution_time_ms = int((end_time - start_time) * 1000)

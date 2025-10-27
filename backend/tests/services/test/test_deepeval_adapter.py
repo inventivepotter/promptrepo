@@ -41,12 +41,66 @@ class TestMetricCreation:
         config = MetricConfig(
             type=MetricType.ANSWER_RELEVANCY,
             threshold=0.8,
-            model="gpt-4"
+            model="openai:gpt-4"
         )
         
         with pytest.raises(ImportError) as exc_info:
             adapter.create_metric(config)
         assert "DeepEval is not installed" in str(exc_info.value)
+    
+    def test_create_metric_with_provider_model_format(self, adapter):
+        """Test creating metric with provider:model format."""
+        if not adapter.deepeval_available:
+            pytest.skip("DeepEval not available")
+        
+        config = MetricConfig(
+            type=MetricType.ANSWER_RELEVANCY,
+            threshold=0.8,
+            model="openai:gpt-4"
+        )
+        
+        with patch.object(adapter, 'metric_mapping') as mock_mapping:
+            mock_metric_class = Mock()
+            mock_metric_instance = Mock()
+            mock_metric_class.return_value = mock_metric_instance
+            mock_mapping.get.return_value = mock_metric_class
+            
+            adapter.create_metric(config)
+            
+            # Verify that the model name is extracted correctly (just "gpt-4", not "openai:gpt-4")
+            mock_metric_class.assert_called_once_with(
+                threshold=0.8,
+                model="gpt-4",
+                include_reason=True,
+                strict_mode=False
+            )
+    
+    def test_create_metric_backward_compatible(self, adapter):
+        """Test creating metric with plain model name (backward compatibility)."""
+        if not adapter.deepeval_available:
+            pytest.skip("DeepEval not available")
+        
+        config = MetricConfig(
+            type=MetricType.ANSWER_RELEVANCY,
+            threshold=0.8,
+            model="gpt-4"
+        )
+        
+        with patch.object(adapter, 'metric_mapping') as mock_mapping:
+            mock_metric_class = Mock()
+            mock_metric_instance = Mock()
+            mock_metric_class.return_value = mock_metric_instance
+            mock_mapping.get.return_value = mock_metric_class
+            
+            adapter.create_metric(config)
+            
+            # Verify that plain model name still works
+            mock_metric_class.assert_called_once_with(
+                threshold=0.8,
+                model="gpt-4",
+                include_reason=True,
+                strict_mode=False
+            )
     
     def test_create_test_case_without_deepeval(self):
         """Test creating test case when DeepEval is not available."""
@@ -116,7 +170,7 @@ class TestMetricEvaluation:
         config = MetricConfig(
             type=MetricType.ANSWER_RELEVANCY,
             threshold=0.8,
-            model="gpt-4"
+            model="openai:gpt-4"
         )
         
         test_case = Mock()

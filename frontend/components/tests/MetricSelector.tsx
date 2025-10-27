@@ -35,7 +35,7 @@ export function MetricSelector({ metrics, onChange }: MetricSelectorProps) {
     const newMetric: MetricConfig = {
       type: selectedMetricType as MetricType,
       threshold: 0.7,
-      model: 'gpt-4',
+      model: '', // Will be selected from combobox
       include_reason: true,
       strict_mode: false,
     };

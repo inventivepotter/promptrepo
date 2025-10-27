@@ -11,6 +11,7 @@ import {
   Collapsible,
   Box,
   Icon,
+  IconButton,
 } from '@chakra-ui/react';
 import { FaCheckCircle, FaTimesCircle, FaChevronDown, FaChevronRight } from 'react-icons/fa';
 import { TestMetrics } from './TestMetrics';
@@ -22,6 +23,7 @@ interface TestResultsProps {
 
 export function TestResults({ execution }: TestResultsProps) {
   const [expandedTests, setExpandedTests] = useState<Set<string>>(new Set());
+  const [isOpen, setIsOpen] = useState(true);
 
   const toggleTest = (testName: string) => {
     const newExpanded = new Set(expandedTests);
@@ -37,23 +39,34 @@ export function TestResults({ execution }: TestResultsProps) {
 
   return (
     <Card.Root>
-      <Card.Header>
-        <HStack justify="space-between">
-          <Heading size="md">Test Results</Heading>
-          <HStack gap={2}>
-            <Badge colorScheme={overallPassed ? 'green' : 'red'} fontSize="md">
-              {overallPassed ? 'PASSED' : 'FAILED'}
-            </Badge>
-            <Badge variant="outline">
-              {execution.passed_tests}/{execution.total_tests} passed
-            </Badge>
-            <Badge variant="outline">
-              {(execution.total_execution_time_ms / 1000).toFixed(2)}s
-            </Badge>
+      <Collapsible.Root open={isOpen} onOpenChange={(e) => setIsOpen(e.open)}>
+        <Card.Header>
+          <HStack justify="space-between" width="100%">
+            <HStack gap={2}>
+              <Heading size="md">Test Results</Heading>
+              <Badge colorScheme={overallPassed ? 'green' : 'red'} fontSize="md">
+                {overallPassed ? 'PASSED' : 'FAILED'}
+              </Badge>
+              <Badge variant="outline">
+                {execution.passed_tests}/{execution.total_tests} passed
+              </Badge>
+              <Badge variant="outline">
+                {(execution.total_execution_time_ms / 1000).toFixed(2)}s
+              </Badge>
+            </HStack>
+            <Collapsible.Trigger asChild>
+              <IconButton
+                aria-label="Toggle test results"
+                variant="ghost"
+                size="sm"
+              >
+                {isOpen ? <FaChevronDown /> : <FaChevronRight />}
+              </IconButton>
+            </Collapsible.Trigger>
           </HStack>
-        </HStack>
-      </Card.Header>
-      <Card.Body>
+        </Card.Header>
+        <Collapsible.Content>
+          <Card.Body>
         <VStack gap={3} align="stretch">
           {execution.test_results.map((testResult) => {
             const isExpanded = expandedTests.has(testResult.test_name);
@@ -207,7 +220,9 @@ export function TestResults({ execution }: TestResultsProps) {
             );
           })}
         </VStack>
-      </Card.Body>
+          </Card.Body>
+        </Collapsible.Content>
+      </Collapsible.Root>
     </Card.Root>
   );
 }

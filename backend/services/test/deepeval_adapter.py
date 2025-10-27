@@ -84,10 +84,17 @@ class DeepEvalAdapter:
             raise ValueError(f"Unsupported metric type: {config.type}")
         
         try:
+            # Extract model name from "provider:model" format
+            # If format is "provider:model", extract just the model part
+            # Otherwise, use the value as-is for backward compatibility
+            model_name = config.model
+            if ':' in config.model:
+                _, model_name = config.model.split(':', 1)
+            
             # Create metric with configuration
             metric = metric_class(
                 threshold=config.threshold,
-                model=config.model,
+                model=model_name,
                 include_reason=config.include_reason,
                 strict_mode=config.strict_mode
             )

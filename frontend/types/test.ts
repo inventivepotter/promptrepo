@@ -50,7 +50,7 @@ export interface UnitTestDefinition {
   /** Context for RAG evaluation metrics */
   retrieval_context?: string[] | null;
   /** DeepEval metrics to evaluate */
-  metrics: MetricConfig[];
+  metrics?: MetricConfig[];
   /** Whether test is enabled */
   enabled: boolean;
 }

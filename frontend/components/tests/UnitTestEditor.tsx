@@ -203,7 +203,7 @@ export function UnitTestEditor({ open, onOpenChange, test, onSave, repoName, isS
                 <Button
                   onClick={handleSave}
                   loading={isSaving}
-                  disabled={isSaving || !name.trim() || !promptReference.trim() || !userMessage.trim() || metrics.length === 0}
+                  disabled={isSaving || !name.trim() || !promptReference.trim() || !userMessage.trim()}
                 >
                   {test ? 'Save Changes' : 'Create Test'}
                 </Button>

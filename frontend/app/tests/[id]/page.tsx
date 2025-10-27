@@ -14,8 +14,11 @@ import {
   IconButton,
   Heading,
   Badge,
+  Collapsible,
+  Card,
 } from '@chakra-ui/react';
-import { FaArrowLeft, FaSave, FaTrash, FaPlus } from 'react-icons/fa';
+import { FaArrowLeft, FaSave, FaTrash, FaPlus, FaChevronDown, FaChevronRight } from 'react-icons/fa';
+import { LuArrowLeft } from 'react-icons/lu';
 import { useTestStore } from '@/stores/testStore/testStore';
 import { useSelectedRepository } from '@/stores/repositoryFilterStore';
 import { TestSuiteEditor } from '@/components/tests/TestSuiteEditor';
@@ -37,6 +40,7 @@ export default function TestSuiteDetailPage() {
   
   const [editingTest, setEditingTest] = useState<UnitTestDefinition | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isTestsListOpen, setIsTestsListOpen] = useState(true);
   
   // Store state
   const currentSuite = useTestStore((state) => state.currentSuite);
@@ -135,164 +139,199 @@ export default function TestSuiteDetailPage() {
   return (
     <Box height="100vh" width="100%" display="flex" flexDirection="column">
       {/* Header */}
-      <Box borderBottomWidth="1px" borderBottomColor="border" py={4} px={6} bg="bg.panel">
-        <Container maxW="7xl">
-          <HStack justify="space-between">
-            <HStack gap={4}>
-              <IconButton
-                aria-label="Go back"
-                onClick={handleBack}
-                size="sm"
-                variant="ghost"
-              >
-                <FaArrowLeft />
-              </IconButton>
-              <VStack align="start" gap={1}>
-                <Heading size="lg">{currentSuite.test_suite.name}</Heading>
-                {currentSuite.test_suite.description && (
-                  <Text fontSize="sm" color="fg.subtle">
-                    {currentSuite.test_suite.description}
-                  </Text>
-                )}
-              </VStack>
-              <Badge colorScheme="blue">
-                {currentSuite.test_suite.tests.length} tests
-              </Badge>
-            </HStack>
-            
-            <HStack gap={2}>
-              <Button
-                colorScheme="blue"
-                onClick={handleSave}
-                loading={isLoading}
-              >
-                <FaSave /> Save
-              </Button>
-              <IconButton
-                aria-label="Delete test suite"
-                colorScheme="red"
-                variant="ghost"
-                onClick={handleDelete}
-              >
-                <FaTrash />
-              </IconButton>
-            </HStack>
+      <Box py={4} px={6} position="sticky" top={0} zIndex={10} bg="bg.subtle">
+        <HStack justify="space-between" align="center">
+          <HStack gap={4}>
+            <Button variant="outline" onClick={handleBack} size="sm">
+              <HStack gap={2}>
+                <LuArrowLeft size={16} />
+                <Text>Back</Text>
+              </HStack>
+            </Button>
+            <VStack align="start" gap={1}>
+              <Text color="fg.muted" fontSize="2xl" letterSpacing="tight" fontWeight="1000">
+                {currentSuite.test_suite.name || 'New Test Suite'}
+              </Text>
+              <Text fontSize="sm" opacity={0.7}>
+                Edit test suite configuration and manage tests. Click Save to persist changes.
+              </Text>
+            </VStack>
           </HStack>
-        </Container>
+          <HStack gap={3}>
+            <Button onClick={handleSave} disabled={isLoading} loading={isLoading}>
+              {isLoading ? 'Saving...' : 'Save Test Suite'}
+            </Button>
+            <IconButton
+              aria-label="Delete test suite"
+              colorScheme="red"
+              variant="ghost"
+              onClick={handleDelete}
+            >
+              <FaTrash />
+            </IconButton>
+          </HStack>
+        </HStack>
       </Box>
 
       <ScrollArea.Root flex="1" width="100%">
-        <ScrollArea.Viewport>
+        <ScrollArea.Viewport
+          css={{
+            "--scroll-shadow-size": "5rem",
+            maskImage:
+              "linear-gradient(#000,#000,transparent 0,#000 var(--scroll-shadow-size),#000 calc(100% - var(--scroll-shadow-size)),transparent)",
+            "&[data-at-top]": {
+              maskImage:
+                "linear-gradient(180deg,#000 calc(100% - var(--scroll-shadow-size)),transparent)",
+            },
+            "&[data-at-bottom]": {
+              maskImage:
+                "linear-gradient(0deg,#000 calc(100% - var(--scroll-shadow-size)),transparent)",
+            },
+          }}
+        >
           <ScrollArea.Content>
-            <Container maxW="7xl" py={6}>
-              <VStack gap={6} align="stretch">
-                {/* Test Suite Editor */}
-                <TestSuiteEditor
-                  suite={currentSuite.test_suite}
-                  onChange={(updated) => {
-                    setCurrentSuite({ test_suite: updated });
-                  }}
-                />
+            <Box position="relative">
+              {/* Main Content - Two column split layout */}
+              <Box p={6}>
+                <HStack gap={6} align="start" minH="600px">
+                  {/* Left Section - Test Suite Info & Tests List */}
+                  <Box width="50%">
+                    <VStack gap={6} align="stretch">
+                      {/* Test Suite Editor */}
+                      <TestSuiteEditor
+                        suite={currentSuite.test_suite}
+                        onChange={(updated) => {
+                          setCurrentSuite({ test_suite: updated });
+                        }}
+                      />
 
-                {/* Test Executor & Results */}
-                <TestExecutor
-                  repoName={repoName || ''}
-                  suiteName={suiteName}
-                  tests={currentSuite.test_suite.tests}
-                  onExecute={executeTestSuite}
-                  isExecuting={isLoading}
-                />
+                      {/* Unit Tests List */}
+                      <Card.Root>
+                        <Collapsible.Root open={isTestsListOpen} onOpenChange={(e) => setIsTestsListOpen(e.open)}>
+                          <Card.Header>
+                            <HStack justify="space-between" width="100%">
+                              <Heading size="md">Tests</Heading>
+                              <HStack gap={2}>
+                                <Button
+                                  colorScheme="blue"
+                                  size="sm"
+                                  onClick={() => {
+                                    setEditingTest(null);
+                                    setIsEditorOpen(true);
+                                  }}
+                                >
+                                  <FaPlus /> Add Test
+                                </Button>
+                                <Collapsible.Trigger asChild>
+                                  <IconButton
+                                    aria-label="Toggle tests list"
+                                    variant="ghost"
+                                    size="sm"
+                                  >
+                                    {isTestsListOpen ? <FaChevronDown /> : <FaChevronRight />}
+                                  </IconButton>
+                                </Collapsible.Trigger>
+                              </HStack>
+                            </HStack>
+                          </Card.Header>
+                          <Collapsible.Content>
+                            <Card.Body>
+                              <UnitTestList
+                                tests={currentSuite.test_suite.tests}
+                                onEdit={(testName) => {
+                                  const test = currentSuite.test_suite.tests.find(t => t.name === testName);
+                                  if (test) {
+                                    setEditingTest(test);
+                                    setIsEditorOpen(true);
+                                  }
+                                }}
+                                onDelete={(testName) => {
+                                  if (confirm(`Delete test "${testName}"?`)) {
+                                    const updatedTests = currentSuite.test_suite.tests.filter(t => t.name !== testName);
+                                    setCurrentSuite({
+                                      test_suite: {
+                                        ...currentSuite.test_suite,
+                                        tests: updatedTests,
+                                      },
+                                    });
+                                  }
+                                }}
+                                onRun={(testName) => {
+                                  if (repoName) {
+                                    executeTestSuite(repoName, suiteName, [testName]);
+                                  }
+                                }}
+                                onToggleEnabled={(testName, enabled) => {
+                                  const updatedTests = currentSuite.test_suite.tests.map(t =>
+                                    t.name === testName ? { ...t, enabled } : t
+                                  );
+                                  setCurrentSuite({
+                                    test_suite: {
+                                      ...currentSuite.test_suite,
+                                      tests: updatedTests,
+                                    },
+                                  });
+                                }}
+                              />
+                            </Card.Body>
+                          </Collapsible.Content>
+                        </Collapsible.Root>
+                      </Card.Root>
+                    </VStack>
+                  </Box>
 
-                {currentExecution && (
-                  <TestResults execution={currentExecution} />
-                )}
+                  {/* Right Section - Test Executor & Results */}
+                  <Box width="50%">
+                    <VStack gap={6} align="stretch">
+                      {/* Test Executor */}
+                      <TestExecutor
+                        repoName={repoName || ''}
+                        suiteName={suiteName}
+                        tests={currentSuite.test_suite.tests}
+                        onExecute={executeTestSuite}
+                        isExecuting={isLoading}
+                      />
 
-                {/* Unit Tests List */}
-                <Box>
-                  <HStack justify="space-between" mb={4}>
-                    <Heading size="md">Tests</Heading>
-                    <Button
-                      colorScheme="blue"
-                      size="sm"
-                      onClick={() => {
-                        setEditingTest(null);
-                        setIsEditorOpen(true);
-                      }}
-                    >
-                      <FaPlus /> Add Test
-                    </Button>
-                  </HStack>
-                  <UnitTestList
-                    tests={currentSuite.test_suite.tests}
-                    onEdit={(testName) => {
-                      const test = currentSuite.test_suite.tests.find(t => t.name === testName);
-                      if (test) {
-                        setEditingTest(test);
-                        setIsEditorOpen(true);
-                      }
-                    }}
-                    onDelete={(testName) => {
-                      if (confirm(`Delete test "${testName}"?`)) {
-                        const updatedTests = currentSuite.test_suite.tests.filter(t => t.name !== testName);
-                        setCurrentSuite({
-                          test_suite: {
-                            ...currentSuite.test_suite,
-                            tests: updatedTests,
-                          },
-                        });
-                      }
-                    }}
-                    onRun={(testName) => {
-                      if (repoName) {
-                        executeTestSuite(repoName, suiteName, [testName]);
-                      }
-                    }}
-                    onToggleEnabled={(testName, enabled) => {
-                      const updatedTests = currentSuite.test_suite.tests.map(t =>
-                        t.name === testName ? { ...t, enabled } : t
-                      );
-                      setCurrentSuite({
-                        test_suite: {
-                          ...currentSuite.test_suite,
-                          tests: updatedTests,
-                        },
-                      });
-                    }}
-                  />
-                </Box>
-
-                {/* Unit Test Editor Dialog */}
-                <UnitTestEditor
-                  open={isEditorOpen}
-                  onOpenChange={setIsEditorOpen}
-                  test={editingTest}
-                  repoName={repoName || ''}
-                  onSave={(test) => {
-                    const isNew = !currentSuite.test_suite.tests.find(t => t.name === editingTest?.name);
-                    const updatedTests = isNew
-                      ? [...currentSuite.test_suite.tests, test]
-                      : currentSuite.test_suite.tests.map(t =>
-                          t.name === editingTest?.name ? test : t
-                        );
-                    
-                    setCurrentSuite({
-                      test_suite: {
-                        ...currentSuite.test_suite,
-                        tests: updatedTests,
-                      },
-                    });
-                    setIsEditorOpen(false);
-                    setEditingTest(null);
-                  }}
-                />
-              </VStack>
-            </Container>
+                      {/* Test Results */}
+                      {currentExecution && (
+                        <TestResults execution={currentExecution} />
+                      )}
+                    </VStack>
+                  </Box>
+                </HStack>
+              </Box>
+            </Box>
           </ScrollArea.Content>
         </ScrollArea.Viewport>
         <ScrollArea.Scrollbar orientation="vertical">
           <ScrollArea.Thumb />
         </ScrollArea.Scrollbar>
       </ScrollArea.Root>
+
+      {/* Unit Test Editor Dialog */}
+      <UnitTestEditor
+        open={isEditorOpen}
+        onOpenChange={setIsEditorOpen}
+        test={editingTest}
+        repoName={repoName || ''}
+        onSave={(test) => {
+          const isNew = !currentSuite.test_suite.tests.find(t => t.name === editingTest?.name);
+          const updatedTests = isNew
+            ? [...currentSuite.test_suite.tests, test]
+            : currentSuite.test_suite.tests.map(t =>
+                t.name === editingTest?.name ? test : t
+              );
+          
+          setCurrentSuite({
+            test_suite: {
+              ...currentSuite.test_suite,
+              tests: updatedTests,
+            },
+          });
+          setIsEditorOpen(false);
+          setEditingTest(null);
+        }}
+      />
     </Box>
   );
 }
