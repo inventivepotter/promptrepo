@@ -139,7 +139,10 @@ class ChatCompletionService:
         # Load tools from file paths if provided
         loaded_tools: Optional[List[Dict[str, Any]]] = None
         if request.tools and len(request.tools) > 0:
-            loaded_tools = self._load_tools_from_paths(request.tools, request.repo_name, user_id)
+            repo_for_tools = request.repo_name
+            if not repo_for_tools and request.prompt_id and ":" in request.prompt_id:
+                repo_for_tools = request.prompt_id.split(":", 1)[0]
+            loaded_tools = self._load_tools_from_paths(request.tools, repo_for_tools, user_id)
 
         try:
             # Handle Z.AI provider separately
@@ -314,7 +317,10 @@ class ChatCompletionService:
         # Load tools from file paths if provided
         loaded_tools: Optional[List[Dict[str, Any]]] = None
         if request.tools and len(request.tools) > 0:
-            loaded_tools = self._load_tools_from_paths(request.tools, request.repo_name, user_id)
+            repo_for_tools = request.repo_name
+            if not repo_for_tools and request.prompt_id and ":" in request.prompt_id:
+                repo_for_tools = request.prompt_id.split(":", 1)[0]
+            loaded_tools = self._load_tools_from_paths(request.tools, repo_for_tools, user_id)
         
         try:
             # Handle Z.AI provider separately

@@ -270,9 +270,10 @@ async def create_tool(
         oauth_token = getattr(user_session, 'oauth_token', None)
         
         # Get user information for git commit author
-        user = user_session.user if hasattr(user_session, 'user') else None
-        author_name = user.oauth_name or user.oauth_username if user else None
-        author_email = user.oauth_email if user else None
+        user = getattr(user_session, 'user', None)
+        author_name = (getattr(user, 'oauth_name', None)
+                       or getattr(user, 'oauth_username', None))
+        author_email = getattr(user, 'oauth_email', None)
         
         # Save the tool with git workflow
         saved_tool, pr_info = await tool_service.save_tool(
@@ -569,6 +570,11 @@ async def execute_mock(
     request_id = request.state.request_id
     
     try:
+        # Mask sensitive parameters before logging
+        masked_params = {
+            k: ("***" if k.lower() in {"token", "api_key", "password", "secret"} else v)
+            for k, v in list(mock_request.parameters.items())[:20]
+        }
         logger.info(
             f"Executing mock for tool: {tool_name}",
             extra={
@@ -576,7 +582,7 @@ async def execute_mock(
                 "user_id": user_id,
                 "tool_name": tool_name,
                 "repo_name": repo_name,
-                "parameters": mock_request.parameters
+                "parameters": masked_params
             }
         )
         

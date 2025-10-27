@@ -1,7 +1,7 @@
 """Tool service models for managing mock tools based on simplified design."""
 
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -37,7 +37,7 @@ class ParameterSchema(BaseModel):
         
         if param_type_value == "string" and not isinstance(v, str):
             raise ValueError(f"Default value must be a string for type 'string', got {type(v)}")
-        elif param_type_value == "number" and not isinstance(v, (int, float)):
+        elif param_type_value == "number" and (not isinstance(v, (int, float)) or isinstance(v, bool)):
             raise ValueError(f"Default value must be a number for type 'number', got {type(v)}")
         elif param_type_value == "boolean" and not isinstance(v, bool):
             raise ValueError(f"Default value must be a boolean for type 'boolean', got {type(v)}")
@@ -87,27 +87,20 @@ class MockConfig(BaseModel):
     enabled: bool = Field(default=True, description="Whether mock is enabled")
     mock_type: MockType = Field(default=MockType.STATIC, description="Type of mock response")
     
-    # Legacy field for backward compatibility
-    response: Optional[str] = Field(None, description="Mock response string (legacy/static)")
-    
     # Type-specific fields
-    static_response: Optional[str] = Field(None, description="Static mock response")
-    conditional_rules: Optional[List[ConditionalRule]] = Field(None, description="Conditional mock rules")
-    python_code: Optional[str] = Field(None, description="Python code for dynamic mock")
+    static_response: Optional[str] = Field(default=None, description="Static mock response")
+    conditional_rules: Optional[List[ConditionalRule]] = Field(default=None, description="Conditional mock rules")
+    python_code: Optional[str] = Field(default=None, description="Python code for dynamic mock")
     
     @field_validator("mock_type", mode="before")
     @classmethod
     def validate_mock_type(cls, v: Any) -> MockType:
         """Validate and convert mock_type."""
+        if v is None:
+            return MockType.STATIC
         if isinstance(v, str):
             return MockType(v.lower())
         return v
-    
-    def model_post_init(self, __context: Any) -> None:
-        """Post-initialization to handle backward compatibility."""
-        # If response is set but static_response is not, migrate it
-        if self.response and not self.static_response and self.mock_type == MockType.STATIC:
-            self.static_response = self.response
 
 
 class ToolDefinition(BaseModel):
@@ -119,7 +112,7 @@ class ToolDefinition(BaseModel):
         default_factory=lambda: ParametersDefinition(type="object", properties={}, required=[]),
         description="OpenAI-compatible parameters"
     )
-    mock: MockConfig = Field(description="Mock configuration")
+    mock: MockConfig = Field(default_factory=lambda: MockConfig(), description="Mock configuration")
     
     @field_validator("name")
     @classmethod

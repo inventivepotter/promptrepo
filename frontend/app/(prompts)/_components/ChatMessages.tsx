@@ -102,7 +102,7 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
     switch (message.role) {
       case 'assistant':
         return (
-          <HStack key={message.id} align="start" justify="flex-start" w="full" mb={4}>
+          <HStack align="start" justify="flex-start" w="full" mb={4}>
             <Box
               p={2}
               borderRadius="full"
@@ -118,12 +118,12 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
                 borderColor={aiMessageBorder}
                 borderWidth="1px"
                 size="sm"
-                opacity={message.tool_calls ? 0.7 : 1}
+                opacity={Array.isArray(message.tool_calls) && message.tool_calls.length > 0 ? 0.7 : 1}
               >
                 <Card.Body p={3}>
                   {message.content ? (
                     <MarkdownRenderer content={message.content} />
-                  ) : message.tool_calls ? (
+                  ) : Array.isArray(message.tool_calls) && message.tool_calls.length > 0 ? (
                     <Box>
                       <HStack gap={2} mb={2}>
                         <Badge size="xs" variant="subtle" colorPalette="gray">
@@ -165,7 +165,7 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
 
       case 'user':
         return (
-          <HStack key={message.id} align="start" justify="flex-end" w="full" mb={4}>
+          <HStack align="start" justify="flex-end" w="full" mb={4}>
             <Box maxW="70%" flex={1}>
               <Card.Root
                 bg={userMessageBg}
@@ -199,7 +199,7 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
 
       case 'system':
         return (
-          <HStack key={message.id} align="start" justify="flex-end" w="full" mb={4}>
+          <HStack align="start" justify="flex-end" w="full" mb={4}>
             <Box maxW="70%" flex={1}>
               <Card.Root
                 bg={systemMessageBg}
@@ -239,7 +239,7 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
 
       case 'tool':
         return (
-          <HStack key={message.id} align="start" justify="flex-end" w="full" mb={4}>
+          <HStack align="start" justify="flex-end" w="full" mb={4}>
             <Box maxW="70%" flex={1}>
               <Card.Root
                 bg="transparent"
@@ -315,7 +315,11 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
           </VStack>
         ) : (
           <VStack gap={0} align="stretch">
-            {messages.map(renderMessage)}
+            {messages.map((message) => (
+              <React.Fragment key={message.id}>
+                {renderMessage(message)}
+              </React.Fragment>
+            ))}
             {isLoading && (
               <HStack align="start" justify="flex-start" w="full" mb={4}>
                 <Box

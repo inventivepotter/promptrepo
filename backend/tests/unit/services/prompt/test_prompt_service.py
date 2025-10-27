@@ -98,7 +98,10 @@ class TestSavePromptCreate:
             mock_repo_path.exists.return_value = True
             mock_file_path = MagicMock()
             mock_file_path.exists.return_value = False  # File doesn't exist yet
+            mock_file_path.is_relative_to.return_value = True  # Allow path validation
             mock_repo_path.__truediv__ = Mock(return_value=mock_file_path)
+            mock_repo_path.resolve.return_value = mock_repo_path
+            mock_file_path.resolve.return_value = mock_file_path
             mock_path.return_value.__truediv__ = Mock(return_value=mock_repo_path)
             
             # Mock file save success
@@ -173,7 +176,10 @@ class TestSavePromptCreate:
             mock_repo_path.exists.return_value = True
             mock_file_path = MagicMock()
             mock_file_path.exists.return_value = False
+            mock_file_path.is_relative_to.return_value = True  # Allow path validation
             mock_repo_path.__truediv__ = Mock(return_value=mock_file_path)
+            mock_repo_path.resolve.return_value = mock_repo_path
+            mock_file_path.resolve.return_value = mock_file_path
             mock_path.return_value.__truediv__ = Mock(return_value=mock_repo_path)
             
             mock_file_ops_service.save_yaml_file.return_value = True
@@ -326,7 +332,10 @@ class TestSavePromptCreate:
             mock_repo_path.exists.return_value = True
             mock_file_path = MagicMock()
             mock_file_path.exists.return_value = False
+            mock_file_path.is_relative_to.return_value = True  # Allow path validation
             mock_repo_path.__truediv__ = Mock(return_value=mock_file_path)
+            mock_repo_path.resolve.return_value = mock_repo_path
+            mock_file_path.resolve.return_value = mock_file_path
             mock_path.return_value.__truediv__ = Mock(return_value=mock_repo_path)
             
             # Mock file save failure
