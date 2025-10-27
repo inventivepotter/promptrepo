@@ -73,12 +73,6 @@ class PRInfo(BaseModel):
     }
 
 
-class ArtifactFile(BaseModel):
-    """Represents a discovered artifact file."""
-    file_path: str
-    artifact_type: ArtifactType
-    
-    
 class ArtifactDiscoveryResult(BaseModel):
     """Result of artifact discovery operation grouped by type."""
     prompts: List[str] = Field(default_factory=list)

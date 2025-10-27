@@ -22,10 +22,13 @@ function EditorPageContent() {
 
   // Fetch and set the current prompt based on mode and URL params
   useEffect(() => {
-    if (mode === 'new' && repo) {
+    // Support both 'repo' and 'repo_name' params for backward compatibility
+    const repositoryName = repoName || repo;
+    
+    if (mode === 'new' && repositoryName) {
       // Creating a new prompt - set up an empty prompt
       setCurrentPrompt({
-        repo_name: repo,
+        repo_name: repositoryName,
         file_path: '', // Will be derived from prompt name when saving
         prompt: {
           id: '',

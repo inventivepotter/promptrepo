@@ -98,22 +98,23 @@ export function ToolsFieldGroup() {
 
   return (
     <Card.Root>
-      <Card.Body>
+      <Card.Body minWidth={0}>
         <Fieldset.Root>
-          <HStack justify="space-between" align="center">
-            <Stack flex={1}>
+          <HStack justify="space-between" align="center" minWidth={0} flexWrap={{ base: "wrap", md: "nowrap" }} gap={2}>
+            <Stack flex={1} minWidth={0}>
               <Fieldset.Legend>Tools</Fieldset.Legend>
               <Fieldset.HelperText color="text.tertiary">
                 Select mock tools to use with this prompt
               </Fieldset.HelperText>
             </Stack>
-            <HStack gap={2}>
+            <HStack gap={2} flexShrink={0}>
               <Button
                 variant="ghost"
                 _hover={{ bg: "bg.subtle" }}
                 size="sm"
                 onClick={() => window.open('/tools?mode=new', '_self')}
                 aria-label="Create new tool"
+                flexShrink={0}
               >
                 <HStack gap={1}>
                   <LuPlus size="xs" />
@@ -128,6 +129,7 @@ export function ToolsFieldGroup() {
                 size="sm"
                 onClick={() => setShowTools(!showTools)}
                 aria-label={showTools ? "Collapse tools" : "Expand tools"}
+                flexShrink={0}
               >
                 <HStack gap={1}>
                   <Text fontSize="xs" fontWeight="medium">
@@ -142,9 +144,9 @@ export function ToolsFieldGroup() {
           <Fieldset.Content>
             <Collapsible.Root open={showTools}>
               <Collapsible.Content>
-                <VStack gap={4} mt={3} align="stretch">
+                <VStack gap={4} mt={3} align="stretch" minWidth={0}>
                   {/* Tool Selection */}
-                  <VStack gap={2} align="stretch">
+                  <VStack gap={2} align="stretch" minWidth={0}>
 
                     <Select.Root
                       collection={toolCollection}
@@ -158,8 +160,8 @@ export function ToolsFieldGroup() {
                       disabled={isLoadingTools || toolCollection.items.length === 0}
                     >
                       <Select.HiddenSelect />
-                      <Select.Control>
-                        <Select.Trigger>
+                      <Select.Control width="100%" minWidth={0}>
+                        <Select.Trigger width="100%">
                           <Select.ValueText 
                             placeholder={
                               isLoadingTools 
@@ -199,7 +201,7 @@ export function ToolsFieldGroup() {
 
                   {/* Selected Tools List */}
                   {tools.length > 0 && (
-                    <VStack gap={2} align="stretch">
+                    <VStack gap={2} align="stretch" minWidth={0}>
                       <Text fontSize="xs" fontWeight="medium">Selected Tools ({tools.length})</Text>
                       {tools.map((toolPath, index) => {
                         const toolName = getToolNameFromPath(toolPath);
@@ -207,16 +209,16 @@ export function ToolsFieldGroup() {
                         
                         return (
                           <Card.Root key={index} size="sm" variant="outline">
-                            <Card.Body>
-                              <HStack justify="space-between">
-                                <VStack align="start" gap={0} flex={1}>
-                                  <Text fontSize="xs" fontWeight="medium">{toolName}</Text>
+                            <Card.Body minWidth={0}>
+                              <HStack justify="space-between" minWidth={0}>
+                                <VStack align="start" gap={0} flex={1} minWidth={0}>
+                                  <Text fontSize="xs" fontWeight="medium" wordBreak="break-word">{toolName}</Text>
                                   {toolInfo && (
                                     <Text fontSize="xs" color="fg.muted" lineClamp={1}>
                                       {toolInfo.description}
                                     </Text>
                                   )}
-                                  <Text fontSize="xs" color="fg.muted" opacity={0.6} fontFamily="mono">
+                                  <Text fontSize="xs" color="fg.muted" opacity={0.6} fontFamily="mono" wordBreak="break-all" overflowWrap="anywhere">
                                     {toolPath}
                                   </Text>
                                 </VStack>
@@ -226,6 +228,7 @@ export function ToolsFieldGroup() {
                                   variant="ghost"
                                   colorPalette="red"
                                   onClick={() => handleRemoveTool(toolPath)}
+                                  flexShrink={0}
                                 >
                                   <LuX />
                                 </IconButton>

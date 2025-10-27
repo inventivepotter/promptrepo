@@ -123,8 +123,7 @@ export default function ToolsPage() {
   // Filter tools based on search
   const filteredTools = tools.filter(tool =>
     tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    tool.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (tool.tags && tool.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())))
+    tool.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -372,16 +371,6 @@ export default function ToolsPage() {
                                   </Badge>
                                 )}
                               </HStack>
-
-                              {tool.tags && tool.tags.length > 0 && (
-                                <HStack gap={2} flexWrap="wrap">
-                                  {tool.tags.map(tag => (
-                                    <Badge key={tag} size="sm" variant="subtle">
-                                      {tag}
-                                    </Badge>
-                                  ))}
-                                </HStack>
-                              )}
                             </VStack>
                           </Card.Body>
                         </Card.Root>

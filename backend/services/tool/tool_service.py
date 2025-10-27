@@ -113,7 +113,7 @@ class ToolService:
         
         if not tool_path.exists():
             logger.warning(f"Tool file not found: {tool_path}")
-            raise NotFoundException(f"Tool '{tool_name}' not found in repository '{repo_name}'")
+            raise NotFoundException(resource="Tool", identifier=f"{repo_name}:{tool_name}")
         
         try:
             # Read the YAML file using the correct method
@@ -188,8 +188,7 @@ class ToolService:
                 # Load the tool
                 tool = self.load_tool(tool_name, repo_name, user_id)
                 
-                # Construct file:// URI for the tool
-                # Convert relative path to file:// URI format
+                # Construct file:// URI with relative path from repo root
                 file_uri = f"file:///{tool_file_path}"
                 
                 # Create summary with file_path populated
@@ -312,15 +311,15 @@ class ToolService:
         tool_path = self._get_tool_path(tool_name, repo_name, user_id)
         
         if not tool_path.exists():
-            logger.warning(f"Tool file not found for deletion: {tool_path}")
-            raise NotFoundException(f"Tool '{tool_name}' not found in repository '{repo_name}'")
+            logger.warning("Tool file not found for deletion: %s", tool_path)
+            raise NotFoundException(resource="Tool", identifier=f"{repo_name}:{tool_name}")
         
         try:
             tool_path.unlink()
             logger.info(f"Successfully deleted tool: {tool_name} from {repo_name}")
         except Exception as e:
-            logger.error(f"Failed to delete tool {tool_name}: {e}")
-            raise ValidationException(f"Failed to delete tool: {e}")
+            logger.exception("Failed to delete tool %s", tool_name)
+            raise ValidationException("Failed to delete tool") from e
     
     def validate_tool(self, tool: ToolDefinition) -> None:
         """Validate a tool definition.
@@ -376,5 +375,25 @@ class ToolService:
             logger.debug(f"Mock is disabled for tool: {tool.name}")
             return None
         
-        logger.debug(f"Returning mock response for tool: {tool.name}")
-        return tool.mock.response
+        # Handle different mock types
+        from services.tool.models import MockType
+        
+        if tool.mock.mock_type == MockType.STATIC:
+            # Return static_response, or fall back to legacy response field
+            response = tool.mock.static_response or tool.mock.response
+            logger.debug(f"Returning static mock response for tool: {tool.name}")
+            return response
+        elif tool.mock.mock_type == MockType.CONDITIONAL:
+            # For conditional mocks, return a placeholder or None
+            # Actual conditional logic should be handled elsewhere with parameters
+            logger.warning(f"Conditional mock type not yet implemented for tool: {tool.name}")
+            return None
+        elif tool.mock.mock_type == MockType.PYTHON:
+            # For Python mocks, return a placeholder or None
+            # Actual Python execution should be handled elsewhere
+            logger.warning(f"Python mock type not yet implemented for tool: {tool.name}")
+            return None
+        else:
+            # Fallback to legacy response field
+            logger.debug(f"Returning legacy mock response for tool: {tool.name}")
+            return tool.mock.response

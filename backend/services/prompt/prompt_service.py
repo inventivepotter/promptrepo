@@ -146,13 +146,18 @@ class PromptService(IPromptService):
         # Get repository base path
         repo_base_path = self._get_repo_base_path(user_id)
         repo_path = repo_base_path / repo_name
-        full_file_path = repo_path / file_path
         
         if not repo_path.exists():
             raise NotFoundException(
                 resource="Repository",
                 identifier=repo_name
             )
+        
+        # Resolve paths and confine to repo to prevent path traversal
+        repo_path_resolved = repo_path.resolve()
+        full_file_path = (repo_path / file_path).resolve()
+        if not full_file_path.is_relative_to(repo_path_resolved):
+            raise AppException(message="Invalid file_path: must be inside the repository")
         
         # Check if file exists to determine create vs update
         is_update = full_file_path.exists()
@@ -167,9 +172,20 @@ class PromptService(IPromptService):
                     message=f"Failed to load existing prompt file at {file_path}"
                 )
             
-            # Update existing data with non-None values from prompt_data
-            update_dict = prompt_data.model_dump(exclude_none=True, by_alias=False)
+            # Only allow mutable fields; keep id/created_at stable
+            update_dict = prompt_data.model_dump(
+                exclude_none=True,
+                by_alias=False,
+                exclude={"id", "created_at", "updated_at", "user"}  # preserve ownership and identity
+            )
             existing_data.update(update_dict)
+            
+            # Ensure deterministic id on disk
+            existing_data["id"] = self._generate_prompt_id(repo_name, file_path)
+            
+            # Backfill created_at if missing
+            if not existing_data.get("created_at"):
+                existing_data["created_at"] = datetime.utcnow().isoformat()
             
             # Update timestamp
             existing_data["updated_at"] = datetime.utcnow().isoformat()

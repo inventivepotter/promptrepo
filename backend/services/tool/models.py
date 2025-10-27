@@ -37,7 +37,7 @@ class ParameterSchema(BaseModel):
         
         if param_type_value == "string" and not isinstance(v, str):
             raise ValueError(f"Default value must be a string for type 'string', got {type(v)}")
-        elif param_type_value == "number" and not isinstance(v, (int, float)):
+        elif param_type_value == "number" and (not isinstance(v, (int, float)) or isinstance(v, bool)):
             raise ValueError(f"Default value must be a number for type 'number', got {type(v)}")
         elif param_type_value == "boolean" and not isinstance(v, bool):
             raise ValueError(f"Default value must be a boolean for type 'boolean', got {type(v)}")
@@ -99,6 +99,8 @@ class MockConfig(BaseModel):
     @classmethod
     def validate_mock_type(cls, v: Any) -> MockType:
         """Validate and convert mock_type."""
+        if v is None:
+            return MockType.STATIC
         if isinstance(v, str):
             return MockType(v.lower())
         return v
@@ -119,7 +121,7 @@ class ToolDefinition(BaseModel):
         default_factory=lambda: ParametersDefinition(type="object", properties={}, required=[]),
         description="OpenAI-compatible parameters"
     )
-    mock: MockConfig = Field(description="Mock configuration")
+    mock: MockConfig = Field(default_factory=lambda: MockConfig(), description="Mock configuration")
     
     @field_validator("name")
     @classmethod

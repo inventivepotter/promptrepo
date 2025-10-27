@@ -60,7 +60,7 @@ export function PromptsHeader() {
 
   const handleCreateNew = () => {
     if (selectedRepository) {
-      router.push(`/editor?mode=new&repo=${encodeURIComponent(selectedRepository)}`);
+      router.push(`/editor?mode=new&repo_name=${encodeURIComponent(selectedRepository)}`);
     }
   };
 
