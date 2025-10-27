@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Box,
   VStack,
@@ -9,7 +9,6 @@ import {
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { ChatMessages } from './ChatMessages';
 import { ChatInput } from './ChatInput';
-import { ChatFooter } from './ChatFooter';
 import { ChatSimpleHeader } from './ChatSimpleHeader';
 import { TokenStats } from './TokenStats';
 import { TemplateVariables } from './TemplateVariables';
@@ -17,7 +16,6 @@ import {
   useMessages,
   useIsSending,
   useChatActions,
-  useToolsManagement,
   useTemplateVariables,
 } from '@/stores/chatStore/hooks';
 import { useCurrentPrompt } from '@/stores/promptStore/hooks';
@@ -29,41 +27,12 @@ interface ChatProps {
   onMessageSend?: (message: string, tools: string[]) => void;
 }
 
-// Mock tools data - in real implementation this would come from API
-const MOCK_TOOLS = [
-  {
-    id: 'search_files',
-    name: 'Search Files',
-    description: 'Search for text patterns across files in the project'
-  },
-  {
-    id: 'read_file',
-    name: 'Read File',
-    description: 'Read the contents of a specific file'
-  },
-  {
-    id: 'write_to_file',
-    name: 'Write to File',
-    description: 'Create or modify files with new content'
-  },
-  {
-    id: 'execute_command',
-    name: 'Execute Command',
-    description: 'Run terminal commands and scripts'
-  },
-  {
-    id: 'browser_action',
-    name: 'Browser Action',
-    description: 'Interact with web pages using a browser'
-  },
-];
 
 export function Chat({ height = "700px", onMessageSend }: ChatProps) {
   // Use chatStore hooks
   const messages = useMessages();
   const isSending = useIsSending();
-  const { sendMessage, clearMessages, clearInput, setAvailableTools, setTemplateVariable, clearTemplateVariables } = useChatActions();
-  const { selectedTools, clearSelectedTools, availableTools } = useToolsManagement();
+  const { sendMessage, clearMessages, clearInput, setTemplateVariable, clearTemplateVariables } = useChatActions();
   const templateVariables = useTemplateVariables();
   
   // Use promptStore hooks to get current prompt
@@ -76,15 +45,8 @@ export function Chat({ height = "700px", onMessageSend }: ChatProps) {
   // State to control if template variables panel is expanded
   const [variablesExpanded, setVariablesExpanded] = useState(true);
 
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const borderColor = "bg.muted";
   const bgColor = useColorModeValue('white', 'gray.800');
-  
-  // Initialize tools on mount using useEffect
-  useEffect(() => {
-    if (availableTools.length === 0) {
-      setAvailableTools(MOCK_TOOLS);
-    }
-  }, [availableTools.length, setAvailableTools]);
   
   // Check if all required variables are filled
   const requiredVariables = currentPrompt?.prompt?.prompt
@@ -96,7 +58,6 @@ export function Chat({ height = "700px", onMessageSend }: ChatProps) {
   const handleReset = () => {
     clearMessages();
     clearInput();
-    clearSelectedTools();
     clearTemplateVariables();
   };
 
@@ -116,8 +77,11 @@ export function Chat({ height = "700px", onMessageSend }: ChatProps) {
       systemPrompt = currentPrompt.prompt.prompt;
     }
     
+    // Get tools from prompt metadata
+    const promptTools = currentPrompt?.prompt?.tools || [];
+    
     if (onMessageSend) {
-      onMessageSend(message, selectedTools);
+      onMessageSend(message, promptTools);
     }
     
     // Get model config from current prompt if available
@@ -127,9 +91,20 @@ export function Chat({ height = "700px", onMessageSend }: ChatProps) {
       temperature: currentPrompt.prompt.temperature,
     } : undefined;
     
+    // Create promptId from repo_name and file_path (format: repo_name:file_path)
+    const promptId = currentPrompt?.repo_name && currentPrompt?.file_path
+      ? `${currentPrompt.repo_name}:${currentPrompt.file_path}`
+      : undefined;
+    
+    // Get repo_name to send separately for tool loading
+    const repoName = currentPrompt?.repo_name;
+    
     await sendMessage(message, {
       systemPrompt,
       modelConfig,
+      promptId,
+      repoName,
+      tools: promptTools, // Pass prompt tools to chat store
     });
   };
 
@@ -181,9 +156,6 @@ export function Chat({ height = "700px", onMessageSend }: ChatProps) {
               disabled={!allVariablesFilled && requiredVariables.length > 0}
             />
           </VStack>
-
-          {/* Footer - tools only - Outside height constraint so it gets pushed down */}
-          <ChatFooter />
         </Collapsible.Content>
       </Collapsible.Root>
     </Box>

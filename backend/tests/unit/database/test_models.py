@@ -184,12 +184,14 @@ class TestUserSessionModel:
         )
         db_session.add(session)
         db_session.commit()
-
+        
+        # Refresh to get the actual timestamp from database
+        db_session.refresh(session)
         original_accessed_at = session.accessed_at
 
-        # Wait a small amount
+        # Wait to ensure timestamp difference
         import time
-        time.sleep(0.5)
+        time.sleep(1.1)
 
         # Update accessed_at by updating the record
         session.oauth_token = "updated_token"
@@ -198,8 +200,8 @@ class TestUserSessionModel:
         # Refresh to get the updated timestamp from database
         db_session.refresh(session)
 
-        # accessed_at should have changed
-        assert session.accessed_at >= original_accessed_at
+        # accessed_at should have changed (with tolerance for microseconds)
+        assert session.accessed_at > original_accessed_at
 
     def test_session_string_representation(self, db_session: Session):
         """Test session string representation"""

@@ -6,19 +6,13 @@ chat completions, validation, and error handling.
 """
 
 import pytest
-import time
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from typing import AsyncGenerator
+from unittest.mock import Mock, patch, MagicMock
 
 from services.llm.completion_service import ChatCompletionService
 from services.llm.models import (
     ChatCompletionRequest,
     ChatMessage,
-    UsageStats,
-    PromptTokensDetails,
-    CompletionTokensDetails,
-    ChatCompletionStreamResponse,
-    ChatCompletionStreamChoice
+    UsageStats
 )
 from services.config.models import LLMConfig
 from middlewares.rest.exceptions import (
@@ -54,6 +48,8 @@ class TestChatCompletionService:
                 ChatMessage(role="user", content="Hello")
             ],
             prompt_id=None,
+            repo_name=None,
+            tools=None,
             stream=False,
             temperature=None,
             max_tokens=None,
@@ -84,6 +80,8 @@ class TestChatCompletionService:
             model="claude-3",
             messages=[ChatMessage(role="system", content="Test")],
             prompt_id=None,
+            repo_name=None,
+            tools=None,
             stream=False,
             temperature=None,
             max_tokens=None,
@@ -108,6 +106,8 @@ class TestChatCompletionService:
             model="gpt-4",
             messages=[ChatMessage(role="system", content="Test")],
             prompt_id=None,
+            repo_name=None,
+            tools=None,
             stream=False,
             temperature=0.7,
             max_tokens=150,
@@ -251,15 +251,16 @@ class TestChatCompletionService:
     
     def test_convert_to_any_llm_messages_with_tool_calls(self):
         """Test _convert_to_any_llm_messages with tool calls"""
+        # Create proper tool_calls as dicts (what ChatMessage expects)
         messages = [
             ChatMessage(
-                role="assistant", 
-                content="I'll help you", 
-                tool_calls=[{"function": "get_weather"}]
+                role="assistant",
+                content="I'll help you",
+                tool_calls=[{"function": "get_weather", "id": "call_1"}]
             ),
             ChatMessage(
-                role="tool", 
-                content="Weather data", 
+                role="tool",
+                content="Weather data",
                 tool_call_id="call_123"
             )
         ]
@@ -268,12 +269,12 @@ class TestChatCompletionService:
         
         expected = [
             {
-                "role": "assistant", 
+                "role": "assistant",
                 "content": "I'll help you",
-                "tool_calls": [{"function": "get_weather"}]
+                "tool_calls": [{"function": "get_weather", "id": "call_1"}]
             },
             {
-                "role": "tool", 
+                "role": "tool",
                 "content": "Weather data",
                 "tool_call_id": "call_123"
             }
@@ -424,6 +425,7 @@ class TestChatCompletionService:
         mock_choice = Mock()
         mock_choice.message = Mock()
         mock_choice.message.content = "Hello! How can I help you?"
+        mock_choice.message.tool_calls = None  # No tool calls
         mock_choice.finish_reason = "stop"
         
         mock_usage = Mock()
@@ -448,6 +450,8 @@ class TestChatCompletionService:
                 ChatMessage(role="user", content="Hello")
             ],
             prompt_id=None,
+            repo_name=None,
+            tools=None,
             stream=False,
             temperature=None,
             max_tokens=None,
@@ -458,7 +462,7 @@ class TestChatCompletionService:
         )
         
         # Execute
-        content, finish_reason, usage_stats, inference_time = await self.service.execute_non_streaming_completion(
+        content, finish_reason, usage_stats, inference_time, tool_calls = await self.service.execute_non_streaming_completion(
             request, "user123"
         )
         
@@ -493,6 +497,8 @@ class TestChatCompletionService:
             model="gpt-4",
             messages=[ChatMessage(role="system", content="You are helpful")],
             prompt_id=None,
+            repo_name=None,
+            tools=None,
             stream=False,
             temperature=None,
             max_tokens=None,
@@ -545,6 +551,8 @@ class TestChatCompletionService:
                 ChatMessage(role="user", content="Hello")
             ],
             prompt_id=None,
+            repo_name=None,
+            tools=None,
             stream=False,
             temperature=None,
             max_tokens=None,
@@ -585,6 +593,8 @@ class TestChatCompletionService:
             model="gpt-4",
             messages=[ChatMessage(role="system", content="You are helpful")],
             prompt_id=None,
+            repo_name=None,
+            tools=None,
             stream=False,
             temperature=None,
             max_tokens=None,
@@ -608,6 +618,8 @@ class TestChatCompletionService:
             model="gpt-4",
             messages=[ChatMessage(role="user", content="Hello")],  # No system message
             prompt_id=None,
+            repo_name=None,
+            tools=None,
             stream=False,
             temperature=None,
             max_tokens=None,
@@ -629,6 +641,8 @@ class TestChatCompletionService:
             model="gpt-4",
             messages=[],  # Empty messages
             prompt_id=None,
+            repo_name=None,
+            tools=None,
             stream=False,
             temperature=None,
             max_tokens=None,

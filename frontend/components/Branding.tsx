@@ -22,7 +22,7 @@ export const Branding = ({ collapsed = false, fontSize, ...props }: BrandingProp
           color={{ _light: "primary.400", _dark: "primary.500" }} 
           {...props}
         >
-          {'{'}P{'}'}
+          {'{'}P
         </Text>
         <Text
           fontWeight="1000"
@@ -30,6 +30,15 @@ export const Branding = ({ collapsed = false, fontSize, ...props }: BrandingProp
           color="fg.muted"
           >
           R
+        </Text>
+        <Text
+          fontSize={finalFontSize}
+          fontWeight="500"
+          letterSpacing="tight"
+          color={{ _light: "primary.400", _dark: "primary.500" }} 
+          {...props}
+        >
+          {'}'}
         </Text>
         </HStack>
       </Link>

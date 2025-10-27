@@ -41,7 +41,7 @@ export function ChatFooter() {
     <Box
       p={3}
       borderTopWidth="1px"
-      borderColor="gray.200"
+      borderColor="bg.muted"
     >
       {/* Tools Selection */}
       <Box mb={3}>

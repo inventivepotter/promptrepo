@@ -15,7 +15,7 @@ export function ConfigHeader() {
     <Box
       bg="bg.subtle"
       borderBottom="1px solid"
-      borderColor="border.muted"
+      borderColor="bg.muted"
       py={4}
       position="sticky"
       top={0}

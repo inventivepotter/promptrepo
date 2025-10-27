@@ -165,7 +165,7 @@ export function ModelFieldGroup() {
           <HStack justify="space-between" align="center">
             <Stack flex={1}>
               <Fieldset.Legend>Model Configuration</Fieldset.Legend>
-              <Fieldset.HelperText>
+              <Fieldset.HelperText color="text.tertiary">
                 Select primary and failover models, and configure generation parameters
               </Fieldset.HelperText>
             </Stack>
@@ -252,9 +252,9 @@ export function ModelFieldGroup() {
 
           {/* Model Parameters */}
           <HStack gap={4}>
-            <Field.Root flex={1}>
+            <Field.Root flex={1} required>
               <Field.Label display="flex" alignItems="center" gap={1} fontSize="xs">
-                Temperature
+                Temperature <Field.RequiredIndicator />
                 <Tooltip content="Controls randomness. Higher values make output more creative, lower values more focused.">
                   <Box cursor="help">
                     <LuInfo size={12} opacity={0.6} />
@@ -265,7 +265,7 @@ export function ModelFieldGroup() {
                 size="sm"
                 inputMode="decimal"
                 onValueChange={(e) => {
-                  const value = e.value ? parseFloat(e.value) : null;
+                  const value = e.value ? parseFloat(e.value) : 1.0;
                   updateField('temperature', value);
                 }}
                 min={0}
@@ -278,9 +278,9 @@ export function ModelFieldGroup() {
               </NumberInput.Root>
             </Field.Root>
 
-            <Field.Root flex={1}>
+            <Field.Root flex={1} required>
               <Field.Label display="flex" alignItems="center" gap={1} fontSize="xs">
-                Top P
+                Top P <Field.RequiredIndicator />
                 <Tooltip content="Probability mass for nucleus sampling.">
                   <Box cursor="help">
                     <LuInfo size={12} opacity={0.6} />
@@ -291,7 +291,7 @@ export function ModelFieldGroup() {
                 size="sm"
                 inputMode="decimal"
                 onValueChange={(e) => {
-                  const value = e.value ? parseFloat(e.value) : null;
+                  const value = e.value ? parseFloat(e.value) : 1.0;
                   updateField('top_p', value);
                 }}
                 min={0}
