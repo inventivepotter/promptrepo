@@ -31,6 +31,9 @@ from services.prompt.prompt_service import PromptService
 from services.file_operations.file_operations_service import FileOperationsService
 from services.tool import ToolService
 from services.tool.tool_execution_service import ToolExecutionService
+from services.test.test_service import TestService
+from services.test.test_execution_service import TestExecutionService
+from services.test.deepeval_adapter import DeepEvalAdapter
 
 
 # ==============================================================================
@@ -350,6 +353,71 @@ def get_tool_execution_service(
 
 
 ToolExecutionServiceDep = Annotated[ToolExecutionService, Depends(get_tool_execution_service)]
+
+
+# ==============================================================================
+# Test Service
+# ==============================================================================
+
+def get_test_service(
+    config_service: ConfigServiceDep,
+    file_operations_service: FileOperationsServiceDep,
+    local_repo_service: LocalRepoServiceDep
+) -> TestService:
+    """
+    Test service dependency.
+    
+    Creates a TestService for managing test suites and execution history.
+    """
+    return TestService(
+        config_service=config_service.config,
+        file_ops_service=file_operations_service,
+        local_repo_service=local_repo_service
+    )
+
+
+TestServiceDep = Annotated[TestService, Depends(get_test_service)]
+
+
+# ==============================================================================
+# DeepEval Adapter
+# ==============================================================================
+
+def get_deepeval_adapter() -> DeepEvalAdapter:
+    """
+    DeepEval adapter dependency (singleton).
+    
+    Returns a shared instance of DeepEvalAdapter for metric evaluation.
+    This is a stateless utility service that doesn't need per-request instances.
+    """
+    return DeepEvalAdapter()
+
+
+DeepEvalAdapterDep = Annotated[DeepEvalAdapter, Depends(get_deepeval_adapter)]
+
+
+# ==============================================================================
+# Test Execution Service
+# ==============================================================================
+
+def get_test_execution_service(
+    test_service: TestServiceDep,
+    prompt_service: PromptServiceDep,
+    deepeval_adapter: DeepEvalAdapterDep
+) -> TestExecutionService:
+    """
+    Test execution service dependency.
+    
+    Creates a TestExecutionService for executing tests and evaluating metrics.
+    """
+    return TestExecutionService(
+        test_service=test_service,
+        prompt_service=prompt_service,
+        deepeval_adapter=deepeval_adapter
+    )
+
+
+TestExecutionServiceDep = Annotated[TestExecutionService, Depends(get_test_execution_service)]
 
 
 # Note: For RemoteRepoService, it's often better to create it dynamically

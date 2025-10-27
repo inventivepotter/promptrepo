@@ -17,7 +17,8 @@ import {
   Collapsible,
 } from '@chakra-ui/react';
 import { useMemo, useState } from 'react';
-import { LuGitBranch, LuChevronDown, LuChevronUp } from 'react-icons/lu';
+import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
+import { FaGitAlt } from 'react-icons/fa';
 import {
   useConfig,
   useAvailableRepos,
@@ -426,12 +427,12 @@ export const RepoConfigManager = ({ disabled = false }: RepoConfigManagerProps) 
                   <EmptyState.Root>
                     <EmptyState.Content>
                       <EmptyState.Indicator>
-                        <LuGitBranch />
+                        <FaGitAlt />
                       </EmptyState.Indicator>
                       <VStack textAlign="center">
-                        <EmptyState.Title>No repositories configured</EmptyState.Title>
+                        <EmptyState.Title>Connect your first repository</EmptyState.Title>
                         <EmptyState.Description>
-                          Add your first repository to get started
+                          Configure a repository to discover and manage your AI prompts effectively.
                         </EmptyState.Description>
                       </VStack>
                     </EmptyState.Content>

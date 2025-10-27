@@ -484,6 +484,134 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v0/tests/suites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List test suites
+         * @description Get list of all test suites in a repository with summary information.
+         */
+        get: operations["list_test_suites_api_v0_tests_suites_get"];
+        put?: never;
+        /**
+         * Create or update test suite
+         * @description Create a new test suite or update an existing one. The suite name is taken from the request body.
+         */
+        post: operations["save_test_suite_api_v0_tests_suites_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v0/tests/suites/{suite_name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get test suite
+         * @description Get detailed information about a specific test suite including all test definitions.
+         */
+        get: operations["get_test_suite_api_v0_tests_suites__suite_name__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete test suite
+         * @description Delete a test suite and all its execution history.
+         */
+        delete: operations["delete_test_suite_api_v0_tests_suites__suite_name__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v0/tests/suites/{suite_name}/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Execute test suite
+         * @description Execute all tests in a suite or specific tests if test_names are provided in request body.
+         */
+        post: operations["execute_test_suite_api_v0_tests_suites__suite_name__execute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v0/tests/suites/{suite_name}/tests/{test_name}/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Execute single test
+         * @description Execute a specific test from a test suite.
+         */
+        post: operations["execute_single_test_api_v0_tests_suites__suite_name__tests__test_name__execute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v0/tests/suites/{suite_name}/executions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get execution history
+         * @description Get execution history for a test suite, ordered by execution time (newest first).
+         */
+        get: operations["get_execution_history_api_v0_tests_suites__suite_name__executions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v0/tests/suites/{suite_name}/executions/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get latest execution
+         * @description Get the most recent execution result for a test suite.
+         */
+        get: operations["get_latest_execution_api_v0_tests_suites__suite_name__executions_latest_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -830,6 +958,17 @@ export interface components {
             repo_names: string[];
         };
         /**
+         * ExecuteTestsRequest
+         * @description Request body for executing specific tests
+         */
+        ExecuteTestsRequest: {
+            /**
+             * Test Names
+             * @description List of test names to execute. If None, all tests are executed.
+             */
+            test_names?: string[] | null;
+        };
+        /**
          * FetchModelsRequest
          * @description Request model for fetching models from a provider
          */
@@ -923,6 +1062,73 @@ export interface components {
             promptrepoRedirectUrl?: string | null;
         };
         /**
+         * MetricConfig
+         * @description Configuration for a single DeepEval metric
+         */
+        MetricConfig: {
+            /** @description Type of DeepEval metric */
+            type: components["schemas"]["MetricType"];
+            /**
+             * Threshold
+             * @description Minimum passing score
+             * @default 0.7
+             */
+            threshold: number;
+            /**
+             * Model
+             * @description LLM model for metric evaluation
+             * @default gpt-4
+             */
+            model: string;
+            /**
+             * Include Reason
+             * @description Include reasoning in results
+             * @default true
+             */
+            include_reason: boolean;
+            /**
+             * Strict Mode
+             * @description Enable strict evaluation mode
+             * @default false
+             */
+            strict_mode: boolean;
+        };
+        /**
+         * MetricResult
+         * @description Result from a single metric evaluation
+         */
+        MetricResult: {
+            type: components["schemas"]["MetricType"];
+            /**
+             * Score
+             * @description Metric score (0.0 to 1.0)
+             */
+            score: number;
+            /**
+             * Passed
+             * @description Whether metric passed threshold
+             */
+            passed: boolean;
+            /** Threshold */
+            threshold: number;
+            /**
+             * Reason
+             * @description Explanation from DeepEval
+             */
+            reason?: string | null;
+            /**
+             * Error
+             * @description Error if metric failed to execute
+             */
+            error?: string | null;
+        };
+        /**
+         * MetricType
+         * @description Predefined DeepEval metrics supported in UI
+         * @enum {string}
+         */
+        MetricType: "answer_relevancy" | "faithfulness" | "contextual_relevancy" | "contextual_precision" | "contextual_recall" | "hallucination" | "bias" | "toxicity";
+        /**
          * MockConfig
          * @description Mock configuration for tool with support for multiple mock types.
          */
@@ -938,11 +1144,6 @@ export interface components {
              * @default static
              */
             mock_type: components["schemas"]["MockType"];
-            /**
-             * Response
-             * @description Mock response string (legacy/static)
-             */
-            response?: string | null;
             /**
              * Static Response
              * @description Static mock response
@@ -1949,6 +2150,88 @@ export interface components {
             meta?: components["schemas"]["ResponseMeta"];
         };
         /**
+         * StandardResponse[List[TestSuiteExecutionResult]]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_List_TestSuiteExecutionResult__: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /**
+             * Data
+             * @description Response payload
+             */
+            data?: components["schemas"]["TestSuiteExecutionResult"][] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
+         * StandardResponse[List[TestSuiteSummary]]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_List_TestSuiteSummary__: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /**
+             * Data
+             * @description Response payload
+             */
+            data?: components["schemas"]["TestSuiteSummary"][] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
          * StandardResponse[List[ToolSummary]]
          * @example {
          *       "data": {
@@ -2297,6 +2580,82 @@ export interface components {
             meta?: components["schemas"]["ResponseMeta"];
         };
         /**
+         * StandardResponse[TestSuiteData]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_TestSuiteData_: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /** @description Response payload */
+            data?: components["schemas"]["TestSuiteData-Output"] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
+         * StandardResponse[TestSuiteExecutionResult]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_TestSuiteExecutionResult_: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /** @description Response payload */
+            data?: components["schemas"]["TestSuiteExecutionResult"] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
          * StandardResponse[ToolDefinition]
          * @example {
          *       "data": {
@@ -2364,6 +2723,82 @@ export interface components {
             status_code: number;
             /** @description Response payload */
             data?: components["schemas"]["ToolSaveResponse"] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
+         * StandardResponse[Union[TestSuiteExecutionResult, NoneType]]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_Union_TestSuiteExecutionResult__NoneType__: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /** @description Response payload */
+            data?: components["schemas"]["TestSuiteExecutionResult"] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
+         * StandardResponse[UnitTestExecutionResult]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_UnitTestExecutionResult_: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /** @description Response payload */
+            data?: components["schemas"]["UnitTestExecutionResult"] | null;
             /**
              * Message
              * @description Human-readable message about the response
@@ -2454,6 +2889,137 @@ export interface components {
             meta?: components["schemas"]["ResponseMeta"];
         };
         /**
+         * TestSuiteData
+         * @description Wrapper for YAML serialization
+         */
+        "TestSuiteData-Input": {
+            test_suite: components["schemas"]["TestSuiteDefinition-Input"];
+        };
+        /**
+         * TestSuiteData
+         * @description Wrapper for YAML serialization
+         */
+        "TestSuiteData-Output": {
+            test_suite: components["schemas"]["TestSuiteDefinition-Output"];
+        };
+        /**
+         * TestSuiteDefinition
+         * @description Test suite containing multiple unit tests
+         */
+        "TestSuiteDefinition-Input": {
+            /**
+             * Name
+             * @description Test suite name
+             */
+            name: string;
+            /**
+             * Description
+             * @description Suite description
+             * @default
+             */
+            description: string | null;
+            /**
+             * Tests
+             * @description Unit tests in this suite
+             */
+            tests?: components["schemas"]["UnitTestDefinition-Input"][];
+            /**
+             * Tags
+             * @description Tags for organization
+             */
+            tags?: string[];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at?: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at?: string;
+        };
+        /**
+         * TestSuiteDefinition
+         * @description Test suite containing multiple unit tests
+         */
+        "TestSuiteDefinition-Output": {
+            /**
+             * Name
+             * @description Test suite name
+             */
+            name: string;
+            /**
+             * Description
+             * @description Suite description
+             * @default
+             */
+            description: string | null;
+            /**
+             * Tests
+             * @description Unit tests in this suite
+             */
+            tests?: components["schemas"]["UnitTestDefinition-Output"][];
+            /**
+             * Tags
+             * @description Tags for organization
+             */
+            tags?: string[];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at?: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at?: string;
+        };
+        /**
+         * TestSuiteExecutionResult
+         * @description Execution result for entire test suite
+         */
+        TestSuiteExecutionResult: {
+            /** Suite Name */
+            suite_name: string;
+            /** Test Results */
+            test_results: components["schemas"]["UnitTestExecutionResult"][];
+            /** Total Tests */
+            total_tests: number;
+            /** Passed Tests */
+            passed_tests: number;
+            /** Failed Tests */
+            failed_tests: number;
+            /** Total Execution Time Ms */
+            total_execution_time_ms: number;
+            /**
+             * Executed At
+             * Format: date-time
+             */
+            executed_at?: string;
+        };
+        /**
+         * TestSuiteSummary
+         * @description Summary of test suite for listing
+         */
+        TestSuiteSummary: {
+            /** Name */
+            name: string;
+            /** Description */
+            description: string;
+            /** Test Count */
+            test_count: number;
+            /** Tags */
+            tags: string[];
+            /** File Path */
+            file_path: string;
+            /** Last Execution */
+            last_execution?: string | null;
+            /** Last Execution Passed */
+            last_execution_passed?: boolean | null;
+        };
+        /**
          * ToolDefinition
          * @description Complete tool definition following simplified design.
          */
@@ -2471,7 +3037,7 @@ export interface components {
             /** @description OpenAI-compatible parameters */
             parameters?: components["schemas"]["ParametersDefinition-Output"];
             /** @description Mock configuration */
-            mock: components["schemas"]["MockConfig"];
+            mock?: components["schemas"]["MockConfig"];
         };
         /**
          * ToolParameterType
@@ -2531,6 +3097,154 @@ export interface components {
              * @description Tool file path (populated during discovery, not stored in YAML)
              */
             file_path: string;
+        };
+        /**
+         * UnitTestDefinition
+         * @description Individual test case definition
+         */
+        "UnitTestDefinition-Input": {
+            /**
+             * Name
+             * @description Unique test name within suite
+             */
+            name: string;
+            /**
+             * Description
+             * @description Test description
+             * @default
+             */
+            description: string | null;
+            /**
+             * Prompt Reference
+             * @description Reference to prompt file path
+             */
+            prompt_reference: string;
+            /**
+             * Template Variables
+             * @description Template variables for prompt execution
+             */
+            template_variables?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Expected Output
+             * @description Expected output for comparison
+             */
+            expected_output?: string | null;
+            /**
+             * Retrieval Context
+             * @description Context for RAG evaluation metrics
+             */
+            retrieval_context?: string[] | null;
+            /**
+             * Metrics
+             * @description DeepEval metrics to evaluate
+             */
+            metrics: components["schemas"]["MetricConfig"][];
+            /**
+             * Enabled
+             * @description Whether test is enabled
+             * @default true
+             */
+            enabled: boolean;
+        };
+        /**
+         * UnitTestDefinition
+         * @description Individual test case definition
+         */
+        "UnitTestDefinition-Output": {
+            /**
+             * Name
+             * @description Unique test name within suite
+             */
+            name: string;
+            /**
+             * Description
+             * @description Test description
+             * @default
+             */
+            description: string | null;
+            /**
+             * Prompt Reference
+             * @description Reference to prompt file path
+             */
+            prompt_reference: string;
+            /**
+             * Template Variables
+             * @description Template variables for prompt execution
+             */
+            template_variables?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Expected Output
+             * @description Expected output for comparison
+             */
+            expected_output?: string | null;
+            /**
+             * Retrieval Context
+             * @description Context for RAG evaluation metrics
+             */
+            retrieval_context?: string[] | null;
+            /**
+             * Metrics
+             * @description DeepEval metrics to evaluate
+             */
+            metrics: components["schemas"]["MetricConfig"][];
+            /**
+             * Enabled
+             * @description Whether test is enabled
+             * @default true
+             */
+            enabled: boolean;
+        };
+        /**
+         * UnitTestExecutionResult
+         * @description Execution result for a single unit test
+         */
+        UnitTestExecutionResult: {
+            /** Test Name */
+            test_name: string;
+            /** Prompt Reference */
+            prompt_reference: string;
+            /** Template Variables */
+            template_variables: {
+                [key: string]: unknown;
+            };
+            /**
+             * Actual Output
+             * @description Output from prompt execution
+             */
+            actual_output: string;
+            /** Expected Output */
+            expected_output?: string | null;
+            /** Retrieval Context */
+            retrieval_context?: string[] | null;
+            /**
+             * Metric Results
+             * @description Results from all metrics
+             */
+            metric_results: components["schemas"]["MetricResult"][];
+            /**
+             * Overall Passed
+             * @description Whether all metrics passed
+             */
+            overall_passed: boolean;
+            /**
+             * Execution Time Ms
+             * @description Execution duration in milliseconds
+             */
+            execution_time_ms: number;
+            /**
+             * Executed At
+             * Format: date-time
+             */
+            executed_at?: string;
+            /**
+             * Error
+             * @description Error if test failed to execute
+             */
+            error?: string | null;
         };
         /**
          * UsageStats
@@ -4211,6 +4925,557 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_test_suites_api_v0_tests_suites_get: {
+        parameters: {
+            query: {
+                /** @description Repository name */
+                repo_name: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_List_TestSuiteSummary__"];
+                };
+            };
+            /** @description Repository not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Not Found",
+                     *       "detail": "Repository not found"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to list test suites"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    save_test_suite_api_v0_tests_suites_post: {
+        parameters: {
+            query: {
+                /** @description Repository name */
+                repo_name: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestSuiteData-Input"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_TestSuiteData_"];
+                };
+            };
+            /** @description Repository not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Not Found",
+                     *       "detail": "Repository not found"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to save test suite"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_test_suite_api_v0_tests_suites__suite_name__get: {
+        parameters: {
+            query: {
+                /** @description Repository name */
+                repo_name: string;
+            };
+            header?: never;
+            path: {
+                suite_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_TestSuiteData_"];
+                };
+            };
+            /** @description Test suite not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Not Found",
+                     *       "detail": "Test suite not found"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to retrieve test suite"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    delete_test_suite_api_v0_tests_suites__suite_name__delete: {
+        parameters: {
+            query: {
+                /** @description Repository name */
+                repo_name: string;
+            };
+            header?: never;
+            path: {
+                suite_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_dict_"];
+                };
+            };
+            /** @description Test suite not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Not Found",
+                     *       "detail": "Test suite not found"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to delete test suite"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    execute_test_suite_api_v0_tests_suites__suite_name__execute_post: {
+        parameters: {
+            query: {
+                /** @description Repository name */
+                repo_name: string;
+            };
+            header?: never;
+            path: {
+                suite_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ExecuteTestsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_TestSuiteExecutionResult_"];
+                };
+            };
+            /** @description Test suite not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Not Found",
+                     *       "detail": "Test suite not found"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to execute test suite"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    execute_single_test_api_v0_tests_suites__suite_name__tests__test_name__execute_post: {
+        parameters: {
+            query: {
+                /** @description Repository name */
+                repo_name: string;
+            };
+            header?: never;
+            path: {
+                suite_name: string;
+                test_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_UnitTestExecutionResult_"];
+                };
+            };
+            /** @description Test not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Not Found",
+                     *       "detail": "Test not found"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to execute test"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_execution_history_api_v0_tests_suites__suite_name__executions_get: {
+        parameters: {
+            query: {
+                /** @description Repository name */
+                repo_name: string;
+                /** @description Maximum number of executions to return */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                suite_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_List_TestSuiteExecutionResult__"];
+                };
+            };
+            /** @description Repository not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Not Found",
+                     *       "detail": "Repository not found"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to retrieve execution history"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_latest_execution_api_v0_tests_suites__suite_name__executions_latest_get: {
+        parameters: {
+            query: {
+                /** @description Repository name */
+                repo_name: string;
+            };
+            header?: never;
+            path: {
+                suite_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_Union_TestSuiteExecutionResult__NoneType__"];
+                };
+            };
+            /** @description Repository not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Not Found",
+                     *       "detail": "Repository not found"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to retrieve latest execution"
+                     *     }
+                     */
+                    "application/json": unknown;
                 };
             };
         };

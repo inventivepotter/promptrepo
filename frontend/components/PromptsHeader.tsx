@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Box,
@@ -12,17 +12,15 @@ import {
   Select,
   Portal,
   createListCollection,
-  Dialog,
 } from '@chakra-ui/react';
-import { LuPlus, LuX } from 'react-icons/lu';
-import { IoRefreshCircle } from "react-icons/io5";
+import { LuPlus } from 'react-icons/lu';
 import { useSelectedRepository, useRepositoryFilterActions } from '@/stores/repositoryFilterStore';
-import { useUniqueRepositories, usePromptActions, useIsLoading } from '@/stores/promptStore';
+import { useUniqueRepositories, usePromptActions } from '@/stores/promptStore';
+import { GetLatestButton } from './GetLatestButton';
 
 export function PromptsHeader() {
   const router = useRouter();
   const headerBg = "bg.subtle";
-  const [isGetLatestDialogOpen, setIsGetLatestDialogOpen] = useState(false);
   
   // Use shared repository filter store
   const selectedRepository = useSelectedRepository();
@@ -31,20 +29,8 @@ export function PromptsHeader() {
   // Get available repositories from prompt store
   const availableRepos = useUniqueRepositories();
   
-  // Get Latest functionality
-  const { getLatestFromBaseBranch } = usePromptActions();
-  const isLoading = useIsLoading();
-
-  const handleGetLatest = async () => {
-    if (!selectedRepository) return;
-    
-    try {
-      await getLatestFromBaseBranch(selectedRepository);
-      setIsGetLatestDialogOpen(false);
-    } catch (error) {
-      console.error('Failed to get latest from base branch:', error);
-    }
-  };
+  // Get discoverAllPromptsFromRepos to refresh after get latest
+  const { discoverAllPromptsFromRepos } = usePromptActions();
 
   // Create collection for Select component - without "All Repositories" option
   const repoCollection = useMemo(
@@ -65,8 +51,7 @@ export function PromptsHeader() {
   };
 
   return (
-    <>
-      <Box
+    <Box
         bg={headerBg}
         borderBottom="1px solid"
         borderColor="bg.muted"
@@ -92,53 +77,53 @@ export function PromptsHeader() {
             </VStack>
             
             <HStack gap={3} alignItems="flex-end">
-              {availableRepos.length > 0 && (
-                <Select.Root
-                  collection={repoCollection}
-                  size="sm"
-                  width="240px"
-                  value={selectedRepository ? [selectedRepository] : []}
-                  onValueChange={(e) => setSelectedRepository(e.value[0] || '')}
-                >
-                  <Select.Label fontSize="xs">Repository</Select.Label>
-                  <Select.HiddenSelect />
-                  <Select.Control>
-                    <Select.Trigger>
-                      <Select.ValueText placeholder="Select Repository" />
-                    </Select.Trigger>
-                    <Select.IndicatorGroup>
-                      <Select.Indicator />
-                    </Select.IndicatorGroup>
-                  </Select.Control>
-                  <Portal>
-                    <Select.Positioner>
-                      <Select.Content>
-                        {repoCollection.items.map((repo) => (
-                          <Select.Item item={repo} key={repo.value}>
-                            {repo.label}
-                            <Select.ItemIndicator />
-                          </Select.Item>
-                        ))}
-                      </Select.Content>
-                    </Select.Positioner>
-                  </Portal>
-                </Select.Root>
-              )}
-              {selectedRepository && (
-                <Button
-                  variant="outline"
-                  onClick={() => setIsGetLatestDialogOpen(true)}
-                  disabled={isLoading}
-                  loading={isLoading}
-                  padding={0}
-                >
-                  <IoRefreshCircle size={20} color="var(--chakra-colors-colorPalette-solid)" />
-                </Button>
-              )}
+              <Select.Root
+                collection={repoCollection}
+                size="sm"
+                width="240px"
+                value={selectedRepository ? [selectedRepository] : []}
+                onValueChange={(e) => setSelectedRepository(e.value[0] || '')}
+                disabled={availableRepos.length === 0}
+              >
+                <Select.Label fontSize="xs">Repository</Select.Label>
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger>
+                    <Select.ValueText
+                      placeholder={
+                        availableRepos.length === 0
+                          ? "No repositories configured"
+                          : "Select Repository"
+                      }
+                    />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Portal>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {repoCollection.items.map((repo) => (
+                        <Select.Item item={repo} key={repo.value}>
+                          {repo.label}
+                          <Select.ItemIndicator />
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Portal>
+              </Select.Root>
+              <GetLatestButton
+                repoName={selectedRepository}
+                artifactType="prompts"
+                onSuccess={discoverAllPromptsFromRepos}
+                disabled={availableRepos.length === 0 || !selectedRepository}
+              />
               <Button
                 variant="solid"
                 onClick={handleCreateNew}
-                disabled={!selectedRepository}
+                disabled={availableRepos.length === 0 || !selectedRepository}
               >
                 <LuPlus /> New Prompt
               </Button>
@@ -146,60 +131,5 @@ export function PromptsHeader() {
           </HStack>
         </Container>
       </Box>
-      
-      {/* Confirmation Dialog for Get Latest */}
-      <Dialog.Root
-        open={isGetLatestDialogOpen}
-        onOpenChange={(e) => setIsGetLatestDialogOpen(e.open)}
-        role="alertdialog"
-      >
-        <Portal>
-          <Dialog.Backdrop />
-          <Dialog.Positioner>
-            <Dialog.Content>
-              <Dialog.Header>
-                <Dialog.Title>Get Latest from Base Branch</Dialog.Title>
-              </Dialog.Header>
-              <Dialog.Body>
-                <p>
-                  This will fetch all latest prompts from the repository&apos;s configured base branch and will lose any local changes.
-                  Changes that have been pushed to the remote repository will still be available in the remote branch.
-                  <br /><br />
-                  Are you sure you want to continue?
-                </p>
-              </Dialog.Body>
-              <Dialog.Footer>
-                <Dialog.ActionTrigger asChild>
-                  <Button variant="outline" disabled={isLoading}>
-                    Cancel
-                  </Button>
-                </Dialog.ActionTrigger>
-                <Button
-                  colorPalette="red"
-                  onClick={handleGetLatest}
-                  loading={isLoading}
-                  disabled={isLoading}
-                  ml={3}
-                >
-                  Get Latest
-                </Button>
-              </Dialog.Footer>
-              <Dialog.CloseTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={isLoading}
-                  p={2}
-                  _hover={{ bg: 'transparent' }}
-                  _active={{ bg: 'transparent' }}
-                >
-                  <LuX size={16} />
-                </Button>
-              </Dialog.CloseTrigger>
-            </Dialog.Content>
-          </Dialog.Positioner>
-        </Portal>
-      </Dialog.Root>
-    </>
   );
 }

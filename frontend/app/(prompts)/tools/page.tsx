@@ -24,13 +24,14 @@ import {
   ButtonGroup,
 } from '@chakra-ui/react';
 import { HiPencil, HiTrash } from 'react-icons/hi';
-import { LuSearch, LuWrench } from 'react-icons/lu';
+import { LuSearch, LuWrench, LuPlus } from 'react-icons/lu';
 import { FaGitAlt } from 'react-icons/fa';
 import type { ToolSummary } from '@/types/tools';
 import { ToolsService } from '@/services/tools';
 import { successNotification } from '@/lib/notifications';
 import { useConfig } from '@/stores/configStore';
 import { useSelectedRepository, useRepositoryFilterActions } from '@/stores/repositoryFilterStore';
+import { GetLatestButton } from '@/components/GetLatestButton';
 
 export default function ToolsPage() {
   const router = useRouter();
@@ -88,6 +89,10 @@ export default function ToolsPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleRefreshAfterGetLatest = async () => {
+    await loadTools();
   };
 
   const handleCreateNew = () => {
@@ -192,12 +197,18 @@ export default function ToolsPage() {
                   </Select.Positioner>
                 </Portal>
               </Select.Root>
+              <GetLatestButton
+                repoName={selectedRepository}
+                artifactType="tools"
+                onSuccess={handleRefreshAfterGetLatest}
+                disabled={availableRepos.length === 0 || !selectedRepository}
+              />
               <Button
                 variant="solid"
                 onClick={handleCreateNew}
-                disabled={!selectedRepository}
+                disabled={availableRepos.length === 0 || !selectedRepository}
               >
-                New Tool
+                <LuPlus /> New Tool
               </Button>
             </HStack>
           </HStack>

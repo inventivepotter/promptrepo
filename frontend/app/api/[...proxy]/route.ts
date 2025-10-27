@@ -33,7 +33,8 @@ const PUBLIC_ENDPOINT_PREFIXES = [
   // TODO: Make sure to only allow prompts/:id here not other endpoints
   '/api/v0/prompts/',
   '/api/v0/llm/provider/',
-  '/api/v0/tools/'
+  '/api/v0/tools/',
+  '/api/v0/tests/'
 ];
 
 function isPublicEndpoint(path: string): boolean {
