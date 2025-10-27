@@ -149,10 +149,14 @@ class ToolData(BaseModel):
 
 
 class ToolSummary(BaseModel):
-    """Tool summary for listing."""
+    """Tool summary for listing.
+    
+    Note: file_path is populated during discovery and not stored in YAML files.
+    """
     
     name: str = Field(description="Tool name")
     description: str = Field(description="Tool description")
     mock_enabled: bool = Field(description="Whether mock is enabled")
     parameter_count: int = Field(description="Number of parameters")
     required_count: int = Field(description="Number of required parameters")
+    file_path: str = Field(description="Tool file path (populated during discovery, not stored in YAML)")

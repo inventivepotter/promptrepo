@@ -45,6 +45,7 @@ class PromptData(BaseModel):
     reasoning_effort: Optional[Literal["minimal", "low", "medium", "high", "auto"]] = Field("auto", description="Reasoning effort level")
     extra_args: Optional[Dict[str, Any]] = Field(None, description="Additional provider-specific arguments")
     tags: List[str] = Field(default_factory=list, description="Tags for prompt categorization")
+    tools: List[str] = Field(default_factory=list, description="Tool file paths (e.g., file:///.promptrepo/mock_tools/tool.yaml)")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
     updated_at: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")
     
@@ -108,3 +109,4 @@ class PromptDataUpdate(BaseModel):
     reasoning_effort: Optional[Literal["minimal", "low", "medium", "high", "auto"]] = Field(None, description="Reasoning effort level")
     extra_args: Optional[Dict[str, Any]] = Field(None, description="Additional provider-specific arguments")
     tags: Optional[List[str]] = Field(None, description="Tags for prompt categorization")
+    tools: Optional[List[str]] = Field(None, description="Tool file paths (e.g., file:///.promptrepo/mock_tools/tool.yaml)")

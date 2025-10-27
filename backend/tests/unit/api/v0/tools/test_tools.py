@@ -108,7 +108,8 @@ def sample_tool_summary():
         description="A test tool",
         mock_enabled=True,
         parameter_count=1,
-        required_count=1
+        required_count=1,
+        file_path="/path/to/test_tool.yaml"
     )
 
 

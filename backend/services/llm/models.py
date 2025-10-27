@@ -24,7 +24,7 @@ class ChatCompletionRequest(BaseModel):
     frequency_penalty: Optional[Annotated[float, Field(ge=-2.0, le=2.0)]] = Field(None, description="Frequency penalty")
     presence_penalty: Optional[Annotated[float, Field(ge=-2.0, le=2.0)]] = Field(None, description="Presence penalty")
     stop: Optional[List[str]] = Field(None, description="Stop sequences")
-    tools: Optional[List[Dict[str, Any]]] = Field(None, description="Tools available for the model to call (OpenAI function format with optional mock_data)")
+    tools: Optional[List[str]] = Field(None, description="Tool file paths (file:// URIs to tool definitions)")
 
 
 class PromptTokensDetails(BaseModel):

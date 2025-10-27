@@ -169,11 +169,15 @@ class ToolService:
             user_id: ID of the user
             
         Returns:
-            List of tool summaries
+            List of tool summaries with file_path populated
         """
         # Use the new discovery method
         tool_files = self.discover_tools(repo_name, user_id)
         summaries = []
+        
+        # Get repo base path to construct file:// URIs
+        repo_base_path = self._get_repo_base_path(user_id)
+        repo_path = repo_base_path / repo_name
         
         for tool_file_path in tool_files:
             try:
@@ -184,13 +188,18 @@ class ToolService:
                 # Load the tool
                 tool = self.load_tool(tool_name, repo_name, user_id)
                 
-                # Create summary
+                # Construct file:// URI for the tool
+                # Convert relative path to file:// URI format
+                file_uri = f"file:///{tool_file_path}"
+                
+                # Create summary with file_path populated
                 summary = ToolSummary(
                     name=tool.name,
                     description=tool.description,
                     mock_enabled=tool.mock.enabled,
                     parameter_count=len(tool.parameters.properties),
-                    required_count=len(tool.parameters.required)
+                    required_count=len(tool.parameters.required),
+                    file_path=file_uri
                 )
                 summaries.append(summary)
                 

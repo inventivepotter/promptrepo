@@ -165,9 +165,13 @@ class ToolExecutionService:
                 
                 # If we have a mock response, create tool response message
                 if mock_response:
+                    # Ensure the mock response is a JSON string
+                    # According to OpenAI spec, tool message content should be a string
+                    tool_response_content = self._ensure_json_string(mock_response)
+                    
                     tool_response = ChatMessage(
                         role="tool",
-                        content=mock_response,
+                        content=tool_response_content,
                         tool_call_id=tool_call_id
                     )
                     tool_responses.append(tool_response)
@@ -254,6 +258,37 @@ class ToolExecutionService:
                     )
         
         return complete_arguments
+    
+    def _ensure_json_string(self, content: str) -> str:
+        """
+        Ensure the content is a valid JSON string.
+        
+        If the content is already a valid JSON string (object/array), return as-is.
+        If it's a primitive value or non-JSON string, wrap it in a JSON object.
+        
+        Args:
+            content: The mock response content
+            
+        Returns:
+            A valid JSON string
+        """
+        if not content:
+            return json.dumps({"result": None})
+        
+        try:
+            # Try to parse as JSON
+            parsed = json.loads(content)
+            
+            # If it's a dict or list, it's already properly formatted
+            if isinstance(parsed, (dict, list)):
+                return content
+            
+            # If it's a primitive (str, int, float, bool, None), wrap it
+            return json.dumps({"result": parsed})
+            
+        except (json.JSONDecodeError, TypeError):
+            # If it's not valid JSON, treat it as a plain string and wrap it
+            return json.dumps({"result": content})
     
     async def _get_final_answer(
         self,

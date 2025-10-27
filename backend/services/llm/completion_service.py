@@ -35,6 +35,47 @@ class ChatCompletionService:
         self.config_service = config_service
         self.tool_service = tool_service
     
+    def _load_tools_from_paths(self, tool_paths: List[str], repo_name: Optional[str], user_id: str) -> List[Dict[str, Any]]:
+        """Load tool definitions from file paths and convert to OpenAI function format."""
+        if not self.tool_service or not tool_paths:
+            return []
+        
+        tools = []
+        for tool_path in tool_paths:
+            try:
+                # Extract tool name from file path
+                # file:///.promptrepo/mock_tools/temp_tool.tool.yaml -> temp_tool
+                tool_name = tool_path.split('/')[-1].replace('.tool.yaml', '').replace('.tool.yml', '')
+                
+                # Load tool definition from tool service
+                tool_def = self.tool_service.load_tool(
+                    tool_name=tool_name,
+                    repo_name=repo_name or "default",
+                    user_id=user_id
+                )
+                
+                # Convert to OpenAI function format
+                tool_dict = {
+                    "type": "function",
+                    "function": {
+                        "name": tool_def.name,
+                        "description": tool_def.description,
+                        "parameters": tool_def.parameters.model_dump(exclude_none=True)
+                    }
+                }
+                
+                # Add mock_data if available for tool execution service
+                if tool_def.mock and tool_def.mock.enabled:
+                    tool_dict["mock_data"] = tool_def.mock.model_dump(exclude_none=True)
+                
+                tools.append(tool_dict)
+                
+            except Exception as e:
+                self.logger.warning(f"Failed to load tool from path {tool_path}: {e}")
+                continue
+        
+        return tools
+    
     def build_completion_params(
         self,
         request: ChatCompletionRequest,
@@ -70,8 +111,6 @@ class ChatCompletionService:
             completion_params["presence_penalty"] = request.presence_penalty
         if request.stop is not None:
             completion_params["stop"] = request.stop
-        if request.tools is not None and len(request.tools) > 0:
-            completion_params["tools"] = request.tools
         
         return completion_params
     
@@ -82,10 +121,25 @@ class ChatCompletionService:
         completion_id: str
     ) -> AsyncGenerator[str, None]:
         """Generate streaming chat completion responses."""
+        async for chunk in self._stream_completion_internal(request, user_id, completion_id):
+            yield chunk
+    
+    async def _stream_completion_internal(
+        self,
+        request: ChatCompletionRequest,
+        user_id: str,
+        completion_id: str
+    ) -> AsyncGenerator[str, None]:
+        """Generate streaming chat completion responses."""
         # Validate system message is present
         self._validate_system_message(request.messages)
 
         api_key, api_base_url = self._get_api_details(request.provider, request.model, user_id=user_id)
+
+        # Load tools from file paths if provided
+        loaded_tools: Optional[List[Dict[str, Any]]] = None
+        if request.tools and len(request.tools) > 0:
+            loaded_tools = self._load_tools_from_paths(request.tools, request.repo_name, user_id)
 
         try:
             # Handle Z.AI provider separately
@@ -111,7 +165,10 @@ class ChatCompletionService:
                     yield chunk
             else:
                 # Handle other providers with any-llm
+                # Add tools to completion params if available
                 completion_params = self.build_completion_params(request, api_key, api_base_url, stream=True)
+                if loaded_tools and len(loaded_tools) > 0:
+                    completion_params["tools"] = loaded_tools
                 stream_response = await acompletion(**completion_params)
                 stream_iterator = cast(AsyncIterator[ChatCompletionChunk], stream_response)
                 
@@ -241,10 +298,23 @@ class ChatCompletionService:
         user_id: str
     ) -> tuple[str, str | None, UsageStats | None, float, Optional[List[Dict[str, Any]]]]:
         """Execute non-streaming completion and return content, finish_reason, usage stats, inference time, and tool_calls."""
+        return await self._execute_non_streaming_completion_internal(request, user_id)
+    
+    async def _execute_non_streaming_completion_internal(
+        self,
+        request: ChatCompletionRequest,
+        user_id: str
+    ) -> tuple[str, str | None, UsageStats | None, float, Optional[List[Dict[str, Any]]]]:
+        """Internal method for non-streaming completion."""
         # Validate system message is present
         self._validate_system_message(request.messages)
 
         api_key, api_base_url = self._get_api_details(request.provider, request.model, user_id=user_id)
+        
+        # Load tools from file paths if provided
+        loaded_tools: Optional[List[Dict[str, Any]]] = None
+        if request.tools and len(request.tools) > 0:
+            loaded_tools = self._load_tools_from_paths(request.tools, request.repo_name, user_id)
         
         try:
             # Handle Z.AI provider separately
@@ -323,6 +393,9 @@ class ChatCompletionService:
             else:
                 # Handle other providers with any-llm
                 completion_params = self.build_completion_params(request, api_key, api_base_url, stream=False)
+                # Add tools to completion params if available
+                if loaded_tools and len(loaded_tools) > 0:
+                    completion_params["tools"] = loaded_tools
                 
                 # Track inference timing
                 start_time = time.time()

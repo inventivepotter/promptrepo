@@ -83,7 +83,7 @@ export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (
   },
   
   // Message Operations
-  sendMessage: async (content: string, options: { systemPrompt?: string; modelConfig?: Partial<ChatStore['defaultModelConfig']>; promptId?: string; repoName?: string; onStream?: (content: string) => void } = {}) => {
+  sendMessage: async (content: string, options: { systemPrompt?: string; modelConfig?: Partial<ChatStore['defaultModelConfig']>; promptId?: string; repoName?: string; onStream?: (content: string) => void; tools?: string[] } = {}) => {
     // Get initial state at the start
     const initialState = get();
     let currentSession = initialState.sessions.find(s => s.id === initialState.currentSessionId);
@@ -153,26 +153,10 @@ export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (
       // Convert messages to OpenAI format
       const messages = chatService.toOpenAIMessages(get().messages);
       
-      // Get selected tools and convert to OpenAI function format
-      const selectedToolIds = get().selectedTools;
-      const availableTools = get().availableTools;
-      const toolsForCompletion = selectedToolIds.length > 0
-        ? selectedToolIds.map(toolId => {
-            const tool = availableTools.find(t => t.id === toolId);
-            if (!tool) return null;
-            return {
-              type: 'function',
-              function: {
-                name: tool.id,
-                description: tool.description,
-                parameters: {
-                  type: 'object',
-                  properties: {},
-                  required: []
-                }
-              }
-            };
-          }).filter(Boolean)
+      // Use tools from options (passed from prompt metadata)
+      // Backend will load tool definitions from file paths
+      const toolsForCompletion = options.tools && options.tools.length > 0
+        ? options.tools
         : undefined;
       
       // Send to chat service

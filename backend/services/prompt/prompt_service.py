@@ -325,6 +325,7 @@ class PromptService(IPromptService):
                 reasoning_effort=yaml_data.get("reasoning_effort", "auto"),
                 extra_args=yaml_data.get("extra_args"),
                 tags=yaml_data.get("tags", []) if isinstance(yaml_data.get("tags"), list) else [],
+                tools=yaml_data.get("tools", []) if isinstance(yaml_data.get("tools"), list) else [],
                 created_at=created_at,
                 updated_at=updated_at
             )

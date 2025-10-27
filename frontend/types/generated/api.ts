@@ -678,11 +678,9 @@ export interface components {
             stop?: string[] | null;
             /**
              * Tools
-             * @description Tools available for the model to call (OpenAI function format with optional mock_data)
+             * @description Tool file paths (file:// URIs to tool definitions)
              */
-            tools?: {
-                [key: string]: unknown;
-            }[] | null;
+            tools?: string[] | null;
         };
         /**
          * ChatCompletionResponse
@@ -1220,7 +1218,7 @@ export interface components {
              * Stop
              * @description Stop sequences
              */
-            stop?: string[] | string | null;
+            stop?: string | string[] | null;
             /**
              * Presence Penalty
              * @description Presence penalty
@@ -1303,6 +1301,11 @@ export interface components {
              * @description Tags for prompt categorization
              */
             tags?: string[];
+            /**
+             * Tools
+             * @description Tool file paths (e.g., file:///.promptrepo/mock_tools/tool.yaml)
+             */
+            tools?: string[];
             /**
              * Created At
              * Format: date-time
@@ -1401,7 +1404,7 @@ export interface components {
              * Stop
              * @description Stop sequences
              */
-            stop?: string[] | string | null;
+            stop?: string | string[] | null;
             /**
              * Presence Penalty
              * @description Presence penalty
@@ -1483,6 +1486,11 @@ export interface components {
              * @description Tags for prompt categorization
              */
             tags?: string[] | null;
+            /**
+             * Tools
+             * @description Tool file paths (e.g., file:///.promptrepo/mock_tools/tool.yaml)
+             */
+            tools?: string[] | null;
         };
         /**
          * PromptMeta
@@ -2489,6 +2497,8 @@ export interface components {
         /**
          * ToolSummary
          * @description Tool summary for listing.
+         *
+         *     Note: file_path is populated during discovery and not stored in YAML files.
          */
         ToolSummary: {
             /**
@@ -2516,6 +2526,11 @@ export interface components {
              * @description Number of required parameters
              */
             required_count: number;
+            /**
+             * File Path
+             * @description Tool file path (populated during discovery, not stored in YAML)
+             */
+            file_path: string;
         };
         /**
          * UsageStats

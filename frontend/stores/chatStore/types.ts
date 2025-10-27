@@ -89,6 +89,7 @@ export interface ChatActions {
       repoName?: string;
       modelConfig?: Partial<ModelConfig>;
       onStream?: (chunk: string) => void;
+      tools?: string[]; // Array of tool file paths from prompt metadata
     }
   ) => Promise<void>;
   

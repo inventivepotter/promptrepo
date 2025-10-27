@@ -234,7 +234,7 @@ export class PricingService {
 
   formatCost(cost: number): string {
     if (cost === 0) return '$0.00';
-    if (cost < 0.001) return `$${cost.toExponential(2)}`;
+    if (cost < 0.01) return '$0.01';
     return `$${cost.toFixed(4)}`;
   }
 }

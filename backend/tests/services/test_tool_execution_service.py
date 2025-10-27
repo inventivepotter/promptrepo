@@ -1,6 +1,7 @@
 """
 Unit tests for ToolExecutionService with focus on default parameter handling.
 """
+import json
 import pytest
 from unittest.mock import Mock
 from services.tool.tool_execution_service import ToolExecutionService
@@ -430,3 +431,146 @@ class TestToolExecutionService:
         assert len(result) == 2
         assert result[0].tool_call_id == "call_1"
         assert result[1].tool_call_id == "call_2"
+    
+    def test_ensure_json_string_with_primitive_integer(self, tool_execution_service):
+        """Test that primitive integer values are wrapped in JSON object."""
+        result = tool_execution_service._ensure_json_string("23")
+        parsed = json.loads(result)
+        assert isinstance(parsed, dict)
+        assert "result" in parsed
+        assert parsed["result"] == 23
+    
+    def test_ensure_json_string_with_primitive_float(self, tool_execution_service):
+        """Test that primitive float values are wrapped in JSON object."""
+        result = tool_execution_service._ensure_json_string("23.5")
+        parsed = json.loads(result)
+        assert isinstance(parsed, dict)
+        assert "result" in parsed
+        assert parsed["result"] == 23.5
+    
+    def test_ensure_json_string_with_primitive_boolean(self, tool_execution_service):
+        """Test that primitive boolean values are wrapped in JSON object."""
+        result = tool_execution_service._ensure_json_string("true")
+        parsed = json.loads(result)
+        assert isinstance(parsed, dict)
+        assert "result" in parsed
+        assert parsed["result"] is True
+    
+    def test_ensure_json_string_with_primitive_string(self, tool_execution_service):
+        """Test that primitive string values are wrapped in JSON object."""
+        result = tool_execution_service._ensure_json_string('"hello world"')
+        parsed = json.loads(result)
+        assert isinstance(parsed, dict)
+        assert "result" in parsed
+        assert parsed["result"] == "hello world"
+    
+    def test_ensure_json_string_with_object(self, tool_execution_service):
+        """Test that JSON objects are returned as-is."""
+        input_json = '{"temperature": 23, "units": "celsius"}'
+        result = tool_execution_service._ensure_json_string(input_json)
+        assert result == input_json
+        parsed = json.loads(result)
+        assert isinstance(parsed, dict)
+        assert parsed["temperature"] == 23
+    
+    def test_ensure_json_string_with_array(self, tool_execution_service):
+        """Test that JSON arrays are returned as-is."""
+        input_json = '[1, 2, 3]'
+        result = tool_execution_service._ensure_json_string(input_json)
+        assert result == input_json
+        parsed = json.loads(result)
+        assert isinstance(parsed, list)
+        assert parsed == [1, 2, 3]
+    
+    def test_ensure_json_string_with_plain_text(self, tool_execution_service):
+        """Test that plain text is wrapped in JSON object."""
+        result = tool_execution_service._ensure_json_string("plain text response")
+        parsed = json.loads(result)
+        assert isinstance(parsed, dict)
+        assert "result" in parsed
+        assert parsed["result"] == "plain text response"
+    
+    def test_ensure_json_string_with_empty_string(self, tool_execution_service):
+        """Test that empty string returns null result."""
+        result = tool_execution_service._ensure_json_string("")
+        parsed = json.loads(result)
+        assert isinstance(parsed, dict)
+        assert "result" in parsed
+        assert parsed["result"] is None
+    
+    def test_ensure_json_string_with_null(self, tool_execution_service):
+        """Test that null value is wrapped properly."""
+        result = tool_execution_service._ensure_json_string("null")
+        parsed = json.loads(result)
+        assert isinstance(parsed, dict)
+        assert "result" in parsed
+        assert parsed["result"] is None
+    
+    def test_generate_tool_responses_with_primitive_mock(
+        self,
+        tool_execution_service,
+        mock_tool_service
+    ):
+        """Test tool response generation with primitive mock response."""
+        # Create a tool with primitive mock response
+        tool_def = ToolDefinition(
+            name="temp_tool",
+            description="Get temperature",
+            parameters=ParametersDefinition(
+                type="object",
+                properties={
+                    "city": ParameterSchema(
+                        type=ToolParameterType.STRING,
+                        description="City name",
+                        enum=None,
+                        default=None
+                    ),
+                    "unit": ParameterSchema(
+                        type=ToolParameterType.STRING,
+                        description="Temperature unit",
+                        enum=None,
+                        default="celsius"
+                    )
+                },
+                required=["city"]
+            ),
+            mock=MockConfig(
+                enabled=True,
+                mock_type=MockType.STATIC,
+                response=None,
+                static_response="23",  # Primitive integer as string
+                conditional_rules=None,
+                python_code=None
+            )
+        )
+        
+        mock_tool_service.load_tool.return_value = tool_def
+        mock_tool_service.get_mock_response.return_value = "23"
+        
+        tool_calls = [
+            {
+                "id": "call_temp",
+                "function": {
+                    "name": "temp_tool",
+                    "arguments": '{"city": "new york"}'
+                }
+            }
+        ]
+        
+        result = tool_execution_service._generate_tool_responses(
+            tool_calls,
+            repo_name="test_repo",
+            user_id="test_user",
+            request_id="test-primitive"
+        )
+        
+        # Should return one tool response with wrapped primitive
+        assert len(result) == 1
+        assert result[0].role == "tool"
+        assert result[0].tool_call_id == "call_temp"
+        
+        # Content should be valid JSON object
+        parsed = json.loads(result[0].content)
+        assert isinstance(parsed, dict)
+        assert "result" in parsed
+        assert parsed["result"] == 23

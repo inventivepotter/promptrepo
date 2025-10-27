@@ -118,6 +118,7 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
                 borderColor={aiMessageBorder}
                 borderWidth="1px"
                 size="sm"
+                opacity={message.tool_calls ? 0.7 : 1}
               >
                 <Card.Body p={3}>
                   {message.content ? (
@@ -125,17 +126,20 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
                   ) : message.tool_calls ? (
                     <Box>
                       <HStack gap={2} mb={2}>
-                        <Badge size="sm" variant="subtle" colorPalette="yellow">
+                        <Badge size="xs" variant="subtle" colorPalette="gray">
                           Tool Call
                         </Badge>
                       </HStack>
                       <VStack align="start" gap={2}>
                         {message.tool_calls.map((toolCall) => (
                           <Box key={toolCall.id} w="full">
-                            <Text fontSize="sm" fontWeight="medium" mb={1}>
-                              {toolCall.function.name}
+                            <Text fontSize="sm" color={mutedTextColor}>
+                              Name: {toolCall.function.name}
                             </Text>
-                            <Box p={2} bg={toolResultBg} borderRadius="md">
+                            <Text fontSize="sm" color={mutedTextColor} mt={1}>
+                              Parameters:
+                            </Text>
+                            <Box p={2} bg={toolResultBg} borderRadius="md" mt={1}>
                               <Text fontSize="xs" fontFamily="mono" color={mutedTextColor}>
                                 {toolCall.function.arguments}
                               </Text>
@@ -244,14 +248,15 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
                 size="sm"
                 ml="auto"
                 variant="outline"
+                opacity={0.7}
               >
                 <Card.Body p={3}>
                   <HStack gap={2} mb={2}>
-                    <Badge size="sm" variant="subtle" colorPalette="yellow">
+                    <Badge size="xs" variant="subtle" colorPalette="gray">
                       Tool Response
                     </Badge>
                   </HStack>
-                  <Text fontSize="sm" whiteSpace="pre-wrap">
+                  <Text fontSize="sm" whiteSpace="pre-wrap" fontFamily="mono">
                     {message.content}
                   </Text>
                   {message.tool_calls && (
@@ -273,6 +278,7 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
               bg={userMessageBg}
               borderWidth="1px"
               borderColor={userMessageBorder}
+              opacity={0.7}
             >
               <LuWrench size={16} />
             </Box>
