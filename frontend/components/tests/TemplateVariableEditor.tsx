@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Box, VStack, HStack, Input, Field, IconButton, Text } from '@chakra-ui/react';
-import { LuTrash2 } from 'react-icons/lu';
+import { Box, VStack, HStack, Input, Field, Text, Textarea } from '@chakra-ui/react';
 
 interface TemplateVariableEditorProps {
   variables: Record<string, unknown>;
@@ -19,15 +18,10 @@ export function TemplateVariableEditor({ variables, onChange }: TemplateVariable
     });
   };
 
-  const handleRemove = (key: string) => {
-    const newVariables = { ...variables };
-    delete newVariables[key];
-    onChange(newVariables);
-  };
 
   return (
-    <Box>
-      <VStack align="stretch" gap={3}>
+    <Box width="100%">
+      <VStack align="stretch" gap={4}>
         {variableEntries.length === 0 ? (
           <Box
             p={4}
@@ -41,34 +35,53 @@ export function TemplateVariableEditor({ variables, onChange }: TemplateVariable
             </Text>
           </Box>
         ) : (
-          variableEntries.map(([key, value]) => (
-            <HStack key={key} gap={2}>
-              <Field.Root flex={1}>
-                <Input
-                  value={key}
-                  disabled
-                  placeholder="Variable name"
-                  bg="gray.50"
-                />
-              </Field.Root>
-              <Field.Root flex={2}>
-                <Input
-                  value={String(value)}
-                  onChange={(e) => handleUpdate(key, e.target.value)}
-                  placeholder="Variable value"
-                />
-              </Field.Root>
-              <IconButton
-                aria-label="Remove variable"
-                size="sm"
-                variant="ghost"
-                colorPalette="red"
-                onClick={() => handleRemove(key)}
-              >
-                <LuTrash2 />
-              </IconButton>
-            </HStack>
-          ))
+          // Group variables in pairs (2 per row) using full width
+          Array.from({ length: Math.ceil(variableEntries.length / 2) }).map((_, rowIndex) => {
+            const pairIndex = rowIndex * 2;
+            const firstVar = variableEntries[pairIndex];
+            const secondVar = variableEntries[pairIndex + 1];
+            
+            return (
+              <HStack key={rowIndex} gap={4} align="start">
+                {/* First variable in pair */}
+                {firstVar && (
+                  <Field.Root flex={1}>
+                    <Field.Label fontSize="xs" fontWeight="medium">
+                      {firstVar[0]} <Field.RequiredIndicator />
+                    </Field.Label>
+                    <Textarea
+                      value={String(firstVar[1])}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleUpdate(firstVar[0], e.target.value)}
+                      placeholder={`Value for ${firstVar[0]}`}
+                      rows={2}
+                      resize="vertical"
+                      size="sm"
+                    />
+                  </Field.Root>
+                )}
+                
+                {/* Second variable in pair */}
+                {secondVar && (
+                  <Field.Root flex={1}>
+                    <Field.Label fontSize="xs" fontWeight="medium">
+                      {secondVar[0]} <Field.RequiredIndicator />
+                    </Field.Label>
+                    <Textarea
+                      value={String(secondVar[1])}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleUpdate(secondVar[0], e.target.value)}
+                      placeholder={`Value for ${secondVar[0]}`}
+                      rows={2}
+                      resize="vertical"
+                        size="sm"
+                    />
+                  </Field.Root>
+                )}
+                
+                {/* Empty placeholder if odd number of variables */}
+                {!secondVar && <Box flex={1} />}
+              </HStack>
+            );
+          })
         )}
       </VStack>
     </Box>

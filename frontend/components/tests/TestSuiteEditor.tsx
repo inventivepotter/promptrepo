@@ -8,13 +8,15 @@ import {
   Text,
   Input,
   Textarea,
-  Heading,
   Field,
   Collapsible,
-  IconButton,
+  Button,
+  Fieldset,
+  Stack,
 } from '@chakra-ui/react';
-import { FaChevronDown, FaChevronRight } from 'react-icons/fa';
-import type { TestSuiteDefinition } from '@/types/test';
+import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
+import type { TestSuiteDefinition, MetricConfig } from '@/types/test';
+import { MetricSelector } from './MetricSelector';
 
 export interface TestSuiteEditorProps {
   suite: TestSuiteDefinition;
@@ -23,6 +25,7 @@ export interface TestSuiteEditorProps {
 
 export function TestSuiteEditor({ suite, onChange }: TestSuiteEditorProps) {
   const [isOpen, setIsOpen] = useState(true);
+  const [showMetrics, setShowMetrics] = useState(true);
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange({
       ...suite,
@@ -39,78 +42,120 @@ export function TestSuiteEditor({ suite, onChange }: TestSuiteEditorProps) {
     });
   };
 
-  const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const tags = e.target.value.split(',').map(tag => tag.trim()).filter(Boolean);
+
+  const handleMetricsChange = (metrics: MetricConfig[]) => {
     onChange({
       ...suite,
-      tags,
+      metrics,
       updated_at: new Date().toISOString(),
     });
   };
 
   return (
-    <Card.Root>
-      <Collapsible.Root open={isOpen} onOpenChange={(e) => setIsOpen(e.open)}>
-        <Card.Header>
-          <HStack justify="space-between" width="100%">
-            <Heading size="md">Test Suite Information</Heading>
-            <Collapsible.Trigger asChild>
-              <IconButton
-                aria-label="Toggle suite info"
+    <VStack gap={6} align="stretch">
+      {/* Test Suite Information Section */}
+      <Card.Root>
+        <Card.Body>
+          <Fieldset.Root>
+            <HStack justify="space-between" align="center">
+              <Stack flex={1}>
+                <Fieldset.Legend>Test Suite Information</Fieldset.Legend>
+                <Fieldset.HelperText color="text.tertiary">
+                  Configure the basic information and metadata for this test suite
+                </Fieldset.HelperText>
+              </Stack>
+              <Button
                 variant="ghost"
+                _hover={{ bg: "bg.subtle" }}
                 size="sm"
+                onClick={() => setIsOpen(!isOpen)}
+                aria-label={isOpen ? "Collapse test suite information" : "Expand test suite information"}
               >
-                {isOpen ? <FaChevronDown /> : <FaChevronRight />}
-              </IconButton>
-            </Collapsible.Trigger>
-          </HStack>
-        </Card.Header>
-        <Collapsible.Content>
-          <Card.Body>
-        <VStack gap={4} align="stretch">
-          <Field.Root required>
-            <Field.Label>Suite Name <Field.RequiredIndicator /></Field.Label>
-            <Input
-              value={suite.name}
-              onChange={handleNameChange}
-              placeholder="Enter test suite name"
-            />
-          </Field.Root>
+                <HStack gap={1}>
+                  <Text fontSize="xs" fontWeight="medium">
+                    {isOpen ? "Hide" : "Show"}
+                  </Text>
+                  {isOpen ? <LuChevronUp /> : <LuChevronDown />}
+                </HStack>
+              </Button>
+            </HStack>
 
-          <Field.Root>
-            <Field.Label>Description</Field.Label>
-            <Textarea
-              value={suite.description || ''}
-              onChange={handleDescriptionChange}
-              placeholder="Describe the purpose of this test suite"
-              rows={3}
-            />
-          </Field.Root>
+            <Fieldset.Content>
+              <Collapsible.Root open={isOpen}>
+                <Collapsible.Content>
+                  <VStack gap={4} align="stretch" mt={3}>
+                    <Field.Root required>
+                      <Field.Label fontSize="xs" fontWeight="medium">
+                        Suite Name <Field.RequiredIndicator />
+                      </Field.Label>
+                      <Input
+                        value={suite.name}
+                        onChange={handleNameChange}
+                        placeholder="Enter test suite name"
+                        size="md"
+                      />
+                    </Field.Root>
 
-          <Field.Root>
-            <Field.Label>Tags</Field.Label>
-            <Input
-              value={suite.tags.join(', ')}
-              onChange={handleTagsChange}
-              placeholder="e.g., production, critical, regression"
-            />
-            <Field.HelperText>Comma-separated tags for organization</Field.HelperText>
-          </Field.Root>
+                    <Field.Root>
+                      <Field.Label fontSize="xs" fontWeight="medium">
+                        Description <Field.RequiredIndicator opacity={0.4}>(optional)</Field.RequiredIndicator>
+                      </Field.Label>
+                      <Textarea
+                        value={suite.description || ''}
+                        onChange={handleDescriptionChange}
+                        placeholder="Describe the purpose of this test suite"
+                        rows={2}
+                        resize="vertical"
+                      />
+                    </Field.Root>
+                  </VStack>
+                </Collapsible.Content>
+              </Collapsible.Root>
+            </Fieldset.Content>
+          </Fieldset.Root>
+        </Card.Body>
+      </Card.Root>
 
-          <HStack justify="space-between" pt={2} borderTopWidth="1px">
-            <VStack align="start" gap={0}>
-              <Text fontSize="xs" color="fg.subtle">Created</Text>
-              <Text fontSize="sm">{new Date(suite.created_at).toLocaleString()}</Text>
-            </VStack>
-            <VStack align="end" gap={0}>
-              <Text fontSize="xs" color="fg.subtle">Last Updated</Text>
-              <Text fontSize="sm">{new Date(suite.updated_at).toLocaleString()}</Text>
-            </VStack>
-          </HStack>
-        </VStack>
-          </Card.Body>
-        </Collapsible.Content>
-      </Collapsible.Root>
-    </Card.Root>
+      {/* Evaluation Metrics Section */}
+      <Card.Root>
+        <Card.Body>
+          <Fieldset.Root>
+            <HStack justify="space-between" align="center">
+              <Stack flex={1}>
+                <Fieldset.Legend>Evaluation Metrics</Fieldset.Legend>
+                <Fieldset.HelperText color="text.tertiary">
+                  Choose how to measure test passed/failed
+                </Fieldset.HelperText>
+              </Stack>
+              <Button
+                variant="ghost"
+                _hover={{ bg: "bg.subtle" }}
+                size="sm"
+                onClick={() => setShowMetrics(!showMetrics)}
+                aria-label={showMetrics ? "Collapse evaluation metrics" : "Expand evaluation metrics"}
+              >
+                <HStack gap={1}>
+                  <Text fontSize="xs" fontWeight="medium">
+                    {showMetrics ? "Hide" : "Show"}
+                  </Text>
+                  {showMetrics ? <LuChevronUp /> : <LuChevronDown />}
+                </HStack>
+              </Button>
+            </HStack>
+
+            <Fieldset.Content>
+              <Collapsible.Root open={showMetrics}>
+                <Collapsible.Content>
+                  <MetricSelector
+                    metrics={suite.metrics || []}
+                    onChange={handleMetricsChange}
+                  />
+                </Collapsible.Content>
+              </Collapsible.Root>
+            </Fieldset.Content>
+          </Fieldset.Root>
+        </Card.Body>
+      </Card.Root>
+    </VStack>
   );
 }

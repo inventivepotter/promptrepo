@@ -612,6 +612,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v0/tests/metrics/metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get all metrics metadata
+         * @description Retrieve metadata for all registered test metrics including field schemas, descriptions, and requirements.
+         */
+        get: operations["get_metrics_metadata_api_v0_tests_metrics_metadata_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -635,6 +655,34 @@ export interface components {
             endpoints: {
                 [key: string]: unknown;
             };
+        };
+        /**
+         * ActualEvaluationFieldsModel
+         * @description Actual evaluation fields from test execution
+         */
+        ActualEvaluationFieldsModel: {
+            /**
+             * Actual Output
+             * @description Actual output from LLM execution
+             */
+            actual_output: string;
+            /**
+             * Tools Called
+             * @description List of tools actually called during execution for agent metrics
+             */
+            tools_called?: {
+                [key: string]: unknown;
+            }[] | null;
+            /**
+             * Execution Time Ms
+             * @description Execution time in milliseconds
+             */
+            execution_time_ms?: number | null;
+            /**
+             * Error
+             * @description Error that occurred during execution
+             */
+            error?: string | null;
         };
         /**
          * AppConfig
@@ -969,6 +1017,24 @@ export interface components {
             test_names?: string[] | null;
         };
         /**
+         * ExpectedEvaluationFieldsModel
+         * @description Expected evaluation fields for test definition.
+         *
+         *     This model uses composition to store metric-specific configurations
+         *     in a type-safe manner while maintaining backward compatibility.
+         */
+        ExpectedEvaluationFieldsModel: {
+            /** @description The metric type this configuration is for */
+            metric_type?: components["schemas"]["MetricType"] | null;
+            /**
+             * Config
+             * @description Metric-specific configuration fields
+             */
+            config?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
          * FetchModelsRequest
          * @description Request model for fetching models from a provider
          */
@@ -1070,16 +1136,19 @@ export interface components {
             type: components["schemas"]["MetricType"];
             /**
              * Threshold
-             * @description Minimum passing score
-             * @default 0.7
+             * @description Minimum passing score (optional for deterministic metrics)
              */
-            threshold: number;
+            threshold?: number | null;
+            /**
+             * Provider
+             * @description LLM provider for non-deterministic metrics (e.g., openai, anthropic)
+             */
+            provider?: string | null;
             /**
              * Model
-             * @description LLM model for metric evaluation
-             * @default gpt-4
+             * @description LLM model for non-deterministic metrics (e.g., gpt-4, claude-3-opus)
              */
-            model: string;
+            model?: string | null;
             /**
              * Include Reason
              * @description Include reasoning in results
@@ -1088,10 +1157,75 @@ export interface components {
             include_reason: boolean;
             /**
              * Strict Mode
-             * @description Enable strict evaluation mode
-             * @default false
+             * @description Enable strict evaluation mode (optional)
              */
-            strict_mode: boolean;
+            strict_mode?: boolean | null;
+        };
+        /**
+         * MetricMetadataModel
+         * @description Metadata for a single metric type.
+         *
+         *     This model describes all information needed by the frontend to:
+         *     - Display metric information to users
+         *     - Dynamically generate configuration forms
+         *     - Validate user input
+         * @example {
+         *       "category": "deterministic",
+         *       "description": "Compares the actual output exactly against the expected output",
+         *       "field_schema": {
+         *         "properties": {
+         *           "expected_output": {
+         *             "description": "Expected output for exact comparison",
+         *             "type": "string"
+         *           }
+         *         },
+         *         "required": [
+         *           "expected_output"
+         *         ],
+         *         "type": "object"
+         *       },
+         *       "required_actual_fields": [
+         *         "actual_output"
+         *       ],
+         *       "required_expected_fields": [
+         *         "expected_output"
+         *       ],
+         *       "type": "exact_match"
+         *     }
+         */
+        MetricMetadataModel: {
+            /**
+             * Type
+             * @description Metric type identifier (e.g., 'exact_match', 'professionalism')
+             */
+            type: string;
+            /**
+             * Category
+             * @description Metric category: 'deterministic' or 'non_deterministic'
+             */
+            category: string;
+            /**
+             * Description
+             * @description Human-readable description of what this metric evaluates
+             */
+            description: string;
+            /**
+             * Required Expected Fields
+             * @description List of field names the user must provide in test definition
+             */
+            required_expected_fields: string[];
+            /**
+             * Required Actual Fields
+             * @description List of field names that must be present from test execution
+             */
+            required_actual_fields: string[];
+            /**
+             * Field Schema
+             * @description JSON schema for expected fields configuration (for dynamic form generation)
+             */
+            field_schema: {
+                [key: string]: unknown;
+            };
         };
         /**
          * MetricResult
@@ -1124,10 +1258,12 @@ export interface components {
         };
         /**
          * MetricType
-         * @description Predefined DeepEval metrics supported in UI
+         * @description Predefined DeepEval metrics supported in UI.
+         *
+         *     This enum delegates to MetricRegistry for metadata, following DRY principle.
          * @enum {string}
          */
-        MetricType: "answer_relevancy" | "faithfulness" | "contextual_relevancy" | "contextual_precision" | "contextual_recall" | "hallucination" | "bias" | "toxicity";
+        MetricType: "exact_match" | "tools_called" | "json_schema_verification" | "keyword_pattern_presence" | "output_length" | "fuzzy_match" | "semantic_similarity" | "answer_relevancy" | "faithfulness" | "contextual_relevancy" | "contextual_precision" | "contextual_recall" | "hallucination" | "bias" | "toxicity" | "summarization" | "professionalism" | "conciseness";
         /**
          * MockConfig
          * @description Mock configuration for tool with support for multiple mock types.
@@ -2109,6 +2245,49 @@ export interface components {
             meta?: components["schemas"]["ResponseMeta"];
         };
         /**
+         * StandardResponse[Dict[str, MetricMetadataModel]]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_Dict_str__MetricMetadataModel__: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /**
+             * Data
+             * @description Response payload
+             */
+            data?: {
+                [key: string]: components["schemas"]["MetricMetadataModel"];
+            } | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
          * StandardResponse[List[PromptMeta]]
          * @example {
          *       "data": {
@@ -2929,6 +3108,11 @@ export interface components {
              */
             tags?: string[];
             /**
+             * Metrics
+             * @description DeepEval metrics to evaluate for all tests in suite
+             */
+            metrics?: components["schemas"]["MetricConfig"][];
+            /**
              * Created At
              * Format: date-time
              */
@@ -2965,6 +3149,11 @@ export interface components {
              * @description Tags for organization
              */
             tags?: string[];
+            /**
+             * Metrics
+             * @description DeepEval metrics to evaluate for all tests in suite
+             */
+            metrics?: components["schemas"]["MetricConfig"][];
             /**
              * Created At
              * Format: date-time
@@ -3126,21 +3315,8 @@ export interface components {
             template_variables?: {
                 [key: string]: unknown;
             };
-            /**
-             * Expected Output
-             * @description Expected output for comparison
-             */
-            expected_output?: string | null;
-            /**
-             * Retrieval Context
-             * @description Context for RAG evaluation metrics
-             */
-            retrieval_context?: string[] | null;
-            /**
-             * Metrics
-             * @description DeepEval metrics to evaluate
-             */
-            metrics: components["schemas"]["MetricConfig"][];
+            /** @description Expected evaluation fields for different metric types */
+            evaluation_fields?: components["schemas"]["ExpectedEvaluationFieldsModel"];
             /**
              * Enabled
              * @description Whether test is enabled
@@ -3176,21 +3352,8 @@ export interface components {
             template_variables?: {
                 [key: string]: unknown;
             };
-            /**
-             * Expected Output
-             * @description Expected output for comparison
-             */
-            expected_output?: string | null;
-            /**
-             * Retrieval Context
-             * @description Context for RAG evaluation metrics
-             */
-            retrieval_context?: string[] | null;
-            /**
-             * Metrics
-             * @description DeepEval metrics to evaluate
-             */
-            metrics: components["schemas"]["MetricConfig"][];
+            /** @description Expected evaluation fields for different metric types */
+            evaluation_fields?: components["schemas"]["ExpectedEvaluationFieldsModel"];
             /**
              * Enabled
              * @description Whether test is enabled
@@ -3203,23 +3366,27 @@ export interface components {
          * @description Execution result for a single unit test
          */
         UnitTestExecutionResult: {
-            /** Test Name */
+            /**
+             * Test Name
+             * @description Name of the test
+             */
             test_name: string;
-            /** Prompt Reference */
+            /**
+             * Prompt Reference
+             * @description Reference to prompt file path
+             */
             prompt_reference: string;
-            /** Template Variables */
+            /**
+             * Template Variables
+             * @description Template variables used in execution
+             */
             template_variables: {
                 [key: string]: unknown;
             };
-            /**
-             * Actual Output
-             * @description Output from prompt execution
-             */
-            actual_output: string;
-            /** Expected Output */
-            expected_output?: string | null;
-            /** Retrieval Context */
-            retrieval_context?: string[] | null;
+            /** @description Actual evaluation fields from execution */
+            actual_evaluation_fields: components["schemas"]["ActualEvaluationFieldsModel"];
+            /** @description Expected evaluation fields from test definition */
+            expected_evaluation_fields: components["schemas"]["ExpectedEvaluationFieldsModel"];
             /**
              * Metric Results
              * @description Results from all metrics
@@ -3231,20 +3398,10 @@ export interface components {
              */
             overall_passed: boolean;
             /**
-             * Execution Time Ms
-             * @description Execution duration in milliseconds
-             */
-            execution_time_ms: number;
-            /**
              * Executed At
              * Format: date-time
              */
             executed_at?: string;
-            /**
-             * Error
-             * @description Error if test failed to execute
-             */
-            error?: string | null;
         };
         /**
          * UsageStats
@@ -5473,6 +5630,43 @@ export interface operations {
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
                      *       "detail": "Failed to retrieve latest execution"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_metrics_metadata_api_v0_tests_metrics_metadata_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_Dict_str__MetricMetadataModel__"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to retrieve metrics metadata"
                      *     }
                      */
                     "application/json": unknown;

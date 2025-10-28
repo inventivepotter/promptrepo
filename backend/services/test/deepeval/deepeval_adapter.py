@@ -10,7 +10,7 @@ Wraps DeepEval library interactions to provide a clean interface for:
 import logging
 from typing import List, Optional, Any, Type, Dict
 
-from .models import MetricConfig, MetricResult, MetricType
+from ..models import MetricConfig, MetricResult, MetricType
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +38,16 @@ class DeepEvalAdapter:
                 ContextualRecallMetric,
                 HallucinationMetric,
                 BiasMetric,
-                ToxicityMetric
+                ToxicityMetric,
+                SummarizationMetric
             )
             from deepeval.test_case import LLMTestCase
+            from .custom_metrics import (
+                ProfessionalismMetric,
+                ConcisenessMetric,
+                FuzzyMatchMetric,
+                SemanticSimilarityMetric
+            )
             
             self.metric_mapping: Dict[MetricType, Type[Any]] = {
                 MetricType.ANSWER_RELEVANCY: AnswerRelevancyMetric,
@@ -51,6 +58,11 @@ class DeepEvalAdapter:
                 MetricType.HALLUCINATION: HallucinationMetric,
                 MetricType.BIAS: BiasMetric,
                 MetricType.TOXICITY: ToxicityMetric,
+                MetricType.SUMMARIZATION: SummarizationMetric,
+                MetricType.PROFESSIONALISM: ProfessionalismMetric,
+                MetricType.CONCISENESS: ConcisenessMetric,
+                MetricType.FUZZY_MATCH: FuzzyMatchMetric,
+                MetricType.SEMANTIC_SIMILARITY: SemanticSimilarityMetric,
             }
             
             self.LLMTestCase: Optional[Type[Any]] = LLMTestCase

@@ -4,7 +4,8 @@ import type {
   TestSuiteData,
   TestSuiteSummary,
   TestSuiteExecutionResult,
-  UnitTestExecutionResult
+  UnitTestExecutionResult,
+  MetricsMetadataResponse
 } from '@/types/test';
 
 /**
@@ -12,6 +13,14 @@ import type {
  * All methods return OpenAPI-formatted responses
  */
 export default class TestApi {
+  /**
+   * Get metrics metadata
+   * @returns OpenAPI response with metrics metadata
+   */
+  static async getMetricsMetadata(): Promise<OpenApiResponse<MetricsMetadataResponse>> {
+    return httpClient.get<MetricsMetadataResponse>('/api/v0/tests/metrics/metadata');
+  }
+
   /**
    * List all test suites in a repository
    * @param repoName - Repository name

@@ -11,11 +11,13 @@ import {
   Text,
   Button,
   IconButton,
-  Heading,
   Collapsible,
   Card,
+  Fieldset,
+  Stack,
 } from '@chakra-ui/react';
-import { FaTrash, FaPlus, FaChevronDown, FaChevronRight } from 'react-icons/fa';
+import { FaTrash, FaPlus } from 'react-icons/fa';
+import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
 import { LuArrowLeft } from 'react-icons/lu';
 import { useTestStore } from '@/stores/testStore/testStore';
 import { useSelectedRepository } from '@/stores/repositoryFilterStore';
@@ -193,7 +195,7 @@ export default function TestSuiteDetailPage() {
               <Box p={6}>
                 <HStack gap={6} align="start" minH="600px">
                   {/* Left Section - Test Suite Info & Tests List */}
-                  <Box width="50%">
+                  <Box width="40%">
                     <VStack gap={6} align="stretch">
                       {/* Test Suite Editor */}
                       <TestSuiteEditor
@@ -205,13 +207,17 @@ export default function TestSuiteDetailPage() {
 
                       {/* Unit Tests List */}
                       <Card.Root>
-                        <Collapsible.Root open={isTestsListOpen} onOpenChange={(e) => setIsTestsListOpen(e.open)}>
-                          <Card.Header>
-                            <HStack justify="space-between" width="100%">
-                              <Heading size="md">Tests</Heading>
+                        <Card.Body>
+                          <Fieldset.Root>
+                            <HStack justify="space-between" align="center">
+                              <Stack flex={1}>
+                                <Fieldset.Legend>Tests</Fieldset.Legend>
+                                <Fieldset.HelperText color="text.tertiary">
+                                  Add and manage unit tests for this test suite
+                                </Fieldset.HelperText>
+                              </Stack>
                               <HStack gap={2}>
                                 <Button
-                                  colorScheme="blue"
                                   size="sm"
                                   onClick={() => {
                                     setEditingTest(null);
@@ -220,24 +226,31 @@ export default function TestSuiteDetailPage() {
                                 >
                                   <FaPlus /> Add Test
                                 </Button>
-                                <Collapsible.Trigger asChild>
-                                  <IconButton
-                                    aria-label="Toggle tests list"
-                                    variant="ghost"
-                                    size="sm"
-                                  >
-                                    {isTestsListOpen ? <FaChevronDown /> : <FaChevronRight />}
-                                  </IconButton>
-                                </Collapsible.Trigger>
+                                <Button
+                                  variant="ghost"
+                                  _hover={{ bg: "bg.subtle" }}
+                                  size="sm"
+                                  onClick={() => setIsTestsListOpen(!isTestsListOpen)}
+                                  aria-label={isTestsListOpen ? "Collapse tests list" : "Expand tests list"}
+                                >
+                                  <HStack gap={1}>
+                                    <Text fontSize="xs" fontWeight="medium">
+                                      {isTestsListOpen ? "Hide" : "Show"}
+                                    </Text>
+                                    {isTestsListOpen ? <LuChevronUp /> : <LuChevronDown />}
+                                  </HStack>
+                                </Button>
                               </HStack>
                             </HStack>
-                          </Card.Header>
-                          <Collapsible.Content>
-                            <Card.Body>
+
+                            <Fieldset.Content>
+                              <Collapsible.Root open={isTestsListOpen}>
+                                <Collapsible.Content>
+                                  <Box mt={3}>
                               <UnitTestList
-                                tests={currentSuite.test_suite.tests}
+                                tests={currentSuite.test_suite.tests || []}
                                 onEdit={(testName) => {
-                                  const test = currentSuite.test_suite.tests.find(t => t.name === testName);
+                                  const test = currentSuite.test_suite.tests?.find(t => t.name === testName);
                                   if (test) {
                                     setEditingTest(test);
                                     setIsEditorOpen(true);
@@ -245,7 +258,7 @@ export default function TestSuiteDetailPage() {
                                 }}
                                 onDelete={(testName) => {
                                   if (confirm(`Delete test "${testName}"?`)) {
-                                    const updatedTests = currentSuite.test_suite.tests.filter(t => t.name !== testName);
+                                    const updatedTests = currentSuite.test_suite.tests?.filter(t => t.name !== testName) || [];
                                     setCurrentSuite({
                                       test_suite: {
                                         ...currentSuite.test_suite,
@@ -260,7 +273,7 @@ export default function TestSuiteDetailPage() {
                                   }
                                 }}
                                 onToggleEnabled={(testName, enabled) => {
-                                  const updatedTests = currentSuite.test_suite.tests.map(t =>
+                                  const updatedTests = currentSuite.test_suite.tests?.map(t =>
                                     t.name === testName ? { ...t, enabled } : t
                                   );
                                   setCurrentSuite({
@@ -271,21 +284,24 @@ export default function TestSuiteDetailPage() {
                                   });
                                 }}
                               />
-                            </Card.Body>
-                          </Collapsible.Content>
-                        </Collapsible.Root>
+                                  </Box>
+                                </Collapsible.Content>
+                              </Collapsible.Root>
+                            </Fieldset.Content>
+                          </Fieldset.Root>
+                        </Card.Body>
                       </Card.Root>
                     </VStack>
                   </Box>
 
                   {/* Right Section - Test Executor & Results */}
-                  <Box width="50%">
+                  <Box width="60%">
                     <VStack gap={6} align="stretch">
                       {/* Test Executor */}
                       <TestExecutor
                         repoName={repoName || ''}
                         suiteName={suiteName}
-                        tests={currentSuite.test_suite.tests}
+                        tests={currentSuite.test_suite.tests || []}
                         onExecute={executeTestSuite}
                         isExecuting={isLoading}
                       />
@@ -312,18 +328,13 @@ export default function TestSuiteDetailPage() {
         onOpenChange={setIsEditorOpen}
         test={editingTest}
         repoName={repoName || ''}
+        suiteMetrics={currentSuite.test_suite.metrics || []}
         onSave={(test) => {
-          const isNew = !currentSuite.test_suite.tests.find(t => t.name === editingTest?.name);
-          // Set test_suite_name to current suite name
-          const testWithSuite = {
-            ...test,
-            test_suite_name: currentSuite.test_suite.name
-          };
-          
+          const isNew = !currentSuite.test_suite.tests?.find(t => t.name === editingTest?.name);
           const updatedTests = isNew
-            ? [...currentSuite.test_suite.tests, testWithSuite]
-            : currentSuite.test_suite.tests.map(t =>
-                t.name === editingTest?.name ? testWithSuite : t
+            ? [...(currentSuite.test_suite.tests || []), test]
+            : currentSuite.test_suite.tests?.map(t =>
+                t.name === editingTest?.name ? test : t
               );
           
           setCurrentSuite({

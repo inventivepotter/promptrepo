@@ -20,7 +20,7 @@ from .models import (
 from .test_interface import ITestService
 from .test_service import TestService
 from .test_execution_service import TestExecutionService
-from .deepeval_adapter import DeepEvalAdapter
+from .deepeval.deepeval_adapter import DeepEvalAdapter
 
 __all__ = [
     "MetricType",

@@ -33,7 +33,7 @@ from services.tool import ToolService
 from services.tool.tool_execution_service import ToolExecutionService
 from services.test.test_service import TestService
 from services.test.test_execution_service import TestExecutionService
-from services.test.deepeval_adapter import DeepEvalAdapter
+from services.test.deepeval.deepeval_adapter import DeepEvalAdapter
 
 
 # ==============================================================================
@@ -403,7 +403,8 @@ DeepEvalAdapterDep = Annotated[DeepEvalAdapter, Depends(get_deepeval_adapter)]
 def get_test_execution_service(
     test_service: TestServiceDep,
     prompt_service: PromptServiceDep,
-    deepeval_adapter: DeepEvalAdapterDep
+    deepeval_adapter: DeepEvalAdapterDep,
+    chat_completion_service: ChatCompletionServiceDep
 ) -> TestExecutionService:
     """
     Test execution service dependency.
@@ -413,7 +414,8 @@ def get_test_execution_service(
     return TestExecutionService(
         test_service=test_service,
         prompt_service=prompt_service,
-        deepeval_adapter=deepeval_adapter
+        deepeval_adapter=deepeval_adapter,
+        chat_completion_service=chat_completion_service
     )
 
 
