@@ -60,8 +60,8 @@ export interface PromptActions {
   // CRUD Operations
   fetchPrompts: (filters?: PromptFilters, page?: number, pageSize?: number) => Promise<void>;
   fetchPromptById: (repoName: string, filePath: string) => Promise<void>;
-  createPrompt: (promptMeta: PromptMeta) => Promise<PromptMeta>;
-  updatePrompt: (repoName: string, filePath: string, updates: PromptDataUpdate) => Promise<PromptMeta>;
+  savePrompt: (repoName: string, filePath: string, promptData: PromptDataUpdate) => Promise<PromptMeta>;
+  saveCurrentPrompt: () => Promise<PromptMeta>;
   deletePrompt: (repoName: string, filePath: string) => Promise<void>;
   
   initializeStore: () => Promise<void>;

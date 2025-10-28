@@ -23,8 +23,8 @@ class PromptData(BaseModel):
     failover_model: Optional[str] = Field(None, description="Backup model if primary fails")
     prompt: str = Field(default="", description="Combined prompt content")
     tool_choice: Optional[Union[str, Dict[str, Any]]] = Field(None, description="Tool choice configuration")
-    temperature: float = Field(default=0.0, ge=0.0, le=2.0, description="Sampling temperature")
-    top_p: Optional[float] = Field(None, ge=0.0, le=1.0, description="Top-p sampling parameter")
+    temperature: float = Field(..., ge=0.0, le=2.0, description="Sampling temperature")
+    top_p: float = Field(..., ge=0.0, le=1.0, description="Top-p sampling parameter")
     max_tokens: Optional[int] = Field(None, gt=0, description="Maximum tokens to generate")
     response_format: Optional[Dict[str, Any]] = Field(None, description="Response format configuration")
     stream: Optional[bool] = Field(None, description="Whether to stream the response")
@@ -45,6 +45,7 @@ class PromptData(BaseModel):
     reasoning_effort: Optional[Literal["minimal", "low", "medium", "high", "auto"]] = Field("auto", description="Reasoning effort level")
     extra_args: Optional[Dict[str, Any]] = Field(None, description="Additional provider-specific arguments")
     tags: List[str] = Field(default_factory=list, description="Tags for prompt categorization")
+    tools: List[str] = Field(default_factory=list, description="Tool file paths (e.g., file:///.promptrepo/mock_tools/tool.yaml)")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
     updated_at: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")
     
@@ -108,3 +109,4 @@ class PromptDataUpdate(BaseModel):
     reasoning_effort: Optional[Literal["minimal", "low", "medium", "high", "auto"]] = Field(None, description="Reasoning effort level")
     extra_args: Optional[Dict[str, Any]] = Field(None, description="Additional provider-specific arguments")
     tags: Optional[List[str]] = Field(None, description="Tags for prompt categorization")
+    tools: Optional[List[str]] = Field(None, description="Tool file paths (e.g., file:///.promptrepo/mock_tools/tool.yaml)")

@@ -56,7 +56,7 @@ export default function LLMConfigManager({
   const isLoading = useIsLoadingConfig();
   
   const llmConfigs = config.llm_configs || [];
-  const borderColor = "border.elevated";
+  const borderColor = "bg.muted";
   // Find the current provider to check if it requires custom API base
   const currentProvider = availableProviders.find(p => p.id === llmProvider);
   const requiresApiBase = currentProvider?.custom_api_base || false;
@@ -156,7 +156,7 @@ export default function LLMConfigManager({
           <HStack justify="space-between" align="center">
             <Stack flex={1}>
               <Fieldset.Legend>LLM Provider Configuration</Fieldset.Legend>
-              <Fieldset.HelperText>
+              <Fieldset.HelperText color="text.tertiary">
                 Setup your AI provider and API key first, then select from available models.
               </Fieldset.HelperText>
             </Stack>
@@ -272,19 +272,21 @@ export default function LLMConfigManager({
 
             {/* Step 1.5: API Base URL, Model, and other fields */}
             <Box width="100%">
-              <HStack gap={4} width="100%" align="end">
-                <Box flex={2.4}>
-                  <Field.Root required={requiresApiBase}>
-                    <Field.Label>API Base URL {requiresApiBase && <Field.RequiredIndicator />}</Field.Label>
-                    <Input
-                    placeholder="Enter API base URL (e.g., http://localhost:1234/v1)"
-                    value={apiBaseUrl}
-                    onChange={(e) => setApiBaseUrl(e.target.value)}
-                    disabled={disabled || !llmProvider || !requiresApiBase}
-                    width="100%"
-                  />
-                  </Field.Root>
-                </Box>
+              <HStack gap={4} width="100%" align="start">
+                {requiresApiBase && (
+                  <Box flex={2.4}>
+                    <Field.Root required>
+                      <Field.Label>API Base URL <Field.RequiredIndicator /></Field.Label>
+                      <Input
+                        placeholder="Enter API base URL (e.g., http://localhost:1234/v1)"
+                        value={apiBaseUrl}
+                        onChange={(e) => setApiBaseUrl(e.target.value)}
+                        disabled={disabled || !llmProvider}
+                        width="100%"
+                      />
+                    </Field.Root>
+                  </Box>
+                )}
                 <Box flex={2.4}>
                   <Field.Root required>
                     <Field.Label>Model <Field.RequiredIndicator /></Field.Label>
@@ -367,10 +369,10 @@ export default function LLMConfigManager({
                     width="100%"
                     bg="bg.panel"
                     borderWidth="1px"
-                    borderColor="border.subtle"
+                    borderColor="bg.muted"
                     transition="all 0.2s"
                     _hover={{
-                      borderColor: isOrgScope ? "border.subtle" : "border.emphasized",
+                      borderColor: "bg.muted",
                       shadow: "sm"
                     }}
                   >

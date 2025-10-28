@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Box,
   Container,
@@ -8,32 +9,52 @@ import {
   VStack,
   Text,
   Button,
+  Select,
+  Portal,
+  createListCollection,
 } from '@chakra-ui/react';
 import { LuPlus } from 'react-icons/lu';
-import { CreatePromptModal } from './CreatePromptModal';
+import { useSelectedRepository, useRepositoryFilterActions } from '@/stores/repositoryFilterStore';
+import { useUniqueRepositories, usePromptActions } from '@/stores/promptStore';
+import { GetLatestButton } from './GetLatestButton';
 
-interface PromptsHeaderProps {
-  onCreateNew?: () => void;
-}
-
-export function PromptsHeader({ onCreateNew }: PromptsHeaderProps) {
+export function PromptsHeader() {
+  const router = useRouter();
   const headerBg = "bg.subtle";
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Use shared repository filter store
+  const selectedRepository = useSelectedRepository();
+  const { setSelectedRepository } = useRepositoryFilterActions();
+  
+  // Get available repositories from prompt store
+  const availableRepos = useUniqueRepositories();
+  
+  // Get discoverAllPromptsFromRepos to refresh after get latest
+  const { discoverAllPromptsFromRepos } = usePromptActions();
 
-  const handleCreateClick = () => {
-    if (onCreateNew) {
-      onCreateNew();
-    } else {
-      setIsModalOpen(true);
+  // Create collection for Select component - without "All Repositories" option
+  const repoCollection = useMemo(
+    () =>
+      createListCollection({
+        items: availableRepos.map((repo) => ({
+          label: repo,
+          value: repo,
+        })),
+      }),
+    [availableRepos]
+  );
+
+  const handleCreateNew = () => {
+    if (selectedRepository) {
+      router.push(`/editor?mode=new&repo_name=${encodeURIComponent(selectedRepository)}`);
     }
   };
 
   return (
-    <>
-      <Box
+    <Box
         bg={headerBg}
         borderBottom="1px solid"
-        borderColor="border.muted"
+        borderColor="bg.muted"
         py={4}
         position="sticky"
         top={0}
@@ -55,16 +76,60 @@ export function PromptsHeader({ onCreateNew }: PromptsHeaderProps) {
               </Text>
             </VStack>
             
-            <HStack gap={3}>
-              <Button variant="solid" onClick={handleCreateClick}>
+            <HStack gap={3} alignItems="flex-end">
+              <Select.Root
+                collection={repoCollection}
+                size="sm"
+                width="240px"
+                value={selectedRepository ? [selectedRepository] : []}
+                onValueChange={(e) => setSelectedRepository(e.value[0] || '')}
+                disabled={availableRepos.length === 0}
+              >
+                <Select.Label fontSize="xs">Repository</Select.Label>
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger>
+                    <Select.ValueText
+                      placeholder={
+                        availableRepos.length === 0
+                          ? "No repositories configured"
+                          : "Select Repository"
+                      }
+                    />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Portal>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {repoCollection.items.map((repo) => (
+                        <Select.Item item={repo} key={repo.value}>
+                          {repo.label}
+                          <Select.ItemIndicator />
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Portal>
+              </Select.Root>
+              <GetLatestButton
+                repoName={selectedRepository}
+                artifactType="prompts"
+                onSuccess={discoverAllPromptsFromRepos}
+                disabled={availableRepos.length === 0 || !selectedRepository}
+              />
+              <Button
+                variant="solid"
+                onClick={handleCreateNew}
+                disabled={availableRepos.length === 0 || !selectedRepository}
+              >
                 <LuPlus /> New Prompt
               </Button>
             </HStack>
           </HStack>
         </Container>
       </Box>
-      
-      <CreatePromptModal open={isModalOpen} onOpenChange={setIsModalOpen} />
-    </>
   );
 }

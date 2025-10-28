@@ -12,7 +12,7 @@ interface MarkdownRendererProps {
 export function MarkdownRenderer({ content }: MarkdownRendererProps) {
   const codeBg = useColorModeValue('gray.100', 'gray.700');
   const codeColor = useColorModeValue('gray.800', 'gray.100');
-  const blockquoteBorder = useColorModeValue('gray.300', 'gray.600');
+  const blockquoteBorder = "bg.muted";
   const blockquoteBg = useColorModeValue('gray.50', 'gray.800');
 
   return (

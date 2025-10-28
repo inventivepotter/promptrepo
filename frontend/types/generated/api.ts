@@ -318,10 +318,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Fetch latest prompt from base branch
-         * @description Fetch the latest version of a prompt from the configured base branch, discarding any local changes. This will reset the prompt to the latest version from the remote repository.
+         * Fetch latest repository content from base branch
+         * @description Fetch the latest version of repository content from the configured base branch, discarding any local changes. This will reset the repository to the latest version from the remote repository.
          */
-        post: operations["get_latest_prompt_api_v0_repos_get_latest_post"];
+        post: operations["get_latest_repo_content_api_v0_repos_get_latest_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -360,16 +360,12 @@ export interface paths {
          * @description Get a specific prompt by repository name and file path. Checks user permissions based on hosting type.
          */
         get: operations["get_prompt_api_v0_prompts__get"];
+        put?: never;
         /**
-         * Update prompt
-         * @description Update an existing prompt. All fields in the update are optional.
+         * Save prompt
+         * @description Save a prompt (create or update). If the file doesn't exist, creates a new prompt. If it exists, updates it.
          */
-        put: operations["update_prompt_api_v0_prompts__put"];
-        /**
-         * Create prompt
-         * @description Create a new prompt. The prompt will be saved to the specified repository and file path.
-         */
-        post: operations["create_prompt_api_v0_prompts__post"];
+        post: operations["save_prompt_api_v0_prompts__post"];
         /**
          * Delete prompt
          * @description Delete a prompt. Removes the prompt file from the repository.
@@ -400,6 +396,242 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v0/tools/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List all tools
+         * @description Retrieve a list of all tools in a repository.
+         */
+        get: operations["list_tools_api_v0_tools__get"];
+        put?: never;
+        /**
+         * Create or update tool
+         * @description Create a new tool or update an existing tool definition.
+         */
+        post: operations["create_tool_api_v0_tools__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v0/tools/{tool_name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get tool definition
+         * @description Retrieve a specific tool definition by name.
+         */
+        get: operations["get_tool_api_v0_tools__tool_name__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete tool
+         * @description Delete a tool definition from the repository.
+         */
+        delete: operations["delete_tool_api_v0_tools__tool_name__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v0/tools/{tool_name}/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate tool definition
+         * @description Validate a tool definition for correctness.
+         */
+        post: operations["validate_tool_api_v0_tools__tool_name__validate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v0/tools/{tool_name}/mock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Execute mock response
+         * @description Execute mock response for a tool with given parameters.
+         */
+        post: operations["execute_mock_api_v0_tools__tool_name__mock_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v0/tests/suites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List test suites
+         * @description Get list of all test suites in a repository with summary information.
+         */
+        get: operations["list_test_suites_api_v0_tests_suites_get"];
+        put?: never;
+        /**
+         * Create or update test suite
+         * @description Create a new test suite or update an existing one. The suite name is taken from the request body.
+         */
+        post: operations["save_test_suite_api_v0_tests_suites_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v0/tests/suites/{suite_name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get test suite
+         * @description Get detailed information about a specific test suite including all test definitions.
+         */
+        get: operations["get_test_suite_api_v0_tests_suites__suite_name__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete test suite
+         * @description Delete a test suite and all its execution history.
+         */
+        delete: operations["delete_test_suite_api_v0_tests_suites__suite_name__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v0/tests/suites/{suite_name}/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Execute test suite
+         * @description Execute all tests in a suite or specific tests if test_names are provided in request body.
+         */
+        post: operations["execute_test_suite_api_v0_tests_suites__suite_name__execute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v0/tests/suites/{suite_name}/tests/{test_name}/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Execute single test
+         * @description Execute a specific test from a test suite.
+         */
+        post: operations["execute_single_test_api_v0_tests_suites__suite_name__tests__test_name__execute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v0/tests/suites/{suite_name}/executions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get execution history
+         * @description Get execution history for a test suite, ordered by execution time (newest first).
+         */
+        get: operations["get_execution_history_api_v0_tests_suites__suite_name__executions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v0/tests/suites/{suite_name}/executions/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get latest execution
+         * @description Get the most recent execution result for a test suite.
+         */
+        get: operations["get_latest_execution_api_v0_tests_suites__suite_name__executions_latest_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v0/tests/metrics/metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get all metrics metadata
+         * @description Retrieve metadata for all registered test metrics including field schemas, descriptions, and requirements.
+         */
+        get: operations["get_metrics_metadata_api_v0_tests_metrics_metadata_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -423,6 +655,34 @@ export interface components {
             endpoints: {
                 [key: string]: unknown;
             };
+        };
+        /**
+         * ActualEvaluationFieldsModel
+         * @description Actual evaluation fields from test execution
+         */
+        ActualEvaluationFieldsModel: {
+            /**
+             * Actual Output
+             * @description Actual output from LLM execution
+             */
+            actual_output: string;
+            /**
+             * Tools Called
+             * @description List of tools actually called during execution for agent metrics
+             */
+            tools_called?: {
+                [key: string]: unknown;
+            }[] | null;
+            /**
+             * Execution Time Ms
+             * @description Execution time in milliseconds
+             */
+            execution_time_ms?: number | null;
+            /**
+             * Error
+             * @description Error that occurred during execution
+             */
+            error?: string | null;
         };
         /**
          * AppConfig
@@ -548,9 +808,14 @@ export interface components {
             model: string;
             /**
              * Prompt Id
-             * @description Optional prompt ID for context
+             * @description Optional prompt ID for context (format: repo_name:file_path)
              */
             prompt_id?: string | null;
+            /**
+             * Repo Name
+             * @description Repository name for loading tool definitions (fallback if prompt_id not provided)
+             */
+            repo_name?: string | null;
             /**
              * Stream
              * @description Whether to stream the response
@@ -587,6 +852,11 @@ export interface components {
              * @description Stop sequences
              */
             stop?: string[] | null;
+            /**
+             * Tools
+             * @description Tool file paths (file:// URIs to tool definitions)
+             */
+            tools?: string[] | null;
         };
         /**
          * ChatCompletionResponse
@@ -609,6 +879,11 @@ export interface components {
             usage?: components["schemas"]["UsageStats"] | null;
             /** Inference Time Ms */
             inference_time_ms?: number | null;
+            /**
+             * Tool Responses
+             * @description Auto-generated tool responses for static mocks
+             */
+            tool_responses?: components["schemas"]["ChatMessage"][] | null;
         };
         /**
          * ChatMessage
@@ -665,6 +940,24 @@ export interface components {
             rejected_prediction_tokens?: number | null;
         };
         /**
+         * ConditionalRule
+         * @description A single conditional rule for conditional mock.
+         */
+        ConditionalRule: {
+            /**
+             * Conditions
+             * @description Parameter name-value pairs that must match
+             */
+            conditions: {
+                [key: string]: unknown;
+            };
+            /**
+             * Output
+             * @description Output to return when conditions match
+             */
+            output: string;
+        };
+        /**
          * ConfiguredReposResponse
          * @description Response for configured repositories endpoint
          */
@@ -676,6 +969,32 @@ export interface components {
             repositories: components["schemas"]["RepoConfig"][];
         };
         /**
+         * CreateToolRequest
+         * @description Request model for creating/updating a tool.
+         */
+        CreateToolRequest: {
+            /**
+             * Name
+             * @description Tool name in function-name format
+             */
+            name: string;
+            /**
+             * Description
+             * @description Human-readable description
+             */
+            description: string;
+            /** @description OpenAI-compatible parameters */
+            parameters?: components["schemas"]["ParametersDefinition-Input"];
+            /** @description Mock configuration */
+            mock: components["schemas"]["MockConfig"];
+            /**
+             * Repo Name
+             * @description Repository name
+             * @default default
+             */
+            repo_name: string | null;
+        };
+        /**
          * DiscoverRepositoriesRequest
          * @description Request model for discovering prompts from repositories.
          */
@@ -685,6 +1004,35 @@ export interface components {
              * @description List of repository names to discover prompts from (supports 'owner/repo' or 'repo' format)
              */
             repo_names: string[];
+        };
+        /**
+         * ExecuteTestsRequest
+         * @description Request body for executing specific tests
+         */
+        ExecuteTestsRequest: {
+            /**
+             * Test Names
+             * @description List of test names to execute. If None, all tests are executed.
+             */
+            test_names?: string[] | null;
+        };
+        /**
+         * ExpectedEvaluationFieldsModel
+         * @description Expected evaluation fields for test definition.
+         *
+         *     This model uses composition to store metric-specific configurations
+         *     in a type-safe manner while maintaining backward compatibility.
+         */
+        ExpectedEvaluationFieldsModel: {
+            /** @description The metric type this configuration is for */
+            metric_type?: components["schemas"]["MetricType"] | null;
+            /**
+             * Config
+             * @description Metric-specific configuration fields
+             */
+            config?: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * FetchModelsRequest
@@ -780,6 +1128,217 @@ export interface components {
             promptrepoRedirectUrl?: string | null;
         };
         /**
+         * MetricConfig
+         * @description Configuration for a single DeepEval metric
+         */
+        MetricConfig: {
+            /** @description Type of DeepEval metric */
+            type: components["schemas"]["MetricType"];
+            /**
+             * Threshold
+             * @description Minimum passing score (optional for deterministic metrics)
+             */
+            threshold?: number | null;
+            /**
+             * Provider
+             * @description LLM provider for non-deterministic metrics (e.g., openai, anthropic)
+             */
+            provider?: string | null;
+            /**
+             * Model
+             * @description LLM model for non-deterministic metrics (e.g., gpt-4, claude-3-opus)
+             */
+            model?: string | null;
+            /**
+             * Include Reason
+             * @description Include reasoning in results
+             * @default true
+             */
+            include_reason: boolean;
+            /**
+             * Strict Mode
+             * @description Enable strict evaluation mode (optional)
+             */
+            strict_mode?: boolean | null;
+        };
+        /**
+         * MetricMetadataModel
+         * @description Metadata for a single metric type.
+         *
+         *     This model describes all information needed by the frontend to:
+         *     - Display metric information to users
+         *     - Dynamically generate configuration forms
+         *     - Validate user input
+         * @example {
+         *       "category": "deterministic",
+         *       "description": "Compares the actual output exactly against the expected output",
+         *       "field_schema": {
+         *         "properties": {
+         *           "expected_output": {
+         *             "description": "Expected output for exact comparison",
+         *             "type": "string"
+         *           }
+         *         },
+         *         "required": [
+         *           "expected_output"
+         *         ],
+         *         "type": "object"
+         *       },
+         *       "required_actual_fields": [
+         *         "actual_output"
+         *       ],
+         *       "required_expected_fields": [
+         *         "expected_output"
+         *       ],
+         *       "type": "exact_match"
+         *     }
+         */
+        MetricMetadataModel: {
+            /**
+             * Type
+             * @description Metric type identifier (e.g., 'exact_match', 'professionalism')
+             */
+            type: string;
+            /**
+             * Category
+             * @description Metric category: 'deterministic' or 'non_deterministic'
+             */
+            category: string;
+            /**
+             * Description
+             * @description Human-readable description of what this metric evaluates
+             */
+            description: string;
+            /**
+             * Required Expected Fields
+             * @description List of field names the user must provide in test definition
+             */
+            required_expected_fields: string[];
+            /**
+             * Required Actual Fields
+             * @description List of field names that must be present from test execution
+             */
+            required_actual_fields: string[];
+            /**
+             * Field Schema
+             * @description JSON schema for expected fields configuration (for dynamic form generation)
+             */
+            field_schema: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * MetricResult
+         * @description Result from a single metric evaluation
+         */
+        MetricResult: {
+            type: components["schemas"]["MetricType"];
+            /**
+             * Score
+             * @description Metric score (0.0 to 1.0)
+             */
+            score: number;
+            /**
+             * Passed
+             * @description Whether metric passed threshold
+             */
+            passed: boolean;
+            /** Threshold */
+            threshold: number;
+            /**
+             * Reason
+             * @description Explanation from DeepEval
+             */
+            reason?: string | null;
+            /**
+             * Error
+             * @description Error if metric failed to execute
+             */
+            error?: string | null;
+        };
+        /**
+         * MetricType
+         * @description Predefined DeepEval metrics supported in UI.
+         *
+         *     This enum delegates to MetricRegistry for metadata, following DRY principle.
+         * @enum {string}
+         */
+        MetricType: "exact_match" | "tools_called" | "json_schema_verification" | "keyword_pattern_presence" | "output_length" | "fuzzy_match" | "semantic_similarity" | "answer_relevancy" | "faithfulness" | "contextual_relevancy" | "contextual_precision" | "contextual_recall" | "hallucination" | "bias" | "toxicity" | "summarization" | "professionalism" | "conciseness";
+        /**
+         * MockConfig
+         * @description Mock configuration for tool with support for multiple mock types.
+         */
+        MockConfig: {
+            /**
+             * Enabled
+             * @description Whether mock is enabled
+             * @default true
+             */
+            enabled: boolean;
+            /**
+             * @description Type of mock response
+             * @default static
+             */
+            mock_type: components["schemas"]["MockType"];
+            /**
+             * Static Response
+             * @description Static mock response
+             */
+            static_response?: string | null;
+            /**
+             * Conditional Rules
+             * @description Conditional mock rules
+             */
+            conditional_rules?: components["schemas"]["ConditionalRule"][] | null;
+            /**
+             * Python Code
+             * @description Python code for dynamic mock
+             */
+            python_code?: string | null;
+        };
+        /**
+         * MockExecutionRequest
+         * @description Request model for executing mock response with parameters.
+         */
+        MockExecutionRequest: {
+            /**
+             * Parameters
+             * @description Parameters to pass to the mock execution
+             */
+            parameters?: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * MockExecutionResponse
+         * @description Response model for mock execution.
+         */
+        MockExecutionResponse: {
+            /**
+             * Response
+             * @description Mock response string
+             */
+            response: string;
+            /**
+             * Tool Name
+             * @description Name of the tool executed
+             */
+            tool_name: string;
+            /**
+             * Parameters Used
+             * @description Parameters that were used in execution
+             */
+            parameters_used?: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * MockType
+         * @description Types of mock responses.
+         * @enum {string}
+         */
+        MockType: "static" | "conditional" | "python";
+        /**
          * ModelInfo
          * @description Information about a specific model
          */
@@ -833,6 +1392,79 @@ export interface components {
          * @enum {string}
          */
         OAuthProvider: "github" | "gitlab" | "bitbucket";
+        /**
+         * ParameterSchema
+         * @description Individual parameter property schema for OpenAI compatibility.
+         */
+        ParameterSchema: {
+            /** @description Parameter type */
+            type: components["schemas"]["ToolParameterType"];
+            /**
+             * Description
+             * @description Parameter description
+             */
+            description: string;
+            /**
+             * Enum
+             * @description Allowed values
+             */
+            enum?: unknown[] | null;
+            /**
+             * Default
+             * @description Default value
+             */
+            default?: unknown | null;
+        };
+        /**
+         * ParametersDefinition
+         * @description Parameters definition following OpenAI function schema.
+         */
+        "ParametersDefinition-Input": {
+            /**
+             * Type
+             * @description Always 'object' for OpenAI compatibility
+             * @default object
+             * @constant
+             */
+            type: "object";
+            /**
+             * Properties
+             * @description Parameter properties
+             */
+            properties?: {
+                [key: string]: components["schemas"]["ParameterSchema"];
+            };
+            /**
+             * Required
+             * @description Required parameter names
+             */
+            required?: string[];
+        };
+        /**
+         * ParametersDefinition
+         * @description Parameters definition following OpenAI function schema.
+         */
+        "ParametersDefinition-Output": {
+            /**
+             * Type
+             * @description Always 'object' for OpenAI compatibility
+             * @default object
+             * @constant
+             */
+            type: "object";
+            /**
+             * Properties
+             * @description Parameter properties
+             */
+            properties?: {
+                [key: string]: components["schemas"]["ParameterSchema"];
+            };
+            /**
+             * Required
+             * @description Required parameter names
+             */
+            required?: string[];
+        };
         /**
          * PromptData
          * @description Core prompt data model with all fields that get saved to YAML files.
@@ -890,14 +1522,13 @@ export interface components {
             /**
              * Temperature
              * @description Sampling temperature
-             * @default 0
              */
             temperature: number;
             /**
              * Top P
              * @description Top-p sampling parameter
              */
-            top_p?: number | null;
+            top_p: number;
             /**
              * Max Tokens
              * @description Maximum tokens to generate
@@ -924,7 +1555,7 @@ export interface components {
              * Stop
              * @description Stop sequences
              */
-            stop?: string[] | string | null;
+            stop?: string | string[] | null;
             /**
              * Presence Penalty
              * @description Presence penalty
@@ -1007,6 +1638,11 @@ export interface components {
              * @description Tags for prompt categorization
              */
             tags?: string[];
+            /**
+             * Tools
+             * @description Tool file paths (e.g., file:///.promptrepo/mock_tools/tool.yaml)
+             */
+            tools?: string[];
             /**
              * Created At
              * Format: date-time
@@ -1105,7 +1741,7 @@ export interface components {
              * Stop
              * @description Stop sequences
              */
-            stop?: string[] | string | null;
+            stop?: string | string[] | null;
             /**
              * Presence Penalty
              * @description Presence penalty
@@ -1187,6 +1823,11 @@ export interface components {
              * @description Tags for prompt categorization
              */
             tags?: string[] | null;
+            /**
+             * Tools
+             * @description Tool file paths (e.g., file:///.promptrepo/mock_tools/tool.yaml)
+             */
+            tools?: string[] | null;
         };
         /**
          * PromptMeta
@@ -1604,6 +2245,49 @@ export interface components {
             meta?: components["schemas"]["ResponseMeta"];
         };
         /**
+         * StandardResponse[Dict[str, MetricMetadataModel]]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_Dict_str__MetricMetadataModel__: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /**
+             * Data
+             * @description Response payload
+             */
+            data?: {
+                [key: string]: components["schemas"]["MetricMetadataModel"];
+            } | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
          * StandardResponse[List[PromptMeta]]
          * @example {
          *       "data": {
@@ -1645,6 +2329,129 @@ export interface components {
             meta?: components["schemas"]["ResponseMeta"];
         };
         /**
+         * StandardResponse[List[TestSuiteExecutionResult]]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_List_TestSuiteExecutionResult__: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /**
+             * Data
+             * @description Response payload
+             */
+            data?: components["schemas"]["TestSuiteExecutionResult"][] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
+         * StandardResponse[List[TestSuiteSummary]]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_List_TestSuiteSummary__: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /**
+             * Data
+             * @description Response payload
+             */
+            data?: components["schemas"]["TestSuiteSummary"][] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
+         * StandardResponse[List[ToolSummary]]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_List_ToolSummary__: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /**
+             * Data
+             * @description Response payload
+             */
+            data?: components["schemas"]["ToolSummary"][] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
          * StandardResponse[LoginResponseData]
          * @example {
          *       "data": {
@@ -1674,6 +2481,44 @@ export interface components {
             status_code: number;
             /** @description Response payload */
             data?: components["schemas"]["LoginResponseData"] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
+         * StandardResponse[MockExecutionResponse]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_MockExecutionResponse_: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /** @description Response payload */
+            data?: components["schemas"]["MockExecutionResponse"] | null;
             /**
              * Message
              * @description Human-readable message about the response
@@ -1914,6 +2759,234 @@ export interface components {
             meta?: components["schemas"]["ResponseMeta"];
         };
         /**
+         * StandardResponse[TestSuiteData]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_TestSuiteData_: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /** @description Response payload */
+            data?: components["schemas"]["TestSuiteData-Output"] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
+         * StandardResponse[TestSuiteExecutionResult]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_TestSuiteExecutionResult_: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /** @description Response payload */
+            data?: components["schemas"]["TestSuiteExecutionResult"] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
+         * StandardResponse[ToolDefinition]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_ToolDefinition_: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /** @description Response payload */
+            data?: components["schemas"]["ToolDefinition"] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
+         * StandardResponse[ToolSaveResponse]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_ToolSaveResponse_: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /** @description Response payload */
+            data?: components["schemas"]["ToolSaveResponse"] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
+         * StandardResponse[Union[TestSuiteExecutionResult, NoneType]]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_Union_TestSuiteExecutionResult__NoneType__: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /** @description Response payload */
+            data?: components["schemas"]["TestSuiteExecutionResult"] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
+         * StandardResponse[UnitTestExecutionResult]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_UnitTestExecutionResult_: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /** @description Response payload */
+            data?: components["schemas"]["UnitTestExecutionResult"] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
          * StandardResponse[User]
          * @example {
          *       "data": {
@@ -1993,6 +3066,342 @@ export interface components {
             message?: string | null;
             /** @description Response metadata */
             meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
+         * TestSuiteData
+         * @description Wrapper for YAML serialization
+         */
+        "TestSuiteData-Input": {
+            test_suite: components["schemas"]["TestSuiteDefinition-Input"];
+        };
+        /**
+         * TestSuiteData
+         * @description Wrapper for YAML serialization
+         */
+        "TestSuiteData-Output": {
+            test_suite: components["schemas"]["TestSuiteDefinition-Output"];
+        };
+        /**
+         * TestSuiteDefinition
+         * @description Test suite containing multiple unit tests
+         */
+        "TestSuiteDefinition-Input": {
+            /**
+             * Name
+             * @description Test suite name
+             */
+            name: string;
+            /**
+             * Description
+             * @description Suite description
+             * @default
+             */
+            description: string | null;
+            /**
+             * Tests
+             * @description Unit tests in this suite
+             */
+            tests?: components["schemas"]["UnitTestDefinition-Input"][];
+            /**
+             * Tags
+             * @description Tags for organization
+             */
+            tags?: string[];
+            /**
+             * Metrics
+             * @description DeepEval metrics to evaluate for all tests in suite
+             */
+            metrics?: components["schemas"]["MetricConfig"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at?: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at?: string;
+        };
+        /**
+         * TestSuiteDefinition
+         * @description Test suite containing multiple unit tests
+         */
+        "TestSuiteDefinition-Output": {
+            /**
+             * Name
+             * @description Test suite name
+             */
+            name: string;
+            /**
+             * Description
+             * @description Suite description
+             * @default
+             */
+            description: string | null;
+            /**
+             * Tests
+             * @description Unit tests in this suite
+             */
+            tests?: components["schemas"]["UnitTestDefinition-Output"][];
+            /**
+             * Tags
+             * @description Tags for organization
+             */
+            tags?: string[];
+            /**
+             * Metrics
+             * @description DeepEval metrics to evaluate for all tests in suite
+             */
+            metrics?: components["schemas"]["MetricConfig"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at?: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at?: string;
+        };
+        /**
+         * TestSuiteExecutionResult
+         * @description Execution result for entire test suite
+         */
+        TestSuiteExecutionResult: {
+            /** Suite Name */
+            suite_name: string;
+            /** Test Results */
+            test_results: components["schemas"]["UnitTestExecutionResult"][];
+            /** Total Tests */
+            total_tests: number;
+            /** Passed Tests */
+            passed_tests: number;
+            /** Failed Tests */
+            failed_tests: number;
+            /** Total Execution Time Ms */
+            total_execution_time_ms: number;
+            /**
+             * Executed At
+             * Format: date-time
+             */
+            executed_at?: string;
+        };
+        /**
+         * TestSuiteSummary
+         * @description Summary of test suite for listing
+         */
+        TestSuiteSummary: {
+            /** Name */
+            name: string;
+            /** Description */
+            description: string;
+            /** Test Count */
+            test_count: number;
+            /** Tags */
+            tags: string[];
+            /** File Path */
+            file_path: string;
+            /** Last Execution */
+            last_execution?: string | null;
+            /** Last Execution Passed */
+            last_execution_passed?: boolean | null;
+        };
+        /**
+         * ToolDefinition
+         * @description Complete tool definition following simplified design.
+         */
+        ToolDefinition: {
+            /**
+             * Name
+             * @description Tool name in function-name format
+             */
+            name: string;
+            /**
+             * Description
+             * @description Human-readable description
+             */
+            description: string;
+            /** @description OpenAI-compatible parameters */
+            parameters?: components["schemas"]["ParametersDefinition-Output"];
+            /** @description Mock configuration */
+            mock?: components["schemas"]["MockConfig"];
+        };
+        /**
+         * ToolParameterType
+         * @description Parameter types for tool parameters.
+         * @enum {string}
+         */
+        ToolParameterType: "string" | "number" | "boolean" | "array" | "object";
+        /**
+         * ToolSaveResponse
+         * @description Response model for tool save operation with git workflow.
+         */
+        ToolSaveResponse: {
+            /** @description The saved tool definition */
+            tool: components["schemas"]["ToolDefinition"];
+            /**
+             * Pr Info
+             * @description Pull request information if PR was created
+             */
+            pr_info?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * ToolSummary
+         * @description Tool summary for listing.
+         *
+         *     Note: file_path is populated during discovery and not stored in YAML files.
+         */
+        ToolSummary: {
+            /**
+             * Name
+             * @description Tool name
+             */
+            name: string;
+            /**
+             * Description
+             * @description Tool description
+             */
+            description: string;
+            /**
+             * Mock Enabled
+             * @description Whether mock is enabled
+             */
+            mock_enabled: boolean;
+            /**
+             * Parameter Count
+             * @description Number of parameters
+             */
+            parameter_count: number;
+            /**
+             * Required Count
+             * @description Number of required parameters
+             */
+            required_count: number;
+            /**
+             * File Path
+             * @description Tool file path (populated during discovery, not stored in YAML)
+             */
+            file_path: string;
+        };
+        /**
+         * UnitTestDefinition
+         * @description Individual test case definition
+         */
+        "UnitTestDefinition-Input": {
+            /**
+             * Name
+             * @description Unique test name within suite
+             */
+            name: string;
+            /**
+             * Description
+             * @description Test description
+             * @default
+             */
+            description: string | null;
+            /**
+             * Prompt Reference
+             * @description Reference to prompt file path
+             */
+            prompt_reference: string;
+            /**
+             * Template Variables
+             * @description Template variables for prompt execution
+             */
+            template_variables?: {
+                [key: string]: unknown;
+            };
+            /** @description Expected evaluation fields for different metric types */
+            evaluation_fields?: components["schemas"]["ExpectedEvaluationFieldsModel"];
+            /**
+             * Enabled
+             * @description Whether test is enabled
+             * @default true
+             */
+            enabled: boolean;
+        };
+        /**
+         * UnitTestDefinition
+         * @description Individual test case definition
+         */
+        "UnitTestDefinition-Output": {
+            /**
+             * Name
+             * @description Unique test name within suite
+             */
+            name: string;
+            /**
+             * Description
+             * @description Test description
+             * @default
+             */
+            description: string | null;
+            /**
+             * Prompt Reference
+             * @description Reference to prompt file path
+             */
+            prompt_reference: string;
+            /**
+             * Template Variables
+             * @description Template variables for prompt execution
+             */
+            template_variables?: {
+                [key: string]: unknown;
+            };
+            /** @description Expected evaluation fields for different metric types */
+            evaluation_fields?: components["schemas"]["ExpectedEvaluationFieldsModel"];
+            /**
+             * Enabled
+             * @description Whether test is enabled
+             * @default true
+             */
+            enabled: boolean;
+        };
+        /**
+         * UnitTestExecutionResult
+         * @description Execution result for a single unit test
+         */
+        UnitTestExecutionResult: {
+            /**
+             * Test Name
+             * @description Name of the test
+             */
+            test_name: string;
+            /**
+             * Prompt Reference
+             * @description Reference to prompt file path
+             */
+            prompt_reference: string;
+            /**
+             * Template Variables
+             * @description Template variables used in execution
+             */
+            template_variables: {
+                [key: string]: unknown;
+            };
+            /** @description Actual evaluation fields from execution */
+            actual_evaluation_fields: components["schemas"]["ActualEvaluationFieldsModel"];
+            /** @description Expected evaluation fields from test definition */
+            expected_evaluation_fields: components["schemas"]["ExpectedEvaluationFieldsModel"];
+            /**
+             * Metric Results
+             * @description Results from all metrics
+             */
+            metric_results: components["schemas"]["MetricResult"][];
+            /**
+             * Overall Passed
+             * @description Whether all metrics passed
+             */
+            overall_passed: boolean;
+            /**
+             * Executed At
+             * Format: date-time
+             */
+            executed_at?: string;
         };
         /**
          * UsageStats
@@ -2932,7 +4341,7 @@ export interface operations {
             };
         };
     };
-    get_latest_prompt_api_v0_repos_get_latest_post: {
+    get_latest_repo_content_api_v0_repos_get_latest_post: {
         parameters: {
             query: {
                 repo_name: string;
@@ -2952,7 +4361,7 @@ export interface operations {
                     "application/json": components["schemas"]["StandardResponse_dict_"];
                 };
             };
-            /** @description Prompt not found */
+            /** @description Repository not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2962,8 +4371,8 @@ export interface operations {
                      * @example {
                      *       "status": "error",
                      *       "type": "/errors/not-found",
-                     *       "title": "Prompt Not Found",
-                     *       "detail": "Prompt with ID 'xxx' not found or access denied"
+                     *       "title": "Repository Not Found",
+                     *       "detail": "Repository 'xxx' not found or access denied"
                      *     }
                      */
                     "application/json": unknown;
@@ -2989,7 +4398,7 @@ export interface operations {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
-                     *       "detail": "Failed to fetch latest prompt"
+                     *       "detail": "Failed to fetch latest repository content"
                      *     }
                      */
                     "application/json": unknown;
@@ -3083,7 +4492,7 @@ export interface operations {
             };
         };
     };
-    update_prompt_api_v0_prompts__put: {
+    save_prompt_api_v0_prompts__post: {
         parameters: {
             query: {
                 repo_name: string;
@@ -3125,7 +4534,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Prompt not found */
+            /** @description Repository not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -3135,8 +4544,8 @@ export interface operations {
                      * @example {
                      *       "status": "error",
                      *       "type": "/errors/not-found",
-                     *       "title": "Prompt Not Found",
-                     *       "detail": "Prompt with ID 'xxx' not found or access denied"
+                     *       "title": "Repository Not Found",
+                     *       "detail": "Repository 'xxx' not found or access denied"
                      *     }
                      */
                     "application/json": unknown;
@@ -3162,94 +4571,7 @@ export interface operations {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
-                     *       "detail": "Failed to update prompt"
-                     *     }
-                     */
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    create_prompt_api_v0_prompts__post: {
-        parameters: {
-            query: {
-                repo_name: string;
-                file_path: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PromptData"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StandardResponse_PromptMeta_"];
-                };
-            };
-            /** @description Invalid prompt data */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "status": "error",
-                     *       "type": "/errors/validation-failed",
-                     *       "title": "Validation Error",
-                     *       "detail": "Invalid prompt data"
-                     *     }
-                     */
-                    "application/json": unknown;
-                };
-            };
-            /** @description Prompt file already exists */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "status": "error",
-                     *       "type": "/errors/conflict",
-                     *       "title": "Conflict",
-                     *       "detail": "Prompt file already exists at the specified path"
-                     *     }
-                     */
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "status": "error",
-                     *       "type": "/errors/internal-server-error",
-                     *       "title": "Internal Server Error",
-                     *       "detail": "Failed to create prompt"
+                     *       "detail": "Failed to save prompt"
                      *     }
                      */
                     "application/json": unknown;
@@ -3383,6 +4705,968 @@ export interface operations {
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
                      *       "detail": "Failed to discover prompts"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    list_tools_api_v0_tools__get: {
+        parameters: {
+            query?: {
+                /** @description Repository name */
+                repo_name?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_List_ToolSummary__"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to retrieve tools"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    create_tool_api_v0_tools__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateToolRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_ToolSaveResponse_"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/validation-error",
+                     *       "title": "Validation Error",
+                     *       "detail": "Tool validation failed"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to create tool"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_tool_api_v0_tools__tool_name__get: {
+        parameters: {
+            query?: {
+                /** @description Repository name */
+                repo_name?: string;
+            };
+            header?: never;
+            path: {
+                tool_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_ToolDefinition_"];
+                };
+            };
+            /** @description Tool not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Not Found",
+                     *       "detail": "Tool not found"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to retrieve tool"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    delete_tool_api_v0_tools__tool_name__delete: {
+        parameters: {
+            query?: {
+                /** @description Repository name */
+                repo_name?: string;
+            };
+            header?: never;
+            path: {
+                tool_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_dict_"];
+                };
+            };
+            /** @description Tool not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Not Found",
+                     *       "detail": "Tool not found"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to delete tool"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    validate_tool_api_v0_tools__tool_name__validate_post: {
+        parameters: {
+            query?: {
+                /** @description Repository name */
+                repo_name?: string;
+            };
+            header?: never;
+            path: {
+                tool_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_dict_"];
+                };
+            };
+            /** @description Tool not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Not Found",
+                     *       "detail": "Tool not found"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/validation-error",
+                     *       "title": "Validation Error",
+                     *       "detail": "Tool validation failed"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    execute_mock_api_v0_tools__tool_name__mock_post: {
+        parameters: {
+            query?: {
+                /** @description Repository name */
+                repo_name?: string;
+            };
+            header?: never;
+            path: {
+                tool_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MockExecutionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_MockExecutionResponse_"];
+                };
+            };
+            /** @description Mock execution disabled */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/bad-request",
+                     *       "title": "Bad Request",
+                     *       "detail": "Mock execution is disabled for this tool"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Tool not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Not Found",
+                     *       "detail": "Tool not found"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_test_suites_api_v0_tests_suites_get: {
+        parameters: {
+            query: {
+                /** @description Repository name */
+                repo_name: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_List_TestSuiteSummary__"];
+                };
+            };
+            /** @description Repository not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Not Found",
+                     *       "detail": "Repository not found"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to list test suites"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    save_test_suite_api_v0_tests_suites_post: {
+        parameters: {
+            query: {
+                /** @description Repository name */
+                repo_name: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestSuiteData-Input"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_TestSuiteData_"];
+                };
+            };
+            /** @description Repository not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Not Found",
+                     *       "detail": "Repository not found"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to save test suite"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_test_suite_api_v0_tests_suites__suite_name__get: {
+        parameters: {
+            query: {
+                /** @description Repository name */
+                repo_name: string;
+            };
+            header?: never;
+            path: {
+                suite_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_TestSuiteData_"];
+                };
+            };
+            /** @description Test suite not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Not Found",
+                     *       "detail": "Test suite not found"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to retrieve test suite"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    delete_test_suite_api_v0_tests_suites__suite_name__delete: {
+        parameters: {
+            query: {
+                /** @description Repository name */
+                repo_name: string;
+            };
+            header?: never;
+            path: {
+                suite_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_dict_"];
+                };
+            };
+            /** @description Test suite not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Not Found",
+                     *       "detail": "Test suite not found"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to delete test suite"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    execute_test_suite_api_v0_tests_suites__suite_name__execute_post: {
+        parameters: {
+            query: {
+                /** @description Repository name */
+                repo_name: string;
+            };
+            header?: never;
+            path: {
+                suite_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ExecuteTestsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_TestSuiteExecutionResult_"];
+                };
+            };
+            /** @description Test suite not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Not Found",
+                     *       "detail": "Test suite not found"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to execute test suite"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    execute_single_test_api_v0_tests_suites__suite_name__tests__test_name__execute_post: {
+        parameters: {
+            query: {
+                /** @description Repository name */
+                repo_name: string;
+            };
+            header?: never;
+            path: {
+                suite_name: string;
+                test_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_UnitTestExecutionResult_"];
+                };
+            };
+            /** @description Test not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Not Found",
+                     *       "detail": "Test not found"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to execute test"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_execution_history_api_v0_tests_suites__suite_name__executions_get: {
+        parameters: {
+            query: {
+                /** @description Repository name */
+                repo_name: string;
+                /** @description Maximum number of executions to return */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                suite_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_List_TestSuiteExecutionResult__"];
+                };
+            };
+            /** @description Repository not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Not Found",
+                     *       "detail": "Repository not found"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to retrieve execution history"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_latest_execution_api_v0_tests_suites__suite_name__executions_latest_get: {
+        parameters: {
+            query: {
+                /** @description Repository name */
+                repo_name: string;
+            };
+            header?: never;
+            path: {
+                suite_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_Union_TestSuiteExecutionResult__NoneType__"];
+                };
+            };
+            /** @description Repository not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Not Found",
+                     *       "detail": "Repository not found"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to retrieve latest execution"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_metrics_metadata_api_v0_tests_metrics_metadata_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_Dict_str__MetricMetadataModel__"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to retrieve metrics metadata"
                      *     }
                      */
                     "application/json": unknown;

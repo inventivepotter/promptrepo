@@ -174,66 +174,66 @@ export const createPromptActions: StateCreator<PromptStore, [], [], PromptAction
     }
   },
 
-  createPrompt: async (promptMeta: PromptMeta) => {
-    set((draft) => {
-      draft.isCreating = true;
-      draft.error = null;
-    // @ts-expect-error - Immer middleware supports 3 params
-    }, false, 'prompts/create-start');
-
-    try {
-      const newPromptMeta = await promptsService.createPrompt(promptMeta);
-      
-      const key = createPromptKey(newPromptMeta.repo_name, newPromptMeta.file_path);
-      set((draft) => {
-        draft.prompts[key] = newPromptMeta;
-        draft.currentPrompt = newPromptMeta;
-        draft.isChanged = false; // Reset isChanged after creation
-        draft.isCreating = false;
-      // @ts-expect-error - Immer middleware supports 3 params
-      }, false, 'prompts/create-success');
-      
-      return newPromptMeta;
-    } catch (error) {
-      set((draft) => {
-        draft.error = error instanceof Error ? error.message : 'Failed to create prompt';
-        draft.isCreating = false;
-      // @ts-expect-error - Immer middleware supports 3 params
-      }, false, 'prompts/create-error');
-      throw error;
-    }
-  },
-
-  updatePrompt: async (repoName: string, filePath: string, updates: PromptDataUpdate) => {
+  savePrompt: async (repoName: string, filePath: string, promptData: PromptDataUpdate) => {
     set((draft) => {
       draft.isUpdating = true;
       draft.error = null;
     // @ts-expect-error - Immer middleware supports 3 params
-    }, false, 'prompts/update-start');
+    }, false, 'prompts/save-start');
 
     try {
-      const updatedPromptMeta = await promptsService.updatePrompt(repoName, filePath, updates);
+      // If filePath is empty, generate it from prompt name
+      let actualFilePath = filePath;
+      if (!actualFilePath) {
+        const promptName = promptData.name || 'untitled';
+        let fileName = promptName
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '_')
+          .replace(/^_+|_+$/g, '');
+        // Guard against empty filename after sanitization
+        if (!fileName) {
+          fileName = 'untitled';
+        }
+        actualFilePath = `.promptrepo/prompts/${fileName}.prompt.yaml`;
+      }
+
+      const savedPromptMeta = await promptsService.savePrompt(repoName, actualFilePath, promptData);
       
-      const promptKey = createPromptKey(repoName, filePath);
+      const promptKey = createPromptKey(savedPromptMeta.repo_name, savedPromptMeta.file_path);
       set((draft) => {
-        draft.prompts[promptKey] = updatedPromptMeta;
+        draft.prompts[promptKey] = savedPromptMeta;
         if (draft.currentPrompt?.repo_name === repoName && draft.currentPrompt?.file_path === filePath) {
-          draft.currentPrompt = updatedPromptMeta;
+          draft.currentPrompt = savedPromptMeta;
         }
         draft.isChanged = false; // Reset isChanged after successful save
         draft.isUpdating = false;
       // @ts-expect-error - Immer middleware supports 3 params
-      }, false, 'prompts/update-success');
+      }, false, 'prompts/save-success');
       
-      return updatedPromptMeta;
+      return savedPromptMeta;
     } catch (error) {
       set((draft) => {
-        draft.error = error instanceof Error ? error.message : 'Failed to update prompt';
+        draft.error = error instanceof Error ? error.message : 'Failed to save prompt';
         draft.isUpdating = false;
       // @ts-expect-error - Immer middleware supports 3 params
-      }, false, 'prompts/update-error');
+      }, false, 'prompts/save-error');
       throw error;
     }
+  },
+
+  saveCurrentPrompt: async () => {
+    const currentPrompt = get().currentPrompt;
+    if (!currentPrompt) {
+      throw new Error('No current prompt to save');
+    }
+    
+    // Save the prompt - file path generation handled in savePrompt action
+    const result = await get().savePrompt(
+      currentPrompt.repo_name,
+      currentPrompt.file_path || '', // Pass empty string if no file_path
+      currentPrompt.prompt
+    );
+    return result;
   },
 
   deletePrompt: async (repoName: string, filePath: string) => {

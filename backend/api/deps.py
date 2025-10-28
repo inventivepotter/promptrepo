@@ -7,7 +7,6 @@ We use function-based dependencies as recommended by FastAPI documentation.
 """
 from typing import Generator, Annotated, Optional
 from fastapi import Depends, Header, Cookie, Request
-from huggingface_hub import User
 from sqlmodel import Session
 from pathlib import Path
 import logging
@@ -30,6 +29,11 @@ from services.local_repo.local_repo_service import LocalRepoService
 from services.remote_repo.remote_repo_service import RemoteRepoService
 from services.prompt.prompt_service import PromptService
 from services.file_operations.file_operations_service import FileOperationsService
+from services.tool import ToolService
+from services.tool.tool_execution_service import ToolExecutionService
+from services.test.test_service import TestService
+from services.test.test_execution_service import TestExecutionService
+from services.test.deepeval.deepeval_adapter import DeepEvalAdapter
 
 
 # ==============================================================================
@@ -158,8 +162,9 @@ def get_chat_completion_service(
     Creates a ChatCompletionService for handling LLM operations.
     The service manages interactions with various LLM providers.
     Uses proper dependency injection with ConfigService.
+    Note: ToolService will be injected later to avoid circular dependency.
     """
-    return ChatCompletionService(config_service=config_service)
+    return ChatCompletionService(config_service=config_service, tool_service=None)
 
 
 ChatCompletionServiceDep = Annotated[ChatCompletionService, Depends(get_chat_completion_service)]
@@ -298,6 +303,123 @@ def get_prompt_service(
 
 
 PromptServiceDep = Annotated[PromptService, Depends(get_prompt_service)]
+
+
+# ==============================================================================
+# Tool Service
+# ==============================================================================
+
+def get_tool_service(
+    config_service: ConfigServiceDep,
+    local_repo_service: LocalRepoServiceDep,
+    file_operations_service: FileOperationsServiceDep
+) -> ToolService:
+    """
+    Tool service dependency.
+    
+    Creates a ToolService for managing tool definitions.
+    """
+    return ToolService(
+        config_service=config_service.config,
+        local_repo_service=local_repo_service,
+        file_operations_service=file_operations_service
+    )
+
+
+ToolServiceDep = Annotated[ToolService, Depends(get_tool_service)]
+
+
+# ==============================================================================
+# Tool Execution Service
+# ==============================================================================
+
+def get_tool_execution_service(
+    tool_service: ToolServiceDep,
+    chat_completion_service: ChatCompletionServiceDep
+) -> ToolExecutionService:
+    """
+    Tool execution service dependency.
+    
+    Creates a ToolExecutionService for handling tool call loops and responses.
+    Also injects tool_service into chat_completion_service to avoid circular dependency.
+    """
+    # Inject tool_service into chat_completion_service here to avoid circular dependency
+    chat_completion_service.tool_service = tool_service
+    
+    return ToolExecutionService(
+        tool_service=tool_service,
+        chat_completion_service=chat_completion_service
+    )
+
+
+ToolExecutionServiceDep = Annotated[ToolExecutionService, Depends(get_tool_execution_service)]
+
+
+# ==============================================================================
+# Test Service
+# ==============================================================================
+
+def get_test_service(
+    config_service: ConfigServiceDep,
+    file_operations_service: FileOperationsServiceDep,
+    local_repo_service: LocalRepoServiceDep
+) -> TestService:
+    """
+    Test service dependency.
+    
+    Creates a TestService for managing test suites and execution history.
+    """
+    return TestService(
+        config_service=config_service.config,
+        file_ops_service=file_operations_service,
+        local_repo_service=local_repo_service
+    )
+
+
+TestServiceDep = Annotated[TestService, Depends(get_test_service)]
+
+
+# ==============================================================================
+# DeepEval Adapter
+# ==============================================================================
+
+def get_deepeval_adapter() -> DeepEvalAdapter:
+    """
+    DeepEval adapter dependency (singleton).
+    
+    Returns a shared instance of DeepEvalAdapter for metric evaluation.
+    This is a stateless utility service that doesn't need per-request instances.
+    """
+    return DeepEvalAdapter()
+
+
+DeepEvalAdapterDep = Annotated[DeepEvalAdapter, Depends(get_deepeval_adapter)]
+
+
+# ==============================================================================
+# Test Execution Service
+# ==============================================================================
+
+def get_test_execution_service(
+    test_service: TestServiceDep,
+    prompt_service: PromptServiceDep,
+    deepeval_adapter: DeepEvalAdapterDep,
+    chat_completion_service: ChatCompletionServiceDep
+) -> TestExecutionService:
+    """
+    Test execution service dependency.
+    
+    Creates a TestExecutionService for executing tests and evaluating metrics.
+    """
+    return TestExecutionService(
+        test_service=test_service,
+        prompt_service=prompt_service,
+        deepeval_adapter=deepeval_adapter,
+        chat_completion_service=chat_completion_service
+    )
+
+
+TestExecutionServiceDep = Annotated[TestExecutionService, Depends(get_test_execution_service)]
 
 
 # Note: For RemoteRepoService, it's often better to create it dynamically

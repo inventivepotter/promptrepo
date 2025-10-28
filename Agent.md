@@ -29,3 +29,5 @@
 
 # Frontend
 * Zustand stores has been implemented in this project, use zustand avoid useEffect, React use directly.
+* There is a proxy in front end that acts as gateway to backend as backend is not available to the internet. Make sure any new endpoints that are accessed by clients are a vailable through this end point.
+* Wrap any new page with proper ProtectedRoute component.

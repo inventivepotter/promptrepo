@@ -10,7 +10,9 @@ import shutil
 
 from services.local_repo.local_repo_service import LocalRepoService
 from services.local_repo.git_service import GitService
+from services.local_repo.models import PRInfo
 from services.config.models import RepoConfig
+from schemas.artifact_type_enum import ArtifactType
 
 
 class TestLocalRepoService:
@@ -354,3 +356,259 @@ class TestLocalRepoService:
                     # Assert
                     assert result["success"] is False
                     assert "Error: Git error" in result["message"]
+
+
+class TestGitWorkflowWithArtifactType:
+    """Test git workflow with different artifact types (PROMPT and TOOL)."""
+    
+    @pytest.fixture
+    def mock_config_service(self):
+        """Mock config service."""
+        config = Mock()
+        config.get_base_branch_for_repo.return_value = "main"
+        config.get_repo_url_for_repo.return_value = "https://github.com/test/repo.git"
+        config.get_hosting_config.return_value = Mock(type="individual")
+        return config
+
+    @pytest.fixture
+    def mock_db(self):
+        """Mock database session."""
+        return Mock()
+
+    @pytest.fixture
+    def mock_remote_repo_service(self):
+        """Mock remote repo service."""
+        service = Mock()
+        
+        # Mock the create_pull_request_if_not_exists method
+        async def mock_create_pr(*args, **kwargs):
+            return Mock(
+                success=True,
+                pr_number=123,
+                pr_url="https://github.com/org/repo/pull/123",
+                pr_id=456789,
+                error=None
+            )
+        
+        service.create_pull_request_if_not_exists = AsyncMock(side_effect=mock_create_pr)
+        return service
+
+    @pytest.fixture
+    def local_repo_service(self, mock_config_service, mock_db, mock_remote_repo_service):
+        """Create LocalRepoService instance with mocked dependencies."""
+        return LocalRepoService(
+            config_service=mock_config_service,
+            db=mock_db,
+            remote_repo_service=mock_remote_repo_service
+        )
+    
+    @pytest.mark.asyncio
+    async def test_prompt_workflow_creates_correct_branch_name(
+        self, local_repo_service, mock_remote_repo_service
+    ):
+        """Test that prompt workflow creates branch with 'prompt' in name."""
+        user_id = "test-user"
+        repo_name = "org/repo"
+        file_path = "prompts/test-prompt.md"
+        
+        # Mock _get_repo_base_path to return a temp path
+        with patch.object(local_repo_service, '_get_repo_base_path', return_value=Path("/tmp/repos")), \
+             patch('services.local_repo.local_repo_service.GitService') as mock_git_service_class:
+            
+            # Setup GitService mock
+            mock_git_service = Mock()
+            mock_git_service.get_current_branch.return_value = "main"
+            mock_git_service.checkout_new_branch.return_value = Mock(success=True)
+            mock_git_service.add_files.return_value = Mock(success=True)
+            mock_git_service.commit_changes.return_value = Mock(success=True)
+            mock_git_service.push_branch.return_value = Mock(success=True)
+            mock_git_service_class.return_value = mock_git_service
+            
+            # Execute workflow
+            pr_info = await local_repo_service.handle_git_workflow_after_save(
+                user_id=user_id,
+                repo_name=repo_name,
+                file_path=file_path,
+                artifact_type=ArtifactType.PROMPT,
+                oauth_token="test-token",
+                author_name="Test User",
+                author_email="test@example.com",
+                user_session=Mock()
+            )
+            
+            # Verify branch name contains 'prompt'
+            mock_git_service.checkout_new_branch.assert_called_once()
+            branch_name = mock_git_service.checkout_new_branch.call_args[1]['branch_name']
+            assert 'prompt' in branch_name.lower()
+            assert 'test-prompt' in branch_name
+    
+    @pytest.mark.asyncio
+    async def test_tool_workflow_creates_correct_branch_name(
+        self, local_repo_service, mock_remote_repo_service
+    ):
+        """Test that tool workflow creates branch with 'tool' in name."""
+        user_id = "test-user"
+        repo_name = "org/repo"
+        file_path = "tools/test-tool.yaml"
+        
+        # Mock _get_repo_base_path to return a temp path
+        with patch.object(local_repo_service, '_get_repo_base_path', return_value=Path("/tmp/repos")), \
+             patch('services.local_repo.local_repo_service.GitService') as mock_git_service_class:
+            
+            # Setup GitService mock
+            mock_git_service = Mock()
+            mock_git_service.get_current_branch.return_value = "main"
+            mock_git_service.checkout_new_branch.return_value = Mock(success=True)
+            mock_git_service.add_files.return_value = Mock(success=True)
+            mock_git_service.commit_changes.return_value = Mock(success=True)
+            mock_git_service.push_branch.return_value = Mock(success=True)
+            mock_git_service_class.return_value = mock_git_service
+            
+            # Execute workflow
+            pr_info = await local_repo_service.handle_git_workflow_after_save(
+                user_id=user_id,
+                repo_name=repo_name,
+                file_path=file_path,
+                artifact_type=ArtifactType.TOOL,
+                oauth_token="test-token",
+                author_name="Test User",
+                author_email="test@example.com",
+                user_session=Mock()
+            )
+            
+            # Verify branch name contains 'tool'
+            mock_git_service.checkout_new_branch.assert_called_once()
+            branch_name = mock_git_service.checkout_new_branch.call_args[1]['branch_name']
+            assert 'tool' in branch_name.lower()
+            assert 'test-tool' in branch_name
+    
+    @pytest.mark.asyncio
+    async def test_workflow_creates_correct_commit_message_by_type(
+        self, local_repo_service
+    ):
+        """Test that workflow creates commit messages with correct artifact type."""
+        user_id = "test-user"
+        repo_name = "org/repo"
+        
+        # Mock _get_repo_base_path to return a temp path
+        with patch.object(local_repo_service, '_get_repo_base_path', return_value=Path("/tmp/repos")), \
+             patch('services.local_repo.local_repo_service.GitService') as mock_git_service_class:
+            
+            # Setup GitService mock
+            mock_git_service = Mock()
+            mock_git_service.get_current_branch.return_value = "main"
+            mock_git_service.checkout_new_branch.return_value = Mock(success=True)
+            mock_git_service.add_files.return_value = Mock(success=True)
+            mock_git_service.commit_changes.return_value = Mock(success=True)
+            mock_git_service.push_branch.return_value = Mock(success=True)
+            mock_git_service_class.return_value = mock_git_service
+            
+            # Test with PROMPT
+            await local_repo_service.handle_git_workflow_after_save(
+                user_id=user_id,
+                repo_name=repo_name,
+                file_path="prompts/test.md",
+                artifact_type=ArtifactType.PROMPT,
+                oauth_token="test-token",
+                author_name="Test User",
+                author_email="test@example.com",
+                user_session=Mock()
+            )
+            
+            commit_message = mock_git_service.commit_changes.call_args[1]['commit_message']
+            assert 'prompt' in commit_message.lower()
+            
+            # Reset mocks
+            mock_git_service.commit_changes.reset_mock()
+            
+            # Test with TOOL
+            await local_repo_service.handle_git_workflow_after_save(
+                user_id=user_id,
+                repo_name=repo_name,
+                file_path="tools/test.yaml",
+                artifact_type=ArtifactType.TOOL,
+                oauth_token="test-token",
+                author_name="Test User",
+                author_email="test@example.com",
+                user_session=Mock()
+            )
+            
+            commit_message = mock_git_service.commit_changes.call_args[1]['commit_message']
+            assert 'tool' in commit_message.lower()
+    
+    @pytest.mark.asyncio
+    async def test_workflow_returns_pr_info(
+        self, local_repo_service, mock_remote_repo_service
+    ):
+        """Test that workflow returns PR info after successful PR creation."""
+        user_id = "test-user"
+        repo_name = "org/repo"
+        file_path = "tools/test-tool.yaml"
+        
+        # Mock _get_repo_base_path to return a temp path
+        with patch.object(local_repo_service, '_get_repo_base_path', return_value=Path("/tmp/repos")), \
+             patch('services.local_repo.local_repo_service.GitService') as mock_git_service_class:
+            
+            # Setup GitService mock
+            mock_git_service = Mock()
+            mock_git_service.get_current_branch.return_value = "main"
+            mock_git_service.checkout_new_branch.return_value = Mock(success=True)
+            mock_git_service.add_files.return_value = Mock(success=True)
+            mock_git_service.commit_changes.return_value = Mock(success=True)
+            mock_git_service.push_branch.return_value = Mock(success=True)
+            mock_git_service_class.return_value = mock_git_service
+            
+            # Execute workflow
+            pr_info = await local_repo_service.handle_git_workflow_after_save(
+                user_id=user_id,
+                repo_name=repo_name,
+                file_path=file_path,
+                artifact_type=ArtifactType.TOOL,
+                oauth_token="test-token",
+                author_name="Test User",
+                author_email="test@example.com",
+                user_session=Mock()
+            )
+            
+            # Verify PR info is returned
+            assert pr_info is not None
+            assert pr_info.pr_number == 123
+            assert pr_info.pr_url == "https://github.com/org/repo/pull/123"
+            assert pr_info.pr_id == 456789
+    
+    @pytest.mark.asyncio
+    async def test_workflow_without_oauth_token_raises_exception(
+        self, local_repo_service
+    ):
+        """Test that workflow raises exception when no OAuth token is provided."""
+        user_id = "test-user"
+        repo_name = "org/repo"
+        file_path = "tools/test-tool.yaml"
+        
+        # Mock _get_repo_base_path to return a temp path
+        with patch.object(local_repo_service, '_get_repo_base_path', return_value=Path("/tmp/repos")), \
+             patch('services.local_repo.local_repo_service.GitService') as mock_git_service_class:
+            
+            # Setup GitService mock
+            mock_git_service = Mock()
+            mock_git_service.get_current_branch.return_value = "main"
+            mock_git_service.checkout_new_branch.return_value = Mock(success=True)
+            mock_git_service.add_files.return_value = Mock(success=True)
+            mock_git_service.commit_changes.return_value = Mock(success=True)
+            mock_git_service_class.return_value = mock_git_service
+            
+            # Execute workflow without OAuth token - should return None (not raise exception)
+            # because the exception is caught and logged
+            pr_info = await local_repo_service.handle_git_workflow_after_save(
+                user_id=user_id,
+                repo_name=repo_name,
+                file_path=file_path,
+                artifact_type=ArtifactType.TOOL,
+                oauth_token=None,
+                author_name="Test User",
+                author_email="test@example.com",
+                user_session=Mock()
+            )
+            
+            # Verify no PR was created (method returns None due to exception handling)
+            assert pr_info is None

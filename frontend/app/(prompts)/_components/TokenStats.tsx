@@ -19,7 +19,7 @@ export function TokenStats() {
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
   const accentColor = useColorModeValue('gray.700', 'gray.300');
   const bgColor = useColorModeValue('gray.50', 'gray.700/30');
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const borderColor = "bg.muted";
   const linkColor = useColorModeValue('blue.500', 'blue.300');
   const titleColor = useColorModeValue('gray.800', 'gray.200');
   const textColor = useColorModeValue('gray.700', 'gray.300');

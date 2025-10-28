@@ -28,19 +28,15 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
   
   // AI Message (left side)
   const aiMessageBg = "bg.subtle";
-  const aiMessageBorder = "border";
+  const aiMessageBorder = "bg.muted";
   
   // User Message (right side - hollow style)
   const userMessageBg = "transparent";
-  const userMessageBorder = "border";
+  const userMessageBorder = "bg.muted";
   
   // System Message (right side, muted)
   const systemMessageBg = "bg.subtle";
-  const systemMessageBorder = "border";
-  
-  // Tool Message (log style)
-  const toolMessageBg = "bg.muted";
-  const toolMessageBorder = "border";
+  const systemMessageBorder = "bg.muted";
   
   // Tool result background
   const toolResultBg = "bg.subtle";
@@ -106,7 +102,7 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
     switch (message.role) {
       case 'assistant':
         return (
-          <HStack key={message.id} align="start" justify="flex-start" w="full" mb={4}>
+          <HStack align="start" justify="flex-start" w="full" mb={4}>
             <Box
               p={2}
               borderRadius="full"
@@ -122,9 +118,41 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
                 borderColor={aiMessageBorder}
                 borderWidth="1px"
                 size="sm"
+                opacity={Array.isArray(message.tool_calls) && message.tool_calls.length > 0 ? 0.7 : 1}
               >
                 <Card.Body p={3}>
-                  <MarkdownRenderer content={message.content} />
+                  {message.content ? (
+                    <MarkdownRenderer content={message.content} />
+                  ) : Array.isArray(message.tool_calls) && message.tool_calls.length > 0 ? (
+                    <Box>
+                      <HStack gap={2} mb={2}>
+                        <Badge size="xs" variant="subtle" colorPalette="gray">
+                          Tool Call
+                        </Badge>
+                      </HStack>
+                      <VStack align="start" gap={2}>
+                        {message.tool_calls.map((toolCall) => (
+                          <Box key={toolCall.id} w="full">
+                            <Text fontSize="sm" color={mutedTextColor}>
+                              Name: {toolCall.function.name}
+                            </Text>
+                            <Text fontSize="sm" color={mutedTextColor} mt={1}>
+                              Parameters:
+                            </Text>
+                            <Box p={2} bg={toolResultBg} borderRadius="md" mt={1}>
+                              <Text fontSize="xs" fontFamily="mono" color={mutedTextColor}>
+                                {toolCall.function.arguments}
+                              </Text>
+                            </Box>
+                          </Box>
+                        ))}
+                      </VStack>
+                    </Box>
+                  ) : (
+                    <Text fontSize="sm" color={mutedTextColor} fontStyle="italic">
+                      No content
+                    </Text>
+                  )}
                 </Card.Body>
               </Card.Root>
               <Text fontSize="xs" color={timestampColor} mt={1} ml={2}>
@@ -137,7 +165,7 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
 
       case 'user':
         return (
-          <HStack key={message.id} align="start" justify="flex-end" w="full" mb={4}>
+          <HStack align="start" justify="flex-end" w="full" mb={4}>
             <Box maxW="70%" flex={1}>
               <Card.Root
                 bg={userMessageBg}
@@ -171,7 +199,7 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
 
       case 'system':
         return (
-          <HStack key={message.id} align="start" justify="flex-end" w="full" mb={4}>
+          <HStack align="start" justify="flex-end" w="full" mb={4}>
             <Box maxW="70%" flex={1}>
               <Card.Root
                 bg={systemMessageBg}
@@ -211,37 +239,50 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
 
       case 'tool':
         return (
-          <Box key={message.id} w="full" mb={3}>
-            <Card.Root
-              bg={toolMessageBg}
-              borderColor={toolMessageBorder}
-              borderWidth="1px"
-              borderLeftWidth="4px"
-              size="sm"
-            >
-              <Card.Body p={3}>
-                <HStack gap={2} mb={2}>
-                  <LuWrench size={14} />
-                  <Badge size="sm" variant="subtle" colorPalette="yellow">
-                    Tool Call
-                  </Badge>
-                  <Text fontSize="xs" color={timestampColor} ml="auto">
-                    {formatTimestamp(message.timestamp)}
+          <HStack align="start" justify="flex-end" w="full" mb={4}>
+            <Box maxW="70%" flex={1}>
+              <Card.Root
+                bg="transparent"
+                borderColor={userMessageBorder}
+                borderWidth="1px"
+                size="sm"
+                ml="auto"
+                variant="outline"
+                opacity={0.7}
+              >
+                <Card.Body p={3}>
+                  <HStack gap={2} mb={2}>
+                    <Badge size="xs" variant="subtle" colorPalette="gray">
+                      Tool Response
+                    </Badge>
+                  </HStack>
+                  <Text fontSize="sm" whiteSpace="pre-wrap" fontFamily="mono">
+                    {message.content}
                   </Text>
-                </HStack>
-                <Text fontSize="sm" color={mutedTextColor} whiteSpace="pre-wrap">
-                  {message.content}
-                </Text>
-                {message.tool_calls && (
-                  <Box mt={2} p={2} bg={toolResultBg} borderRadius="md">
-                    <Text fontSize="xs" color={mutedTextColor}>
-                      Tool Calls: {JSON.stringify(message.tool_calls, null, 2)}
-                    </Text>
-                  </Box>
-                )}
-              </Card.Body>
-            </Card.Root>
-          </Box>
+                  {message.tool_calls && (
+                    <Box mt={2} p={2} bg={toolResultBg} borderRadius="md">
+                      <Text fontSize="xs" color={mutedTextColor}>
+                        Tool Calls: {JSON.stringify(message.tool_calls, null, 2)}
+                      </Text>
+                    </Box>
+                  )}
+                </Card.Body>
+              </Card.Root>
+              <Text fontSize="xs" color={timestampColor} mt={1} mr={2} textAlign="right">
+                {formatTimestamp(message.timestamp)}
+              </Text>
+            </Box>
+            <Box
+              p={2}
+              borderRadius="full"
+              bg={userMessageBg}
+              borderWidth="1px"
+              borderColor={userMessageBorder}
+              opacity={0.7}
+            >
+              <LuWrench size={16} />
+            </Box>
+          </HStack>
         );
 
       default:
@@ -274,7 +315,11 @@ export function ChatMessages({ messages, isLoading = false }: ChatMessagesProps)
           </VStack>
         ) : (
           <VStack gap={0} align="stretch">
-            {messages.map(renderMessage)}
+            {messages.map((message) => (
+              <React.Fragment key={message.id}>
+                {renderMessage(message)}
+              </React.Fragment>
+            ))}
             {isLoading && (
               <HStack align="start" justify="flex-start" w="full" mb={4}>
                 <Box

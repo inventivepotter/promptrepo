@@ -12,6 +12,7 @@ import { PromptEditorHeader } from './PromptEditorHeader';
 import { PromptFieldGroup } from './PromptFieldGroup';
 import { ModelFieldGroup } from './ModelFieldGroup';
 import { ParametersFieldGroup } from './ParametersFieldGroup';
+import { ToolsFieldGroup } from './ToolsFieldGroup';
 import { Chat } from './Chat';
 import { PromptTimeline } from './PromptTimeline';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
@@ -148,6 +149,9 @@ export function PromptEditor() {
                       
                       {/* Parameters */}
                       <ParametersFieldGroup />
+                      
+                      {/* Tools */}
+                      <ToolsFieldGroup />
                     </VStack>
                   </Box>
 
