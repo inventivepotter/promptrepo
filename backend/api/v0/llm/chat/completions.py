@@ -110,6 +110,7 @@ async def chat_completions(
             }
         )
         
+        # TODO: Streaming response not supported yet
         # Handle streaming response
         if request_body.stream:
             logger.info(

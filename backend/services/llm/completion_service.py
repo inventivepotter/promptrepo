@@ -323,6 +323,7 @@ class ChatCompletionService:
             loaded_tools = self._load_tools_from_paths(request.tools, repo_for_tools, user_id)
         
         try:
+            #TODO: See if these can be refactored to any llm sdk
             # Handle Z.AI provider separately
             if request.provider == "zai":
                 zai_service = ZAILlmProvider(

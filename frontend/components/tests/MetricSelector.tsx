@@ -96,7 +96,8 @@ export function MetricSelector({ metrics, onChange }: MetricSelectorProps) {
     const newMetric: MetricConfig = {
       type: selectedMetricType as MetricType,
       threshold: 0.7,
-      model: isNonDet ? (modelOptions[0]?.value || '') : undefined,
+      provider: isNonDet ? (modelOptions[0]?.provider || '') : undefined,
+      model: isNonDet ? (modelOptions[0]?.model || '') : undefined,
       include_reason: isNonDet,
       strict_mode: false,
     };
@@ -239,7 +240,14 @@ export function MetricSelector({ metrics, onChange }: MetricSelectorProps) {
                           value={[currentModelValue]}
                           onValueChange={(e) => {
                             const newValue = e.value[0] || '';
-                            handleUpdateMetric(index, 'model', newValue);
+                            const selectedOption = modelOptions.find((opt) => opt.value === newValue);
+                            if (selectedOption) {
+                              handleUpdateMetric(index, 'provider', selectedOption.provider);
+                              handleUpdateMetric(index, 'model', selectedOption.model);
+                            } else {
+                              handleUpdateMetric(index, 'provider', '');
+                              handleUpdateMetric(index, 'model', '');
+                            }
                             if (newValue) {
                               setModelSearch('');
                             }

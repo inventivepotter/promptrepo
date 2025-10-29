@@ -46,7 +46,12 @@ class DeepEvalAdapter:
                 ProfessionalismMetric,
                 ConcisenessMetric,
                 FuzzyMatchMetric,
-                SemanticSimilarityMetric
+                SemanticSimilarityMetric,
+                ExactMatchMetric,
+                ToolsCalledMetric,
+                JsonSchemaVerificationMetric,
+                KeywordPatternPresenceMetric,
+                OutputLengthMetric
             )
             
             self.metric_mapping: Dict[MetricType, Type[Any]] = {
@@ -63,6 +68,11 @@ class DeepEvalAdapter:
                 MetricType.CONCISENESS: ConcisenessMetric,
                 MetricType.FUZZY_MATCH: FuzzyMatchMetric,
                 MetricType.SEMANTIC_SIMILARITY: SemanticSimilarityMetric,
+                MetricType.EXACT_MATCH: ExactMatchMetric,
+                MetricType.TOOLS_CALLED: ToolsCalledMetric,
+                MetricType.JSON_SCHEMA_VERIFICATION: JsonSchemaVerificationMetric,
+                MetricType.KEYWORD_PATTERN_PRESENCE: KeywordPatternPresenceMetric,
+                MetricType.OUTPUT_LENGTH: OutputLengthMetric,
             }
             
             self.LLMTestCase: Optional[Type[Any]] = LLMTestCase
@@ -96,21 +106,31 @@ class DeepEvalAdapter:
             raise ValueError(f"Unsupported metric type: {config.type}")
         
         try:
-            # Extract model name from "provider:model" format
-            # If format is "provider:model", extract just the model part
-            # Otherwise, use the value as-is for backward compatibility
-            model_name = config.model
-            if ':' in config.model:
-                _, model_name = config.model.split(':', 1)
+            # Check if this is a deterministic metric (doesn't need LLM configuration)
+            is_deterministic = MetricType.is_deterministic(config.type)
             
-            # Create metric with configuration
-            metric = metric_class(
-                threshold=config.threshold,
-                model=model_name,
-                include_reason=config.include_reason,
-                strict_mode=config.strict_mode
-            )
-            return metric
+            if is_deterministic:
+                # Deterministic metrics don't need model/provider
+                # Just instantiate them directly
+                metric = metric_class()
+                return metric
+            else:
+                # Non-deterministic metrics need model/provider
+                # Extract model name from "provider:model" format
+                # If format is "provider:model", extract just the model part
+                # Otherwise, use the value as-is for backward compatibility
+                model_name = config.model
+                if config.model and ':' in config.model:
+                    _, model_name = config.model.split(':', 1)
+                
+                # Create metric with configuration
+                metric = metric_class(
+                    threshold=config.threshold or 0.7,
+                    model=model_name,
+                    include_reason=config.include_reason,
+                    strict_mode=config.strict_mode
+                )
+                return metric
         except Exception as e:
             logger.error(f"Failed to create metric {config.type}: {e}")
             raise
@@ -184,13 +204,14 @@ class DeepEvalAdapter:
                 reason = metric.reason if hasattr(metric, 'reason') and config.include_reason else None
                 
                 # Determine if passed based on threshold
-                passed = score >= config.threshold
+                threshold = config.threshold or 0.7
+                passed = score >= threshold
                 
                 result = MetricResult(
                     type=config.type,
                     score=score,
                     passed=passed,
-                    threshold=config.threshold,
+                    threshold=threshold,
                     reason=reason,
                     error=None
                 )
@@ -201,11 +222,12 @@ class DeepEvalAdapter:
                 logger.error(f"Failed to evaluate metric {config.type}: {e}")
                 
                 # Create error result
+                threshold = config.threshold or 0.7
                 error_result = MetricResult(
                     type=config.type,
                     score=0.0,
                     passed=False,
-                    threshold=config.threshold,
+                    threshold=threshold,
                     reason=None,
                     error=str(e)
                 )

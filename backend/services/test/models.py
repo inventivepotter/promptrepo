@@ -231,6 +231,10 @@ class UnitTestDefinition(BaseModel):
     name: str = Field(description="Unique test name within suite")
     description: Optional[str] = Field(default="", description="Test description")
     prompt_reference: str = Field(description="Reference to prompt file path")
+    user_message: Optional[str] = Field(
+        default=None,
+        description="User message input for the prompt"
+    )
     template_variables: Dict[str, Any] = Field(
         default_factory=dict,
         description="Template variables for prompt execution"

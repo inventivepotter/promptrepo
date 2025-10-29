@@ -263,36 +263,62 @@ class TestExecutionService:
                 if placeholder in prompt_text:
                     prompt_text = prompt_text.replace(placeholder, str(var_value))
             
+            user_message = test_def.user_message
+            
             # Extract input from template variables (typically user_question or similar)
-            input_text = test_def.template_variables.get(
-                "user_question",
-                test_def.template_variables.get("input", prompt_text)
-            )
+            input_text = user_message if user_message is not None else prompt_text
             
             # Execute prompt using ChatCompletionService
-            # Check if any metric requires LLM execution
-            needs_llm_execution = any(
-                metric.provider and metric.model
-                for metric in suite_metrics
-            )
+            # Check if any non-deterministic metric requires LLM execution
+            # Deterministic metrics don't need provider/model, but we still need to execute the prompt
+            non_deterministic_metrics = [
+                metric for metric in suite_metrics
+                if MetricType.is_non_deterministic(metric.type)
+            ]
             
-            if not needs_llm_execution:
-                raise ValidationException(
-                    message="At least one metric must have provider and model configured for test execution",
-                    context={"test_name": test_def.name}
+            # For non-deterministic metrics, we need provider/model
+            # For deterministic metrics, we can use any available LLM config or a default
+            execution_metric = None
+            
+            if non_deterministic_metrics:
+                # If we have non-deterministic metrics, we need one with provider/model configured
+                execution_metric = next(
+                    (m for m in non_deterministic_metrics if m.provider and m.model),
+                    None
+                )
+                if not execution_metric:
+                    raise ValidationException(
+                        message="Non-deterministic metrics require provider and model configuration",
+                        context={"test_name": test_def.name}
+                    )
+            else:
+                # For deterministic-only metrics, try to find any metric with provider/model
+                # If none exist, we'll use a default or skip LLM execution
+                execution_metric = next(
+                    (m for m in suite_metrics if m.provider and m.model),
+                    None
                 )
             
-            # Use the first non-deterministic metric's provider/model for execution
-            execution_metric = next(
-                (m for m in suite_metrics if m.provider and m.model),
-                None
-            )
-            
+            # If no execution_metric found (all deterministic), we still need to execute the prompt
+            # to get actual_output for comparison. Try to get provider/model from prompt config
+            # or use a default
             if not execution_metric:
-                raise ValidationException(
-                    message="No metric found with provider and model configuration",
-                    context={"test_name": test_def.name}
-                )
+                # For deterministic-only suites, check if prompt has provider/model config
+                if hasattr(prompt_meta.prompt, 'provider') and hasattr(prompt_meta.prompt, 'model'):
+                    if prompt_meta.prompt.provider and prompt_meta.prompt.model:
+                        # Create a temporary metric config for execution
+                        execution_metric = MetricConfig(
+                            type=MetricType.EXACT_MATCH,  # Dummy type, not used for execution
+                            provider=prompt_meta.prompt.provider,
+                            model=prompt_meta.prompt.model
+                        )
+                
+                # If still no execution_metric, we cannot execute
+                if not execution_metric:
+                    raise ValidationException(
+                        message="Cannot execute test: no LLM provider/model configured. Either add a non-deterministic metric with provider/model, or configure provider/model in the prompt.",
+                        context={"test_name": test_def.name}
+                    )
             
             # Build chat completion request
             # Use prompt text directly as system message (could be enhanced to parse system/user)

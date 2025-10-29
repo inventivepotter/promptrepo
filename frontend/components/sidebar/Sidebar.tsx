@@ -6,13 +6,13 @@ import {
   Button,
   Separator,
   Stack,
+  Text
 } from '@chakra-ui/react'
 import {
   LuSettings,
   LuWrench,
+  LuFlaskConical
 } from 'react-icons/lu'
-import { PiBracketsCurlyDuotone } from 'react-icons/pi'
-import { FaFlask } from 'react-icons/fa'
 import { useSidebarCollapsed, useSidebarHasHydrated } from '@/stores/sidebarStore'
 import { Branding } from '../Branding'
 import { AuthSection } from './AuthSection'
@@ -74,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
               transition="all 0.15s ease"
               width="100%"
             >
-              <LuSettings size={16} />
+              <LuSettings size={18} />
               {!isCollapsed && (
                 <span style={{ marginLeft: 12, fontSize: '14px', fontWeight: 500 }}>
                   Configuration
@@ -100,7 +100,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
               transition="all 0.15s ease"
               width="100%"
             >
-              <PiBracketsCurlyDuotone size={16} />
+              <Text
+                fontSize={12}
+                fontWeight="600"
+              >
+                {'{'}P{'}'}
+              </Text>
               {!isCollapsed && (
                 <span style={{ marginLeft: 12, fontSize: '14px', fontWeight: 500 }}>
                   Prompts
@@ -152,7 +157,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
               transition="all 0.15s ease"
               width="100%"
             >
-              <FaFlask size={16} />
+              <LuFlaskConical size={16} />
               {!isCollapsed && (
                 <span style={{ marginLeft: 12, fontSize: '14px', fontWeight: 500 }}>
                   Tests
