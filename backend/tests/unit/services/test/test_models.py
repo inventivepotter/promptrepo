@@ -1,22 +1,22 @@
 """
-Unit tests for test service models.
+Unit tests for eval service models.
 """
 
 import pytest
 from datetime import datetime
 from typing import Dict, Any, List
 
-from services.test.models import (
+from services.evals.models import (
     MetricType,
     ExpectedEvaluationFieldsModel,
     ActualEvaluationFieldsModel,
     MetricConfig,
-    UnitTestDefinition,
-    TestSuiteDefinition,
+    EvalDefinition,
+    EvalSuiteDefinition,
     MetricResult,
-    UnitTestExecutionResult,
-    TestSuiteExecutionResult,
-    TestSuiteSummary
+    EvalExecutionResult,
+    EvalSuiteExecutionResult,
+    EvalSuiteSummary
 )
 
 
@@ -70,82 +70,65 @@ class TestExpectedEvaluationFieldsModel:
         """Test that default values are set correctly"""
         fields = ExpectedEvaluationFieldsModel()
         
-        assert fields.expected_output is None
-        assert fields.retrieval_context is None
-        assert fields.evaluation_steps is None
-        assert fields.criteria is None
-        assert fields.expected_tools is None
-        assert fields.expected_schema is None
-        assert fields.expected_keywords is None
-        assert fields.expected_patterns is None
-        assert fields.forbidden_keywords is None
-        assert fields.min_length is None
-        assert fields.max_length is None
-        assert fields.length_unit == "characters"
-        assert fields.domain is None
-        assert fields.chatbot_role is None
-        assert fields.assessment_questions is None
+        assert fields.metric_type is None
+        assert fields.config is None
     
     def test_with_values(self):
         """Test model with values"""
-        expected_output = "Expected response"
-        retrieval_context = ["Context 1", "Context 2"]
-        evaluation_steps = ["Step 1", "Step 2"]
+        config = {
+            "expected_output": "Expected response",
+            "retrieval_context": ["Context 1", "Context 2"],
+            "evaluation_steps": ["Step 1", "Step 2"]
+        }
         
         fields = ExpectedEvaluationFieldsModel(
-            expected_output=expected_output,
-            retrieval_context=retrieval_context,
-            evaluation_steps=evaluation_steps
+            metric_type=MetricType.FAITHFULNESS,
+            config=config
         )
         
-        assert fields.expected_output == expected_output
-        assert fields.retrieval_context == retrieval_context
-        assert fields.evaluation_steps == evaluation_steps
+        assert fields.metric_type == MetricType.FAITHFULNESS
+        assert fields.config == config
+        assert fields.get_config_value("expected_output") == "Expected response"
+        assert fields.get_config_value("retrieval_context") == ["Context 1", "Context 2"]
     
-    def test_get_context_for_metric(self):
-        """Test get_context_for_metric method"""
+    def test_config_value_retrieval(self):
+        """Test config value retrieval"""
+        config = {
+            "expected_output": "Expected result",
+            "retrieval_context": ["Context"]
+        }
+        
         fields = ExpectedEvaluationFieldsModel(
-            retrieval_context=["test context"]
+            metric_type=MetricType.FAITHFULNESS,
+            config=config
         )
         
-        # Test RAG metrics
-        assert fields.get_context_for_metric(MetricType.FAITHFULNESS) == ["test context"]
-        assert fields.get_context_for_metric(MetricType.CONTEXTUAL_RELEVANCY) == ["test context"]
-        assert fields.get_context_for_metric(MetricType.CONTEXTUAL_PRECISION) == ["test context"]
-        assert fields.get_context_for_metric(MetricType.CONTEXTUAL_RECALL) == ["test context"]
-        
-        # Test hallucination metric (should use retrieval_context since context field was removed)
-        assert fields.get_context_for_metric(MetricType.HALLUCINATION) == ["test context"]
-        
-        # Test metrics that don't need context
-        assert fields.get_context_for_metric(MetricType.ANSWER_RELEVANCY) is None
-        assert fields.get_context_for_metric(MetricType.BIAS) is None
-        assert fields.get_context_for_metric(MetricType.TOXICITY) is None
-        
-        # Test deterministic metrics
-        assert fields.get_context_for_metric(MetricType.EXACT_MATCH) is None
-        assert fields.get_context_for_metric(MetricType.TOOLS_CALLED) is None
+        assert fields.get_config_value("expected_output") == "Expected result"
+        assert fields.get_config_value("retrieval_context") == ["Context"]
+        assert fields.get_config_value("nonexistent") is None
     
-    def test_get_required_fields_for_metric(self):
-        """Test get_required_fields_for_metric method"""
-        fields = ExpectedEvaluationFieldsModel()
+    def test_metric_config_conversion(self):
+        """Test conversion to/from metric config"""
+        from lib.deepeval.metric_config import ExactMatchConfig
         
-        # Test deterministic metrics
-        assert fields.get_required_fields_for_metric(MetricType.EXACT_MATCH) == ["expected_output"]
-        assert fields.get_required_fields_for_metric(MetricType.TOOLS_CALLED) == ["expected_tools"]
-        assert fields.get_required_fields_for_metric(MetricType.JSON_SCHEMA_VERIFICATION) == ["expected_schema"]
-        assert fields.get_required_fields_for_metric(MetricType.KEYWORD_PATTERN_PRESENCE) == ["expected_keywords", "expected_patterns"]
-        assert fields.get_required_fields_for_metric(MetricType.OUTPUT_LENGTH) == ["min_length", "max_length"]
+        # Create a specific metric config
+        metric_config = ExactMatchConfig(expected_output="test output")
         
-        # Test non-deterministic metrics
-        assert fields.get_required_fields_for_metric(MetricType.ANSWER_RELEVANCY) == []
-        assert fields.get_required_fields_for_metric(MetricType.FAITHFULNESS) == ["retrieval_context"]
-        assert fields.get_required_fields_for_metric(MetricType.CONTEXTUAL_RELEVANCY) == ["retrieval_context"]
-        assert fields.get_required_fields_for_metric(MetricType.CONTEXTUAL_PRECISION) == ["retrieval_context"]
-        assert fields.get_required_fields_for_metric(MetricType.CONTEXTUAL_RECALL) == ["retrieval_context"]
-        assert fields.get_required_fields_for_metric(MetricType.HALLUCINATION) == ["context"]
-        assert fields.get_required_fields_for_metric(MetricType.BIAS) == []
-        assert fields.get_required_fields_for_metric(MetricType.TOXICITY) == []
+        fields = ExpectedEvaluationFieldsModel.from_metric_config(
+            MetricType.EXACT_MATCH,
+            metric_config
+        )
+        
+        assert fields.metric_type == MetricType.EXACT_MATCH
+        assert fields.config is not None
+        assert fields.config["expected_output"] == "test output"
+        
+        # Test to metric config
+        converted_back = fields.to_metric_config()
+        assert converted_back is not None
+        # Cast back to the specific type to access fields
+        exact_match_config = ExactMatchConfig.model_validate(converted_back.model_dump())
+        assert exact_match_config.expected_output == "test output"
 
 
 class TestActualEvaluationFieldsModel:
@@ -223,12 +206,12 @@ class TestMetricConfig:
             MetricConfig(type=MetricType.ANSWER_RELEVANCY, threshold=1.1)
 
 
-class TestUnitTestDefinition:
-    """Test UnitTestDefinition model"""
+class TestEvalDefinition:
+    """Test EvalDefinition model"""
     
     def test_default_values(self):
         """Test default values"""
-        test_def = UnitTestDefinition(
+        test_def = EvalDefinition(
             name="test",
             prompt_reference="test_prompt.txt"
         )
@@ -243,11 +226,14 @@ class TestUnitTestDefinition:
     def test_with_values(self):
         """Test test definition with values"""
         evaluation_fields = ExpectedEvaluationFieldsModel(
-            expected_output="Expected result",
-            retrieval_context=["Context"]
+            metric_type=MetricType.FAITHFULNESS,
+            config={
+                "expected_output": "Expected result",
+                "retrieval_context": ["Context"]
+            }
         )
         
-        test_def = UnitTestDefinition(
+        test_def = EvalDefinition(
             name="test_with_values",
             description="Test description",
             prompt_reference="test_prompt.txt",
@@ -264,16 +250,16 @@ class TestUnitTestDefinition:
         assert test_def.enabled is False
 
 
-class TestTestSuiteDefinition:
-    """Test TestSuiteDefinition model"""
+class TestEvalSuiteDefinition:
+    """Test EvalSuiteDefinition model"""
     
     def test_default_values(self):
         """Test default values"""
-        suite = TestSuiteDefinition(name="test_suite")
+        suite = EvalSuiteDefinition(name="test_suite")
         
         assert suite.name == "test_suite"
         assert suite.description == ""
-        assert suite.tests == []
+        assert suite.evals == []
         assert suite.tags == []
         assert suite.metrics == []
         assert isinstance(suite.created_at, datetime)
@@ -281,23 +267,23 @@ class TestTestSuiteDefinition:
     
     def test_with_values(self):
         """Test suite with values"""
-        test_def = UnitTestDefinition(
+        test_def = EvalDefinition(
             name="test1",
             prompt_reference="prompt1.txt"
         )
         metric_config = MetricConfig(type=MetricType.ANSWER_RELEVANCY)
         
-        suite = TestSuiteDefinition(
+        suite = EvalSuiteDefinition(
             name="suite_with_values",
             description="Suite description",
-            tests=[test_def],
+            evals=[test_def],
             tags=["test", "example"],
             metrics=[metric_config]
         )
         
         assert suite.name == "suite_with_values"
         assert suite.description == "Suite description"
-        assert suite.tests == [test_def]
+        assert suite.evals == [test_def]
         assert suite.tags == ["test", "example"]
         assert suite.metrics == [metric_config]
 
@@ -323,8 +309,8 @@ class TestMetricResult:
         assert result.error is None
 
 
-class TestUnitTestExecutionResult:
-    """Test UnitTestExecutionResult model"""
+class TestEvalExecutionResult:
+    """Test EvalExecutionResult model"""
     
     def test_with_values(self):
         """Test execution result with values"""
@@ -333,7 +319,8 @@ class TestUnitTestExecutionResult:
             execution_time_ms=1000
         )
         expected_fields = ExpectedEvaluationFieldsModel(
-            expected_output="Expected output"
+            metric_type=MetricType.ANSWER_RELEVANCY,
+            config={"expected_output": "Expected output"}
         )
         metric_result = MetricResult(
             type=MetricType.ANSWER_RELEVANCY,
@@ -342,8 +329,8 @@ class TestUnitTestExecutionResult:
             threshold=0.7
         )
         
-        execution_result = UnitTestExecutionResult(
-            test_name="test_execution",
+        execution_result = EvalExecutionResult(
+            eval_name="test_execution",
             prompt_reference="test_prompt.txt",
             template_variables={"var": "value"},
             actual_evaluation_fields=actual_fields,
@@ -352,7 +339,7 @@ class TestUnitTestExecutionResult:
             overall_passed=True
         )
         
-        assert execution_result.test_name == "test_execution"
+        assert execution_result.eval_name == "test_execution"
         assert execution_result.prompt_reference == "test_prompt.txt"
         assert execution_result.template_variables == {"var": "value"}
         assert execution_result.actual_evaluation_fields == actual_fields
@@ -362,13 +349,13 @@ class TestUnitTestExecutionResult:
         assert isinstance(execution_result.executed_at, datetime)
 
 
-class TestTestSuiteExecutionResult:
-    """Test TestSuiteExecutionResult model"""
+class TestEvalSuiteExecutionResult:
+    """Test EvalSuiteExecutionResult model"""
     
     def test_with_values(self):
         """Test suite execution result with values"""
-        execution_result = UnitTestExecutionResult(
-            test_name="test",
+        execution_result = EvalExecutionResult(
+            eval_name="test",
             prompt_reference="prompt.txt",
             template_variables={},
             actual_evaluation_fields=ActualEvaluationFieldsModel(actual_output="output"),
@@ -377,35 +364,35 @@ class TestTestSuiteExecutionResult:
             overall_passed=True
         )
         
-        suite_result = TestSuiteExecutionResult(
+        suite_result = EvalSuiteExecutionResult(
             suite_name="test_suite",
-            test_results=[execution_result],
-            total_tests=1,
-            passed_tests=1,
-            failed_tests=0,
+            eval_results=[execution_result],
+            total_evals=1,
+            passed_evals=1,
+            failed_evals=0,
             total_execution_time_ms=1500
         )
         
         assert suite_result.suite_name == "test_suite"
-        assert suite_result.test_results == [execution_result]
-        assert suite_result.total_tests == 1
-        assert suite_result.passed_tests == 1
-        assert suite_result.failed_tests == 0
+        assert suite_result.eval_results == [execution_result]
+        assert suite_result.total_evals == 1
+        assert suite_result.passed_evals == 1
+        assert suite_result.failed_evals == 0
         assert suite_result.total_execution_time_ms == 1500
         assert isinstance(suite_result.executed_at, datetime)
 
 
-class TestTestSuiteSummary:
-    """Test TestSuiteSummary model"""
+class TestEvalSuiteSummary:
+    """Test EvalSuiteSummary model"""
     
     def test_with_values(self):
         """Test suite summary with values"""
         now = datetime.now()
         
-        summary = TestSuiteSummary(
+        summary = EvalSuiteSummary(
             name="test_suite",
-            description="Test suite description",
-            test_count=5,
+            description="Eval suite description",
+            eval_count=5,
             tags=["test", "example"],
             file_path="/path/to/suite.yaml",
             last_execution=now,
@@ -413,8 +400,8 @@ class TestTestSuiteSummary:
         )
         
         assert summary.name == "test_suite"
-        assert summary.description == "Test suite description"
-        assert summary.test_count == 5
+        assert summary.description == "Eval suite description"
+        assert summary.eval_count == 5
         assert summary.tags == ["test", "example"]
         assert summary.file_path == "/path/to/suite.yaml"
         assert summary.last_execution == now

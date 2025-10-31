@@ -1,8 +1,8 @@
 """
-Unit tests for Test Service.
+Unit tests for Eval Service.
 
 Tests cover:
-- Test suite CRUD operations
+- Eval suite CRUD operations
 - Execution history retrieval
 - File operations and error handling
 """
@@ -13,16 +13,17 @@ from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 from typing import Dict, Any
 
-from services.test.test_service import TestService
-from services.test.models import (
-    TestSuiteData,
-    TestSuiteDefinition,
-    UnitTestDefinition,
+from services.evals.eval_meta_service import EvalMetaService
+from services.evals.models import (
+    EvalSuiteData,
+    EvalSuiteDefinition,
+    EvalDefinition,
     MetricConfig,
     MetricType,
-    TestSuiteExecutionResult,
-    UnitTestExecutionResult,
-    TestSuiteSummary
+    EvalSuiteExecutionResult,
+    EvalExecutionResult,
+    EvalSuiteSummary,
+    ExpectedEvaluationFieldsModel
 )
 from schemas.hosting_type_enum import HostingType
 from middlewares.rest.exceptions import NotFoundException, AppException
@@ -52,8 +53,8 @@ def mock_local_repo_service():
 
 @pytest.fixture
 def test_service(mock_config_service, mock_file_ops_service, mock_local_repo_service):
-    """Create TestService instance with mocked dependencies."""
-    return TestService(
+    """Create EvalMetaService instance with mocked dependencies."""
+    return EvalMetaService(
         config_service=mock_config_service,
         file_ops_service=mock_file_ops_service,
         local_repo_service=mock_local_repo_service
@@ -61,8 +62,8 @@ def test_service(mock_config_service, mock_file_ops_service, mock_local_repo_ser
 
 
 @pytest.fixture
-def sample_test_suite():
-    """Create sample test suite for testing."""
+def sample_eval_suite():
+    """Create sample eval suite for testing."""
     metric_config = MetricConfig(
         type=MetricType.ANSWER_RELEVANCY,
         threshold=0.8,
@@ -71,125 +72,127 @@ def sample_test_suite():
         strict_mode=False
     )
     
-    unit_test = UnitTestDefinition(
+    unit_test = EvalDefinition(
         name="test-login-prompt",
         description="Test login prompt",
         prompt_reference="file:///.promptrepo/prompts/auth/login.yaml",
         template_variables={"user_question": "How do I reset my password?"},
-        expected_output="Click 'Forgot Password' link",
-        metrics=[metric_config],
+        evaluation_fields=ExpectedEvaluationFieldsModel(
+            metric_type=MetricType.ANSWER_RELEVANCY,
+            config={"expected_output": "Click 'Forgot Password' link"}
+        ),
         enabled=True
     )
     
-    suite_def = TestSuiteDefinition(
+    suite_def = EvalSuiteDefinition(
         name="auth-suite",
-        description="Authentication test suite",
-        tests=[unit_test],
+        description="Authentication eval suite",
+        evals=[unit_test],
         tags=["auth", "security"],
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow()
     )
     
-    return TestSuiteData(test_suite=suite_def)
+    return EvalSuiteData(eval_suite=suite_def)
 
 
-class TestTestServiceCRUD:
-    """Test CRUD operations for test suites."""
+class TestEvalServiceCRUD:
+    """Test CRUD operations for eval suites."""
     
     @pytest.mark.asyncio
-    async def test_list_test_suites_empty_directory(
+    async def test_list_eval_suites_empty_directory(
         self, test_service, mock_file_ops_service
     ):
-        """Test listing test suites when directory doesn't exist."""
+        """Test listing eval suites when directory doesn't exist."""
         with patch('pathlib.Path.exists', return_value=True):
             with patch('pathlib.Path.iterdir', return_value=[]):
                 with patch.object(Path, '__truediv__', return_value=Path('/tmp/test')):
-                    suites = await test_service.list_test_suites("user1", "repo1")
+                    suites = await test_service.list_eval_suites("user1", "repo1")
                     assert suites == []
     
     @pytest.mark.asyncio
-    async def test_list_test_suites_repository_not_found(self, test_service):
-        """Test listing test suites when repository doesn't exist."""
+    async def test_list_eval_suites_repository_not_found(self, test_service):
+        """Test listing eval suites when repository doesn't exist."""
         with patch('pathlib.Path.exists', return_value=False):
             with pytest.raises(NotFoundException) as exc_info:
-                await test_service.list_test_suites("user1", "nonexistent-repo")
+                await test_service.list_eval_suites("user1", "nonexistent-repo")
             assert "Repository" in str(exc_info.value.message)
     
     @pytest.mark.asyncio
-    async def test_get_test_suite_success(
-        self, test_service, mock_file_ops_service, sample_test_suite
+    async def test_get_eval_suite_success(
+        self, test_service, mock_file_ops_service, sample_eval_suite
     ):
-        """Test getting a test suite successfully."""
-        suite_dict = sample_test_suite.model_dump(mode='json')
+        """Test getting an eval suite successfully."""
+        suite_dict = sample_eval_suite.model_dump(mode='json')
         mock_file_ops_service.load_yaml_file.return_value = suite_dict
         
         with patch('pathlib.Path.exists', return_value=True):
-            result = await test_service.get_test_suite("user1", "repo1", "auth-suite")
+            result = await test_service.get_eval_suite("user1", "repo1", "auth-suite")
             
             assert result is not None
-            assert result.test_suite.name == "auth-suite"
-            assert len(result.test_suite.tests) == 1
+            assert result.eval_suite.name == "auth-suite"
+            assert len(result.eval_suite.evals) == 1
     
     @pytest.mark.asyncio
-    async def test_get_test_suite_not_found(self, test_service):
-        """Test getting non-existent test suite."""
+    async def test_get_eval_suite_not_found(self, test_service):
+        """Test getting non-existent eval suite."""
         with patch('pathlib.Path.exists', return_value=False):
             with pytest.raises(NotFoundException) as exc_info:
-                await test_service.get_test_suite("user1", "repo1", "nonexistent")
-            assert "Test suite" in str(exc_info.value.message)
+                await test_service.get_eval_suite("user1", "repo1", "nonexistent")
+            assert "Eval suite" in str(exc_info.value.message)
     
     @pytest.mark.asyncio
-    async def test_save_test_suite_create(
-        self, test_service, mock_file_ops_service, sample_test_suite
+    async def test_save_eval_suite_create(
+        self, test_service, mock_file_ops_service, sample_eval_suite
     ):
-        """Test creating a new test suite."""
+        """Test creating a new eval suite."""
         mock_file_ops_service.save_yaml_file.return_value = True
         
         with patch('pathlib.Path.exists', side_effect=[True, False]):
-            result = await test_service.save_test_suite(
-                "user1", "repo1", sample_test_suite
+            result = await test_service.save_eval_suite(
+                "user1", "repo1", sample_eval_suite
             )
             
             assert result is not None
-            assert result.test_suite.name == "auth-suite"
+            assert result.eval_suite.name == "auth-suite"
             assert mock_file_ops_service.save_yaml_file.called
     
     @pytest.mark.asyncio
-    async def test_save_test_suite_update(
-        self, test_service, mock_file_ops_service, sample_test_suite
+    async def test_save_eval_suite_update(
+        self, test_service, mock_file_ops_service, sample_eval_suite
     ):
-        """Test updating an existing test suite."""
-        existing_data = sample_test_suite.model_dump(mode='json')
+        """Test updating an existing eval suite."""
+        existing_data = sample_eval_suite.model_dump(mode='json')
         mock_file_ops_service.load_yaml_file.return_value = existing_data
         mock_file_ops_service.save_yaml_file.return_value = True
         
         with patch('pathlib.Path.exists', return_value=True):
-            result = await test_service.save_test_suite(
-                "user1", "repo1", sample_test_suite
+            result = await test_service.save_eval_suite(
+                "user1", "repo1", sample_eval_suite
             )
             
             assert result is not None
             assert mock_file_ops_service.save_yaml_file.called
     
     @pytest.mark.asyncio
-    async def test_delete_test_suite_success(
+    async def test_delete_eval_suite_success(
         self, test_service, mock_file_ops_service
     ):
-        """Test deleting a test suite successfully."""
+        """Test deleting an eval suite successfully."""
         mock_file_ops_service.delete_directory.return_value = True
         
         with patch('pathlib.Path.exists', return_value=True):
-            result = await test_service.delete_test_suite("user1", "repo1", "auth-suite")
+            result = await test_service.delete_eval_suite("user1", "repo1", "auth-suite")
             
             assert result is True
             assert mock_file_ops_service.delete_directory.called
     
     @pytest.mark.asyncio
-    async def test_delete_test_suite_not_found(self, test_service):
-        """Test deleting non-existent test suite."""
+    async def test_delete_eval_suite_not_found(self, test_service):
+        """Test deleting non-existent eval suite."""
         with patch('pathlib.Path.exists', side_effect=[True, False]):
             with pytest.raises(NotFoundException):
-                await test_service.delete_test_suite("user1", "repo1", "nonexistent")
+                await test_service.delete_eval_suite("user1", "repo1", "nonexistent")
 
 
 class TestExecutionHistory:
@@ -221,12 +224,12 @@ class TestExecutionHistory:
         mock_file_ops_service.create_directory.return_value = True
         mock_file_ops_service.save_yaml_file.return_value = True
         
-        execution_result = TestSuiteExecutionResult(
+        execution_result = EvalSuiteExecutionResult(
             suite_name="auth-suite",
-            test_results=[],
-            total_tests=0,
-            passed_tests=0,
-            failed_tests=0,
+            eval_results=[],
+            total_evals=0,
+            passed_evals=0,
+            failed_evals=0,
             total_execution_time_ms=100,
             executed_at=datetime.utcnow()
         )

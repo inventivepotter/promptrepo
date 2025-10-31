@@ -1,10 +1,11 @@
 import { errorNotification } from '@/lib/notifications';
-import { pricingService } from '@/services/llm/pricing/pricingService';
-import { ChatApi, type ChatCompletionRequest, type ChatMessage as ApiChatMessage } from './api';
+import { ChatApi, type ChatCompletionRequest } from './api';
 import type { OpenAIMessage, ChatMessage } from '@/app/(prompts)/_types/ChatState';
-import type { ChatCompletionOptions, UsageWithReasoning } from '@/types/Chat';
 import { isStandardResponse, isErrorResponse } from '@/types/OpenApiResponse';
-import type { TokenUsage as PricingTokenUsage } from '@/types/Pricing';
+import type { components } from '@/types/generated/api';
+
+type PromptMeta = components['schemas']['PromptMeta'];
+type MessageSchema = components['schemas']['UserMessageSchema'] | components['schemas']['AIMessageSchema'] | components['schemas']['SystemMessageSchema'] | components['schemas']['ToolMessageSchema'];
 
 
 /**
@@ -14,27 +15,18 @@ import type { TokenUsage as PricingTokenUsage } from '@/types/Pricing';
  */
 export class ChatService {
   /**
-   * Send messages to chat completion endpoint and get AI response.
-   * Handles error notifications and fallback behavior.
-   * @param messages - Array of OpenAI formatted messages
-   * @param promptId - Optional prompt ID
-   * @param options - Chat completion options
-   * @param systemMessage - Optional system message to prepend
-   * @param tools - Optional tools in OpenAI function format
+   * Send chat completion request using PromptMeta.
+   * @param promptMeta - The prompt metadata containing full configuration
+   * @param messages - Optional conversation history
    * @returns The assistant's message or null if an error occurs
    */
   async sendChatCompletion(
-    messages: OpenAIMessage[],
-    promptId?: string,
-    options?: ChatCompletionOptions,
-    systemMessage?: string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    tools?: any[],
-    repoName?: string
-  ): Promise<ChatMessage | null> {
+    promptMeta: PromptMeta,
+    messages?: MessageSchema[]
+  ): Promise<{ message: ChatMessage; toolCalls?: MessageSchema[] } | null> {
     try {
-      // Validate completion options
-      if (!options?.provider || !options.provider.trim()) {
+      // Validate prompt_meta
+      if (!promptMeta?.prompt?.provider || !promptMeta.prompt.provider.trim()) {
         errorNotification(
           'Missing Provider',
           'Please select a provider (e.g., openai, anthropic) in the prompt editor before sending a message.'
@@ -42,7 +34,7 @@ export class ChatService {
         return null;
       }
 
-      if (!options?.model || !options.model.trim()) {
+      if (!promptMeta?.prompt?.model || !promptMeta.prompt.model.trim()) {
         errorNotification(
           'Missing Model',
           'Please select a model (e.g., gpt-4, claude-3) in the prompt editor before sending a message.'
@@ -50,44 +42,14 @@ export class ChatService {
         return null;
       }
 
-      // Use provided system message or ensure first message is a system message
-      let messagesWithSystem: OpenAIMessage[];
-
-      if (systemMessage) {
-        // If a system message is provided, use it
-        const systemMsg: OpenAIMessage = {
-          role: 'system' as const,
-          content: systemMessage
-        };
-
-        // Remove any existing system message and prepend the new one
-        const nonSystemMessages = messages.filter(msg => msg.role !== 'system');
-        messagesWithSystem = [systemMsg, ...nonSystemMessages];
-      } else {
-        // No system message provided - this should result in an error from backend
-        messagesWithSystem = messages;
-      }
-
       const request: ChatCompletionRequest = {
-        messages: messagesWithSystem as ApiChatMessage[],
-        provider: options.provider,
-        model: options.model,
-        prompt_id: promptId || null,
-        repo_name: repoName || null,
-        stream: options.stream || false,
-        temperature: options.temperature || null,
-        max_tokens: options.max_tokens || null,
-        top_p: options.top_p || null,
-        frequency_penalty: options.frequency_penalty || null,
-        presence_penalty: options.presence_penalty || null,
-        stop: options.stop || null,
-        tools: tools || null
+        prompt_meta: promptMeta,
+        messages: messages || null
       };
 
       const result = await ChatApi.chatCompletion(request);
 
       if (isErrorResponse(result)) {
-        // Show user-friendly notification
         errorNotification(
           result.title || 'Chat Request Failed',
           result.detail || 'Unable to get response from AI service. Please try again.'
@@ -103,43 +65,32 @@ export class ChatService {
         return null;
       }
 
-      // Extract the assistant message from the completion response
-      if (!result.data.choices || result.data.choices.length === 0) {
-        errorNotification(
-          'Invalid Response',
-          'The AI service returned an invalid response format.'
-        );
-        return null;
-      }
+      const responseData = result.data;
 
-      const assistantMessage = result.data.choices[0].message as OpenAIMessage & {
-        tool_call_id?: string | null;
-        tool_calls?: OpenAIMessage['tool_calls'] | null;
-      };
-
-      // Pre-process the usage object to handle null values
-      const usage = result.data.usage ? {
-        prompt_tokens: result.data.usage.prompt_tokens ?? undefined,
-        completion_tokens: result.data.usage.completion_tokens ?? undefined,
-        total_tokens: result.data.usage.total_tokens ?? undefined,
-        reasoning_tokens: (result.data.usage as UsageWithReasoning).reasoning_tokens ?? undefined
+      // Extract usage and cost from backend response
+      const usage = responseData.usage ? {
+        prompt_tokens: responseData.usage.input_tokens,
+        completion_tokens: responseData.usage.output_tokens,
+        total_tokens: responseData.usage.total_tokens,
       } : undefined;
 
-      // Convert response back to internal ChatMessage format
-      const chatMessage = await this.fromOpenAIMessage(assistantMessage, `assistant-${Date.now()}`, usage, options.model);
+      // Create chat message from response
+      const chatMessage: ChatMessage = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content: responseData.content,
+        timestamp: new Date(),
+        usage,
+        cost: responseData.cost?.total_cost,
+        inferenceTimeMs: responseData.duration_ms ?? undefined,
+      };
 
-      // Add inference time from API response
-      if (result.data.inference_time_ms) {
-        chatMessage.inferenceTimeMs = result.data.inference_time_ms;
-      }
 
-      // Store tool responses in the message for the store to process
-      if (result.data.tool_responses && Array.isArray(result.data.tool_responses)) {
-        // Add tool_responses to the message
-        chatMessage.tool_responses = result.data.tool_responses as OpenAIMessage[];
-      }
-
-      return chatMessage;
+      // Return both the message and tool calls
+      return {
+        message: chatMessage,
+        toolCalls: responseData.tool_calls || undefined
+      };
     } catch (error: unknown) {
       console.error('Error in chat completion:', error);
       errorNotification(
@@ -170,14 +121,13 @@ export class ChatService {
   }
 
   /**
-   * Convert OpenAI message to internal ChatMessage format
+   * Convert OpenAI message to internal ChatMessage format (simplified - cost now from backend)
    */
-  public async fromOpenAIMessage(
+  public fromOpenAIMessage(
     openAIMessage: OpenAIMessage,
     id?: string,
-    usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number; reasoning_tokens?: number },
-    model?: string
-  ): Promise<ChatMessage> {
+    usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number; reasoning_tokens?: number }
+  ): ChatMessage {
     // Handle potential null values for tool_call_id and tool_calls to match OpenAIMessage type
     const processedMessage: OpenAIMessage = {
       ...openAIMessage,
@@ -185,7 +135,7 @@ export class ChatService {
       tool_calls: openAIMessage.tool_calls === null ? undefined : openAIMessage.tool_calls
     };
 
-    const message: ChatMessage = {
+    return {
       id: id || `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       timestamp: new Date(),
       usage: usage ? {
@@ -194,31 +144,8 @@ export class ChatService {
         total_tokens: usage.total_tokens ?? undefined,
         reasoning_tokens: usage.reasoning_tokens ?? undefined
       } : undefined,
-      model,
       ...processedMessage
     };
-
-    // Calculate cost if usage and model are provided
-    if (usage && model && processedMessage.role === 'assistant') {
-      const tokenUsage: PricingTokenUsage = {
-        inputTokens: usage.prompt_tokens || 0,
-        outputTokens: usage.completion_tokens || 0,
-        reasoningTokens: usage.reasoning_tokens
-      };
-      
-      try {
-        // Ensure pricing data is loaded before calculating cost
-        await pricingService.getPricingData();
-        const costCalculation = pricingService.calculateCost(model, tokenUsage);
-        if (costCalculation) {
-          message.cost = costCalculation.totalCost;
-        }
-      } catch (error) {
-        console.warn('Failed to calculate cost for message:', error);
-      }
-    }
-
-    return message;
   }
 
   /**
@@ -249,37 +176,6 @@ export class ChatService {
   public createToolMessage = (content: string, tool_call_id: string) =>
     this.createMessage('tool', content, { tool_call_id });
 
-  /**
-   * Extract token usage from ChatMessage for pricing calculations
-   */
-  public getTokenUsageFromMessage(message: ChatMessage): PricingTokenUsage | null {
-    if (!message.usage) return null;
-    
-    return {
-      inputTokens: message.usage.prompt_tokens || 0,
-      outputTokens: message.usage.completion_tokens || 0,
-      reasoningTokens: message.usage.reasoning_tokens
-    };
-  }
-
-  /**
-   * Calculate cost for a message if model and usage are available
-   */
-  public async calculateMessageCost(message: ChatMessage): Promise<number | null> {
-    if (!message.model || !message.usage) return null;
-    
-    const tokenUsage = this.getTokenUsageFromMessage(message);
-    if (!tokenUsage) return null;
-    
-    try {
-      await pricingService.getPricingData();
-      const costCalculation = pricingService.calculateCost(message.model, tokenUsage);
-      return costCalculation?.totalCost || null;
-    } catch (error) {
-      console.warn('Failed to calculate message cost:', error);
-      return null;
-    }
-  }
 }
 
 // Export singleton instance

@@ -10,8 +10,8 @@ Tests cover:
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 
-from services.test.deepeval.deepeval_adapter import DeepEvalAdapter
-from services.test.models import MetricConfig, MetricType, MetricResult
+from lib.deepeval.deepeval_adapter import DeepEvalAdapter
+from services.evals.models import MetricConfig, MetricType, MetricResult
 
 
 @pytest.fixture

@@ -3,14 +3,14 @@ Services module for PromptRepo.
 Provides factory functions for creating service instances.
 """
 
-from .llm import LLMProviderService, ChatCompletionService
+from .llm import ModelProviderService, ChatCompletionService
 from .config import ConfigService, IConfig
 from .remote_repo import RemoteRepoService
 from .auth import AuthService, SessionService
 from .oauth import OAuthService
 
 __all__ = [
-    'LLMProviderService',
+    'ModelProviderService',
     'ChatCompletionService',
     'ConfigService',
     'IConfig',

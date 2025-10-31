@@ -7,7 +7,8 @@ from pydantic import BaseModel, Field
 from services.tool.models import (
     ParametersDefinition,
     MockConfig,
-    ToolDefinition
+    ToolDefinition,
+    ReturnsSchema
 )
 from services.local_repo.models import PRInfo
 
@@ -21,6 +22,7 @@ class CreateToolRequest(BaseModel):
         default_factory=lambda: ParametersDefinition(type="object", properties={}, required=[]),
         description="OpenAI-compatible parameters"
     )
+    returns: Optional[ReturnsSchema] = Field(None, description="Return type schema")
     mock: MockConfig = Field(description="Mock configuration")
     repo_name: Optional[str] = Field("default", description="Repository name")
 

@@ -5,7 +5,7 @@ import pytest
 from unittest.mock import Mock, patch
 from typing import List
 
-from services.llm.llm_provider_service import LLMProviderService
+from services.llm.model_provider_service import ModelProviderService
 from services.config.config_service import ConfigService
 from services.llm.models import ProviderInfo, ModelInfo, ProvidersResponse
 from database.models.user_llm_configs import UserLLMConfigs
@@ -17,13 +17,13 @@ class TestProviderService:
     def test_init(self):
         """Test ProviderService initialization"""
         config_service = Mock(spec=ConfigService)
-        service = LLMProviderService(config_service)
+        service = ModelProviderService(config_service)
         assert service.config_service == config_service
 
     def test_get_configured_providers_success(self):
         """Test getting configured providers with valid LLM configs"""
         config_service = Mock(spec=ConfigService)
-        service = LLMProviderService(config_service)
+        service = ModelProviderService(config_service)
         
         # Mock LLM configs
         mock_configs = [
@@ -55,7 +55,7 @@ class TestProviderService:
     def test_get_configured_providers_no_configs(self):
         """Test getting configured providers when no LLM configs exist"""
         config_service = Mock(spec=ConfigService)
-        service = LLMProviderService(config_service)
+        service = ModelProviderService(config_service)
         
         config_service.get_llm_configs.return_value = []
         
@@ -67,7 +67,7 @@ class TestProviderService:
     def test_get_configured_providers_none_configs(self):
         """Test getting configured providers when get_llm_configs returns None"""
         config_service = Mock(spec=ConfigService)
-        service = LLMProviderService(config_service)
+        service = ModelProviderService(config_service)
         
         config_service.get_llm_configs.return_value = None
         
@@ -79,7 +79,7 @@ class TestProviderService:
     def test_get_configured_providers_invalid_provider_type(self):
         """Test handling invalid provider types (dict instead of string)"""
         config_service = Mock(spec=ConfigService)
-        service = LLMProviderService(config_service)
+        service = ModelProviderService(config_service)
         
         # Mock config with invalid provider type
         mock_configs = [
@@ -97,7 +97,7 @@ class TestProviderService:
     def test_get_configured_providers_invalid_model_type(self):
         """Test handling invalid model types (dict instead of string)"""
         config_service = Mock(spec=ConfigService)
-        service = LLMProviderService(config_service)
+        service = ModelProviderService(config_service)
         
         # Mock config with invalid model type
         mock_configs = [
@@ -116,7 +116,7 @@ class TestProviderService:
     def test_get_configured_providers_deduplicates_models(self):
         """Test that duplicate models for same provider are deduplicated"""
         config_service = Mock(spec=ConfigService)
-        service = LLMProviderService(config_service)
+        service = ModelProviderService(config_service)
         
         # Mock configs with duplicate models
         mock_configs = [
@@ -135,7 +135,7 @@ class TestProviderService:
     def test_get_configured_providers_exception_handling(self):
         """Test exception handling in get_configured_providers"""
         config_service = Mock(spec=ConfigService)
-        service = LLMProviderService(config_service)
+        service = ModelProviderService(config_service)
         
         config_service.get_llm_configs.side_effect = Exception("Database error")
         
@@ -148,7 +148,7 @@ class TestProviderService:
     def test_get_available_providers_success(self, mock_llm_provider):
         """Test getting all available providers"""
         config_service = Mock(spec=ConfigService)
-        service = LLMProviderService(config_service)
+        service = ModelProviderService(config_service)
         
         # Mock LLMProvider enum
         mock_llm_provider.__members__ = {
@@ -176,7 +176,7 @@ class TestProviderService:
     def test_get_available_providers_exception_handling(self, mock_llm_provider):
         """Test exception handling in get_available_providers"""
         config_service = Mock(spec=ConfigService)
-        service = LLMProviderService(config_service)
+        service = ModelProviderService(config_service)
         
         mock_llm_provider.__iter__ = Mock(side_effect=Exception("Provider error"))
         
@@ -190,7 +190,7 @@ class TestProviderService:
     async def test_fetch_models_by_provider_success(self, mock_alist_models):
         """Test successfully fetching models for a provider"""
         config_service = Mock(spec=ConfigService)
-        service = LLMProviderService(config_service)
+        service = ModelProviderService(config_service)
         
         # Mock models from API
         mock_model1 = Mock()
@@ -218,7 +218,7 @@ class TestProviderService:
     async def test_fetch_models_by_provider_with_api_base(self, mock_alist_models):
         """Test fetching models with custom API base URL"""
         config_service = Mock(spec=ConfigService)
-        service = LLMProviderService(config_service)
+        service = ModelProviderService(config_service)
         
         mock_model = Mock()
         mock_model.id = "custom-model"
@@ -234,7 +234,7 @@ class TestProviderService:
     async def test_fetch_models_by_provider_unsupported_provider(self):
         """Test fetching models for unsupported provider"""
         config_service = Mock(spec=ConfigService)
-        service = LLMProviderService(config_service)
+        service = ModelProviderService(config_service)
         
         result = await service.fetch_models_by_provider("unsupported_provider", "api_key_123", "")
         
@@ -246,7 +246,7 @@ class TestProviderService:
     async def test_fetch_models_by_provider_api_exception(self, mock_alist_models):
         """Test handling API exceptions when fetching models"""
         config_service = Mock(spec=ConfigService)
-        service = LLMProviderService(config_service)
+        service = ModelProviderService(config_service)
         
         mock_alist_models.side_effect = Exception("API Error")
         
@@ -260,7 +260,7 @@ class TestProviderService:
     async def test_fetch_models_by_provider_filters_invalid_models(self, mock_alist_models):
         """Test that invalid models are filtered out"""
         config_service = Mock(spec=ConfigService)
-        service = LLMProviderService(config_service)
+        service = ModelProviderService(config_service)
         
         # Mock models with various validity states
         valid_model = Mock()

@@ -1,4 +1,7 @@
 import type { ChatMessage, Tool } from '@/app/(prompts)/_types/ChatState';
+import type { components } from '@/types/generated/api';
+
+type PromptMeta = components['schemas']['PromptMeta'];
 
 // Model configuration for chat sessions
 export interface ModelConfig {
@@ -84,12 +87,8 @@ export interface ChatActions {
   sendMessage: (
     content: string,
     options?: {
-      systemPrompt?: string;
-      promptId?: string;
-      repoName?: string;
-      modelConfig?: Partial<ModelConfig>;
+      promptMeta: PromptMeta;
       onStream?: (chunk: string) => void;
-      tools?: string[]; // Array of tool file paths from prompt metadata
     }
   ) => Promise<void>;
   

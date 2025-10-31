@@ -141,9 +141,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
           </Link>
         </Box>
 
-        {/* Tests */}
+        {/* Evals */}
         <Box as="span" width="100%">
-          <Link href="/tests" style={{ textDecoration: 'none' }}>
+          <Link href="/evals" style={{ textDecoration: 'none' }}>
             <Button
               variant="ghost"
               justifyContent={isCollapsed ? "center" : "flex-start"}
@@ -160,7 +160,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
               <LuFlaskConical size={16} />
               {!isCollapsed && (
                 <span style={{ marginLeft: 12, fontSize: '14px', fontWeight: 500 }}>
-                  Tests
+                  Evals
                 </span>
               )}
             </Button>

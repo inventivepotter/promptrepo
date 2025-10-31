@@ -2,5 +2,10 @@
 LLM (Large Language Model) services module for PromptRepo.
 """
 
-from .completion_service import ChatCompletionService
-from .llm_provider_service import LLMProviderService
+from .chat_completion_service import ChatCompletionService
+from .model_provider_service import ModelProviderService
+
+__all__ = [
+    "ChatCompletionService",
+    "ModelProviderService"
+]

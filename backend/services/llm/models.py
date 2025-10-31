@@ -1,88 +1,38 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Literal, Any, Dict, Union, Annotated
-
-
-class ChatMessage(BaseModel):
-    """OpenAI-compatible message format"""
-    role: Literal["system", "user", "assistant", "tool"]
-    content: str = Field(default="", description="Message content (can be empty for system-only prompts)")
-    tool_call_id: Optional[str] = None
-    tool_calls: Optional[List[Dict[str, Any]]] = None
+from typing import List, Optional, Literal, Any, Dict
+from services.prompt.models import PromptMeta
+from schemas import MessageSchema
 
 
 class ChatCompletionRequest(BaseModel):
-    """Request model for chat completions"""
-    messages: List[ChatMessage] = Field(default_factory=list, description="List of messages (can be empty for system-only prompts)")
-    provider: str = Field(..., description="LLM provider (e.g., openai, mistral, anthropic)")
-    model: str = Field(..., description="Model name (e.g., gpt-3.5-turbo, claude-3)")
-    prompt_id: Optional[str] = Field(None, description="Optional prompt ID for context (format: repo_name:file_path)")
-    repo_name: Optional[str] = Field(None, description="Repository name for loading tool definitions (fallback if prompt_id not provided)")
-    stream: Optional[bool] = Field(False, description="Whether to stream the response")
-    temperature: Optional[Annotated[float, Field(ge=0.0, le=2.0)]] = Field(None, description="Sampling temperature")
-    max_tokens: Optional[Annotated[int, Field(gt=0)]] = Field(None, description="Maximum tokens to generate")
-    top_p: Optional[Annotated[float, Field(ge=0.0, le=1.0)]] = Field(None, description="Top-p sampling parameter")
-    frequency_penalty: Optional[Annotated[float, Field(ge=-2.0, le=2.0)]] = Field(None, description="Frequency penalty")
-    presence_penalty: Optional[Annotated[float, Field(ge=-2.0, le=2.0)]] = Field(None, description="Presence penalty")
-    stop: Optional[List[str]] = Field(None, description="Stop sequences")
-    tools: Optional[List[str]] = Field(None, description="Tool file paths (file:// URIs to tool definitions)")
+    """Request model for chat completions using PromptMeta"""
+    prompt_meta: PromptMeta = Field(..., description="Prompt metadata with full configuration")
+    messages: Optional[List[MessageSchema]] = Field(None, description="Optional conversation history")
 
 
-class PromptTokensDetails(BaseModel):
-    """Breakdown of tokens used in the prompt"""
-    audio_tokens: Optional[int] = None
-    cached_tokens: Optional[int] = None
-
-class CompletionTokensDetails(BaseModel):
-    """Breakdown of tokens used in a completion"""
-    accepted_prediction_tokens: Optional[int] = None
-    audio_tokens: Optional[int] = None
-    reasoning_tokens: Optional[int] = None
-    rejected_prediction_tokens: Optional[int] = None
-
-class UsageStats(BaseModel):
-    """Usage statistics for chat completion"""
-    prompt_tokens: Optional[int] = None
-    completion_tokens: Optional[int] = None
-    total_tokens: Optional[int] = None
-    prompt_tokens_details: Optional[PromptTokensDetails] = None
-    completion_tokens_details: Optional[CompletionTokensDetails] = None
+class TokenUsage(BaseModel):
+    """Token usage statistics from AgentTrace"""
+    input_tokens: int = Field(..., description="Number of input tokens")
+    output_tokens: int = Field(..., description="Number of output tokens")
+    total_tokens: int = Field(..., description="Total number of tokens")
 
 
-class ChatCompletionChoice(BaseModel):
-    """Choice in chat completion response"""
-    index: int
-    message: ChatMessage
-    finish_reason: Optional[str] = None
+class CostInfo(BaseModel):
+    """Cost information from completion"""
+    input_cost: float = Field(..., description="Cost for input tokens")
+    output_cost: float = Field(..., description="Cost for output tokens")
+    total_cost: float = Field(..., description="Total cost")
 
 
 class ChatCompletionResponse(BaseModel):
-    """Response model for chat completions"""
-    id: str
-    object: str = "chat.completion"
-    created: int
-    model: str
-    choices: List[ChatCompletionChoice]
-    usage: Optional[UsageStats] = None
-    inference_time_ms: Optional[float] = None  # Inference time in milliseconds
-    tool_responses: Optional[List[ChatMessage]] = Field(default=None, description="Auto-generated tool responses for static mocks")
-
-
-class ChatCompletionStreamChoice(BaseModel):
-    """Choice in streaming chat completion response"""
-    index: int
-    delta: ChatMessage
-    finish_reason: Optional[str] = None
-
-
-class ChatCompletionStreamResponse(BaseModel):
-    """Streaming response model for chat completions"""
-    id: str
-    object: str = "chat.completion.chunk"
-    created: int
-    model: str
-    choices: List[ChatCompletionStreamChoice]
-
-
+    """Lightweight response model for chat completions"""
+    content: str = Field(..., description="The generated completion content")
+    finish_reason: Optional[str] = Field(None, description="Reason for completion finish (stop, length, tool_calls, etc.)")
+    usage: Optional[TokenUsage] = Field(None, description="Token usage statistics")
+    cost: Optional[CostInfo] = Field(None, description="Cost information")
+    duration_ms: Optional[float] = Field(None, description="Inference duration in milliseconds")
+    tool_calls: Optional[List[MessageSchema]] = Field(None, description="Tool calls and tool responses from the agent trace")
+    messages: Optional[List[MessageSchema]] = Field(None, description="Full conversation history including the response")
 
 
 # Schemas for LLM Providers endpoint

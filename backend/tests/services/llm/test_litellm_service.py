@@ -4,7 +4,7 @@ Unit tests for LiteLLM provider service.
 import pytest
 import json
 from unittest.mock import AsyncMock, patch, MagicMock
-from services.llm.providers.litellm_provider import LiteLLMProvider
+from lib.any_llm.litellm_provider import LiteLLMProvider
 from services.llm.models import ChatMessage, ChatCompletionRequest
 
 

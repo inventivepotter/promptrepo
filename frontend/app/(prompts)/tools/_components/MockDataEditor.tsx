@@ -14,7 +14,7 @@ import {
   Input,
 } from '@chakra-ui/react';
 import { LuTrash2, LuPlus } from 'react-icons/lu';
-import type { MockConfig, ParameterSchema } from '@/types/tools';
+import type { MockConfig, ParameterSchema, ContentType } from '@/types/tools';
 
 interface MockDataEditorProps {
   mockConfig: MockConfig;
@@ -29,6 +29,7 @@ interface ConditionalRule {
 
 export function MockDataEditor({ mockConfig, parameters, onChange }: MockDataEditorProps) {
   const mockType = mockConfig.mock_type || 'static';
+  const contentType = mockConfig.content_type || 'STRING';
   const [conditionalRules, setConditionalRules] = useState<ConditionalRule[]>(
     (mockConfig.conditional_rules as ConditionalRule[]) || []
   );
@@ -37,6 +38,13 @@ export function MockDataEditor({ mockConfig, parameters, onChange }: MockDataEdi
     onChange({
       ...mockConfig,
       mock_type: value as 'static' | 'conditional' | 'python',
+    });
+  };
+
+  const handleContentTypeChange = (value: string) => {
+    onChange({
+      ...mockConfig,
+      content_type: value as ContentType,
     });
   };
 
@@ -143,6 +151,40 @@ export function MockDataEditor({ mockConfig, parameters, onChange }: MockDataEdi
               <RadioGroup.ItemHiddenInput />
               <RadioGroup.ItemControl />
               <RadioGroup.ItemText fontSize="sm">Python Code</RadioGroup.ItemText>
+            </RadioGroup.Item>
+          </HStack>
+        </RadioGroup.Root>
+      </Field.Root>
+
+      {/* Content Type Selector */}
+      <Field.Root>
+        <Field.Label fontSize="xs" fontWeight="medium">Content Type</Field.Label>
+        <Field.HelperText fontSize="xs" color="fg.muted" mb={2}>
+          Format of the mock response data
+        </Field.HelperText>
+        <RadioGroup.Root
+          value={contentType}
+          onValueChange={(details) => {
+            if (details.value) {
+              handleContentTypeChange(details.value);
+            }
+          }}
+        >
+          <HStack gap={4}>
+            <RadioGroup.Item value="STRING">
+              <RadioGroup.ItemHiddenInput />
+              <RadioGroup.ItemControl />
+              <RadioGroup.ItemText fontSize="sm">String</RadioGroup.ItemText>
+            </RadioGroup.Item>
+            <RadioGroup.Item value="json">
+              <RadioGroup.ItemHiddenInput />
+              <RadioGroup.ItemControl />
+              <RadioGroup.ItemText fontSize="sm">JSON</RadioGroup.ItemText>
+            </RadioGroup.Item>
+            <RadioGroup.Item value="xml">
+              <RadioGroup.ItemHiddenInput />
+              <RadioGroup.ItemControl />
+              <RadioGroup.ItemText fontSize="sm">XML</RadioGroup.ItemText>
             </RadioGroup.Item>
           </HStack>
         </RadioGroup.Root>

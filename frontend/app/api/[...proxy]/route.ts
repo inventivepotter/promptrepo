@@ -34,7 +34,7 @@ const PUBLIC_ENDPOINT_PREFIXES = [
   '/api/v0/prompts/',
   '/api/v0/llm/provider/',
   '/api/v0/tools/',
-  '/api/v0/tests/'
+  '/api/v0/evals/'
 ];
 
 function isPublicEndpoint(path: string): boolean {

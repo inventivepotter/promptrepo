@@ -195,7 +195,7 @@ export interface paths {
         put?: never;
         /**
          * Create chat completion
-         * @description Create a chat completion using any-llm. Supports both streaming and non-streaming responses.
+         * @description Create a chat completion using PromptMeta configuration and optional conversation history.
          */
         post: operations["chat_completions_api_v0_llm_completions_post"];
         delete?: never;
@@ -464,27 +464,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v0/tools/{tool_name}/mock": {
+    "/api/v0/evals/suites": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List eval suites
+         * @description Get list of all eval suites in a repository with summary information.
+         */
+        get: operations["list_eval_suites_api_v0_evals_suites_get"];
         put?: never;
         /**
-         * Execute mock response
-         * @description Execute mock response for a tool with given parameters.
+         * Create or update eval suite
+         * @description Create a new eval suite or update an existing one. The suite name is taken from the request body.
          */
-        post: operations["execute_mock_api_v0_tools__tool_name__mock_post"];
+        post: operations["save_eval_suite_api_v0_evals_suites_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v0/tests/suites": {
+    "/api/v0/evals/suites/{suite_name}": {
         parameters: {
             query?: never;
             header?: never;
@@ -492,47 +496,23 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List test suites
-         * @description Get list of all test suites in a repository with summary information.
+         * Get eval suite
+         * @description Get detailed information about a specific eval suite including all eval definitions.
          */
-        get: operations["list_test_suites_api_v0_tests_suites_get"];
-        put?: never;
-        /**
-         * Create or update test suite
-         * @description Create a new test suite or update an existing one. The suite name is taken from the request body.
-         */
-        post: operations["save_test_suite_api_v0_tests_suites_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v0/tests/suites/{suite_name}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get test suite
-         * @description Get detailed information about a specific test suite including all test definitions.
-         */
-        get: operations["get_test_suite_api_v0_tests_suites__suite_name__get"];
+        get: operations["get_eval_suite_api_v0_evals_suites__suite_name__get"];
         put?: never;
         post?: never;
         /**
-         * Delete test suite
-         * @description Delete a test suite and all its execution history.
+         * Delete eval suite
+         * @description Delete an eval suite and all its execution history.
          */
-        delete: operations["delete_test_suite_api_v0_tests_suites__suite_name__delete"];
+        delete: operations["delete_eval_suite_api_v0_evals_suites__suite_name__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v0/tests/suites/{suite_name}/execute": {
+    "/api/v0/evals/suites/{suite_name}/execute": {
         parameters: {
             query?: never;
             header?: never;
@@ -542,17 +522,17 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Execute test suite
-         * @description Execute all tests in a suite or specific tests if test_names are provided in request body.
+         * Execute eval suite
+         * @description Execute all evals in a suite or specific evals if eval_names are provided in request body.
          */
-        post: operations["execute_test_suite_api_v0_tests_suites__suite_name__execute_post"];
+        post: operations["execute_eval_suite_api_v0_evals_suites__suite_name__execute_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v0/tests/suites/{suite_name}/tests/{test_name}/execute": {
+    "/api/v0/evals/suites/{suite_name}/evals/{eval_name}/execute": {
         parameters: {
             query?: never;
             header?: never;
@@ -562,17 +542,17 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Execute single test
-         * @description Execute a specific test from a test suite.
+         * Execute single eval
+         * @description Execute a specific eval from an eval suite.
          */
-        post: operations["execute_single_test_api_v0_tests_suites__suite_name__tests__test_name__execute_post"];
+        post: operations["execute_single_eval_api_v0_evals_suites__suite_name__evals__eval_name__execute_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v0/tests/suites/{suite_name}/executions": {
+    "/api/v0/evals/suites/{suite_name}/executions": {
         parameters: {
             query?: never;
             header?: never;
@@ -581,9 +561,9 @@ export interface paths {
         };
         /**
          * Get execution history
-         * @description Get execution history for a test suite, ordered by execution time (newest first).
+         * @description Get execution history for an eval suite, ordered by execution time (newest first).
          */
-        get: operations["get_execution_history_api_v0_tests_suites__suite_name__executions_get"];
+        get: operations["get_execution_history_api_v0_evals_suites__suite_name__executions_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -592,7 +572,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v0/tests/suites/{suite_name}/executions/latest": {
+    "/api/v0/evals/suites/{suite_name}/executions/latest": {
         parameters: {
             query?: never;
             header?: never;
@@ -601,9 +581,9 @@ export interface paths {
         };
         /**
          * Get latest execution
-         * @description Get the most recent execution result for a test suite.
+         * @description Get the most recent execution result for an eval suite.
          */
-        get: operations["get_latest_execution_api_v0_tests_suites__suite_name__executions_latest_get"];
+        get: operations["get_latest_execution_api_v0_evals_suites__suite_name__executions_latest_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -612,7 +592,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v0/tests/metrics/metadata": {
+    "/api/v0/evals/metrics/metadata": {
         parameters: {
             query?: never;
             header?: never;
@@ -621,9 +601,9 @@ export interface paths {
         };
         /**
          * Get all metrics metadata
-         * @description Retrieve metadata for all registered test metrics including field schemas, descriptions, and requirements.
+         * @description Retrieve metadata for all registered eval metrics including field schemas, descriptions, and requirements.
          */
-        get: operations["get_metrics_metadata_api_v0_tests_metrics_metadata_get"];
+        get: operations["get_metrics_metadata_api_v0_evals_metrics_metadata_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -636,6 +616,78 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AIMessageSchema
+         * @description Schema for AI/Assistant messages.
+         * @example {
+         *       "content": "I'll search for Python files in the current directory.",
+         *       "finish_reason": "tool_calls",
+         *       "model": "claude-sonnet-4.5",
+         *       "role": "assistant",
+         *       "token_usage": {
+         *         "input_tokens": 100,
+         *         "output_tokens": 50
+         *       },
+         *       "tool_calls": [
+         *         {
+         *           "arguments": {
+         *             "path": ".",
+         *             "regex": ".*\\.py$"
+         *           },
+         *           "id": "call_123",
+         *           "name": "search_files"
+         *         }
+         *       ]
+         *     }
+         */
+        AIMessageSchema: {
+            /**
+             * Content
+             * @description The text content of the message
+             */
+            content: string;
+            /**
+             * Timestamp
+             * @description When the message was created
+             */
+            timestamp?: string | null;
+            /**
+             * Metadata
+             * @description Additional metadata associated with the message
+             */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Role
+             * @description Message role - always 'assistant'
+             * @default assistant
+             * @constant
+             */
+            role: "assistant";
+            /**
+             * Model
+             * @description The AI model that generated this message
+             */
+            model?: string | null;
+            /**
+             * Tool Calls
+             * @description Tool calls made by the assistant in this message
+             */
+            tool_calls?: components["schemas"]["ToolCallSchema"][] | null;
+            /**
+             * Finish Reason
+             * @description Reason why the model stopped generating
+             */
+            finish_reason?: ("stop" | "length" | "tool_calls" | "content_filter") | null;
+            /**
+             * Token Usage
+             * @description Token usage statistics for this message
+             */
+            token_usage?: {
+                [key: string]: number;
+            } | null;
+        };
         /**
          * APIInfo
          * @description API information model.
@@ -658,7 +710,7 @@ export interface components {
         };
         /**
          * ActualEvaluationFieldsModel
-         * @description Actual evaluation fields from test execution
+         * @description Actual evaluation fields from eval execution
          */
         ActualEvaluationFieldsModel: {
             /**
@@ -776,137 +828,52 @@ export interface components {
             is_default: boolean;
         };
         /**
-         * ChatCompletionChoice
-         * @description Choice in chat completion response
-         */
-        ChatCompletionChoice: {
-            /** Index */
-            index: number;
-            message: components["schemas"]["ChatMessage"];
-            /** Finish Reason */
-            finish_reason?: string | null;
-        };
-        /**
          * ChatCompletionRequest
-         * @description Request model for chat completions
+         * @description Request model for chat completions using PromptMeta
          */
         ChatCompletionRequest: {
+            /** @description Prompt metadata with full configuration */
+            prompt_meta: components["schemas"]["PromptMeta"];
             /**
              * Messages
-             * @description List of messages (can be empty for system-only prompts)
+             * @description Optional conversation history
              */
-            messages?: components["schemas"]["ChatMessage"][];
-            /**
-             * Provider
-             * @description LLM provider (e.g., openai, mistral, anthropic)
-             */
-            provider: string;
-            /**
-             * Model
-             * @description Model name (e.g., gpt-3.5-turbo, claude-3)
-             */
-            model: string;
-            /**
-             * Prompt Id
-             * @description Optional prompt ID for context (format: repo_name:file_path)
-             */
-            prompt_id?: string | null;
-            /**
-             * Repo Name
-             * @description Repository name for loading tool definitions (fallback if prompt_id not provided)
-             */
-            repo_name?: string | null;
-            /**
-             * Stream
-             * @description Whether to stream the response
-             * @default false
-             */
-            stream: boolean | null;
-            /**
-             * Temperature
-             * @description Sampling temperature
-             */
-            temperature?: number | null;
-            /**
-             * Max Tokens
-             * @description Maximum tokens to generate
-             */
-            max_tokens?: number | null;
-            /**
-             * Top P
-             * @description Top-p sampling parameter
-             */
-            top_p?: number | null;
-            /**
-             * Frequency Penalty
-             * @description Frequency penalty
-             */
-            frequency_penalty?: number | null;
-            /**
-             * Presence Penalty
-             * @description Presence penalty
-             */
-            presence_penalty?: number | null;
-            /**
-             * Stop
-             * @description Stop sequences
-             */
-            stop?: string[] | null;
-            /**
-             * Tools
-             * @description Tool file paths (file:// URIs to tool definitions)
-             */
-            tools?: string[] | null;
+            messages?: (components["schemas"]["UserMessageSchema"] | components["schemas"]["AIMessageSchema"] | components["schemas"]["SystemMessageSchema"] | components["schemas"]["ToolMessageSchema"])[] | null;
         };
         /**
          * ChatCompletionResponse
-         * @description Response model for chat completions
+         * @description Lightweight response model for chat completions
          */
         ChatCompletionResponse: {
-            /** Id */
-            id: string;
-            /**
-             * Object
-             * @default chat.completion
-             */
-            object: string;
-            /** Created */
-            created: number;
-            /** Model */
-            model: string;
-            /** Choices */
-            choices: components["schemas"]["ChatCompletionChoice"][];
-            usage?: components["schemas"]["UsageStats"] | null;
-            /** Inference Time Ms */
-            inference_time_ms?: number | null;
-            /**
-             * Tool Responses
-             * @description Auto-generated tool responses for static mocks
-             */
-            tool_responses?: components["schemas"]["ChatMessage"][] | null;
-        };
-        /**
-         * ChatMessage
-         * @description OpenAI-compatible message format
-         */
-        ChatMessage: {
-            /**
-             * Role
-             * @enum {string}
-             */
-            role: "system" | "user" | "assistant" | "tool";
             /**
              * Content
-             * @description Message content (can be empty for system-only prompts)
-             * @default
+             * @description The generated completion content
              */
             content: string;
-            /** Tool Call Id */
-            tool_call_id?: string | null;
-            /** Tool Calls */
-            tool_calls?: {
-                [key: string]: unknown;
-            }[] | null;
+            /**
+             * Finish Reason
+             * @description Reason for completion finish (stop, length, tool_calls, etc.)
+             */
+            finish_reason?: string | null;
+            /** @description Token usage statistics */
+            usage?: components["schemas"]["TokenUsage"] | null;
+            /** @description Cost information */
+            cost?: components["schemas"]["CostInfo"] | null;
+            /**
+             * Duration Ms
+             * @description Inference duration in milliseconds
+             */
+            duration_ms?: number | null;
+            /**
+             * Tool Calls
+             * @description Tool calls and tool responses from the agent trace
+             */
+            tool_calls?: (components["schemas"]["UserMessageSchema"] | components["schemas"]["AIMessageSchema"] | components["schemas"]["SystemMessageSchema"] | components["schemas"]["ToolMessageSchema"])[] | null;
+            /**
+             * Messages
+             * @description Full conversation history including the response
+             */
+            messages?: (components["schemas"]["UserMessageSchema"] | components["schemas"]["AIMessageSchema"] | components["schemas"]["SystemMessageSchema"] | components["schemas"]["ToolMessageSchema"])[] | null;
         };
         /**
          * CommitInfo
@@ -924,20 +891,6 @@ export interface components {
              * Format: date-time
              */
             timestamp: string;
-        };
-        /**
-         * CompletionTokensDetails
-         * @description Breakdown of tokens used in a completion
-         */
-        CompletionTokensDetails: {
-            /** Accepted Prediction Tokens */
-            accepted_prediction_tokens?: number | null;
-            /** Audio Tokens */
-            audio_tokens?: number | null;
-            /** Reasoning Tokens */
-            reasoning_tokens?: number | null;
-            /** Rejected Prediction Tokens */
-            rejected_prediction_tokens?: number | null;
         };
         /**
          * ConditionalRule
@@ -969,6 +922,33 @@ export interface components {
             repositories: components["schemas"]["RepoConfig"][];
         };
         /**
+         * ContentType
+         * @description Content types for mock responses.
+         * @enum {string}
+         */
+        ContentType: "json" | "xml" | "STRING";
+        /**
+         * CostInfo
+         * @description Cost information from completion
+         */
+        CostInfo: {
+            /**
+             * Input Cost
+             * @description Cost for input tokens
+             */
+            input_cost: number;
+            /**
+             * Output Cost
+             * @description Cost for output tokens
+             */
+            output_cost: number;
+            /**
+             * Total Cost
+             * @description Total cost
+             */
+            total_cost: number;
+        };
+        /**
          * CreateToolRequest
          * @description Request model for creating/updating a tool.
          */
@@ -985,6 +965,8 @@ export interface components {
             description: string;
             /** @description OpenAI-compatible parameters */
             parameters?: components["schemas"]["ParametersDefinition-Input"];
+            /** @description Return type schema */
+            returns?: components["schemas"]["ReturnsSchema-Input"] | null;
             /** @description Mock configuration */
             mock: components["schemas"]["MockConfig"];
             /**
@@ -1006,19 +988,286 @@ export interface components {
             repo_names: string[];
         };
         /**
-         * ExecuteTestsRequest
-         * @description Request body for executing specific tests
+         * EvalDefinition
+         * @description Individual eval case definition
          */
-        ExecuteTestsRequest: {
+        "EvalDefinition-Input": {
             /**
-             * Test Names
-             * @description List of test names to execute. If None, all tests are executed.
+             * Name
+             * @description Unique eval name within suite
              */
-            test_names?: string[] | null;
+            name: string;
+            /**
+             * Description
+             * @description Eval description
+             * @default
+             */
+            description: string | null;
+            /**
+             * Prompt Reference
+             * @description Reference to prompt file path
+             */
+            prompt_reference: string;
+            /**
+             * User Message
+             * @description User message input for the prompt
+             */
+            user_message?: string | null;
+            /**
+             * Template Variables
+             * @description Template variables for prompt execution
+             */
+            template_variables?: {
+                [key: string]: unknown;
+            };
+            /** @description Expected evaluation fields for different metric types */
+            evaluation_fields?: components["schemas"]["ExpectedEvaluationFieldsModel"];
+            /**
+             * Enabled
+             * @description Whether eval is enabled
+             * @default true
+             */
+            enabled: boolean;
+        };
+        /**
+         * EvalDefinition
+         * @description Individual eval case definition
+         */
+        "EvalDefinition-Output": {
+            /**
+             * Name
+             * @description Unique eval name within suite
+             */
+            name: string;
+            /**
+             * Description
+             * @description Eval description
+             * @default
+             */
+            description: string | null;
+            /**
+             * Prompt Reference
+             * @description Reference to prompt file path
+             */
+            prompt_reference: string;
+            /**
+             * User Message
+             * @description User message input for the prompt
+             */
+            user_message?: string | null;
+            /**
+             * Template Variables
+             * @description Template variables for prompt execution
+             */
+            template_variables?: {
+                [key: string]: unknown;
+            };
+            /** @description Expected evaluation fields for different metric types */
+            evaluation_fields?: components["schemas"]["ExpectedEvaluationFieldsModel"];
+            /**
+             * Enabled
+             * @description Whether eval is enabled
+             * @default true
+             */
+            enabled: boolean;
+        };
+        /**
+         * EvalExecutionResult
+         * @description Execution result for a single eval
+         */
+        EvalExecutionResult: {
+            /**
+             * Eval Name
+             * @description Name of the eval
+             */
+            eval_name: string;
+            /**
+             * Prompt Reference
+             * @description Reference to prompt file path
+             */
+            prompt_reference: string;
+            /**
+             * Template Variables
+             * @description Template variables used in execution
+             */
+            template_variables: {
+                [key: string]: unknown;
+            };
+            /** @description Actual evaluation fields from execution */
+            actual_evaluation_fields: components["schemas"]["ActualEvaluationFieldsModel"];
+            /** @description Expected evaluation fields from eval definition */
+            expected_evaluation_fields: components["schemas"]["ExpectedEvaluationFieldsModel"];
+            /**
+             * Metric Results
+             * @description Results from all metrics
+             */
+            metric_results: components["schemas"]["MetricResult"][];
+            /**
+             * Overall Passed
+             * @description Whether all metrics passed
+             */
+            overall_passed: boolean;
+            /**
+             * Executed At
+             * Format: date-time
+             */
+            executed_at?: string;
+        };
+        /**
+         * EvalSuiteData
+         * @description Wrapper for YAML serialization
+         */
+        "EvalSuiteData-Input": {
+            eval_suite: components["schemas"]["EvalSuiteDefinition-Input"];
+        };
+        /**
+         * EvalSuiteData
+         * @description Wrapper for YAML serialization
+         */
+        "EvalSuiteData-Output": {
+            eval_suite: components["schemas"]["EvalSuiteDefinition-Output"];
+        };
+        /**
+         * EvalSuiteDefinition
+         * @description Eval suite containing multiple unit evals
+         */
+        "EvalSuiteDefinition-Input": {
+            /**
+             * Name
+             * @description Eval suite name
+             */
+            name: string;
+            /**
+             * Description
+             * @description Suite description
+             * @default
+             */
+            description: string | null;
+            /**
+             * Evals
+             * @description Unit evals in this suite
+             */
+            evals?: components["schemas"]["EvalDefinition-Input"][];
+            /**
+             * Tags
+             * @description Tags for organization
+             */
+            tags?: string[];
+            /**
+             * Metrics
+             * @description DeepEval metrics to evaluate for all evals in suite
+             */
+            metrics?: components["schemas"]["MetricConfig"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at?: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at?: string;
+        };
+        /**
+         * EvalSuiteDefinition
+         * @description Eval suite containing multiple unit evals
+         */
+        "EvalSuiteDefinition-Output": {
+            /**
+             * Name
+             * @description Eval suite name
+             */
+            name: string;
+            /**
+             * Description
+             * @description Suite description
+             * @default
+             */
+            description: string | null;
+            /**
+             * Evals
+             * @description Unit evals in this suite
+             */
+            evals?: components["schemas"]["EvalDefinition-Output"][];
+            /**
+             * Tags
+             * @description Tags for organization
+             */
+            tags?: string[];
+            /**
+             * Metrics
+             * @description DeepEval metrics to evaluate for all evals in suite
+             */
+            metrics?: components["schemas"]["MetricConfig"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at?: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at?: string;
+        };
+        /**
+         * EvalSuiteExecutionResult
+         * @description Execution result for entire eval suite
+         */
+        EvalSuiteExecutionResult: {
+            /** Suite Name */
+            suite_name: string;
+            /** Eval Results */
+            eval_results: components["schemas"]["EvalExecutionResult"][];
+            /** Total Evals */
+            total_evals: number;
+            /** Passed Evals */
+            passed_evals: number;
+            /** Failed Evals */
+            failed_evals: number;
+            /** Total Execution Time Ms */
+            total_execution_time_ms: number;
+            /**
+             * Executed At
+             * Format: date-time
+             */
+            executed_at?: string;
+        };
+        /**
+         * EvalSuiteSummary
+         * @description Summary of eval suite for listing
+         */
+        EvalSuiteSummary: {
+            /** Name */
+            name: string;
+            /** Description */
+            description: string;
+            /** Eval Count */
+            eval_count: number;
+            /** Tags */
+            tags: string[];
+            /** File Path */
+            file_path: string;
+            /** Last Execution */
+            last_execution?: string | null;
+            /** Last Execution Passed */
+            last_execution_passed?: boolean | null;
+        };
+        /**
+         * ExecuteEvalsRequest
+         * @description Request body for executing specific evals
+         */
+        ExecuteEvalsRequest: {
+            /**
+             * Eval Names
+             * @description List of eval names to execute. If None, all evals are executed.
+             */
+            eval_names?: string[] | null;
         };
         /**
          * ExpectedEvaluationFieldsModel
-         * @description Expected evaluation fields for test definition.
+         * @description Expected evaluation fields for eval definition.
          *
          *     This model uses composition to store metric-specific configurations
          *     in a type-safe manner while maintaining backward compatibility.
@@ -1211,12 +1460,12 @@ export interface components {
             description: string;
             /**
              * Required Expected Fields
-             * @description List of field names the user must provide in test definition
+             * @description List of field names the user must provide in eval definition
              */
             required_expected_fields: string[];
             /**
              * Required Actual Fields
-             * @description List of field names that must be present from test execution
+             * @description List of field names that must be present from eval execution
              */
             required_actual_fields: string[];
             /**
@@ -1281,6 +1530,11 @@ export interface components {
              */
             mock_type: components["schemas"]["MockType"];
             /**
+             * @description Content type of mock response
+             * @default STRING
+             */
+            content_type: components["schemas"]["ContentType"];
+            /**
              * Static Response
              * @description Static mock response
              */
@@ -1295,42 +1549,6 @@ export interface components {
              * @description Python code for dynamic mock
              */
             python_code?: string | null;
-        };
-        /**
-         * MockExecutionRequest
-         * @description Request model for executing mock response with parameters.
-         */
-        MockExecutionRequest: {
-            /**
-             * Parameters
-             * @description Parameters to pass to the mock execution
-             */
-            parameters?: {
-                [key: string]: unknown;
-            };
-        };
-        /**
-         * MockExecutionResponse
-         * @description Response model for mock execution.
-         */
-        MockExecutionResponse: {
-            /**
-             * Response
-             * @description Mock response string
-             */
-            response: string;
-            /**
-             * Tool Name
-             * @description Name of the tool executed
-             */
-            tool_name: string;
-            /**
-             * Parameters Used
-             * @description Parameters that were used in execution
-             */
-            parameters_used?: {
-                [key: string]: unknown;
-            };
         };
         /**
          * MockType
@@ -1860,16 +2078,6 @@ export interface components {
             } | null;
         };
         /**
-         * PromptTokensDetails
-         * @description Breakdown of tokens used in the prompt
-         */
-        PromptTokensDetails: {
-            /** Audio Tokens */
-            audio_tokens?: number | null;
-            /** Cached Tokens */
-            cached_tokens?: number | null;
-        };
-        /**
          * ProviderInfo
          * @description Information about an LLM provider
          */
@@ -2016,6 +2224,56 @@ export interface components {
          * @enum {string}
          */
         ResponseStatus: "success" | "error" | "partial";
+        /**
+         * ReturnsSchema
+         * @description Return type schema for tool following OpenAI format.
+         */
+        "ReturnsSchema-Input": {
+            /** @description Return type */
+            type: components["schemas"]["ToolParameterType"];
+            /**
+             * Description
+             * @description Return value description
+             */
+            description?: string | null;
+            /**
+             * Properties
+             * @description Properties for object return type
+             */
+            properties?: {
+                [key: string]: components["schemas"]["ParameterSchema"];
+            } | null;
+            /**
+             * Required
+             * @description Required properties for object return type
+             */
+            required?: string[] | null;
+        };
+        /**
+         * ReturnsSchema
+         * @description Return type schema for tool following OpenAI format.
+         */
+        "ReturnsSchema-Output": {
+            /** @description Return type */
+            type: components["schemas"]["ToolParameterType"];
+            /**
+             * Description
+             * @description Return value description
+             */
+            description?: string | null;
+            /**
+             * Properties
+             * @description Properties for object return type
+             */
+            properties?: {
+                [key: string]: components["schemas"]["ParameterSchema"];
+            } | null;
+            /**
+             * Required
+             * @description Required properties for object return type
+             */
+            required?: string[] | null;
+        };
         /**
          * StandardResponse[APIInfo]
          * @example {
@@ -2288,6 +2546,202 @@ export interface components {
             meta?: components["schemas"]["ResponseMeta"];
         };
         /**
+         * StandardResponse[EvalExecutionResult]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_EvalExecutionResult_: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /** @description Response payload */
+            data?: components["schemas"]["EvalExecutionResult"] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
+         * StandardResponse[EvalSuiteData]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_EvalSuiteData_: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /** @description Response payload */
+            data?: components["schemas"]["EvalSuiteData-Output"] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
+         * StandardResponse[EvalSuiteExecutionResult]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_EvalSuiteExecutionResult_: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /** @description Response payload */
+            data?: components["schemas"]["EvalSuiteExecutionResult"] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
+         * StandardResponse[List[EvalSuiteExecutionResult]]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_List_EvalSuiteExecutionResult__: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /**
+             * Data
+             * @description Response payload
+             */
+            data?: components["schemas"]["EvalSuiteExecutionResult"][] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
+         * StandardResponse[List[EvalSuiteSummary]]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_List_EvalSuiteSummary__: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /**
+             * Data
+             * @description Response payload
+             */
+            data?: components["schemas"]["EvalSuiteSummary"][] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
          * StandardResponse[List[PromptMeta]]
          * @example {
          *       "data": {
@@ -2320,88 +2774,6 @@ export interface components {
              * @description Response payload
              */
             data?: components["schemas"]["PromptMeta"][] | null;
-            /**
-             * Message
-             * @description Human-readable message about the response
-             */
-            message?: string | null;
-            /** @description Response metadata */
-            meta?: components["schemas"]["ResponseMeta"];
-        };
-        /**
-         * StandardResponse[List[TestSuiteExecutionResult]]
-         * @example {
-         *       "data": {
-         *         "id": 1,
-         *         "name": "Example"
-         *       },
-         *       "message": "Operation completed successfully",
-         *       "meta": {
-         *         "request_id": "req_123",
-         *         "timestamp": "2024-01-01T00:00:00Z",
-         *         "version": "1.0.0"
-         *       },
-         *       "status": "success"
-         *     }
-         */
-        StandardResponse_List_TestSuiteExecutionResult__: {
-            /**
-             * @description Response status indicator
-             * @default success
-             */
-            status: components["schemas"]["ResponseStatus"];
-            /**
-             * Status Code
-             * @description HTTP status code
-             * @default 200
-             */
-            status_code: number;
-            /**
-             * Data
-             * @description Response payload
-             */
-            data?: components["schemas"]["TestSuiteExecutionResult"][] | null;
-            /**
-             * Message
-             * @description Human-readable message about the response
-             */
-            message?: string | null;
-            /** @description Response metadata */
-            meta?: components["schemas"]["ResponseMeta"];
-        };
-        /**
-         * StandardResponse[List[TestSuiteSummary]]
-         * @example {
-         *       "data": {
-         *         "id": 1,
-         *         "name": "Example"
-         *       },
-         *       "message": "Operation completed successfully",
-         *       "meta": {
-         *         "request_id": "req_123",
-         *         "timestamp": "2024-01-01T00:00:00Z",
-         *         "version": "1.0.0"
-         *       },
-         *       "status": "success"
-         *     }
-         */
-        StandardResponse_List_TestSuiteSummary__: {
-            /**
-             * @description Response status indicator
-             * @default success
-             */
-            status: components["schemas"]["ResponseStatus"];
-            /**
-             * Status Code
-             * @description HTTP status code
-             * @default 200
-             */
-            status_code: number;
-            /**
-             * Data
-             * @description Response payload
-             */
-            data?: components["schemas"]["TestSuiteSummary"][] | null;
             /**
              * Message
              * @description Human-readable message about the response
@@ -2481,44 +2853,6 @@ export interface components {
             status_code: number;
             /** @description Response payload */
             data?: components["schemas"]["LoginResponseData"] | null;
-            /**
-             * Message
-             * @description Human-readable message about the response
-             */
-            message?: string | null;
-            /** @description Response metadata */
-            meta?: components["schemas"]["ResponseMeta"];
-        };
-        /**
-         * StandardResponse[MockExecutionResponse]
-         * @example {
-         *       "data": {
-         *         "id": 1,
-         *         "name": "Example"
-         *       },
-         *       "message": "Operation completed successfully",
-         *       "meta": {
-         *         "request_id": "req_123",
-         *         "timestamp": "2024-01-01T00:00:00Z",
-         *         "version": "1.0.0"
-         *       },
-         *       "status": "success"
-         *     }
-         */
-        StandardResponse_MockExecutionResponse_: {
-            /**
-             * @description Response status indicator
-             * @default success
-             */
-            status: components["schemas"]["ResponseStatus"];
-            /**
-             * Status Code
-             * @description HTTP status code
-             * @default 200
-             */
-            status_code: number;
-            /** @description Response payload */
-            data?: components["schemas"]["MockExecutionResponse"] | null;
             /**
              * Message
              * @description Human-readable message about the response
@@ -2759,82 +3093,6 @@ export interface components {
             meta?: components["schemas"]["ResponseMeta"];
         };
         /**
-         * StandardResponse[TestSuiteData]
-         * @example {
-         *       "data": {
-         *         "id": 1,
-         *         "name": "Example"
-         *       },
-         *       "message": "Operation completed successfully",
-         *       "meta": {
-         *         "request_id": "req_123",
-         *         "timestamp": "2024-01-01T00:00:00Z",
-         *         "version": "1.0.0"
-         *       },
-         *       "status": "success"
-         *     }
-         */
-        StandardResponse_TestSuiteData_: {
-            /**
-             * @description Response status indicator
-             * @default success
-             */
-            status: components["schemas"]["ResponseStatus"];
-            /**
-             * Status Code
-             * @description HTTP status code
-             * @default 200
-             */
-            status_code: number;
-            /** @description Response payload */
-            data?: components["schemas"]["TestSuiteData-Output"] | null;
-            /**
-             * Message
-             * @description Human-readable message about the response
-             */
-            message?: string | null;
-            /** @description Response metadata */
-            meta?: components["schemas"]["ResponseMeta"];
-        };
-        /**
-         * StandardResponse[TestSuiteExecutionResult]
-         * @example {
-         *       "data": {
-         *         "id": 1,
-         *         "name": "Example"
-         *       },
-         *       "message": "Operation completed successfully",
-         *       "meta": {
-         *         "request_id": "req_123",
-         *         "timestamp": "2024-01-01T00:00:00Z",
-         *         "version": "1.0.0"
-         *       },
-         *       "status": "success"
-         *     }
-         */
-        StandardResponse_TestSuiteExecutionResult_: {
-            /**
-             * @description Response status indicator
-             * @default success
-             */
-            status: components["schemas"]["ResponseStatus"];
-            /**
-             * Status Code
-             * @description HTTP status code
-             * @default 200
-             */
-            status_code: number;
-            /** @description Response payload */
-            data?: components["schemas"]["TestSuiteExecutionResult"] | null;
-            /**
-             * Message
-             * @description Human-readable message about the response
-             */
-            message?: string | null;
-            /** @description Response metadata */
-            meta?: components["schemas"]["ResponseMeta"];
-        };
-        /**
          * StandardResponse[ToolDefinition]
          * @example {
          *       "data": {
@@ -2911,7 +3169,7 @@ export interface components {
             meta?: components["schemas"]["ResponseMeta"];
         };
         /**
-         * StandardResponse[Union[TestSuiteExecutionResult, NoneType]]
+         * StandardResponse[Union[EvalSuiteExecutionResult, NoneType]]
          * @example {
          *       "data": {
          *         "id": 1,
@@ -2926,7 +3184,7 @@ export interface components {
          *       "status": "success"
          *     }
          */
-        StandardResponse_Union_TestSuiteExecutionResult__NoneType__: {
+        StandardResponse_Union_EvalSuiteExecutionResult__NoneType__: {
             /**
              * @description Response status indicator
              * @default success
@@ -2939,45 +3197,7 @@ export interface components {
              */
             status_code: number;
             /** @description Response payload */
-            data?: components["schemas"]["TestSuiteExecutionResult"] | null;
-            /**
-             * Message
-             * @description Human-readable message about the response
-             */
-            message?: string | null;
-            /** @description Response metadata */
-            meta?: components["schemas"]["ResponseMeta"];
-        };
-        /**
-         * StandardResponse[UnitTestExecutionResult]
-         * @example {
-         *       "data": {
-         *         "id": 1,
-         *         "name": "Example"
-         *       },
-         *       "message": "Operation completed successfully",
-         *       "meta": {
-         *         "request_id": "req_123",
-         *         "timestamp": "2024-01-01T00:00:00Z",
-         *         "version": "1.0.0"
-         *       },
-         *       "status": "success"
-         *     }
-         */
-        StandardResponse_UnitTestExecutionResult_: {
-            /**
-             * @description Response status indicator
-             * @default success
-             */
-            status: components["schemas"]["ResponseStatus"];
-            /**
-             * Status Code
-             * @description HTTP status code
-             * @default 200
-             */
-            status_code: number;
-            /** @description Response payload */
-            data?: components["schemas"]["UnitTestExecutionResult"] | null;
+            data?: components["schemas"]["EvalSuiteExecutionResult"] | null;
             /**
              * Message
              * @description Human-readable message about the response
@@ -3068,145 +3288,98 @@ export interface components {
             meta?: components["schemas"]["ResponseMeta"];
         };
         /**
-         * TestSuiteData
-         * @description Wrapper for YAML serialization
+         * SystemMessageSchema
+         * @description Schema for system messages.
+         * @example {
+         *       "content": "You are a helpful AI assistant specialized in code analysis.",
+         *       "priority": "high",
+         *       "role": "system",
+         *       "timestamp": "2024-01-15T10:30:00Z"
+         *     }
          */
-        "TestSuiteData-Input": {
-            test_suite: components["schemas"]["TestSuiteDefinition-Input"];
+        SystemMessageSchema: {
+            /**
+             * Content
+             * @description The text content of the message
+             */
+            content: string;
+            /**
+             * Timestamp
+             * @description When the message was created
+             */
+            timestamp?: string | null;
+            /**
+             * Metadata
+             * @description Additional metadata associated with the message
+             */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Role
+             * @description Message role - always 'system'
+             * @default system
+             * @constant
+             */
+            role: "system";
+            /**
+             * Priority
+             * @description Priority level of the system message
+             * @default medium
+             */
+            priority: ("low" | "medium" | "high") | null;
         };
         /**
-         * TestSuiteData
-         * @description Wrapper for YAML serialization
+         * TokenUsage
+         * @description Token usage statistics from AgentTrace
          */
-        "TestSuiteData-Output": {
-            test_suite: components["schemas"]["TestSuiteDefinition-Output"];
+        TokenUsage: {
+            /**
+             * Input Tokens
+             * @description Number of input tokens
+             */
+            input_tokens: number;
+            /**
+             * Output Tokens
+             * @description Number of output tokens
+             */
+            output_tokens: number;
+            /**
+             * Total Tokens
+             * @description Total number of tokens
+             */
+            total_tokens: number;
         };
         /**
-         * TestSuiteDefinition
-         * @description Test suite containing multiple unit tests
+         * ToolCallSchema
+         * @description Schema for a tool call made by the AI.
+         * @example {
+         *       "arguments": {
+         *         "path": ".",
+         *         "regex": ".*\\.py$"
+         *       },
+         *       "id": "call_123abc",
+         *       "name": "search_files"
+         *     }
          */
-        "TestSuiteDefinition-Input": {
+        ToolCallSchema: {
+            /**
+             * Id
+             * @description Unique identifier for this tool call
+             */
+            id: string;
             /**
              * Name
-             * @description Test suite name
+             * @description Name of the tool being called
              */
             name: string;
             /**
-             * Description
-             * @description Suite description
-             * @default
+             * Arguments
+             * @description Arguments passed to the tool as key-value pairs
              */
-            description: string | null;
-            /**
-             * Tests
-             * @description Unit tests in this suite
-             */
-            tests?: components["schemas"]["UnitTestDefinition-Input"][];
-            /**
-             * Tags
-             * @description Tags for organization
-             */
-            tags?: string[];
-            /**
-             * Metrics
-             * @description DeepEval metrics to evaluate for all tests in suite
-             */
-            metrics?: components["schemas"]["MetricConfig"][];
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at?: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at?: string;
-        };
-        /**
-         * TestSuiteDefinition
-         * @description Test suite containing multiple unit tests
-         */
-        "TestSuiteDefinition-Output": {
-            /**
-             * Name
-             * @description Test suite name
-             */
-            name: string;
-            /**
-             * Description
-             * @description Suite description
-             * @default
-             */
-            description: string | null;
-            /**
-             * Tests
-             * @description Unit tests in this suite
-             */
-            tests?: components["schemas"]["UnitTestDefinition-Output"][];
-            /**
-             * Tags
-             * @description Tags for organization
-             */
-            tags?: string[];
-            /**
-             * Metrics
-             * @description DeepEval metrics to evaluate for all tests in suite
-             */
-            metrics?: components["schemas"]["MetricConfig"][];
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at?: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at?: string;
-        };
-        /**
-         * TestSuiteExecutionResult
-         * @description Execution result for entire test suite
-         */
-        TestSuiteExecutionResult: {
-            /** Suite Name */
-            suite_name: string;
-            /** Test Results */
-            test_results: components["schemas"]["UnitTestExecutionResult"][];
-            /** Total Tests */
-            total_tests: number;
-            /** Passed Tests */
-            passed_tests: number;
-            /** Failed Tests */
-            failed_tests: number;
-            /** Total Execution Time Ms */
-            total_execution_time_ms: number;
-            /**
-             * Executed At
-             * Format: date-time
-             */
-            executed_at?: string;
-        };
-        /**
-         * TestSuiteSummary
-         * @description Summary of test suite for listing
-         */
-        TestSuiteSummary: {
-            /** Name */
-            name: string;
-            /** Description */
-            description: string;
-            /** Test Count */
-            test_count: number;
-            /** Tags */
-            tags: string[];
-            /** File Path */
-            file_path: string;
-            /** Last Execution */
-            last_execution?: string | null;
-            /** Last Execution Passed */
-            last_execution_passed?: boolean | null;
+            arguments?: {
+                [key: string]: unknown;
+            };
         };
         /**
          * ToolDefinition
@@ -3225,15 +3398,71 @@ export interface components {
             description: string;
             /** @description OpenAI-compatible parameters */
             parameters?: components["schemas"]["ParametersDefinition-Output"];
+            /** @description Return type schema (OpenAI compatible) */
+            returns?: components["schemas"]["ReturnsSchema-Output"] | null;
             /** @description Mock configuration */
             mock?: components["schemas"]["MockConfig"];
+        };
+        /**
+         * ToolMessageSchema
+         * @description Schema for tool result messages.
+         * @example {
+         *       "content": "Found 5 Python files: app.py, utils.py, models.py, services.py, tests.py",
+         *       "is_error": false,
+         *       "role": "tool",
+         *       "timestamp": "2024-01-15T10:30:05Z",
+         *       "tool_call_id": "call_123",
+         *       "tool_name": "search_files"
+         *     }
+         */
+        ToolMessageSchema: {
+            /**
+             * Content
+             * @description The text content of the message
+             */
+            content: string;
+            /**
+             * Timestamp
+             * @description When the message was created
+             */
+            timestamp?: string | null;
+            /**
+             * Metadata
+             * @description Additional metadata associated with the message
+             */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Role
+             * @description Message role - always 'tool'
+             * @default tool
+             * @constant
+             */
+            role: "tool";
+            /**
+             * Tool Call Id
+             * @description ID of the tool call this message responds to
+             */
+            tool_call_id: string;
+            /**
+             * Tool Name
+             * @description Name of the tool that was executed
+             */
+            tool_name: string;
+            /**
+             * Is Error
+             * @description Whether the tool execution resulted in an error
+             * @default false
+             */
+            is_error: boolean;
         };
         /**
          * ToolParameterType
          * @description Parameter types for tool parameters.
          * @enum {string}
          */
-        ToolParameterType: "string" | "number" | "boolean" | "array" | "object";
+        ToolParameterType: "string" | "integer" | "number" | "boolean" | "array" | "object";
         /**
          * ToolSaveResponse
          * @description Response model for tool save operation with git workflow.
@@ -3286,136 +3515,6 @@ export interface components {
              * @description Tool file path (populated during discovery, not stored in YAML)
              */
             file_path: string;
-        };
-        /**
-         * UnitTestDefinition
-         * @description Individual test case definition
-         */
-        "UnitTestDefinition-Input": {
-            /**
-             * Name
-             * @description Unique test name within suite
-             */
-            name: string;
-            /**
-             * Description
-             * @description Test description
-             * @default
-             */
-            description: string | null;
-            /**
-             * Prompt Reference
-             * @description Reference to prompt file path
-             */
-            prompt_reference: string;
-            /**
-             * Template Variables
-             * @description Template variables for prompt execution
-             */
-            template_variables?: {
-                [key: string]: unknown;
-            };
-            /** @description Expected evaluation fields for different metric types */
-            evaluation_fields?: components["schemas"]["ExpectedEvaluationFieldsModel"];
-            /**
-             * Enabled
-             * @description Whether test is enabled
-             * @default true
-             */
-            enabled: boolean;
-        };
-        /**
-         * UnitTestDefinition
-         * @description Individual test case definition
-         */
-        "UnitTestDefinition-Output": {
-            /**
-             * Name
-             * @description Unique test name within suite
-             */
-            name: string;
-            /**
-             * Description
-             * @description Test description
-             * @default
-             */
-            description: string | null;
-            /**
-             * Prompt Reference
-             * @description Reference to prompt file path
-             */
-            prompt_reference: string;
-            /**
-             * Template Variables
-             * @description Template variables for prompt execution
-             */
-            template_variables?: {
-                [key: string]: unknown;
-            };
-            /** @description Expected evaluation fields for different metric types */
-            evaluation_fields?: components["schemas"]["ExpectedEvaluationFieldsModel"];
-            /**
-             * Enabled
-             * @description Whether test is enabled
-             * @default true
-             */
-            enabled: boolean;
-        };
-        /**
-         * UnitTestExecutionResult
-         * @description Execution result for a single unit test
-         */
-        UnitTestExecutionResult: {
-            /**
-             * Test Name
-             * @description Name of the test
-             */
-            test_name: string;
-            /**
-             * Prompt Reference
-             * @description Reference to prompt file path
-             */
-            prompt_reference: string;
-            /**
-             * Template Variables
-             * @description Template variables used in execution
-             */
-            template_variables: {
-                [key: string]: unknown;
-            };
-            /** @description Actual evaluation fields from execution */
-            actual_evaluation_fields: components["schemas"]["ActualEvaluationFieldsModel"];
-            /** @description Expected evaluation fields from test definition */
-            expected_evaluation_fields: components["schemas"]["ExpectedEvaluationFieldsModel"];
-            /**
-             * Metric Results
-             * @description Results from all metrics
-             */
-            metric_results: components["schemas"]["MetricResult"][];
-            /**
-             * Overall Passed
-             * @description Whether all metrics passed
-             */
-            overall_passed: boolean;
-            /**
-             * Executed At
-             * Format: date-time
-             */
-            executed_at?: string;
-        };
-        /**
-         * UsageStats
-         * @description Usage statistics for chat completion
-         */
-        UsageStats: {
-            /** Prompt Tokens */
-            prompt_tokens?: number | null;
-            /** Completion Tokens */
-            completion_tokens?: number | null;
-            /** Total Tokens */
-            total_tokens?: number | null;
-            prompt_tokens_details?: components["schemas"]["PromptTokensDetails"] | null;
-            completion_tokens_details?: components["schemas"]["CompletionTokensDetails"] | null;
         };
         /**
          * User
@@ -3471,6 +3570,47 @@ export interface components {
              * @description When the user was last modified
              */
             modified_at?: string;
+        };
+        /**
+         * UserMessageSchema
+         * @description Schema for user messages.
+         * @example {
+         *       "content": "Can you help me search for Python files?",
+         *       "role": "user",
+         *       "timestamp": "2024-01-15T10:30:00Z",
+         *       "user_id": "user_123"
+         *     }
+         */
+        UserMessageSchema: {
+            /**
+             * Content
+             * @description The text content of the message
+             */
+            content: string;
+            /**
+             * Timestamp
+             * @description When the message was created
+             */
+            timestamp?: string | null;
+            /**
+             * Metadata
+             * @description Additional metadata associated with the message
+             */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Role
+             * @description Message role - always 'user'
+             * @default user
+             * @constant
+             */
+            role: "user";
+            /**
+             * User Id
+             * @description ID of the user who sent the message
+             */
+            user_id?: string | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -3982,7 +4122,7 @@ export interface operations {
                      *       "status": "error",
                      *       "type": "/errors/bad-request",
                      *       "title": "Bad request",
-                     *       "detail": "Invalid provider or model"
+                     *       "detail": "Invalid prompt_meta or messages"
                      *     }
                      */
                     "application/json": unknown;
@@ -5014,79 +5154,7 @@ export interface operations {
             };
         };
     };
-    execute_mock_api_v0_tools__tool_name__mock_post: {
-        parameters: {
-            query?: {
-                /** @description Repository name */
-                repo_name?: string;
-            };
-            header?: never;
-            path: {
-                tool_name: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MockExecutionRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StandardResponse_MockExecutionResponse_"];
-                };
-            };
-            /** @description Mock execution disabled */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "status": "error",
-                     *       "type": "/errors/bad-request",
-                     *       "title": "Bad Request",
-                     *       "detail": "Mock execution is disabled for this tool"
-                     *     }
-                     */
-                    "application/json": unknown;
-                };
-            };
-            /** @description Tool not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "status": "error",
-                     *       "type": "/errors/not-found",
-                     *       "title": "Not Found",
-                     *       "detail": "Tool not found"
-                     *     }
-                     */
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_test_suites_api_v0_tests_suites_get: {
+    list_eval_suites_api_v0_evals_suites_get: {
         parameters: {
             query: {
                 /** @description Repository name */
@@ -5104,7 +5172,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StandardResponse_List_TestSuiteSummary__"];
+                    "application/json": components["schemas"]["StandardResponse_List_EvalSuiteSummary__"];
                 };
             };
             /** @description Repository not found */
@@ -5144,7 +5212,7 @@ export interface operations {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
-                     *       "detail": "Failed to list test suites"
+                     *       "detail": "Failed to list eval suites"
                      *     }
                      */
                     "application/json": unknown;
@@ -5152,7 +5220,7 @@ export interface operations {
             };
         };
     };
-    save_test_suite_api_v0_tests_suites_post: {
+    save_eval_suite_api_v0_evals_suites_post: {
         parameters: {
             query: {
                 /** @description Repository name */
@@ -5164,7 +5232,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["TestSuiteData-Input"];
+                "application/json": components["schemas"]["EvalSuiteData-Input"];
             };
         };
         responses: {
@@ -5174,7 +5242,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StandardResponse_TestSuiteData_"];
+                    "application/json": components["schemas"]["StandardResponse_EvalSuiteData_"];
                 };
             };
             /** @description Repository not found */
@@ -5214,7 +5282,7 @@ export interface operations {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
-                     *       "detail": "Failed to save test suite"
+                     *       "detail": "Failed to save eval suite"
                      *     }
                      */
                     "application/json": unknown;
@@ -5222,7 +5290,7 @@ export interface operations {
             };
         };
     };
-    get_test_suite_api_v0_tests_suites__suite_name__get: {
+    get_eval_suite_api_v0_evals_suites__suite_name__get: {
         parameters: {
             query: {
                 /** @description Repository name */
@@ -5242,10 +5310,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StandardResponse_TestSuiteData_"];
+                    "application/json": components["schemas"]["StandardResponse_EvalSuiteData_"];
                 };
             };
-            /** @description Test suite not found */
+            /** @description Eval suite not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -5256,7 +5324,7 @@ export interface operations {
                      *       "status": "error",
                      *       "type": "/errors/not-found",
                      *       "title": "Not Found",
-                     *       "detail": "Test suite not found"
+                     *       "detail": "Eval suite not found"
                      *     }
                      */
                     "application/json": unknown;
@@ -5282,7 +5350,7 @@ export interface operations {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
-                     *       "detail": "Failed to retrieve test suite"
+                     *       "detail": "Failed to retrieve eval suite"
                      *     }
                      */
                     "application/json": unknown;
@@ -5290,7 +5358,7 @@ export interface operations {
             };
         };
     };
-    delete_test_suite_api_v0_tests_suites__suite_name__delete: {
+    delete_eval_suite_api_v0_evals_suites__suite_name__delete: {
         parameters: {
             query: {
                 /** @description Repository name */
@@ -5313,7 +5381,7 @@ export interface operations {
                     "application/json": components["schemas"]["StandardResponse_dict_"];
                 };
             };
-            /** @description Test suite not found */
+            /** @description Eval suite not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -5324,7 +5392,7 @@ export interface operations {
                      *       "status": "error",
                      *       "type": "/errors/not-found",
                      *       "title": "Not Found",
-                     *       "detail": "Test suite not found"
+                     *       "detail": "Eval suite not found"
                      *     }
                      */
                     "application/json": unknown;
@@ -5350,7 +5418,7 @@ export interface operations {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
-                     *       "detail": "Failed to delete test suite"
+                     *       "detail": "Failed to delete eval suite"
                      *     }
                      */
                     "application/json": unknown;
@@ -5358,7 +5426,7 @@ export interface operations {
             };
         };
     };
-    execute_test_suite_api_v0_tests_suites__suite_name__execute_post: {
+    execute_eval_suite_api_v0_evals_suites__suite_name__execute_post: {
         parameters: {
             query: {
                 /** @description Repository name */
@@ -5372,7 +5440,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["ExecuteTestsRequest"];
+                "application/json": components["schemas"]["ExecuteEvalsRequest"];
             };
         };
         responses: {
@@ -5382,10 +5450,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StandardResponse_TestSuiteExecutionResult_"];
+                    "application/json": components["schemas"]["StandardResponse_EvalSuiteExecutionResult_"];
                 };
             };
-            /** @description Test suite not found */
+            /** @description Eval suite not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -5396,7 +5464,7 @@ export interface operations {
                      *       "status": "error",
                      *       "type": "/errors/not-found",
                      *       "title": "Not Found",
-                     *       "detail": "Test suite not found"
+                     *       "detail": "Eval suite not found"
                      *     }
                      */
                     "application/json": unknown;
@@ -5422,7 +5490,7 @@ export interface operations {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
-                     *       "detail": "Failed to execute test suite"
+                     *       "detail": "Failed to execute eval suite"
                      *     }
                      */
                     "application/json": unknown;
@@ -5430,7 +5498,7 @@ export interface operations {
             };
         };
     };
-    execute_single_test_api_v0_tests_suites__suite_name__tests__test_name__execute_post: {
+    execute_single_eval_api_v0_evals_suites__suite_name__evals__eval_name__execute_post: {
         parameters: {
             query: {
                 /** @description Repository name */
@@ -5439,7 +5507,7 @@ export interface operations {
             header?: never;
             path: {
                 suite_name: string;
-                test_name: string;
+                eval_name: string;
             };
             cookie?: never;
         };
@@ -5451,10 +5519,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StandardResponse_UnitTestExecutionResult_"];
+                    "application/json": components["schemas"]["StandardResponse_EvalExecutionResult_"];
                 };
             };
-            /** @description Test not found */
+            /** @description Eval not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -5465,7 +5533,7 @@ export interface operations {
                      *       "status": "error",
                      *       "type": "/errors/not-found",
                      *       "title": "Not Found",
-                     *       "detail": "Test not found"
+                     *       "detail": "Eval not found"
                      *     }
                      */
                     "application/json": unknown;
@@ -5491,7 +5559,7 @@ export interface operations {
                      *       "status": "error",
                      *       "type": "/errors/internal-server-error",
                      *       "title": "Internal Server Error",
-                     *       "detail": "Failed to execute test"
+                     *       "detail": "Failed to execute eval"
                      *     }
                      */
                     "application/json": unknown;
@@ -5499,7 +5567,7 @@ export interface operations {
             };
         };
     };
-    get_execution_history_api_v0_tests_suites__suite_name__executions_get: {
+    get_execution_history_api_v0_evals_suites__suite_name__executions_get: {
         parameters: {
             query: {
                 /** @description Repository name */
@@ -5521,7 +5589,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StandardResponse_List_TestSuiteExecutionResult__"];
+                    "application/json": components["schemas"]["StandardResponse_List_EvalSuiteExecutionResult__"];
                 };
             };
             /** @description Repository not found */
@@ -5569,7 +5637,7 @@ export interface operations {
             };
         };
     };
-    get_latest_execution_api_v0_tests_suites__suite_name__executions_latest_get: {
+    get_latest_execution_api_v0_evals_suites__suite_name__executions_latest_get: {
         parameters: {
             query: {
                 /** @description Repository name */
@@ -5589,7 +5657,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StandardResponse_Union_TestSuiteExecutionResult__NoneType__"];
+                    "application/json": components["schemas"]["StandardResponse_Union_EvalSuiteExecutionResult__NoneType__"];
                 };
             };
             /** @description Repository not found */
@@ -5637,7 +5705,7 @@ export interface operations {
             };
         };
     };
-    get_metrics_metadata_api_v0_tests_metrics_metadata_get: {
+    get_metrics_metadata_api_v0_evals_metrics_metadata_get: {
         parameters: {
             query?: never;
             header?: never;

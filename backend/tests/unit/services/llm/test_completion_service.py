@@ -8,7 +8,7 @@ chat completions, validation, and error handling.
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 
-from services.llm.completion_service import ChatCompletionService
+from services.llm.chat_completion_service import ChatCompletionService
 from services.llm.models import (
     ChatCompletionRequest,
     ChatMessage,
@@ -462,7 +462,7 @@ class TestChatCompletionService:
         )
         
         # Execute
-        content, finish_reason, usage_stats, inference_time, tool_calls = await self.service.execute_non_streaming_completion(
+        content, finish_reason, usage_stats, inference_time, tool_calls = await self.service.execute_non_streaming_completion_from_chat_request(
             request, "user123"
         )
         
@@ -509,7 +509,7 @@ class TestChatCompletionService:
         )
         
         with pytest.raises(ServiceUnavailableException) as exc_info:
-            await self.service.execute_non_streaming_completion(request, "user123")
+            await self.service.execute_non_streaming_completion_from_chat_request(request, "user123")
         
         assert "Completion error" in str(exc_info.value)
         assert "Unexpected response format from completion API" in str(exc_info.value)
@@ -653,4 +653,4 @@ class TestChatCompletionService:
         )
         
         with pytest.raises(BadRequestException):
-            await self.service.execute_non_streaming_completion(request, "user123")
+            await self.service.execute_non_streaming_completion_from_chat_request(request, "user123")

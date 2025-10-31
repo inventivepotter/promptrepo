@@ -17,8 +17,6 @@ interface GetLatestButtonProps {
   disabled?: boolean;
   /** Callback function after successfully getting latest */
   onSuccess?: () => Promise<void>;
-  /** The artifact type (for display in the dialog) */
-  artifactType?: 'prompts' | 'tests' | 'tools' | 'test suites' | 'artifacts';
 }
 
 /**
@@ -29,7 +27,6 @@ export function GetLatestButton({
   repoName,
   disabled = false,
   onSuccess,
-  artifactType = 'artifacts',
 }: GetLatestButtonProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

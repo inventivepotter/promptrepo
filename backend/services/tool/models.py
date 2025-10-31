@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, field_validator
 class ToolParameterType(str, Enum):
     """Parameter types for tool parameters."""
     STRING = "string"
+    INTEGER = "integer"
     NUMBER = "number"
     BOOLEAN = "boolean"
     ARRAY = "array"
@@ -81,11 +82,19 @@ class MockType(str, Enum):
     PYTHON = "python"
 
 
+class ContentType(str, Enum):
+    """Content types for mock responses."""
+    JSON = "json"
+    XML = "xml"
+    STRING = "STRING"
+
+
 class MockConfig(BaseModel):
     """Mock configuration for tool with support for multiple mock types."""
     
     enabled: bool = Field(default=True, description="Whether mock is enabled")
     mock_type: MockType = Field(default=MockType.STATIC, description="Type of mock response")
+    content_type: ContentType = Field(default=ContentType.STRING, description="Content type of mock response")
     
     # Type-specific fields
     static_response: Optional[str] = Field(default=None, description="Static mock response")
@@ -101,6 +110,25 @@ class MockConfig(BaseModel):
         if isinstance(v, str):
             return MockType(v.lower())
         return v
+    
+    @field_validator("content_type", mode="before")
+    @classmethod
+    def validate_content_type(cls, v: Any) -> ContentType:
+        """Validate and convert content_type."""
+        if v is None:
+            return ContentType.JSON
+        if isinstance(v, str):
+            return ContentType(v.lower())
+        return v
+
+
+class ReturnsSchema(BaseModel):
+    """Return type schema for tool following OpenAI format."""
+    
+    type: ToolParameterType = Field(description="Return type")
+    description: Optional[str] = Field(None, description="Return value description")
+    properties: Optional[Dict[str, ParameterSchema]] = Field(None, description="Properties for object return type")
+    required: Optional[List[str]] = Field(None, description="Required properties for object return type")
 
 
 class ToolDefinition(BaseModel):
@@ -112,6 +140,7 @@ class ToolDefinition(BaseModel):
         default_factory=lambda: ParametersDefinition(type="object", properties={}, required=[]),
         description="OpenAI-compatible parameters"
     )
+    returns: Optional[ReturnsSchema] = Field(None, description="Return type schema (OpenAI compatible)")
     mock: MockConfig = Field(default_factory=lambda: MockConfig(), description="Mock configuration")
     
     @field_validator("name")
@@ -126,12 +155,21 @@ class ToolDefinition(BaseModel):
             )
         return v
     
-    def to_openai_function(self) -> Dict[str, Any]:
-        """Convert to OpenAI function format."""
-        return {
+    def to_openai_tool_json(self) -> Dict[str, Any]:
+        """Convert to OpenAI tool JSON format (type: function wrapper)."""
+        function_def = {
             "name": self.name,
             "description": self.description,
             "parameters": self.parameters.model_dump(exclude_none=True)
+        }
+        
+        # Add returns schema if present
+        if self.returns:
+            function_def["returns"] = self.returns.model_dump(exclude_none=True)
+        
+        return {
+            "type": "function",
+            "function": function_def
         }
 
 

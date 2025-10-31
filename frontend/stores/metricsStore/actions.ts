@@ -2,11 +2,11 @@
  * Actions for Metrics Store
  */
 import type { StateCreator } from 'zustand';
-import TestApi from '@/services/tests/api';
+import EvalApi from '@/services/evals/api';
 import { handleStoreError } from '@/lib/zustand';
 import { isStandardResponse, isErrorResponse } from '@/types/OpenApiResponse';
 import type { MetricsStore, MetricsActions } from './types';
-import type { MetricMetadata } from '@/types/test';
+import type { MetricMetadata } from '@/types/eval';
 
 export const createMetricsActions: StateCreator<
   MetricsStore,
@@ -17,7 +17,7 @@ export const createMetricsActions: StateCreator<
   fetchMetadata: async () => {
     set({ isLoading: true, error: null });
     try {
-      const response = await TestApi.getMetricsMetadata();
+      const response = await EvalApi.getMetricsMetadata();
       
       if (isStandardResponse(response) && response.data) {
         set({ metadata: response.data, isLoading: false });

@@ -2,10 +2,6 @@
 Chat completions endpoint with standardized responses.
 """
 from fastapi import APIRouter, Request, status
-from fastapi.responses import StreamingResponse
-from typing import List
-import uuid
-import time
 import logging
 
 from middlewares.rest import (
@@ -17,10 +13,8 @@ from middlewares.rest import (
 from services.llm.models import (
     ChatCompletionRequest,
     ChatCompletionResponse,
-    ChatCompletionChoice,
-    ChatMessage,
 )
-from api.deps import ChatCompletionServiceDep, CurrentUserDep, ToolExecutionServiceDep
+from api.deps import ChatCompletionServiceDep, CurrentUserDep
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -39,7 +33,7 @@ router = APIRouter()
                         "status": "error",
                         "type": "/errors/bad-request",
                         "title": "Bad request",
-                        "detail": "Invalid provider or model"
+                        "detail": "Invalid prompt_meta or messages"
                     }
                 }
             }
@@ -59,93 +53,84 @@ router = APIRouter()
         }
     },
     summary="Create chat completion",
-    description="Create a chat completion using any-llm. Supports both streaming and non-streaming responses."
+    description="Create a chat completion using PromptMeta configuration and optional conversation history."
 )
 async def chat_completions(
     request_body: ChatCompletionRequest,
     request: Request,
     chat_completion_service: ChatCompletionServiceDep,
-    user_id: CurrentUserDep,
-    tool_execution_service: ToolExecutionServiceDep
-):
+    user_id: CurrentUserDep
+) -> StandardResponse[ChatCompletionResponse]:
     """
-    Create a chat completion using any-llm.
-    Supports both streaming and non-streaming responses.
+    Create a chat completion using PromptMeta configuration.
+    
+    Args:
+        request_body: ChatCompletionRequest with prompt_meta and optional messages
+        request: FastAPI Request object
+        chat_completion_service: Injected chat completion service
+        user_id: Current user ID from auth
     
     Returns:
         StandardResponse[ChatCompletionResponse]: Standardized response containing completion
-        StreamingResponse: When stream=true is requested
     
     Raises:
-        BadRequestException: When provider/model validation fails
+        BadRequestException: When validation fails
         AppException: When completion fails
     """
     request_id = getattr(request.state, "request_id", None)
     
     try:
-        # Generate completion ID
-        completion_id = f"chatcmpl-{uuid.uuid4().hex[:29]}"
+        # Validate prompt_meta
+        if not request_body.prompt_meta:
+            raise BadRequestException(
+                message="prompt_meta is required",
+                context={"request_id": request_id}
+            )
         
-        # Validate required fields
+        # Extract provider and model from prompt_meta for validation
+        prompt_data = request_body.prompt_meta.prompt
+        provider = prompt_data.provider
+        model = prompt_data.model
+        
+        # Validate provider and model
         try:
-            chat_completion_service.validate_provider_and_model(request_body.provider, request_body.model)
+            chat_completion_service.validate_provider_and_model(provider, model)
         except Exception as e:
             raise BadRequestException(
                 message="Invalid provider or model",
                 context={
-                    "provider": request_body.provider,
-                    "model": request_body.model,
+                    "provider": provider,
+                    "model": model,
                     "error": str(e)
                 }
             )
 
         logger.info(
-            f"Chat completion request",
+            "Chat completion request",
             extra={
                 "request_id": request_id,
-                "provider": request_body.provider,
-                "model": request_body.model,
-                "stream": request_body.stream,
+                "user_id": user_id,
+                "provider": provider,
+                "model": model,
                 "message_count": len(request_body.messages) if request_body.messages else 0
             }
         )
         
-        # TODO: Streaming response not supported yet
-        # Handle streaming response
-        if request_body.stream:
-            logger.info(
-                "Returning streaming response",
-                extra={
-                    "request_id": request_id,
-                    "completion_id": completion_id
-                }
-            )
-            return StreamingResponse(
-                chat_completion_service.stream_completion(
-                    request_body,
-                    f"{request_body.provider}/{request_body.model}",
-                    completion_id
-                ),
-                media_type="text/plain",
-                headers={
-                    "Cache-Control": "no-cache",
-                    "Connection": "keep-alive",
-                    "Content-Type": "text/event-stream",
-                    "X-Request-Id": request_id or ""
-                }
-            )
-        
-        # Handle non-streaming response with automatic tool call loop
+        # Execute completion using the service
         try:
-            content, finish_reason, usage_stats, inference_time_ms, tool_calls = await chat_completion_service.execute_non_streaming_completion(request_body, user_id)
+            completion_response = await chat_completion_service.execute_completion(
+                request=request_body,
+                user_id=user_id
+            )
         except Exception as e:
             logger.error(
                 f"Error in completion processing: {e}",
                 exc_info=True,
                 extra={
                     "request_id": request_id,
-                    "provider": request_body.provider,
-                    "model": request_body.model
+                    "user_id": user_id,
+                    "provider": provider,
+                    "model": model
                 }
             )
             raise AppException(
@@ -153,79 +138,14 @@ async def chat_completions(
                 detail=str(e)
             )
         
-        # Create initial assistant message with tool_calls if present
-        assistant_message = ChatMessage(
-            role="assistant",
-            content=content,
-            tool_calls=tool_calls
-        )
-        
-        # Initialize tool_responses list for messages to return
-        tool_responses_list: List[ChatMessage] = []
-        
-        # If tool_calls are present, delegate to ToolExecutionService for automatic tool loop
-        if tool_calls and request_body.tools:
-            logger.info(
-                "Tool calls detected in completion - starting automatic tool loop",
-                extra={
-                    "request_id": request_id,
-                    "tool_call_count": len(tool_calls),
-                    "tool_names": [tc.get("function", {}).get("name") for tc in tool_calls]
-                }
-            )
-            
-            try:
-                # Execute tool call loop through service
-                final_assistant_message, tool_responses_list = await tool_execution_service.execute_tool_call_loop(
-                    initial_tool_calls=tool_calls,
-                    request_body=request_body,
-                    assistant_message=assistant_message,
-                    user_id=user_id,
-                    request_id=request_id
-                )
-                
-                # Update content from final assistant message
-                content = final_assistant_message.content
-                finish_reason = "stop"  # Tool loop completed successfully
-                
-                # Keep original tool_calls in assistant_message for frontend to display
-                # but use content from final answer
-                assistant_message.content = content
-                
-            except Exception as tool_loop_error:
-                logger.error(
-                    f"Error in tool execution loop: {tool_loop_error}",
-                    exc_info=True,
-                    extra={"request_id": request_id}
-                )
-                # If tool loop fails, continue with original assistant message
-                # (frontend will at least see the tool calls)
-        
-        # Create completion response
-        completion_response = ChatCompletionResponse(
-            id=completion_id,
-            created=int(time.time()),
-            model=f"{request_body.provider}/{request_body.model}",
-            choices=[
-                ChatCompletionChoice(
-                    index=0,
-                    message=assistant_message,
-                    finish_reason=finish_reason
-                )
-            ],
-            usage=usage_stats,
-            inference_time_ms=inference_time_ms,
-            tool_responses=tool_responses_list if tool_responses_list else None
-        )
-        
         logger.info(
             "Chat completion successful",
             extra={
                 "request_id": request_id,
-                "completion_id": completion_id,
-                "provider": request_body.provider,
-                "model": request_body.model,
-                "usage": usage_stats.dict() if usage_stats else None
+                "user_id": user_id,
+                "provider": provider,
+                "model": model,
+                "usage": completion_response.usage.dict() if completion_response.usage else None
             }
         )
         
@@ -244,8 +164,7 @@ async def chat_completions(
             exc_info=True,
             extra={
                 "request_id": request_id,
-                "provider": request_body.provider if hasattr(request_body, 'provider') else None,
-                "model": request_body.model if hasattr(request_body, 'model') else None
+                "user_id": user_id
             }
         )
         raise AppException(

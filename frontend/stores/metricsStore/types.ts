@@ -1,7 +1,7 @@
 /**
  * Types for Metrics Store
  */
-import type { MetricMetadata, MetricsMetadataResponse } from '@/types/test';
+import type { MetricMetadata, MetricsMetadataResponse } from '@/types/eval';
 
 /**
  * Metrics Store State

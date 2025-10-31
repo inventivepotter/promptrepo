@@ -3,7 +3,10 @@ import type { StateCreator } from '@/lib/zustand';
 import { chatService } from '@/services/llm/chat/chatService';
 import type { ChatStore, ChatActions, ChatSession } from './types';
 import type { ChatMessage, Tool } from '@/app/(prompts)/_types/ChatState';
-import type { ChatCompletionOptions } from '@/types/Chat';
+import type { components } from '@/types/generated/api';
+
+type PromptMeta = components['schemas']['PromptMeta'];
+type MessageSchema = components['schemas']['UserMessageSchema'] | components['schemas']['AIMessageSchema'] | components['schemas']['SystemMessageSchema'] | components['schemas']['ToolMessageSchema'];
 
 // Helper function to generate unique IDs
 const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -83,7 +86,7 @@ export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (
   },
   
   // Message Operations
-  sendMessage: async (content: string, options: { systemPrompt?: string; modelConfig?: Partial<ChatStore['defaultModelConfig']>; promptId?: string; repoName?: string; onStream?: (content: string) => void; tools?: string[] } = {}) => {
+  sendMessage: async (content: string, options: { promptMeta?: PromptMeta; onStream?: (content: string) => void } = {}) => {
     // Get initial state at the start
     const initialState = get();
     let currentSession = initialState.sessions.find(s => s.id === initialState.currentSessionId);
@@ -93,11 +96,21 @@ export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (
       currentSession = get().createSession();
     }
     
-    // Create system message if systemPrompt is provided and it's the first message
+    // Validate that we have promptMeta
+    if (!options.promptMeta) {
+      set((draft) => {
+        draft.error = 'No prompt metadata provided';
+        draft.isSending = false;
+      // @ts-expect-error - Immer middleware supports 3 params
+      }, false, 'chat/send-message-error');
+      return;
+    }
+    
+    // Create system message if systemPrompt is in promptMeta and it's the first message
     const isFirstMessage = initialState.messages.length === 0;
     let systemMessage = null;
-    if (options.systemPrompt && isFirstMessage) {
-      systemMessage = chatService.createSystemMessage(options.systemPrompt);
+    if (options.promptMeta.prompt.prompt && isFirstMessage) {
+      systemMessage = chatService.createSystemMessage(options.promptMeta.prompt.prompt);
     }
     
     // Create user message only if content is provided
@@ -130,106 +143,137 @@ export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (
     }, false, 'chat/send-message-start');
     
     try {
-      // Get fresh state and session for model config
-      const freshState = get();
-      const freshSession = freshState.sessions.find(s => s.id === freshState.currentSessionId);
+      // Convert messages to MessageSchema format for backend
+      const currentMessages = get().messages;
+      const messageSchemas: MessageSchema[] = currentMessages.map(msg => {
+        if (msg.role === 'user') {
+          return {
+            role: 'user' as const,
+            content: msg.content,
+            timestamp: msg.timestamp?.toISOString() || null,
+            metadata: null,
+            user_id: null
+          };
+        } else if (msg.role === 'assistant') {
+          return {
+            role: 'assistant' as const,
+            content: msg.content,
+            timestamp: msg.timestamp?.toISOString() || null,
+            metadata: null,
+            model: null,
+            tool_calls: msg.tool_calls && Array.isArray(msg.tool_calls) && msg.tool_calls.length > 0 && 'id' in msg.tool_calls[0] && 'function' in msg.tool_calls[0]
+              ? msg.tool_calls.map(tc => {
+                  const toolCall = tc as { id: string; type: 'function'; function: { name: string; arguments: string; } };
+                  return {
+                    id: toolCall.id,
+                    name: toolCall.function.name,
+                    arguments: typeof toolCall.function.arguments === 'string' ? JSON.parse(toolCall.function.arguments) : toolCall.function.arguments
+                  };
+                })
+              : null,
+            finish_reason: null,
+            token_usage: null
+          };
+        } else if (msg.role === 'system') {
+          return {
+            role: 'system' as const,
+            content: msg.content,
+            timestamp: msg.timestamp?.toISOString() || null,
+            metadata: null,
+            priority: null
+          };
+        } else if (msg.role === 'tool') {
+          return {
+            role: 'tool' as const,
+            content: msg.content,
+            timestamp: msg.timestamp?.toISOString() || null,
+            metadata: null,
+            tool_call_id: msg.tool_call_id || '',
+            tool_name: '',
+            is_error: false
+          };
+        }
+        // Default fallback (shouldn't reach here)
+        return {
+          role: 'user' as const,
+          content: msg.content,
+          timestamp: msg.timestamp?.toISOString() || null,
+          metadata: null,
+          user_id: null
+        };
+      });
       
-      // Prepare completion options using fresh session data
-      const modelConfig = options.modelConfig
-        ? { ...(freshSession?.modelConfig || freshState.defaultModelConfig), ...options.modelConfig }
-        : (freshSession?.modelConfig || freshState.defaultModelConfig);
-        
-      const completionOptions: ChatCompletionOptions = {
-        provider: modelConfig.provider,
-        model: modelConfig.model,
-        temperature: modelConfig.temperature,
-        max_tokens: modelConfig.max_tokens,
-        top_p: modelConfig.top_p,
-        frequency_penalty: modelConfig.frequency_penalty,
-        presence_penalty: modelConfig.presence_penalty,
-        stream: options.onStream !== undefined,
-      };
-      
-      // Convert messages to OpenAI format
-      const messages = chatService.toOpenAIMessages(get().messages);
-      
-      // Use tools from options (passed from prompt metadata)
-      // Backend will load tool definitions from file paths
-      const toolsForCompletion = options.tools && options.tools.length > 0
-        ? options.tools
-        : undefined;
-      
-      // Send to chat service
+      // Send to chat service with PromptMeta
       const assistantMessage = await chatService.sendChatCompletion(
-        messages,
-        options.promptId,
-        completionOptions,
-        options.systemPrompt || currentSession.systemPrompt,
-        toolsForCompletion,
-        options.repoName
+        options.promptMeta,
+        messageSchemas
       );
       
       if (assistantMessage) {
         set((draft) => {
           const session = draft.sessions.find(s => s.id === draft.currentSessionId);
-          
-          // If there are tool responses, this means the backend executed the tool loop
-          // We need to reconstruct the message order: tool_calls message -> tool responses -> final answer
-          if (assistantMessage.tool_responses && Array.isArray(assistantMessage.tool_responses) && assistantMessage.tool_responses.length > 0) {
-            // Create the initial assistant message with tool_calls (if tool_calls exist in the response)
-            // The backend should have returned tool_calls in the message even after executing the loop
-            if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
-              const toolCallMessage = chatService.createAssistantMessage('', assistantMessage.tool_calls);
+
+          // If there are tool calls, this means the backend executed the tool loop
+          // toolCalls now contains MessageSchema objects: AIMessageSchema with tool_calls + ToolMessageSchema with results
+          if (assistantMessage.toolCalls && Array.isArray(assistantMessage.toolCalls) && assistantMessage.toolCalls.length > 0) {
+            // New format: toolCalls is MessageSchema[]
+            for (const toolMessageSchema of assistantMessage.toolCalls) {
+              let chatMessage: ChatMessage;
+
+              if (toolMessageSchema.role === 'assistant') {
+                // This is the AI message with tool calls
+                const aiMessageSchema = toolMessageSchema as components['schemas']['AIMessageSchema'];
+                chatMessage = chatService.createAssistantMessage(
+                  aiMessageSchema.content || '',
+                  aiMessageSchema.tool_calls ? aiMessageSchema.tool_calls.map(tc => ({
+                    id: tc.id,
+                    type: 'function' as const,
+                    function: {
+                      name: tc.name,
+                      arguments: typeof tc.arguments === 'string' ? tc.arguments : JSON.stringify(tc.arguments)
+                    }
+                  })) : undefined
+                );
+              } else if (toolMessageSchema.role === 'tool') {
+                // This is a tool response message
+                const toolMessageSchema_ = toolMessageSchema as components['schemas']['ToolMessageSchema'];
+                chatMessage = chatService.createToolMessage(
+                  toolMessageSchema_.content,
+                  toolMessageSchema_.tool_call_id || ''
+                );
+              } else {
+                // Fallback - shouldn't happen
+                continue;
+              }
+
+              // Copy timestamp if available
+              if (toolMessageSchema.timestamp) {
+                chatMessage.timestamp = new Date(toolMessageSchema.timestamp);
+              }
+
               if (session) {
-                session.messages.push(toolCallMessage);
+                session.messages.push(chatMessage);
                 session.updatedAt = new Date();
               }
-              draft.messages.push(toolCallMessage);
+              draft.messages.push(chatMessage);
             }
-            
-            // Add tool response messages
-            for (const toolResponse of assistantMessage.tool_responses) {
-              const toolMessage = chatService.createToolMessage(
-                toolResponse.content,
-                toolResponse.tool_call_id || ''
-              );
-              
-              if (session) {
-                session.messages.push(toolMessage);
-              }
-              draft.messages.push(toolMessage);
-            }
-            
-            // Create final answer message (without tool_calls)
-            const finalAnswerMessage = chatService.createAssistantMessage(assistantMessage.content);
-            // Copy over metadata
-            if (assistantMessage.usage) finalAnswerMessage.usage = assistantMessage.usage;
-            if (assistantMessage.cost) finalAnswerMessage.cost = assistantMessage.cost;
-            if (assistantMessage.model) finalAnswerMessage.model = assistantMessage.model;
-            if (assistantMessage.inferenceTimeMs) finalAnswerMessage.inferenceTimeMs = assistantMessage.inferenceTimeMs;
-            
-            if (session) {
-              session.messages.push(finalAnswerMessage);
-              session.updatedAt = new Date();
-            }
-            draft.messages.push(finalAnswerMessage);
-          } else {
-            // No tool loop executed, just add the assistant message as-is
-            if (session) {
-              session.messages.push(assistantMessage);
-              session.updatedAt = new Date();
-            }
-            draft.messages.push(assistantMessage);
           }
-          
+
+          // Add the final assistant message
+          if (session) {
+            session.messages.push(assistantMessage.message);
+            session.updatedAt = new Date();
+          }
+          draft.messages.push(assistantMessage.message);
+
           // Update statistics if available
-          if (assistantMessage.usage) {
-            draft.totalTokensUsed += assistantMessage.usage.total_tokens || 0;
+          if (assistantMessage.message.usage) {
+            draft.totalTokensUsed += assistantMessage.message.usage.total_tokens || 0;
           }
-          if (assistantMessage.cost) {
-            draft.totalCost += assistantMessage.cost;
+          if (assistantMessage.message.cost) {
+            draft.totalCost += assistantMessage.message.cost;
           }
-          
+
           draft.isSending = false;
         // @ts-expect-error - Immer middleware supports 3 params
         }, false, 'chat/send-message-success');

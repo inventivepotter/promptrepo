@@ -66,45 +66,39 @@ export function Chat({ height = "700px", onMessageSend }: ChatProps) {
     setHasStartedChat(true);
     setVariablesExpanded(false);
     
-    // Resolve template variables if current prompt has variables
-    let systemPrompt: string | undefined = undefined;
-    
-    if (currentPrompt?.prompt?.prompt && TemplateUtils.hasVariables(currentPrompt.prompt.prompt)) {
-      // Resolve the template with the current variables
-      systemPrompt = TemplateUtils.resolveTemplate(currentPrompt.prompt.prompt, templateVariables);
-    } else if (currentPrompt?.prompt?.prompt) {
-      // Use the prompt as-is if no variables
-      systemPrompt = currentPrompt.prompt.prompt;
+    // Validate that we have a current prompt
+    if (!currentPrompt) {
+      console.error('No current prompt available');
+      return;
     }
     
-    // Get tools from prompt metadata
-    const promptTools = currentPrompt?.prompt?.tools || [];
+    // Resolve template variables if current prompt has variables
+    let resolvedPromptMeta = currentPrompt;
+    
+    if (currentPrompt.prompt?.prompt && TemplateUtils.hasVariables(currentPrompt.prompt.prompt)) {
+      // Resolve the template with the current variables
+      const resolvedPrompt = TemplateUtils.resolveTemplate(currentPrompt.prompt.prompt, templateVariables);
+      
+      // Create a new promptMeta with resolved template
+      resolvedPromptMeta = {
+        ...currentPrompt,
+        prompt: {
+          ...currentPrompt.prompt,
+          prompt: resolvedPrompt
+        }
+      };
+    }
+    
+    // Get tools from prompt metadata for callback
+    const promptTools = currentPrompt.prompt?.tools || [];
     
     if (onMessageSend) {
       onMessageSend(message, promptTools);
     }
     
-    // Get model config from current prompt if available
-    const modelConfig = currentPrompt?.prompt?.provider && currentPrompt?.prompt?.model ? {
-      provider: currentPrompt.prompt.provider,
-      model: currentPrompt.prompt.model,
-      temperature: currentPrompt.prompt.temperature,
-    } : undefined;
-    
-    // Create promptId from repo_name and file_path (format: repo_name:file_path)
-    const promptId = currentPrompt?.repo_name && currentPrompt?.file_path
-      ? `${currentPrompt.repo_name}:${currentPrompt.file_path}`
-      : undefined;
-    
-    // Get repo_name to send separately for tool loading
-    const repoName = currentPrompt?.repo_name;
-    
+    // Send message with the full promptMeta
     await sendMessage(message, {
-      systemPrompt,
-      modelConfig,
-      promptId,
-      repoName,
-      tools: promptTools, // Pass prompt tools to chat store
+      promptMeta: resolvedPromptMeta
     });
   };
 

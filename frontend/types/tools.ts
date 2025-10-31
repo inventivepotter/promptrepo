@@ -8,7 +8,10 @@ import type { components } from './generated/api';
 
 export type ParameterSchema = components['schemas']['ParameterSchema'];
 export type ParametersDefinition = components['schemas']['ParametersDefinition-Output'];
+export type ReturnsSchema = components['schemas']['ReturnsSchema-Output'];
 export type MockConfig = components['schemas']['MockConfig'];
+export type ContentType = components['schemas']['ContentType'];
+export type MockType = components['schemas']['MockType'];
 export type ToolDefinition = components['schemas']['ToolDefinition'];
 export type ToolSummary = components['schemas']['ToolSummary'];
 export type ToolSaveResponse = components['schemas']['ToolSaveResponse'];

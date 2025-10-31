@@ -4,7 +4,7 @@ Unit tests for Z.AI provider service.
 import pytest
 import json
 from unittest.mock import AsyncMock, patch, MagicMock
-from services.llm.providers.zai_llm_provider import ZAILlmProvider
+from lib.any_llm.zai_provider import ZAIProvider
 from services.llm.models import ChatMessage, ChatCompletionRequest
 
 
@@ -14,11 +14,11 @@ class TestZAILlmProvider:
     @pytest.fixture
     def zai_service(self):
         """Create Z.AI service instance for testing."""
-        return ZAILlmProvider(api_key="test-api-key", api_base="https://api.z.ai/api/coding/paas/v4")
+        return ZAIProvider(api_key="test-api-key", api_base="https://api.z.ai/api/coding/paas/v4")
     
     def test_init(self):
         """Test Z.AI service initialization."""
-        service = ZAILlmProvider(api_key="test-key", api_base="https://test.com")
+        service = ZAIProvider(api_key="test-key", api_base="https://test.com")
         assert service.api_key == "test-key"
         assert service.api_base == "https://test.com"
         assert service.client.headers["authorization"] == "Bearer test-key"
@@ -316,7 +316,7 @@ class TestZAILlmProvider:
     @pytest.mark.asyncio
     async def test_context_manager(self):
         """Test Z.AI service as context manager."""
-        async with ZAILlmProvider(api_key="test-key") as service:
+        async with ZAIProvider(api_key="test-key") as service:
             assert service.api_key == "test-key"
             assert service.client is not None
         

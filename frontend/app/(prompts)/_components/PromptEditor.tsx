@@ -47,12 +47,13 @@ export function PromptEditor() {
         const prInfo = data?.pr_info as { pr_url?: string; pr_number?: number } | null | undefined;
         const prUrl = prInfo?.pr_url;
         const prNumber = prInfo?.pr_number;
-        
+
         if (prUrl) {
           return {
             title: 'Successfully saved!',
             description: `Pull Request #${prNumber} created`,
             duration: 30000, // Sticky notification - 30 seconds
+            closable: true,
             action: {
               label: 'View PR',
               onClick: () => {
@@ -61,11 +62,12 @@ export function PromptEditor() {
             },
           };
         }
-        
+
         return {
           title: 'Successfully saved!',
           description: 'Changes committed successfully',
           duration: 5000, // Auto-dismiss after 5 seconds
+          closable: true,
         };
       },
       error: {

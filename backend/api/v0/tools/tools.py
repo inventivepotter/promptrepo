@@ -6,14 +6,13 @@ import logging
 from typing import List
 from fastapi import APIRouter, Request, Query, status
 
-from api.deps import ToolServiceDep, CurrentUserDep, CurrentSessionDep
+from api.deps import ToolMetaServiceDep, CurrentUserDep, CurrentSessionDep
 from middlewares.rest import (
     StandardResponse,
     success_response,
     AppException,
     NotFoundException,
     ValidationException,
-    BadRequestException
 )
 from services.tool.models import (
     ToolDefinition,
@@ -21,8 +20,6 @@ from services.tool.models import (
 )
 from .models import (
     CreateToolRequest,
-    MockExecutionRequest,
-    MockExecutionResponse,
     ToolSaveResponse
 )
 
@@ -55,7 +52,7 @@ router = APIRouter()
 )
 async def list_tools(
     request: Request,
-    tool_service: ToolServiceDep,
+    tool_meta_service: ToolMetaServiceDep,
     user_id: CurrentUserDep,
     repo_name: str = Query("default", description="Repository name")
 ) -> StandardResponse[List[ToolSummary]]:
@@ -76,7 +73,7 @@ async def list_tools(
             extra={"request_id": request_id, "user_id": user_id, "repo_name": repo_name}
         )
         
-        tools = tool_service.list_tools(repo_name=repo_name, user_id=user_id)
+        tools = tool_meta_service.list_tools(repo_name=repo_name, user_id=user_id)
         
         logger.info(
             f"Successfully retrieved {len(tools)} tools",
@@ -139,7 +136,7 @@ async def list_tools(
 async def get_tool(
     request: Request,
     tool_name: str,
-    tool_service: ToolServiceDep,
+    tool_meta_service: ToolMetaServiceDep,
     user_id: CurrentUserDep,
     repo_name: str = Query("default", description="Repository name")
 ) -> StandardResponse[ToolDefinition]:
@@ -161,7 +158,7 @@ async def get_tool(
             extra={"request_id": request_id, "user_id": user_id, "tool_name": tool_name, "repo_name": repo_name}
         )
         
-        tool = tool_service.load_tool(tool_name=tool_name, repo_name=repo_name, user_id=user_id)
+        tool = tool_meta_service.load_tool(tool_name=tool_name, repo_name=repo_name, user_id=user_id)
         
         logger.info(
             f"Successfully retrieved tool: {tool_name}",
@@ -230,7 +227,7 @@ async def get_tool(
 async def create_tool(
     request: Request,
     tool_request: CreateToolRequest,
-    tool_service: ToolServiceDep,
+    tool_meta_service: ToolMetaServiceDep,
     user_id: CurrentUserDep,
     user_session: CurrentSessionDep
 ) -> StandardResponse[ToolSaveResponse]:
@@ -263,6 +260,7 @@ async def create_tool(
             name=tool_request.name,
             description=tool_request.description,
             parameters=tool_request.parameters,
+            returns=tool_request.returns,
             mock=tool_request.mock
         )
         
@@ -276,7 +274,7 @@ async def create_tool(
         author_email = getattr(user, 'oauth_email', None)
         
         # Save the tool with git workflow
-        saved_tool, pr_info = await tool_service.save_tool(
+        saved_tool, pr_info = await tool_meta_service.save_tool(
             tool=tool,
             repo_name=repo_name,
             user_id=user_id,
@@ -359,7 +357,7 @@ async def create_tool(
 async def delete_tool(
     request: Request,
     tool_name: str,
-    tool_service: ToolServiceDep,
+    tool_meta_service: ToolMetaServiceDep,
     user_id: CurrentUserDep,
     repo_name: str = Query("default", description="Repository name")
 ) -> StandardResponse[dict]:
@@ -381,7 +379,7 @@ async def delete_tool(
             extra={"request_id": request_id, "user_id": user_id, "tool_name": tool_name, "repo_name": repo_name}
         )
         
-        tool_service.delete_tool(tool_name=tool_name, repo_name=repo_name, user_id=user_id)
+        tool_meta_service.delete_tool(tool_name=tool_name, repo_name=repo_name, user_id=user_id)
         
         logger.info(
             f"Successfully deleted tool: {tool_name}",
@@ -450,7 +448,7 @@ async def delete_tool(
 async def validate_tool(
     request: Request,
     tool_name: str,
-    tool_service: ToolServiceDep,
+    tool_meta_service: ToolMetaServiceDep,
     user_id: CurrentUserDep,
     repo_name: str = Query("default", description="Repository name")
 ) -> StandardResponse[dict]:
@@ -473,10 +471,10 @@ async def validate_tool(
         )
         
         # Load the tool
-        tool = tool_service.load_tool(tool_name=tool_name, repo_name=repo_name, user_id=user_id)
+        tool = tool_meta_service.load_tool(tool_name=tool_name, repo_name=repo_name, user_id=user_id)
         
         # Validate the tool
-        tool_service.validate_tool(tool)
+        tool_meta_service.validate_tool(tool)
         
         logger.info(
             f"Tool validation successful: {tool_name}",
@@ -509,128 +507,5 @@ async def validate_tool(
         )
         raise AppException(
             message="Failed to validate tool",
-            detail=str(e)
-        )
-
-
-@router.post(
-    "/{tool_name}/mock",
-    response_model=StandardResponse[MockExecutionResponse],
-    status_code=status.HTTP_200_OK,
-    responses={
-        404: {
-            "description": "Tool not found",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "status": "error",
-                        "type": "/errors/not-found",
-                        "title": "Not Found",
-                        "detail": "Tool not found"
-                    }
-                }
-            }
-        },
-        400: {
-            "description": "Mock execution disabled",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "status": "error",
-                        "type": "/errors/bad-request",
-                        "title": "Bad Request",
-                        "detail": "Mock execution is disabled for this tool"
-                    }
-                }
-            }
-        }
-    },
-    summary="Execute mock response",
-    description="Execute mock response for a tool with given parameters.",
-)
-async def execute_mock(
-    request: Request,
-    tool_name: str,
-    mock_request: MockExecutionRequest,
-    tool_service: ToolServiceDep,
-    user_id: CurrentUserDep,
-    repo_name: str = Query("default", description="Repository name")
-) -> StandardResponse[MockExecutionResponse]:
-    """
-    Execute mock response for a tool.
-    
-    Returns:
-        StandardResponse[MockExecutionResponse]: Mock execution result
-    
-    Raises:
-        NotFoundException: When tool is not found
-        BadRequestException: When mock is disabled
-        AppException: When execution fails
-    """
-    request_id = request.state.request_id
-    
-    try:
-        # Mask sensitive parameters before logging
-        masked_params = {
-            k: ("***" if k.lower() in {"token", "api_key", "password", "secret"} else v)
-            for k, v in list(mock_request.parameters.items())[:20]
-        }
-        logger.info(
-            f"Executing mock for tool: {tool_name}",
-            extra={
-                "request_id": request_id,
-                "user_id": user_id,
-                "tool_name": tool_name,
-                "repo_name": repo_name,
-                "parameters": masked_params
-            }
-        )
-        
-        # Load the tool
-        tool = tool_service.load_tool(tool_name=tool_name, repo_name=repo_name, user_id=user_id)
-        
-        # Get mock response
-        mock_response = tool_service.get_mock_response(tool)
-        
-        if mock_response is None:
-            raise BadRequestException(
-                message=f"Mock execution is disabled for tool '{tool_name}'",
-                context={"tool_name": tool_name, "mock_enabled": False}
-            )
-        
-        # Create response
-        response = MockExecutionResponse(
-            response=mock_response,
-            tool_name=tool_name,
-            parameters_used=mock_request.parameters
-        )
-        
-        logger.info(
-            f"Successfully executed mock for tool: {tool_name}",
-            extra={"request_id": request_id, "user_id": user_id, "tool_name": tool_name}
-        )
-        
-        return success_response(
-            data=response,
-            message=f"Mock executed successfully for tool '{tool_name}'",
-            meta={"request_id": request_id, "repo_name": repo_name}
-        )
-        
-    except NotFoundException:
-        logger.warning(
-            f"Tool not found for mock execution: {tool_name}",
-            extra={"request_id": request_id, "user_id": user_id, "tool_name": tool_name}
-        )
-        raise
-    except BadRequestException:
-        raise
-    except Exception as e:
-        logger.error(
-            f"Failed to execute mock for tool {tool_name}: {str(e)}",
-            exc_info=True,
-            extra={"request_id": request_id, "user_id": user_id, "tool_name": tool_name}
-        )
-        raise AppException(
-            message="Failed to execute mock",
             detail=str(e)
         )
