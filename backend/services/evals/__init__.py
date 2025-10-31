@@ -1,7 +1,7 @@
 """
 Eval service package for DeepEval integration.
 
-This package provides eval suite management and execution functionality
+This package provides evals management and execution functionality
 for evaluating LLM prompts using DeepEval metrics.
 """
 

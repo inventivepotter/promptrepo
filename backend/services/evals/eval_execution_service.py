@@ -107,7 +107,7 @@ class EvalExecutionService:
         # Filter out disabled tests
         tests_to_run = [t for t in tests_to_run if t.enabled]
         
-        # Execute each test with suite-level metrics
+        # Execute each test with eval-level metrics
         test_results = []
         for test_def in tests_to_run:
             try:
@@ -212,7 +212,7 @@ class EvalExecutionService:
         user_id: str,
         repo_name: str,
         test_def: TestDefinition,
-        suite_metrics: Optional[List[MetricConfig]] = None
+        eval_metrics: Optional[List[MetricConfig]] = None
     ) -> TestExecutionResult:
         """
         Internal method to execute a single test.
@@ -221,13 +221,13 @@ class EvalExecutionService:
             user_id: User ID
             repo_name: Repository name
             test_def: Test definition
-            suite_metrics: Metrics from eval level
+            eval_metrics: Metrics from eval level
             
         Returns:
             TestExecutionResult with execution results
         """
-        if suite_metrics is None:
-            suite_metrics = []
+        if eval_metrics is None:
+            eval_metrics = []
         start_time = time.time()
         
         try:
@@ -290,7 +290,7 @@ class EvalExecutionService:
             
             # Only evaluate metrics if they are defined at eval level
             metric_results = []
-            if suite_metrics:
+            if eval_metrics:
                 # Build test case parameters from metric config and actual fields
                 test_case_params: Dict[str, Any] = {
                     "input_text": str(input_text),
@@ -316,12 +316,12 @@ class EvalExecutionService:
                 # Create DeepEval metrics from configs
                 metrics = [
                     self.deepeval_adapter.create_metric(metric_config)
-                    for metric_config in suite_metrics
+                    for metric_config in eval_metrics
                 ]
                 
                 # Evaluate metrics
                 metric_results = await self.deepeval_adapter.evaluate_metrics(
-                    test_case, metrics, suite_metrics
+                    test_case, metrics, eval_metrics
                 )
             
             # Determine overall pass/fail

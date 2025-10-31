@@ -359,7 +359,7 @@ def get_eval_service(
     """
     Eval service dependency.
     
-    Creates an EvalMetaService for managing eval suites and execution history.
+    Creates an EvalMetaService for managing evals and execution history.
     """
     return EvalMetaService(
         config_service=config_service.config,

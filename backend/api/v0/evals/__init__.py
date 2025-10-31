@@ -2,27 +2,27 @@
 Eval API endpoints for DeepEval eval management and execution.
 
 This module provides REST API endpoints for:
-- Eval suite CRUD operations
+- Eval evals CRUD operations
 - Eval execution and history
 - Metrics metadata
 """
 
 from fastapi import APIRouter
-from . import suites, execution, metrics
+from . import evals, execution, metrics
 
 router = APIRouter()
 
-# Include eval suite endpoints
+# Include evals endpoints
 router.include_router(
-    suites.router,
-    prefix="/suites",
-    tags=["Eval Suites"]
+    evals.router,
+    prefix="/evals",
+    tags=["Eval evals"]
 )
 
 # Include eval execution endpoints
 router.include_router(
     execution.router,
-    prefix="/suites",
+    prefix="/evals",
     tags=["Eval Execution"]
 )
 

@@ -87,7 +87,7 @@ async def list_evals(
         
         return success_response(
             data=evals,
-            message=f"Found {len(evals)} eval suites",
+            message=f"Found {len(evals)} evals",
             meta={"request_id": request_id}
         )
         
@@ -95,12 +95,12 @@ async def list_evals(
         raise
     except Exception as e:
         logger.error(
-            f"Failed to list eval suites: {str(e)}",
+            f"Failed to list evals: {str(e)}",
             exc_info=True,
             extra={"request_id": request_id, "user_id": user_id}
         )
         raise AppException(
-            message="Failed to list eval suites",
+            message="Failed to list evals",
             detail=str(e)
         )
 
@@ -118,7 +118,7 @@ async def list_evals(
                         "status": "error",
                         "type": "/errors/not-found",
                         "title": "Not Found",
-                        "detail": "Eval suite not found"
+                        "detail": "Eval not found"
                     }
                 }
             }
@@ -148,27 +148,27 @@ async def get_eval(
     repo_name: str = Query(..., description="Repository name")
 ) -> StandardResponse[EvalData]:
     """
-    Get specific eval suite definition.
+    Get specific eval definition.
     
     Returns:
-        StandardResponse[EvalSuiteData]: Eval suite definition
+        StandardResponse[EvalData]: Eval definition
     
     Raises:
-        NotFoundException: When suite doesn't exist
+        NotFoundException: When eval doesn't exist
         AppException: When retrieval fails
     """
     request_id = request.state.request_id
     
     try:
         logger.info(
-            f"Getting eval suite {name} from repo {repo_name}",
+            f"Getting eval {name} from repo {repo_name}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
         eval_data = await eval_service.get_eval(user_id, repo_name, name)
         
         logger.info(
-            f"Retrieved eval suite {name}",
+            f"Retrieved eval {name}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
@@ -182,12 +182,12 @@ async def get_eval(
         raise
     except Exception as e:
         logger.error(
-            f"Failed to get eval suite {name}: {str(e)}",
+            f"Failed to get eval {name}: {str(e)}",
             exc_info=True,
             extra={"request_id": request_id, "user_id": user_id}
         )
         raise AppException(
-            message=f"Failed to retrieve eval suite {name}",
+            message=f"Failed to retrieve eval {name}",
             detail=str(e)
         )
 
@@ -218,14 +218,14 @@ async def get_eval(
                         "status": "error",
                         "type": "/errors/internal-server-error",
                         "title": "Internal Server Error",
-                        "detail": "Failed to save eval suite"
+                        "detail": "Failed to save eval"
                     }
                 }
             }
         }
     },
-    summary="Create or update eval suite",
-    description="Create a new eval suite or update an existing one. The suite name is taken from the request body.",
+    summary="Create or update eval",
+    description="Create a new eval or update an existing one. The eval name is taken from the request body.",
 )
 async def save_eval(
     request: Request,
@@ -236,10 +236,10 @@ async def save_eval(
     repo_name: str = Query(..., description="Repository name")
 ) -> StandardResponse[EvalData]:
     """
-    Create or update eval suite with git workflow integration.
+    Create or update eval with git workflow integration.
     
     Returns:
-        StandardResponse[EvalSuiteData]: Saved eval suite
+        StandardResponse[EvalData]: Saved eval
     
     Raises:
         NotFoundException: When repository doesn't exist
@@ -249,7 +249,7 @@ async def save_eval(
     
     try:
         logger.info(
-            f"Saving eval suite {eval_data.eval.name} to repo {repo_name}",
+            f"Saving eval {eval_data.eval.name} to repo {repo_name}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
@@ -272,26 +272,31 @@ async def save_eval(
         )
         
         logger.info(
-            f"Saved eval suite {eval_data.eval.name}",
+            f"Saved eval {eval_data.eval.name}",
             extra={"request_id": request_id, "user_id": user_id}
         )
+        
+        # Include PR info in meta if available
+        meta_data = {"request_id": request_id}
+        if pr_info:
+            meta_data["pr_info"] = pr_info
         
         return success_response(
             data=saved_eval,
             message="Eval saved successfully",
-            meta={"request_id": request_id}
+            meta=meta_data
         )
         
     except (NotFoundException, AppException):
         raise
     except Exception as e:
         logger.error(
-            f"Failed to save eval suite {eval_data.eval.name}: {str(e)}",
+            f"Failed to save eval {eval_data.eval.name}: {str(e)}",
             exc_info=True,
             extra={"request_id": request_id, "user_id": user_id}
         )
         raise AppException(
-            message=f"Failed to save eval suite {eval_data.eval.name}",
+            message=f"Failed to save eval {eval_data.eval.name}",
             detail=str(e)
         )
 
@@ -302,14 +307,14 @@ async def save_eval(
     status_code=status.HTTP_200_OK,
     responses={
         404: {
-            "description": "Eval suite not found",
+            "description": "Eval not found",
             "content": {
                 "application/json": {
                     "example": {
                         "status": "error",
                         "type": "/errors/not-found",
                         "title": "Not Found",
-                        "detail": "Eval suite not found"
+                        "detail": "Eval not found"
                     }
                 }
             }
@@ -322,14 +327,14 @@ async def save_eval(
                         "status": "error",
                         "type": "/errors/internal-server-error",
                         "title": "Internal Server Error",
-                        "detail": "Failed to delete eval suite"
+                        "detail": "Failed to delete eval"
                     }
                 }
             }
         }
     },
-    summary="Delete eval suite",
-    description="Delete an eval suite and all its execution history.",
+    summary="Delete eval",
+    description="Delete an eval and all its execution history.",
 )
 async def delete_eval(
     request: Request,
@@ -339,20 +344,20 @@ async def delete_eval(
     repo_name: str = Query(..., description="Repository name")
 ) -> StandardResponse[dict]:
     """
-    Delete eval suite.
+    Delete eval.
     
     Returns:
         StandardResponse[dict]: Deletion confirmation
     
     Raises:
-        NotFoundException: When suite doesn't exist
+        NotFoundException: When eval doesn't exist
         AppException: When deletion fails
     """
     request_id = request.state.request_id
     
     try:
         logger.info(
-            f"Deleting eval suite {name} from repo {repo_name}",
+            f"Deleting eval {name} from repo {repo_name}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
@@ -360,17 +365,17 @@ async def delete_eval(
         
         if not success:
             raise AppException(
-                message=f"Failed to delete eval suite {name}"
+                message=f"Failed to delete eval {name}"
             )
         
         logger.info(
-            f"Deleted eval suite {name}",
+            f"Deleted eval {name}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
         return success_response(
-            data={"deleted": True, "suite_name": name},
-            message="Eval suite deleted successfully",
+            data={"deleted": True, "eval_name": name},
+            message="Eval deleted successfully",
             meta={"request_id": request_id}
         )
         
@@ -378,11 +383,11 @@ async def delete_eval(
         raise
     except Exception as e:
         logger.error(
-            f"Failed to delete eval suite {name}: {str(e)}",
+            f"Failed to delete eval {name}: {str(e)}",
             exc_info=True,
             extra={"request_id": request_id, "user_id": user_id}
         )
         raise AppException(
-            message=f"Failed to delete eval suite {name}",
+            message=f"Failed to delete eval {name}",
             detail=str(e)
         )

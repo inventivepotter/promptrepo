@@ -32,19 +32,19 @@ class ExecuteTestsRequest(BaseModel):
 
 
 @router.post(
-    "/{suite_name}/execute",
+    "/{eval_name}/execute",
     response_model=StandardResponse[EvalExecutionResult],
     status_code=status.HTTP_200_OK,
     responses={
         404: {
-            "description": "Eval suite not found",
+            "description": "Eval not found",
             "content": {
                 "application/json": {
                     "example": {
                         "status": "error",
                         "type": "/errors/not-found",
                         "title": "Not Found",
-                        "detail": "Eval suite not found"
+                        "detail": "Eval not found"
                     }
                 }
             }
@@ -57,31 +57,31 @@ class ExecuteTestsRequest(BaseModel):
                         "status": "error",
                         "type": "/errors/internal-server-error",
                         "title": "Internal Server Error",
-                        "detail": "Failed to execute eval suite"
+                        "detail": "Failed to execute eval"
                     }
                 }
             }
         }
     },
-    summary="Execute eval suite",
-    description="Execute all tests in a suite or specific tests if test_names are provided in request body.",
+    summary="Execute eval",
+    description="Execute all tests in an eval or specific tests if test_names are provided in request body.",
 )
-async def execute_eval_suite(
+async def execute_eval(
     request: Request,
     eval_execution_service: EvalExecutionServiceDep,
     user_id: CurrentUserDep,
-    suite_name: str,
+    eval_name: str,
     repo_name: str = Query(..., description="Repository name"),
     request_body: ExecuteTestsRequest = Body(default=ExecuteTestsRequest())
 ) -> StandardResponse[EvalExecutionResult]:
     """
-    Execute eval suite or specific tests within suite.
+    Execute eval or specific tests within eval.
     
     Returns:
-        StandardResponse[EvalSuiteExecutionResult]: Execution results
+        StandardResponse[EvalExecutionResult]: Execution results
     
     Raises:
-        NotFoundException: When suite or tests don't exist
+        NotFoundException: When eval or tests don't exist
         AppException: When execution fails
     """
     request_id = request.state.request_id
@@ -91,17 +91,17 @@ async def execute_eval_suite(
         
         if test_names:
             logger.info(
-                f"Executing tests {test_names} in suite {suite_name} from repo {repo_name}",
+                f"Executing tests {test_names} in eval {eval_name} from repo {repo_name}",
                 extra={"request_id": request_id, "user_id": user_id}
             )
         else:
             logger.info(
-                f"Executing all tests in suite {suite_name} from repo {repo_name}",
+                f"Executing all tests in eval {eval_name} from repo {repo_name}",
                 extra={"request_id": request_id, "user_id": user_id}
             )
         
         execution_result = await eval_execution_service.execute_eval(
-            user_id, repo_name, suite_name, test_names
+            user_id, repo_name, eval_name, test_names
         )
         
         logger.info(
@@ -109,7 +109,7 @@ async def execute_eval_suite(
             extra={
                 "request_id": request_id,
                 "user_id": user_id,
-                "eval_name": suite_name,
+                "eval_name": eval_name,
                 "passed": execution_result.passed_tests,
                 "failed": execution_result.failed_tests
             }
@@ -117,7 +117,7 @@ async def execute_eval_suite(
         
         return success_response(
             data=execution_result,
-            message=f"Eval suite executed: {execution_result.passed_tests}/{execution_result.total_tests} passed",
+            message=f"Eval executed: {execution_result.passed_tests}/{execution_result.total_tests} passed",
             meta={"request_id": request_id}
         )
         
@@ -125,18 +125,18 @@ async def execute_eval_suite(
         raise
     except Exception as e:
         logger.error(
-            f"Failed to execute eval suite {suite_name}: {str(e)}",
+            f"Failed to execute eval {eval_name}: {str(e)}",
             exc_info=True,
             extra={"request_id": request_id, "user_id": user_id}
         )
         raise AppException(
-            message=f"Failed to execute eval suite {suite_name}",
+            message=f"Failed to execute eval {eval_name}",
             detail=str(e)
         )
 
 
 @router.post(
-    "/{suite_name}/tests/{test_name}/execute",
+    "/{eval_name}/tests/{test_name}/execute",
     response_model=StandardResponse[TestExecutionResult],
     status_code=status.HTTP_200_OK,
     responses={
@@ -168,13 +168,13 @@ async def execute_eval_suite(
         }
     },
     summary="Execute single test",
-    description="Execute a specific test from an eval suite.",
+    description="Execute a specific test from an eval.",
 )
 async def execute_single_test(
     request: Request,
     eval_execution_service: EvalExecutionServiceDep,
     user_id: CurrentUserDep,
-    suite_name: str,
+    eval_name: str,
     test_name: str,
     repo_name: str = Query(..., description="Repository name")
 ) -> StandardResponse[TestExecutionResult]:
@@ -192,12 +192,12 @@ async def execute_single_test(
     
     try:
         logger.info(
-            f"Executing test {test_name} in suite {suite_name} from repo {repo_name}",
+            f"Executing test {test_name} in eval {eval_name} from repo {repo_name}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
         execution_result = await eval_execution_service.execute_single_test(
-            user_id, repo_name, suite_name, test_name
+            user_id, repo_name, eval_name, test_name
         )
         
         logger.info(
@@ -231,7 +231,7 @@ async def execute_single_test(
 
 
 @router.get(
-    "/{suite_name}/executions",
+    "/{eval_name}/executions",
     response_model=StandardResponse[List[EvalExecutionResult]],
     status_code=status.HTTP_200_OK,
     responses={
@@ -263,21 +263,21 @@ async def execute_single_test(
         }
     },
     summary="Get execution history",
-    description="Get execution history for an eval suite, ordered by execution time (newest first).",
+    description="Get execution history for an eval, ordered by execution time (newest first).",
 )
 async def get_execution_history(
     request: Request,
     eval_execution_service: EvalExecutionServiceDep,
     user_id: CurrentUserDep,
-    suite_name: str,
+    eval_name: str,
     repo_name: str = Query(..., description="Repository name"),
     limit: int = Query(10, ge=1, le=100, description="Maximum number of executions to return")
 ) -> StandardResponse[List[EvalExecutionResult]]:
     """
-    Get execution history for eval suite.
+    Get execution history for eval.
     
     Returns:
-        StandardResponse[List[EvalSuiteExecutionResult]]: Execution history
+        StandardResponse[List[EvalExecutionResult]]: Execution history
     
     Raises:
         NotFoundException: When repository doesn't exist
@@ -287,16 +287,16 @@ async def get_execution_history(
     
     try:
         logger.info(
-            f"Getting execution history for suite {suite_name} from repo {repo_name}",
+            f"Getting execution history for eval {eval_name} from repo {repo_name}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
         executions = await eval_execution_service.eval_meta_service.list_executions(
-            user_id, repo_name, suite_name, limit
+            user_id, repo_name, eval_name, limit
         )
         
         logger.info(
-            f"Retrieved {len(executions)} executions for suite {suite_name}",
+            f"Retrieved {len(executions)} executions for eval {eval_name}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
@@ -310,18 +310,18 @@ async def get_execution_history(
         raise
     except Exception as e:
         logger.error(
-            f"Failed to get execution history for suite {suite_name}: {str(e)}",
+            f"Failed to get execution history for eval {eval_name}: {str(e)}",
             exc_info=True,
             extra={"request_id": request_id, "user_id": user_id}
         )
         raise AppException(
-            message=f"Failed to retrieve execution history for suite {suite_name}",
+            message=f"Failed to retrieve execution history for eval {eval_name}",
             detail=str(e)
         )
 
 
 @router.get(
-    "/{suite_name}/executions/latest",
+    "/{eval_name}/executions/latest",
     response_model=StandardResponse[Optional[EvalExecutionResult]],
     status_code=status.HTTP_200_OK,
     responses={
@@ -353,20 +353,20 @@ async def get_execution_history(
         }
     },
     summary="Get latest execution",
-    description="Get the most recent execution result for an eval suite.",
+    description="Get the most recent execution result for an eval.",
 )
 async def get_latest_execution(
     request: Request,
     eval_execution_service: EvalExecutionServiceDep,
     user_id: CurrentUserDep,
-    suite_name: str,
+    eval_name: str,
     repo_name: str = Query(..., description="Repository name")
 ) -> StandardResponse[Optional[EvalExecutionResult]]:
     """
-    Get latest execution result for eval suite.
+    Get latest execution result for eval.
     
     Returns:
-        StandardResponse[Optional[EvalSuiteExecutionResult]]: Latest execution or None
+        StandardResponse[Optional[EvalExecutionResult]]: Latest execution or None
     
     Raises:
         NotFoundException: When repository doesn't exist
@@ -376,23 +376,23 @@ async def get_latest_execution(
     
     try:
         logger.info(
-            f"Getting latest execution for suite {suite_name} from repo {repo_name}",
+            f"Getting latest execution for eval {eval_name} from repo {repo_name}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
         latest_execution = await eval_execution_service.eval_meta_service.get_latest_execution(
-            user_id, repo_name, suite_name
+            user_id, repo_name, eval_name
         )
         
         if latest_execution:
             logger.info(
-                f"Retrieved latest execution for suite {suite_name}",
+                f"Retrieved latest execution for eval {eval_name}",
                 extra={"request_id": request_id, "user_id": user_id}
             )
             message = "Latest execution retrieved successfully"
         else:
             logger.info(
-                f"No executions found for suite {suite_name}",
+                f"No executions found for eval {eval_name}",
                 extra={"request_id": request_id, "user_id": user_id}
             )
             message = "No executions found"
@@ -407,11 +407,11 @@ async def get_latest_execution(
         raise
     except Exception as e:
         logger.error(
-            f"Failed to get latest execution for suite {suite_name}: {str(e)}",
+            f"Failed to get latest execution for eval {eval_name}: {str(e)}",
             exc_info=True,
             extra={"request_id": request_id, "user_id": user_id}
         )
         raise AppException(
-            message=f"Failed to retrieve latest execution for suite {suite_name}",
+            message=f"Failed to retrieve latest execution for eval {eval_name}",
             detail=str(e)
         )
