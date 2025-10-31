@@ -7,8 +7,8 @@ from fastapi import APIRouter, Request, status, Query, Body
 from pydantic import BaseModel, Field
 
 from services.evals.models import (
-    EvalExecutionResult,
-    EvalSuiteExecutionResult
+    TestExecutionResult,
+    EvalExecutionResult
 )
 from api.deps import EvalExecutionServiceDep, CurrentUserDep
 from middlewares.rest import (
@@ -23,17 +23,17 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-class ExecuteEvalsRequest(BaseModel):
-    """Request body for executing specific evals"""
-    eval_names: Optional[List[str]] = Field(
+class ExecuteTestsRequest(BaseModel):
+    """Request body for executing specific tests"""
+    test_names: Optional[List[str]] = Field(
         default=None,
-        description="List of eval names to execute. If None, all evals are executed."
+        description="List of test names to execute. If None, all tests are executed."
     )
 
 
 @router.post(
     "/{suite_name}/execute",
-    response_model=StandardResponse[EvalSuiteExecutionResult],
+    response_model=StandardResponse[EvalExecutionResult],
     status_code=status.HTTP_200_OK,
     responses={
         404: {
@@ -64,7 +64,7 @@ class ExecuteEvalsRequest(BaseModel):
         }
     },
     summary="Execute eval suite",
-    description="Execute all evals in a suite or specific evals if eval_names are provided in request body.",
+    description="Execute all tests in a suite or specific tests if test_names are provided in request body.",
 )
 async def execute_eval_suite(
     request: Request,
@@ -72,52 +72,52 @@ async def execute_eval_suite(
     user_id: CurrentUserDep,
     suite_name: str,
     repo_name: str = Query(..., description="Repository name"),
-    request_body: ExecuteEvalsRequest = Body(default=ExecuteEvalsRequest())
-) -> StandardResponse[EvalSuiteExecutionResult]:
+    request_body: ExecuteTestsRequest = Body(default=ExecuteTestsRequest())
+) -> StandardResponse[EvalExecutionResult]:
     """
-    Execute eval suite or specific evals within suite.
+    Execute eval suite or specific tests within suite.
     
     Returns:
         StandardResponse[EvalSuiteExecutionResult]: Execution results
     
     Raises:
-        NotFoundException: When suite or evals don't exist
+        NotFoundException: When suite or tests don't exist
         AppException: When execution fails
     """
     request_id = request.state.request_id
     
     try:
-        eval_names = request_body.eval_names
+        test_names = request_body.test_names
         
-        if eval_names:
+        if test_names:
             logger.info(
-                f"Executing evals {eval_names} in suite {suite_name} from repo {repo_name}",
+                f"Executing tests {test_names} in suite {suite_name} from repo {repo_name}",
                 extra={"request_id": request_id, "user_id": user_id}
             )
         else:
             logger.info(
-                f"Executing all evals in suite {suite_name} from repo {repo_name}",
+                f"Executing all tests in suite {suite_name} from repo {repo_name}",
                 extra={"request_id": request_id, "user_id": user_id}
             )
         
-        execution_result = await eval_execution_service.execute_eval_suite(
-            user_id, repo_name, suite_name, eval_names
+        execution_result = await eval_execution_service.execute_eval(
+            user_id, repo_name, suite_name, test_names
         )
         
         logger.info(
-            f"Eval suite execution completed: {execution_result.passed_evals}/{execution_result.total_evals} passed",
+            f"Eval execution completed: {execution_result.passed_tests}/{execution_result.total_tests} passed",
             extra={
                 "request_id": request_id,
                 "user_id": user_id,
-                "suite_name": suite_name,
-                "passed": execution_result.passed_evals,
-                "failed": execution_result.failed_evals
+                "eval_name": suite_name,
+                "passed": execution_result.passed_tests,
+                "failed": execution_result.failed_tests
             }
         )
         
         return success_response(
             data=execution_result,
-            message=f"Eval suite executed: {execution_result.passed_evals}/{execution_result.total_evals} passed",
+            message=f"Eval suite executed: {execution_result.passed_tests}/{execution_result.total_tests} passed",
             meta={"request_id": request_id}
         )
         
@@ -136,19 +136,19 @@ async def execute_eval_suite(
 
 
 @router.post(
-    "/{suite_name}/evals/{eval_name}/execute",
-    response_model=StandardResponse[EvalExecutionResult],
+    "/{suite_name}/tests/{test_name}/execute",
+    response_model=StandardResponse[TestExecutionResult],
     status_code=status.HTTP_200_OK,
     responses={
         404: {
-            "description": "Eval not found",
+            "description": "Test not found",
             "content": {
                 "application/json": {
                     "example": {
                         "status": "error",
                         "type": "/errors/not-found",
                         "title": "Not Found",
-                        "detail": "Eval not found"
+                        "detail": "Test not found"
                     }
                 }
             }
@@ -161,58 +161,58 @@ async def execute_eval_suite(
                         "status": "error",
                         "type": "/errors/internal-server-error",
                         "title": "Internal Server Error",
-                        "detail": "Failed to execute eval"
+                        "detail": "Failed to execute test"
                     }
                 }
             }
         }
     },
-    summary="Execute single eval",
-    description="Execute a specific eval from an eval suite.",
+    summary="Execute single test",
+    description="Execute a specific test from an eval suite.",
 )
-async def execute_single_eval(
+async def execute_single_test(
     request: Request,
     eval_execution_service: EvalExecutionServiceDep,
     user_id: CurrentUserDep,
     suite_name: str,
-    eval_name: str,
+    test_name: str,
     repo_name: str = Query(..., description="Repository name")
-) -> StandardResponse[EvalExecutionResult]:
+) -> StandardResponse[TestExecutionResult]:
     """
-    Execute single eval.
+    Execute single test.
     
     Returns:
-        StandardResponse[EvalExecutionResult]: Eval execution result
+        StandardResponse[TestExecutionResult]: Test execution result
     
     Raises:
-        NotFoundException: When eval doesn't exist
+        NotFoundException: When test doesn't exist
         AppException: When execution fails
     """
     request_id = request.state.request_id
     
     try:
         logger.info(
-            f"Executing eval {eval_name} in suite {suite_name} from repo {repo_name}",
+            f"Executing test {test_name} in suite {suite_name} from repo {repo_name}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
-        execution_result = await eval_execution_service.execute_single_eval(
-            user_id, repo_name, suite_name, eval_name
+        execution_result = await eval_execution_service.execute_single_test(
+            user_id, repo_name, suite_name, test_name
         )
         
         logger.info(
-            f"Eval execution completed: {eval_name} {'passed' if execution_result.overall_passed else 'failed'}",
+            f"Test execution completed: {test_name} {'passed' if execution_result.overall_passed else 'failed'}",
             extra={
                 "request_id": request_id,
                 "user_id": user_id,
-                "eval_name": eval_name,
+                "test_name": test_name,
                 "passed": execution_result.overall_passed
             }
         )
         
         return success_response(
             data=execution_result,
-            message=f"Eval {'passed' if execution_result.overall_passed else 'failed'}",
+            message=f"Test {'passed' if execution_result.overall_passed else 'failed'}",
             meta={"request_id": request_id}
         )
         
@@ -220,19 +220,19 @@ async def execute_single_eval(
         raise
     except Exception as e:
         logger.error(
-            f"Failed to execute eval {eval_name}: {str(e)}",
+            f"Failed to execute test {test_name}: {str(e)}",
             exc_info=True,
             extra={"request_id": request_id, "user_id": user_id}
         )
         raise AppException(
-            message=f"Failed to execute eval {eval_name}",
+            message=f"Failed to execute test {test_name}",
             detail=str(e)
         )
 
 
 @router.get(
     "/{suite_name}/executions",
-    response_model=StandardResponse[List[EvalSuiteExecutionResult]],
+    response_model=StandardResponse[List[EvalExecutionResult]],
     status_code=status.HTTP_200_OK,
     responses={
         404: {
@@ -272,7 +272,7 @@ async def get_execution_history(
     suite_name: str,
     repo_name: str = Query(..., description="Repository name"),
     limit: int = Query(10, ge=1, le=100, description="Maximum number of executions to return")
-) -> StandardResponse[List[EvalSuiteExecutionResult]]:
+) -> StandardResponse[List[EvalExecutionResult]]:
     """
     Get execution history for eval suite.
     
@@ -322,7 +322,7 @@ async def get_execution_history(
 
 @router.get(
     "/{suite_name}/executions/latest",
-    response_model=StandardResponse[Optional[EvalSuiteExecutionResult]],
+    response_model=StandardResponse[Optional[EvalExecutionResult]],
     status_code=status.HTTP_200_OK,
     responses={
         404: {
@@ -361,7 +361,7 @@ async def get_latest_execution(
     user_id: CurrentUserDep,
     suite_name: str,
     repo_name: str = Query(..., description="Repository name")
-) -> StandardResponse[Optional[EvalSuiteExecutionResult]]:
+) -> StandardResponse[Optional[EvalExecutionResult]]:
     """
     Get latest execution result for eval suite.
     

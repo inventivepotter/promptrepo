@@ -8,14 +8,14 @@ for evaluating LLM prompts using DeepEval metrics.
 from .models import (
     MetricType,
     MetricConfig,
+    TestDefinition,
     EvalDefinition,
-    EvalSuiteDefinition,
-    EvalSuiteData,
+    EvalData,
     MetricResult,
+    TestExecutionResult,
     EvalExecutionResult,
-    EvalSuiteExecutionResult,
-    EvalSuiteExecutionData,
-    EvalSuiteSummary
+    EvalExecutionData,
+    EvalSummary
 )
 from .eval_meta_service import EvalMetaService
 from .eval_execution_service import EvalExecutionService
@@ -23,14 +23,14 @@ from .eval_execution_service import EvalExecutionService
 __all__ = [
     "MetricType",
     "MetricConfig",
+    "TestDefinition",
     "EvalDefinition",
-    "EvalSuiteDefinition",
-    "EvalSuiteData",
+    "EvalData",
     "MetricResult",
+    "TestExecutionResult",
     "EvalExecutionResult",
-    "EvalSuiteExecutionResult",
-    "EvalSuiteExecutionData",
-    "EvalSuiteSummary",
+    "EvalExecutionData",
+    "EvalSummary",
     "EvalMetaService",
     "EvalExecutionService",
 ]

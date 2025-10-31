@@ -11,8 +11,8 @@ class ArtifactType(str, Enum):
     
     PROMPT = "prompt"
     TOOL = "tool"
+    TEST = "test"
     EVAL = "eval"
-    EVAL_SUITE = "evalsuite"
     
     def __str__(self) -> str:
         """Return the string value of the enum."""

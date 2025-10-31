@@ -1,11 +1,11 @@
 """
-Eval suite CRUD endpoints with standardized responses.
+Eval CRUD endpoints with standardized responses.
 """
 import logging
 from typing import List
 from fastapi import APIRouter, Request, status, Body, Query
 
-from services.evals.models import EvalSuiteData, EvalSuiteSummary
+from services.evals.models import EvalData, EvalSummary
 from api.deps import EvalMetaServiceDep, CurrentUserDep, CurrentSessionDep
 from middlewares.rest import (
     StandardResponse,
@@ -21,7 +21,7 @@ router = APIRouter()
 
 @router.get(
     "",
-    response_model=StandardResponse[List[EvalSuiteSummary]],
+    response_model=StandardResponse[List[EvalSummary]],
     status_code=status.HTTP_200_OK,
     responses={
         404: {
@@ -45,27 +45,27 @@ router = APIRouter()
                         "status": "error",
                         "type": "/errors/internal-server-error",
                         "title": "Internal Server Error",
-                        "detail": "Failed to list eval suites"
+                        "detail": "Failed to list evals"
                     }
                 }
             }
         }
     },
-    summary="List eval suites",
-    description="Get list of all eval suites in a repository with summary information.",
+    summary="List evals",
+    description="Get list of all evals in a repository with summary information.",
 )
-async def list_eval_suites(
+async def list_evals(
     request: Request,
     eval_service: EvalMetaServiceDep,
     user_id: CurrentUserDep,
     repo_name: str = Query(..., description="Repository name")
-) -> StandardResponse[List[EvalSuiteSummary]]:
+) -> StandardResponse[List[EvalSummary]]:
     """
-    List all eval suites in a repository.
+    List all evals in a repository.
     
     Returns:
-        StandardResponse[List[EvalSuiteSummary]]: List of eval suite summaries
-    
+        StandardResponse[List[EvalSummary]]: List of eval summaries
+
     Raises:
         NotFoundException: When repository doesn't exist
         AppException: When listing fails
@@ -74,20 +74,20 @@ async def list_eval_suites(
     
     try:
         logger.info(
-            f"Listing eval suites for repo {repo_name}",
+            f"Listing evals for repo {repo_name}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
-        suites = await eval_service.list_eval_suites(user_id, repo_name)
+        evals = await eval_service.list_evals(user_id, repo_name)
         
         logger.info(
-            f"Found {len(suites)} eval suites in {repo_name}",
+            f"Found {len(evals)} evals in {repo_name}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
         return success_response(
-            data=suites,
-            message=f"Found {len(suites)} eval suites",
+            data=evals,
+            message=f"Found {len(evals)} eval suites",
             meta={"request_id": request_id}
         )
         
@@ -106,12 +106,12 @@ async def list_eval_suites(
 
 
 @router.get(
-    "/{suite_name}",
-    response_model=StandardResponse[EvalSuiteData],
+    "/{eval_name}",
+    response_model=StandardResponse[EvalData],
     status_code=status.HTTP_200_OK,
     responses={
         404: {
-            "description": "Eval suite not found",
+            "description": "Eval not found",
             "content": {
                 "application/json": {
                     "example": {
@@ -131,22 +131,22 @@ async def list_eval_suites(
                         "status": "error",
                         "type": "/errors/internal-server-error",
                         "title": "Internal Server Error",
-                        "detail": "Failed to retrieve eval suite"
+                        "detail": "Failed to retrieve eval"
                     }
                 }
             }
         }
     },
-    summary="Get eval suite",
-    description="Get detailed information about a specific eval suite including all eval definitions.",
+    summary="Get eval",
+    description="Get detailed information about a specific eval including all eval definitions.",
 )
-async def get_eval_suite(
+async def get_eval(
     request: Request,
     eval_service: EvalMetaServiceDep,
     user_id: CurrentUserDep,
-    suite_name: str,
+    name: str,
     repo_name: str = Query(..., description="Repository name")
-) -> StandardResponse[EvalSuiteData]:
+) -> StandardResponse[EvalData]:
     """
     Get specific eval suite definition.
     
@@ -161,20 +161,20 @@ async def get_eval_suite(
     
     try:
         logger.info(
-            f"Getting eval suite {suite_name} from repo {repo_name}",
+            f"Getting eval suite {name} from repo {repo_name}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
-        suite_data = await eval_service.get_eval_suite(user_id, repo_name, suite_name)
+        eval_data = await eval_service.get_eval(user_id, repo_name, name)
         
         logger.info(
-            f"Retrieved eval suite {suite_name}",
+            f"Retrieved eval suite {name}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
         return success_response(
-            data=suite_data,
-            message="Eval suite retrieved successfully",
+            data=eval_data,
+            message="Eval retrieved successfully",
             meta={"request_id": request_id}
         )
         
@@ -182,19 +182,19 @@ async def get_eval_suite(
         raise
     except Exception as e:
         logger.error(
-            f"Failed to get eval suite {suite_name}: {str(e)}",
+            f"Failed to get eval suite {name}: {str(e)}",
             exc_info=True,
             extra={"request_id": request_id, "user_id": user_id}
         )
         raise AppException(
-            message=f"Failed to retrieve eval suite {suite_name}",
+            message=f"Failed to retrieve eval suite {name}",
             detail=str(e)
         )
 
 
 @router.post(
     "",
-    response_model=StandardResponse[EvalSuiteData],
+    response_model=StandardResponse[EvalData],
     status_code=status.HTTP_200_OK,
     responses={
         404: {
@@ -227,14 +227,14 @@ async def get_eval_suite(
     summary="Create or update eval suite",
     description="Create a new eval suite or update an existing one. The suite name is taken from the request body.",
 )
-async def save_eval_suite(
+async def save_eval(
     request: Request,
     eval_service: EvalMetaServiceDep,
     user_id: CurrentUserDep,
     user_session: CurrentSessionDep,
-    suite_data: EvalSuiteData = Body(...),
+    eval_data: EvalData = Body(...),
     repo_name: str = Query(..., description="Repository name")
-) -> StandardResponse[EvalSuiteData]:
+) -> StandardResponse[EvalData]:
     """
     Create or update eval suite with git workflow integration.
     
@@ -249,7 +249,7 @@ async def save_eval_suite(
     
     try:
         logger.info(
-            f"Saving eval suite {suite_data.eval_suite.name} to repo {repo_name}",
+            f"Saving eval suite {eval_data.eval.name} to repo {repo_name}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
@@ -261,10 +261,10 @@ async def save_eval_suite(
         author_name = user.oauth_name or user.oauth_username if user else None
         author_email = user.oauth_email if user else None
         
-        saved_suite, pr_info = await eval_service.save_eval_suite(
+        saved_eval, pr_info = await eval_service.save_eval(
             user_id=user_id,
             repo_name=repo_name,
-            suite_data=suite_data,
+            eval_data=eval_data,
             oauth_token=oauth_token,
             author_name=author_name,
             author_email=author_email,
@@ -272,13 +272,13 @@ async def save_eval_suite(
         )
         
         logger.info(
-            f"Saved eval suite {suite_data.eval_suite.name}",
+            f"Saved eval suite {eval_data.eval.name}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
         return success_response(
-            data=saved_suite,
-            message="Eval suite saved successfully",
+            data=saved_eval,
+            message="Eval saved successfully",
             meta={"request_id": request_id}
         )
         
@@ -286,18 +286,18 @@ async def save_eval_suite(
         raise
     except Exception as e:
         logger.error(
-            f"Failed to save eval suite {suite_data.eval_suite.name}: {str(e)}",
+            f"Failed to save eval suite {eval_data.eval.name}: {str(e)}",
             exc_info=True,
             extra={"request_id": request_id, "user_id": user_id}
         )
         raise AppException(
-            message=f"Failed to save eval suite {suite_data.eval_suite.name}",
+            message=f"Failed to save eval suite {eval_data.eval.name}",
             detail=str(e)
         )
 
 
 @router.delete(
-    "/{suite_name}",
+    "/{eval_name}",
     response_model=StandardResponse[dict],
     status_code=status.HTTP_200_OK,
     responses={
@@ -331,11 +331,11 @@ async def save_eval_suite(
     summary="Delete eval suite",
     description="Delete an eval suite and all its execution history.",
 )
-async def delete_eval_suite(
+async def delete_eval(
     request: Request,
     eval_service: EvalMetaServiceDep,
     user_id: CurrentUserDep,
-    suite_name: str,
+    name: str,
     repo_name: str = Query(..., description="Repository name")
 ) -> StandardResponse[dict]:
     """
@@ -352,24 +352,24 @@ async def delete_eval_suite(
     
     try:
         logger.info(
-            f"Deleting eval suite {suite_name} from repo {repo_name}",
+            f"Deleting eval suite {name} from repo {repo_name}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
-        success = await eval_service.delete_eval_suite(user_id, repo_name, suite_name)
+        success = await eval_service.delete_eval(user_id, repo_name, name)
         
         if not success:
             raise AppException(
-                message=f"Failed to delete eval suite {suite_name}"
+                message=f"Failed to delete eval suite {name}"
             )
         
         logger.info(
-            f"Deleted eval suite {suite_name}",
+            f"Deleted eval suite {name}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
         return success_response(
-            data={"deleted": True, "suite_name": suite_name},
+            data={"deleted": True, "suite_name": name},
             message="Eval suite deleted successfully",
             meta={"request_id": request_id}
         )
@@ -378,11 +378,11 @@ async def delete_eval_suite(
         raise
     except Exception as e:
         logger.error(
-            f"Failed to delete eval suite {suite_name}: {str(e)}",
+            f"Failed to delete eval suite {name}: {str(e)}",
             exc_info=True,
             extra={"request_id": request_id, "user_id": user_id}
         )
         raise AppException(
-            message=f"Failed to delete eval suite {suite_name}",
+            message=f"Failed to delete eval suite {name}",
             detail=str(e)
         )

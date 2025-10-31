@@ -472,8 +472,8 @@ class LocalRepoService:
     ARTIFACT_EXTENSION_PATTERNS = {
         ArtifactType.PROMPT: ".prompt.yaml",
         ArtifactType.TOOL: ".tool.yaml",
-        ArtifactType.EVAL: ".eval.yaml",
-        ArtifactType.EVAL_SUITE: ".suite.yaml"
+        ArtifactType.TEST: ".eval.yaml",
+        ArtifactType.EVAL: ".suite.yaml"
     }
     
     def discover_artifacts(

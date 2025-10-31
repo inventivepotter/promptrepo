@@ -23,7 +23,7 @@ from lib.deepeval.metric_config import (
     ProfessionalismConfig,
     ConcisenessConfig,
 )
-from services.evals.models import MetricType, ExpectedEvaluationFieldsModel
+from services.evals.models import MetricType, ExpectedTestFieldsModel
 
 
 class TestMetricConfigClasses:
@@ -261,7 +261,7 @@ class TestExpectedEvaluationFieldsModel:
     def test_from_metric_config(self):
         """Test creating ExpectedEvaluationFieldsModel from config."""
         config = ExactMatchConfig(expected_output="Test output")
-        model = ExpectedEvaluationFieldsModel.from_metric_config(
+        model = ExpectedTestFieldsModel.from_metric_config(
             MetricType.EXACT_MATCH,
             config
         )
@@ -276,7 +276,7 @@ class TestExpectedEvaluationFieldsModel:
             expected_output="Test",
             json_field="data.result"
         )
-        model = ExpectedEvaluationFieldsModel.from_metric_config(
+        model = ExpectedTestFieldsModel.from_metric_config(
             MetricType.FUZZY_MATCH,
             original_config
         )
@@ -294,7 +294,7 @@ class TestExpectedEvaluationFieldsModel:
             max_length=100,
             length_unit="words"
         )
-        model = ExpectedEvaluationFieldsModel.from_metric_config(
+        model = ExpectedTestFieldsModel.from_metric_config(
             MetricType.OUTPUT_LENGTH,
             config
         )
@@ -307,14 +307,14 @@ class TestExpectedEvaluationFieldsModel:
     def test_validation_with_invalid_config(self):
         """Test that validation catches invalid configurations."""
         with pytest.raises(ValueError, match="Invalid configuration"):
-            ExpectedEvaluationFieldsModel(
+            ExpectedTestFieldsModel(
                 metric_type=MetricType.EXACT_MATCH,
                 config={}  # Missing required expected_output
             )
     
     def test_empty_model(self):
         """Test creating empty model."""
-        model = ExpectedEvaluationFieldsModel()
+        model = ExpectedTestFieldsModel()
         
         assert model.metric_type is None
         assert model.config is None

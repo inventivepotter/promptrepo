@@ -6,14 +6,13 @@ across eval definitions and execution results.
 """
 
 from datetime import datetime
-from enum import Enum
 from typing import Dict, Any, List, Optional, TypeAlias
 from pydantic import BaseModel, Field, model_validator
 from lib.deepeval import MetricType, BaseMetricConfig, MetricConfig, MetricResult
 
-class ExpectedEvaluationFieldsModel(BaseModel):
+class ExpectedTestFieldsModel(BaseModel):
     """
-    Expected evaluation fields for eval definition.
+    Expected test fields for test definition.
     
     This model uses composition to store metric-specific configurations
     in a type-safe manner while maintaining backward compatibility.
@@ -32,16 +31,16 @@ class ExpectedEvaluationFieldsModel(BaseModel):
     )
     
     @classmethod
-    def from_metric_config(cls, metric_type: MetricType, config: BaseMetricConfig) -> "ExpectedEvaluationFieldsModel":
+    def from_metric_config(cls, metric_type: MetricType, config: BaseMetricConfig) -> "ExpectedTestFieldsModel":
         """
-        Create ExpectedEvaluationFieldsModel from a metric-specific config.
+        Create ExpectedTestFieldsModel from a metric-specific config.
         
         Args:
             metric_type: The metric type
             config: The metric-specific configuration
             
         Returns:
-            ExpectedEvaluationFieldsModel instance
+            ExpectedTestFieldsModel instance
         """
         return cls(
             metric_type=metric_type,
@@ -76,7 +75,7 @@ class ExpectedEvaluationFieldsModel(BaseModel):
         return self.config.get(field_name)
     
     @model_validator(mode='after')
-    def validate_metric_config(self) -> 'ExpectedEvaluationFieldsModel':
+    def validate_metric_config(self) -> 'ExpectedTestFieldsModel':
         """Validate that config matches the metric type requirements"""
         if self.metric_type and self.config:
             # Validate that the config has all required fields
@@ -89,8 +88,8 @@ class ExpectedEvaluationFieldsModel(BaseModel):
         return self
 
 
-class ActualEvaluationFieldsModel(BaseModel):
-    """Actual evaluation fields from eval execution"""
+class ActualTestFieldsModel(BaseModel):
+    """Actual test fields from test execution"""
     # Common fields
     actual_output: str = Field(description="Actual output from LLM execution")
     
@@ -112,10 +111,10 @@ class ActualEvaluationFieldsModel(BaseModel):
     )
 
 
-class EvalDefinition(BaseModel):
-    """Individual eval case definition"""
-    name: str = Field(description="Unique eval name within suite")
-    description: Optional[str] = Field(default="", description="Eval description")
+class TestDefinition(BaseModel):
+    """Individual test case definition"""
+    name: str = Field(description="Unique test name within eval")
+    description: Optional[str] = Field(default="", description="test description")
     prompt_reference: str = Field(description="Reference to prompt file path")
     user_message: Optional[str] = Field(
         default=None,
@@ -125,23 +124,23 @@ class EvalDefinition(BaseModel):
         default_factory=dict,
         description="Template variables for prompt execution"
     )
-    evaluation_fields: ExpectedEvaluationFieldsModel = Field(
-        default_factory=ExpectedEvaluationFieldsModel,
-        description="Expected evaluation fields for different metric types"
+    test_fields: ExpectedTestFieldsModel = Field(
+        default_factory=ExpectedTestFieldsModel,
+        description="Expected test fields for different metric types"
     )
-    enabled: bool = Field(default=True, description="Whether eval is enabled")
+    enabled: bool = Field(default=True, description="Whether test is enabled")
 
 
-class EvalSuiteDefinition(BaseModel):
-    """Eval suite containing multiple unit evals"""
-    name: str = Field(description="Eval suite name")
-    description: Optional[str] = Field(default="", description="Suite description")
-    evals: List[EvalDefinition] = Field(
+class EvalDefinition(BaseModel):
+    """Eval containing multiple unit evals"""
+    name: str = Field(description="Eval name")
+    description: Optional[str] = Field(default="", description="Eval description")
+    tests: List[TestDefinition] = Field(
         default_factory=list,
-        description="Unit evals in this suite"
+        description="Unit tests in this eval"
     )
     tags: List[str] = Field(default_factory=list, description="Tags for organization")
-    metrics: List[MetricConfig] = Field(default_factory=list, description="DeepEval metrics to evaluate for all evals in suite")
+    metrics: List[MetricConfig] = Field(default_factory=list, description="DeepEval metrics to evaluate for all tests in eval")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -152,18 +151,18 @@ class EvalSuiteDefinition(BaseModel):
     }
 
 
-class EvalSuiteData(BaseModel):
+class EvalData(BaseModel):
     """Wrapper for YAML serialization"""
-    eval_suite: EvalSuiteDefinition
+    eval: EvalDefinition
 
 
-class EvalExecutionResult(BaseModel):
-    """Execution result for a single eval"""
-    eval_name: str = Field(description="Name of the eval")
+class TestExecutionResult(BaseModel):
+    """Execution result for a single test"""
+    test_name: str = Field(description="Name of the test")
     prompt_reference: str = Field(description="Reference to prompt file path")
     template_variables: Dict[str, Any] = Field(description="Template variables used in execution")
-    actual_evaluation_fields: ActualEvaluationFieldsModel = Field(description="Actual evaluation fields from execution")
-    expected_evaluation_fields: ExpectedEvaluationFieldsModel = Field(description="Expected evaluation fields from eval definition")
+    actual_test_fields: ActualTestFieldsModel = Field(description="Actual test fields from execution")
+    expected_test_fields: ExpectedTestFieldsModel = Field(description="Expected tests fields from test definition")
     metric_results: List[MetricResult] = Field(description="Results from all metrics")
     overall_passed: bool = Field(description="Whether all metrics passed")
     executed_at: datetime = Field(default_factory=datetime.utcnow)
@@ -175,13 +174,13 @@ class EvalExecutionResult(BaseModel):
     }
 
 
-class EvalSuiteExecutionResult(BaseModel):
-    """Execution result for entire eval suite"""
-    suite_name: str
-    eval_results: List[EvalExecutionResult]
-    total_evals: int
-    passed_evals: int
-    failed_evals: int
+class EvalExecutionResult(BaseModel):
+    """Execution result for entire eval"""
+    eval_name: str
+    test_results: List[TestExecutionResult]
+    total_tests: int
+    passed_tests: int
+    failed_tests: int
     total_execution_time_ms: int
     executed_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -192,16 +191,16 @@ class EvalSuiteExecutionResult(BaseModel):
     }
 
 
-class EvalSuiteExecutionData(BaseModel):
+class EvalExecutionData(BaseModel):
     """Wrapper for execution YAML serialization"""
-    execution: EvalSuiteExecutionResult
+    execution: EvalExecutionResult
 
 
-class EvalSuiteSummary(BaseModel):
-    """Summary of eval suite for listing"""
+class EvalSummary(BaseModel):
+    """Summary of eval for listing"""
     name: str
     description: str
-    eval_count: int
+    test_count: int
     tags: List[str]
     file_path: str
     last_execution: Optional[datetime] = None
@@ -234,10 +233,10 @@ class MetricMetadataModel(BaseModel):
         description="Human-readable description of what this metric evaluates"
     )
     required_expected_fields: List[str] = Field(
-        description="List of field names the user must provide in eval definition"
+        description="List of field names the user must provide in test definition"
     )
     required_actual_fields: List[str] = Field(
-        description="List of field names that must be present from eval execution"
+        description="List of field names that must be present from test execution"
     )
     field_schema: Dict[str, Any] = Field(
         description="JSON schema for expected fields configuration (for dynamic form generation)"

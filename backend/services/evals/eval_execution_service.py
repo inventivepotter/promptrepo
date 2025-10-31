@@ -2,7 +2,7 @@
 Eval Execution Service
 
 Orchestrates eval execution workflow including:
-- Executing eval suites and individual evals
+- Executing evals and individual tests
 - Coordinating with prompt service for execution
 - Integration with DeepEval adapter for metric evaluation
 - Saving execution results to YAML files
@@ -20,12 +20,12 @@ from services.llm.chat_completion_service import ChatCompletionService
 from .eval_meta_service import EvalMetaService
 from lib.deepeval.deepeval_adapter import DeepEvalAdapter
 from .models import (
-    EvalDefinition,
+    TestDefinition,
+    TestExecutionResult,
     EvalExecutionResult,
-    EvalSuiteExecutionResult,
     MetricConfig,
     MetricType,
-    ActualEvaluationFieldsModel,
+    ActualTestFieldsModel,
 )
 
 logger = logging.getLogger(__name__)
@@ -33,11 +33,11 @@ logger = logging.getLogger(__name__)
 
 class EvalExecutionService:
     """
-    Service for executing eval suites and individual evals.
+    Service for executing evals and individual tests.
     
     This service handles:
-    - Eval suite execution orchestration
-    - Single eval execution
+    - Eval execution orchestration
+    - Single test execution
     - Prompt execution with template variables
     - DeepEval metric evaluation
     - Result aggregation and storage
@@ -54,7 +54,7 @@ class EvalExecutionService:
         Initialize EvalExecutionService with injected dependencies.
         
         Args:
-            eval_meta_service: Eval service for loading definitions and saving results
+            eval_meta_service: Eval meta service for loading definitions and saving results
             prompt_service: Prompt service for executing prompts
             deepeval_adapter: DeepEval adapter for metric evaluation
             chat_completion_service: Chat completion service for executing prompts
@@ -64,167 +64,167 @@ class EvalExecutionService:
         self.deepeval_adapter = deepeval_adapter
         self.chat_completion_service = chat_completion_service
     
-    async def execute_eval_suite(
+    async def execute_eval(
         self,
         user_id: str,
         repo_name: str,
-        suite_name: str,
-        eval_names: Optional[List[str]] = None
-    ) -> EvalSuiteExecutionResult:
+        eval_name: str,
+        test_names: Optional[List[str]] = None
+    ) -> EvalExecutionResult:
         """
-        Execute eval suite or specific evals within suite.
+        Execute eval or specific tests within eval.
         
         Args:
             user_id: User ID
             repo_name: Repository name
-            suite_name: Eval suite name
-            eval_names: Optional list of specific eval names to run (None = run all)
+            eval_name: Eval name
+            test_names: Optional list of specific test names to run (None = run all)
             
         Returns:
-            EvalSuiteExecutionResult with complete execution results
+            EvalExecutionResult with complete execution results
             
         Raises:
-            NotFoundException: If suite doesn't exist
+            NotFoundException: If eval doesn't exist
             AppException: If execution fails
         """
-        logger.info(f"Executing eval suite {suite_name} in {repo_name} for user {user_id}")
+        logger.info(f"Executing eval {eval_name} in {repo_name} for user {user_id}")
         
         start_time = time.time()
         
-        # Load test suite definition
-        suite_data = await self.eval_meta_service.get_eval_suite(user_id, repo_name, suite_name)
+        # Load eval definition
+        eval_data = await self.eval_meta_service.get_eval(user_id, repo_name, eval_name)
         
-        # Filter evals if specific eval names provided
-        evals_to_run = suite_data.eval_suite.evals
-        if eval_names:
-            evals_to_run = [t for t in evals_to_run if t.name in eval_names]
-            if not evals_to_run:
+        # Filter tests if specific test names provided
+        tests_to_run = eval_data.eval.tests
+        if test_names:
+            tests_to_run = [t for t in tests_to_run if t.name in test_names]
+            if not tests_to_run:
                 raise NotFoundException(
-                    resource="Evals",
-                    identifier=", ".join(eval_names)
+                    resource="Tests",
+                    identifier=", ".join(test_names)
                 )
         
-        # Filter out disabled evals
-        evals_to_run = [t for t in evals_to_run if t.enabled]
+        # Filter out disabled tests
+        tests_to_run = [t for t in tests_to_run if t.enabled]
         
-        # Execute each eval with suite-level metrics
-        eval_results = []
-        for test_def in evals_to_run:
+        # Execute each test with suite-level metrics
+        test_results = []
+        for test_def in tests_to_run:
             try:
-                result = await self._execute_single_eval_internal(
-                    user_id, repo_name, test_def, suite_data.eval_suite.metrics
+                result = await self._execute_single_test_internal(
+                    user_id, repo_name, test_def, eval_data.eval.metrics
                 )
-                eval_results.append(result)
+                test_results.append(result)
             except Exception as e:
-                logger.error(f"Failed to execute eval {test_def.name}: {e}")
-                # Create error result for failed eval
-                error_result = EvalExecutionResult(
-                    eval_name=test_def.name,
+                logger.error(f"Failed to execute test {test_def.name}: {e}")
+                # Create error result for failed test
+                error_result = TestExecutionResult(
+                    test_name=test_def.name,
                     prompt_reference=test_def.prompt_reference,
                     template_variables=test_def.template_variables,
-                    actual_evaluation_fields=ActualEvaluationFieldsModel(
+                    actual_test_fields=ActualTestFieldsModel(
                         actual_output="",
                         error=str(e)
                     ),
-                    expected_evaluation_fields=test_def.evaluation_fields,
+                    expected_test_fields=test_def.test_fields,
                     metric_results=[],
                     overall_passed=False,
                     executed_at=datetime.now(timezone.utc)
                 )
-                eval_results.append(error_result)
+                test_results.append(error_result)
         
         # Calculate summary statistics
-        total_evals = len(eval_results)
-        passed_evals = sum(1 for r in eval_results if r.overall_passed)
-        failed_evals = total_evals - passed_evals
+        total_tests = len(test_results)
+        passed_tests = sum(1 for r in test_results if r.overall_passed)
+        failed_tests = total_tests - passed_tests
         
         end_time = time.time()
         total_execution_time_ms = int((end_time - start_time) * 1000)
         
         # Create execution result
-        execution_result = EvalSuiteExecutionResult(
-            suite_name=suite_name,
-            eval_results=eval_results,
-            total_evals=total_evals,
-            passed_evals=passed_evals,
-            failed_evals=failed_evals,
+        execution_result = EvalExecutionResult(
+            eval_name=eval_name,
+            test_results=test_results,
+            total_tests=total_tests,
+            passed_tests=passed_tests,
+            failed_tests=failed_tests,
             total_execution_time_ms=total_execution_time_ms,
             executed_at=datetime.now(timezone.utc)
         )
         
         # Save execution result
         await self.eval_meta_service.save_execution_result(
-            user_id, repo_name, suite_name, execution_result
+            user_id, repo_name, eval_name, execution_result
         )
         
         logger.info(
-            f"Completed eval suite {suite_name}: {passed_evals}/{total_evals} passed "
+            f"Completed eval {eval_name}: {passed_tests}/{total_tests} passed "
             f"in {total_execution_time_ms}ms"
         )
         
         return execution_result
     
-    async def execute_single_eval(
+    async def execute_single_test(
         self,
         user_id: str,
         repo_name: str,
-        suite_name: str,
-        eval_name: str
-    ) -> EvalExecutionResult:
+        eval_name: str,
+        test_name: str
+    ) -> TestExecutionResult:
         """
-        Execute single eval.
+        Execute single test.
         
         Args:
             user_id: User ID
             repo_name: Repository name
-            suite_name: Eval suite name
             eval_name: Eval name
+            test_name: Test name
             
         Returns:
-            EvalExecutionResult with execution results
+            TestExecutionResult with execution results
             
         Raises:
-            NotFoundException: If eval doesn't exist
+            NotFoundException: If test doesn't exist
         """
-        logger.info(f"Executing single eval {eval_name} from suite {suite_name}")
+        logger.info(f"Executing single test {test_name} from eval {eval_name}")
         
-        # Load test suite to get test definition and metrics
-        suite_data = await self.eval_meta_service.get_eval_suite(user_id, repo_name, suite_name)
+        # Load eval to get test definition and metrics
+        eval_data = await self.eval_meta_service.get_eval(user_id, repo_name, eval_name)
         
-        # Find the specific eval
-        eval_def = None
-        for test in suite_data.eval_suite.evals:
-            if test.name == eval_name:
-                eval_def = test
+        # Find the specific test
+        test_def = None
+        for test in eval_data.eval.tests:
+            if test.name == test_name:
+                test_def = test
                 break
         
-        if not eval_def:
+        if not test_def:
             raise NotFoundException(
-                resource="Eval",
-                identifier=eval_name
+                resource="Test",
+                identifier=test_name
             )
         
-        # Execute the eval with suite-level metrics
-        return await self._execute_single_eval_internal(user_id, repo_name, eval_def, suite_data.eval_suite.metrics)
+        # Execute the test with eval-level metrics
+        return await self._execute_single_test_internal(user_id, repo_name, test_def, eval_data.eval.metrics)
     
-    async def _execute_single_eval_internal(
+    async def _execute_single_test_internal(
         self,
         user_id: str,
         repo_name: str,
-        eval_def: EvalDefinition,
+        test_def: TestDefinition,
         suite_metrics: Optional[List[MetricConfig]] = None
-    ) -> EvalExecutionResult:
+    ) -> TestExecutionResult:
         """
-        Internal method to execute a single eval.
+        Internal method to execute a single test.
         
         Args:
             user_id: User ID
             repo_name: Repository name
-            eval_def: Eval definition
-            suite_metrics: Metrics from eval suite level
+            test_def: Test definition
+            suite_metrics: Metrics from eval level
             
         Returns:
-            EvalExecutionResult with execution results
+            TestExecutionResult with execution results
         """
         if suite_metrics is None:
             suite_metrics = []
@@ -233,7 +233,7 @@ class EvalExecutionService:
         try:
             # Parse prompt reference to extract file path
             # Expected format: "file:///.promptrepo/prompts/path/to/prompt.yaml"
-            prompt_reference = eval_def.prompt_reference
+            prompt_reference = test_def.prompt_reference
             if prompt_reference.startswith("file:///"):
                 prompt_file_path = prompt_reference.replace("file:///", "")
             else:
@@ -243,8 +243,8 @@ class EvalExecutionService:
             prompt_id = f"{repo_name}:{prompt_file_path}"
             
             # Determine the user message to send
-            # If user_message is provided in eval, use it; otherwise use None for single-turn
-            user_message = eval_def.user_message
+            # If user_message is provided in test, use it; otherwise use None for single-turn
+            user_message = test_def.user_message
             
             # Execute prompt using ChatCompletionService's execute_completion_from_saved_prompt
             completion_response = await self.chat_completion_service.execute_completion_from_saved_prompt(
@@ -271,24 +271,24 @@ class EvalExecutionService:
             
             # Apply template variables to prompt for input text
             prompt_text = prompt_meta.prompt.prompt
-            for var_name, var_value in eval_def.template_variables.items():
+            for var_name, var_value in test_def.template_variables.items():
                 placeholder = f"{{{var_name}}}"
                 if placeholder in prompt_text:
                     prompt_text = prompt_text.replace(placeholder, str(var_value))
             
             input_text = user_message if user_message is not None else prompt_text
             
-            # Create actual evaluation fields
+            # Create actual test fields
             end_time = time.time()
             execution_time_ms = int((end_time - start_time) * 1000)
             
-            actual_fields = ActualEvaluationFieldsModel(
+            actual_fields = ActualTestFieldsModel(
                 actual_output=actual_output,
                 tools_called=tools_called,
                 execution_time_ms=execution_time_ms
             )
             
-            # Only evaluate metrics if they are defined at suite level
+            # Only evaluate metrics if they are defined at eval level
             metric_results = []
             if suite_metrics:
                 # Build test case parameters from metric config and actual fields
@@ -297,10 +297,10 @@ class EvalExecutionService:
                     "actual_output": actual_output
                 }
                 
-                # Add expected fields from evaluation_fields config
-                # The evaluation_fields.config contains the raw expected values
-                if eval_def.evaluation_fields.config:
-                    config_dict = eval_def.evaluation_fields.config
+                # Add expected fields from test_fields config
+                # The test_fields.config contains the raw expected values
+                if test_def.test_fields.config:
+                    config_dict = test_def.test_fields.config
                     
                     if 'expected_output' in config_dict:
                         test_case_params["expected_output"] = config_dict['expected_output']
@@ -328,19 +328,19 @@ class EvalExecutionService:
             # If no metrics, test passes if it executes successfully
             overall_passed = all(result.passed for result in metric_results) if metric_results else True
             
-            return EvalExecutionResult(
-                eval_name=eval_def.name,
-                prompt_reference=eval_def.prompt_reference,
-                template_variables=eval_def.template_variables,
-                actual_evaluation_fields=actual_fields,
-                expected_evaluation_fields=eval_def.evaluation_fields,
+            return TestExecutionResult(
+                test_name=test_def.name,
+                prompt_reference=test_def.prompt_reference,
+                template_variables=test_def.template_variables,
+                actual_test_fields=actual_fields,
+                expected_test_fields=test_def.test_fields,
                 metric_results=metric_results,
                 overall_passed=overall_passed,
                 executed_at=datetime.now(timezone.utc)
             )
             
         except Exception as e:
-            logger.error(f"Error executing eval {eval_def.name}: {e}")
+            logger.error(f"Error executing test {test_def.name}: {e}")
             raise AppException(
-                message=f"Failed to execute eval {eval_def.name}: {str(e)}"
+                message=f"Failed to execute test {test_def.name}: {str(e)}"
             )

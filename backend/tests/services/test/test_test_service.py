@@ -15,15 +15,15 @@ from typing import Dict, Any
 
 from services.evals.eval_meta_service import EvalMetaService
 from services.evals.models import (
-    EvalSuiteData,
-    EvalSuiteDefinition,
+    EvalData,
     EvalDefinition,
+    TestDefinition,
     MetricConfig,
     MetricType,
-    EvalSuiteExecutionResult,
     EvalExecutionResult,
-    EvalSuiteSummary,
-    ExpectedEvaluationFieldsModel
+    TestExecutionResult,
+    EvalSummary,
+    ExpectedTestFieldsModel
 )
 from schemas.hosting_type_enum import HostingType
 from middlewares.rest.exceptions import NotFoundException, AppException
@@ -72,28 +72,28 @@ def sample_eval_suite():
         strict_mode=False
     )
     
-    unit_test = EvalDefinition(
+    unit_test = TestDefinition(
         name="test-login-prompt",
         description="Test login prompt",
         prompt_reference="file:///.promptrepo/prompts/auth/login.yaml",
         template_variables={"user_question": "How do I reset my password?"},
-        evaluation_fields=ExpectedEvaluationFieldsModel(
+        test_fields=ExpectedTestFieldsModel(
             metric_type=MetricType.ANSWER_RELEVANCY,
             config={"expected_output": "Click 'Forgot Password' link"}
         ),
         enabled=True
     )
     
-    suite_def = EvalSuiteDefinition(
+    suite_def = EvalDefinition(
         name="auth-suite",
         description="Authentication eval suite",
-        evals=[unit_test],
+        tests=[unit_test],
         tags=["auth", "security"],
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow()
     )
     
-    return EvalSuiteData(eval_suite=suite_def)
+    return EvalData(eval=suite_def)
 
 
 class TestEvalServiceCRUD:
@@ -224,12 +224,12 @@ class TestExecutionHistory:
         mock_file_ops_service.create_directory.return_value = True
         mock_file_ops_service.save_yaml_file.return_value = True
         
-        execution_result = EvalSuiteExecutionResult(
-            suite_name="auth-suite",
-            eval_results=[],
-            total_evals=0,
-            passed_evals=0,
-            failed_evals=0,
+        execution_result = EvalExecutionResult(
+            eval_name="auth-suite",
+            test_results=[],
+            total_tests=0,
+            passed_tests=0,
+            failed_tests=0,
             total_execution_time_ms=100,
             executed_at=datetime.utcnow()
         )
