@@ -18,15 +18,16 @@ import { useEvalStore } from '@/stores/evalStore';
 import { useConfigStore } from '@/stores/configStore/configStore';
 import { useSelectedRepository, useRepositoryFilterActions } from '@/stores/repositoryFilterStore';
 import { EvalHeader } from '@/components/EvalHeader';
-import { EvalSuiteCard } from '@/components/evals/EvalSuiteCard';
+import { EvalCard } from '@/components/evals/EvalCard';
+import { buildEvalEditorUrl } from '@/lib/urlEncoder';
 
 export default function EvalsPage() {
   const router = useRouter();
   
   // Use eval store
-  const evalSuites = useEvalStore((state) => state.evalSuites);
+  const evals = useEvalStore((state) => state.evals);
   const isLoading = useEvalStore((state) => state.isLoading);
-  const fetchEvalSuites = useEvalStore((state) => state.fetchEvalSuites);
+  const fetchEvals = useEvalStore((state) => state.fetchEvals);
   const setSelectedRepo = useEvalStore((state) => state.setSelectedRepo);
   
   // Use shared repository filter store
@@ -49,29 +50,31 @@ export default function EvalsPage() {
     }
   }, [config, selectedRepository, setSelectedRepository]);
 
-  // Fetch eval suites only when a valid repository is selected
+  // Fetch evals only when a valid repository is selected
   useEffect(() => {
     // Only fetch if we have a non-empty selectedRepository and it's in the configured repos
     if (typeof window !== 'undefined' &&
         selectedRepository &&
         selectedRepository.trim() !== '' &&
         config?.repo_configs?.some(r => r.repo_name === selectedRepository)) {
-      fetchEvalSuites(selectedRepository);
+      fetchEvals(selectedRepository);
       setSelectedRepo(selectedRepository);
     }
-  }, [selectedRepository, config, fetchEvalSuites, setSelectedRepo]);
+  }, [selectedRepository, config, fetchEvals, setSelectedRepo]);
 
-  const handleViewSuite = (suiteName: string) => {
-    router.push(`/evals/${encodeURIComponent(suiteName)}?repo_name=${encodeURIComponent(selectedRepository || '')}`);
+  const handleViewEval = (evalName: string) => {
+    if (selectedRepository) {
+      router.push(buildEvalEditorUrl(selectedRepository, evalName));
+    }
   };
 
   const handleAddRepositories = () => {
     router.push('/config#repositories');
   };
 
-  const handleCreateEvalSuite = () => {
+  const handleCreateEval = () => {
     if (selectedRepository) {
-      router.push(`/evals/new?repo_name=${encodeURIComponent(selectedRepository)}`);
+      router.push(buildEvalEditorUrl(selectedRepository, 'new'));
     }
   };
 
@@ -100,7 +103,7 @@ export default function EvalsPage() {
             <Box position="relative">
               <Container maxW="7xl" py={6}>
                 <VStack gap={6} align="stretch">
-                  {/* Eval Suites grid */}
+                  {/* Evals grid */}
                   {isLoading ? (
                     <Grid
                       templateColumns={{
@@ -129,7 +132,7 @@ export default function EvalsPage() {
                         </Box>
                       ))}
                     </Grid>
-                  ) : evalSuites.length === 0 ? (
+                  ) : evals.length === 0 ? (
                     <EmptyState.Root>
                       <EmptyState.Content>
                         <EmptyState.Indicator>
@@ -137,19 +140,19 @@ export default function EvalsPage() {
                         </EmptyState.Indicator>
                         <VStack textAlign="center">
                           <EmptyState.Title>
-                            {hasConfiguredRepos ? 'Create your first eval suite' : 'Connect your first repository'}
+                            {hasConfiguredRepos ? 'Create your first eval' : 'Connect your first repository'}
                           </EmptyState.Title>
                           <EmptyState.Description>
                             {hasConfiguredRepos
-                              ? 'You have repositories configured. Create your first eval suite to begin evaluating your prompts with DeepEval metrics.'
+                              ? 'You have repositories configured. Create your first eval to begin evaluating your prompts with DeepEval metrics.'
                               : 'Configure a repository first to discover and manage your AI prompts effectively.'
                             }
                           </EmptyState.Description>
                         </VStack>
                         <ButtonGroup>
                           {hasConfiguredRepos ? (
-                            <Button onClick={handleCreateEvalSuite} disabled={!selectedRepository}>
-                              Create Eval Suite
+                            <Button onClick={handleCreateEval} disabled={!selectedRepository}>
+                              Create Eval
                             </Button>
                           ) : (
                             <Button onClick={handleAddRepositories}>Add Repository</Button>
@@ -166,11 +169,11 @@ export default function EvalsPage() {
                       }}
                       gap={6}
                     >
-                      {evalSuites.map((suite) => (
-                        <EvalSuiteCard
-                          key={suite.name}
-                          suite={suite}
-                          onView={handleViewSuite}
+                      {evals.map((evalData) => (
+                        <EvalCard
+                          key={evalData.name}
+                          eval={evalData}
+                          onView={handleViewEval}
                         />
                       ))}
                     </Grid>

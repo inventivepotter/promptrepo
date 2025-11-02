@@ -426,7 +426,7 @@ export function MetricSelector({ metrics, onChange }: MetricSelectorProps) {
               </Combobox.Positioner>
             </Combobox.Root>
             <Field.HelperText fontSize="xs">
-              Select a metric to configure for this eval suite
+              Select a metric to configure for this eval
             </Field.HelperText>
           </Field.Root>
 

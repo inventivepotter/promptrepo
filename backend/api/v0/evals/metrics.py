@@ -6,7 +6,7 @@ Provides information about available metrics for frontend consumption.
 import logging
 from fastapi import APIRouter, Request, status
 
-from services.evals.models import MetricsMetadataResponse
+from services.artifacts.evals.models import MetricsMetadataResponse
 from lib.deepeval.metric_config import MetricRegistry
 from middlewares.rest import StandardResponse, success_response, AppException
 

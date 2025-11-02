@@ -7,23 +7,23 @@ Also handles repository cloning and ensuring repositories are available.
 """
 
 import logging
+import re
+import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, TYPE_CHECKING
-import uuid
-
-from services.local_repo.models import PRInfo, ArtifactDiscoveryResult
+from typing import List, Optional, TYPE_CHECKING, Tuple
 
 from sqlmodel import Session
 from database.daos.user.user_repos_dao import UserReposDAO
-from database.models.user_repos import RepoStatus
+from services.local_repo.git_service import GitService
 from middlewares.rest.exceptions import AppException, NotFoundException
 from schemas.artifact_type_enum import ArtifactType
 from services.config.config_service import ConfigService
 from services.config.models import RepoConfig
-from services.local_repo.git_service import GitService
-from schemas.hosting_type_enum import HostingType
+from .models import PRInfo, ArtifactDiscoveryResult, CommitInfo, SaveArtifactResult
+from database.models.user_repos import RepoStatus
 from settings import settings
+from services.file_operations.file_operations_service import FileOperationsService
 
 if TYPE_CHECKING:
     from services.remote_repo.remote_repo_service import RemoteRepoService
@@ -59,27 +59,53 @@ class LocalRepoService:
         self.config_service = config_service
         self.db = db
         self.remote_repo_service = remote_repo_service
+        self.file_ops_service = FileOperationsService()
         if db:
             self.user_repos_dao = UserReposDAO(db)
         else:
             self.user_repos_dao = None
     
-    def _get_repo_base_path(self, user_id: str) -> Path:
+    def get_repo_path(self, user_id: str, repo_name: str) -> Path:
         """
-        Get the base repository path based on hosting type.
+        Get the full path to a repository.
         
         Args:
-            user_id: ID of the user
+            user_id: User ID
+            repo_name: Repository name
             
         Returns:
-            Path object for the repository base directory
+            Path to the repository directory
         """
-        hosting_config = self.config_service.get_hosting_config()
+        # Use repo_path with user scoping
+        return Path(settings.repo_path) / user_id / repo_name
+
+    def get_file_path(
+        self,
+        user_id: str,
+        repo_name: str,
+        artifact_type: ArtifactType,
+        artifact_name: str,
+    ) -> Tuple[Path, str]:
+        """
+        Get the directory path for a specific artifact.
+
+        Args:
+            user_id: User ID
+            repo_name: Repository name
+            artifact_type: Type of the artifact (e.g., Prompt, Evaluation)
+            artifact_name: Name of the artifact
+            extension: Optional file extension (e.g., ".yaml")
+
+        Returns:
+            Tuple of (directory_path, file_name)
+        """
+        # Get the repository path
+        repo_path = self.get_repo_path(user_id, repo_name)
+        # Construct the full directory path: repo_path / .promptrepo / artifact_types
+        directory_path = repo_path / settings.meta_directory / f"{artifact_type}s"
         
-        if hosting_config.type == HostingType.INDIVIDUAL:
-            return Path(settings.local_repo_path)
-        else:
-            return Path(settings.multi_user_repo_path) / user_id
+        file_name = f"{self._sanitize_for_filename(artifact_name)}.{artifact_type.value}.yaml"
+        return (directory_path, file_name)
     
     def _check_repo_exists_on_filesystem(self, user_id: str, repo_name: str) -> bool:
         """
@@ -92,11 +118,200 @@ class LocalRepoService:
         Returns:
             bool: True if repository exists, False otherwise
         """
-        repo_base_path = self._get_repo_base_path(user_id)
-        repo_path = repo_base_path / repo_name
+        repo_path = self.get_repo_path(user_id, repo_name)
         
         # Check if directory exists and has .git folder
         return repo_path.exists() and (repo_path / ".git").exists()
+
+    def _sanitize_for_filename(self, name: str) -> str:
+        """
+        Sanitize a string to make it safe for use as a filename or directory name.
+        
+        Rules:
+        - Convert spaces to hyphens
+        - Convert to lowercase
+        - Remove any characters that are not alphanumeric, hyphens, or underscores
+        - Replace multiple consecutive hyphens with a single hyphen
+        - Strip leading/trailing hyphens
+        
+        Args:
+            name: The original name string
+            
+        Returns:
+            Sanitized string safe for use as filename/directory name
+        """
+        # Convert to lowercase
+        sanitized = name.lower()
+        
+        # Replace spaces with hyphens
+        sanitized = sanitized.replace(' ', '-')
+        
+        # Remove any character that's not alphanumeric, hyphen, or underscore
+        sanitized = re.sub(r'[^a-z0-9\-_]', '', sanitized)
+        
+        # Replace multiple consecutive hyphens with a single hyphen
+        sanitized = re.sub(r'-+', '-', sanitized)
+        
+        # Strip leading/trailing hyphens
+        sanitized = sanitized.strip('-')
+        
+        return sanitized
+
+    async def save_artifact(
+        self,
+        user_id: str,
+        repo_name: str,
+        artifact_type: ArtifactType,
+        artifact_name: str,
+        artifact_data: dict,
+        file_path: Optional[str] = None,
+        oauth_token: Optional[str] = None,
+        author_name: Optional[str] = None,
+        author_email: Optional[str] = None,
+        user_session = None
+    ) -> SaveArtifactResult:
+        """
+        Save an artifact file to the repository with complete git workflow.
+        
+        This method:
+        1. Checks if file exists (update vs create)
+        2. Preserves created_at timestamp for updates
+        3. Uses provided file_path for updates or constructs path from artifact name for new files
+        4. Saves the artifact data to YAML file
+        5. Handles git workflow (branch, commit, push, PR creation)
+        6. Returns the save result
+        
+        Args:
+            user_id: User ID
+            repo_name: Repository name
+            artifact_type: Type of artifact (PROMPT, TOOL, EVAL, etc.)
+            artifact_name: Name of the artifact
+            artifact_data: Dictionary containing artifact data to save
+            file_path: Optional relative file path for updates (if None, constructs from artifact_name)
+            oauth_token: Optional OAuth token for git operations
+            author_name: Optional git commit author name
+            author_email: Optional git commit author email
+            user_session: Optional user session for PR creation
+            
+        Returns:
+            SaveArtifactResult: Result containing file path, update flag, and PR info if created
+            
+        Raises:
+            NotFoundException: If repository doesn't exist
+            AppException: If file save fails
+        """
+        # Get repository path
+        repo_path = self.get_repo_path(user_id, repo_name)
+        
+        if not repo_path.exists():
+            raise NotFoundException(
+                resource="Repository",
+                identifier=repo_name
+            )
+        
+        # Use provided file_path or construct new one
+        if file_path:
+            # Use the provided file path (for updates)
+            full_file_path = repo_path / file_path
+        else:
+            # Construct the file path from artifact name (for new files)
+            directory_path, filename = self.get_file_path(
+                user_id=user_id,
+                repo_name=repo_name,
+                artifact_type=artifact_type,
+                artifact_name=artifact_name
+            )
+            full_file_path = directory_path / filename
+        
+        # Check if this is an update
+        is_update = full_file_path.exists()
+        
+        # Preserve created_at timestamp for updates
+        if is_update:
+            try:
+                existing_data = self.file_ops_service.load_yaml_file(full_file_path)
+                if existing_data and 'created_at' in existing_data:
+                    # Preserve the created_at from existing file
+                    artifact_data['created_at'] = existing_data['created_at']
+            except Exception as e:
+                logger.warning(f"Failed to load existing timestamps for {artifact_type.value}: {e}")
+        
+        # Save the file using FileOperationsService
+        save_result = self.file_ops_service.save_yaml_file(
+            file_path=full_file_path,
+            data=artifact_data
+        )
+        
+        if not save_result.success:
+            raise AppException(
+                message=f"Failed to save {artifact_type.value} to {full_file_path}"
+            )
+        
+        # Calculate relative path from repo root for git operations
+        relative_path = str(full_file_path.relative_to(repo_path))
+        
+        action = "Updated" if is_update else "Created"
+        logger.info(f"{action} {artifact_type.value} '{artifact_name}' at {relative_path} in {repo_name}")
+        
+        # Handle git workflow if git parameters provided
+        pr_info = None
+        if oauth_token or author_name or author_email or user_session:
+            pr_info = await self.handle_git_workflow_after_save(
+                user_id=user_id,
+                repo_name=repo_name,
+                file_path=relative_path,
+                artifact_type=artifact_type,
+                oauth_token=oauth_token,
+                author_name=author_name,
+                author_email=author_email,
+                user_session=user_session
+            )
+        
+        return SaveArtifactResult(
+            file_path=relative_path,
+            is_update=is_update,
+            pr_info=pr_info
+        )
+
+    def load_artifact(
+        self,
+        user_id: str,
+        repo_name: str,
+        file_path: str,
+        artifact_type: ArtifactType
+    ) -> Optional[dict]:
+        """
+        Load an artifact file from the repository.
+
+        Args:
+            user_id: User ID
+            repo_name: Repository name
+            file_path: Relative path to the artifact file from repo root
+            artifact_type: Type of artifact (PROMPT, TOOL, EVAL, etc.)
+
+        Returns:
+            Optional[dict]: Artifact data as dictionary, or None if file doesn't exist
+
+        Raises:
+            NotFoundException: If repository doesn't exist
+        """
+        # Get repository path
+        repo_path = self.get_repo_path(user_id, repo_name)
+
+        if not repo_path.exists():
+            raise NotFoundException(
+                resource="Repository",
+                identifier=repo_name
+            )
+
+        # Construct full file path
+        full_file_path = repo_path / file_path
+
+        # Load the YAML file
+        artifact_data = self.file_ops_service.load_yaml_file(full_file_path)
+
+        return artifact_data
+    
     
     def ensure_repos_cloned(
         self,
@@ -268,8 +483,7 @@ class LocalRepoService:
             repo_url = self.config_service.get_repo_url_for_repo(user_id, repo_name)
             
             # Get repository path
-            repo_base_path = self._get_repo_base_path(user_id)
-            repo_path = repo_base_path / repo_name
+            repo_path = self.get_repo_path(user_id, repo_name)
             
             # Initialize git service
             git_service = GitService(repo_path)
@@ -432,8 +646,7 @@ class LocalRepoService:
             base_branch = self.config_service.get_base_branch_for_repo(user_id, repo_name)
             
             # Get repository path
-            repo_base_path = self._get_repo_base_path(user_id)
-            repo_path = repo_base_path / repo_name
+            repo_path = self.get_repo_path(user_id, repo_name)
             
             if not (repo_path.exists() and (repo_path / ".git").exists()):
                 logger.warning(f"Repository {repo_name} not found at {repo_path}")
@@ -495,8 +708,7 @@ class LocalRepoService:
             ArtifactDiscoveryResult: Discovered artifacts grouped by type
         """
         # Get repository path
-        repo_base_path = self._get_repo_base_path(user_id)
-        repo_path = repo_base_path / repo_name
+        repo_path = self.get_repo_path(user_id, repo_name)
         
         # Initialize result
         result = ArtifactDiscoveryResult()
@@ -540,3 +752,12 @@ class LocalRepoService:
             f"{len(result.prompts)} prompts, {len(result.tools)} tools"
         )
         return result
+    
+    def get_file_commit_history(self, repo_path: Path, file_path: str, limit: int = 5) -> list[CommitInfo]:
+        """Get commit history for a specific file using GitService."""
+        try:
+            git_service = GitService(repo_path)
+            return git_service.get_file_commit_history(file_path, limit)
+        except Exception as e:
+            logger.warning(f"Failed to get commit history for {file_path}: {e}")
+            return []

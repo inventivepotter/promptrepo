@@ -16,10 +16,10 @@ import type { MetricResult } from '@/types/eval';
 
 interface EvalMetricsProps {
   results: MetricResult[];
-  suiteMetrics?: Array<{ type: string; model?: string }>;
+  evalMetrics?: Array<{ type: string; model?: string }>;
 }
 
-export function EvalMetrics({ results, suiteMetrics }: EvalMetricsProps) {
+export function EvalMetrics({ results, evalMetrics }: EvalMetricsProps) {
   const [expandedMetrics, setExpandedMetrics] = useState<Set<string>>(new Set());
   const { metadata, getMetricMetadata, isNonDeterministic } = useMetricsStore();
 
@@ -51,7 +51,7 @@ export function EvalMetrics({ results, suiteMetrics }: EvalMetricsProps) {
           const isExpanded = expandedMetrics.has(result.type);
           const metricMeta = getMetricMetadata(result.type);
           const isNonDet = isNonDeterministic(result.type);
-          const suiteMetric = suiteMetrics?.find((m) => m.type === result.type);
+          const evalMetric = evalMetrics?.find((m) => m.type === result.type);
           
           return (
             <Box
@@ -113,13 +113,13 @@ export function EvalMetrics({ results, suiteMetrics }: EvalMetricsProps) {
                     )}
 
                     {/* Provider/Model for non-deterministic metrics */}
-                    {isNonDet && suiteMetric?.model && (
+                    {isNonDet && evalMetric?.model && (
                       <Box>
                         <Text fontSize="xs" fontWeight="semibold" mb={1}>
                           Evaluation Model
                         </Text>
                         <Text fontSize="xs" color="fg.muted">
-                          {suiteMetric.model.replace(':', ' / ')}
+                          {evalMetric.model.replace(':', ' / ')}
                         </Text>
                       </Box>
                     )}

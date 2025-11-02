@@ -21,7 +21,7 @@ interface GetLatestButtonProps {
 
 /**
  * Generic Get Latest from Base Branch button component
- * Can be used across all artifact types (prompts, tests, tools, test suites)
+ * Can be used across all artifact types (prompts, tests, tools, evals)
  */
 export function GetLatestButton({
   repoName,
@@ -87,7 +87,7 @@ export function GetLatestButton({
               </Dialog.Header>
               <Dialog.Body>
                 <p>
-                  This will reset all artifacts (prompts, tests, tools, and test suites) in this repository to match the configured base branch.
+                  This will reset all artifacts (prompts, tests, tools, and evals) in this repository to match the configured base branch.
                   <br /><br />
                   <strong>Warning:</strong> Any local changes that haven&apos;t been pushed to the remote repository will be permanently lost.
                   Changes that have been pushed will remain available in your remote branch.

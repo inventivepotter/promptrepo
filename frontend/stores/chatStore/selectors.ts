@@ -1,5 +1,5 @@
 import { ChatStore, ChatSession } from './types';
-import { ChatMessage, Tool } from '@/app/(prompts)/_types/ChatState';
+import { ChatMessage, Tool } from '@/app/prompts/_types/ChatState';
 import { ModelConfig } from './types';
 
 // Session Selectors

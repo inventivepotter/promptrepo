@@ -1,115 +1,127 @@
 'use client';
 
-import React from 'react';
-import { Box, VStack, HStack, Text, Badge, IconButton, Card, Checkbox } from '@chakra-ui/react';
-import { LuPencil, LuTrash2, LuPlay } from 'react-icons/lu';
-import type { EvalDefinition } from '@/types/eval';
+import React, { useState } from 'react';
+import { Box, VStack, Text, Button, HStack, Input, SimpleGrid } from '@chakra-ui/react';
+import { LuPlus } from 'react-icons/lu';
+import { EvalCard } from './EvalCard';
+import { DeletePromptDialog } from '../DeletePromptDialog';
+import { useEvalStore } from '@/stores/evalStore';
+import type { EvalSummary } from '@/types/eval';
 
 interface EvalListProps {
-  evals: EvalDefinition[];
-  onEdit: (evalName: string) => void;
-  onDelete: (evalName: string) => void;
-  onRun: (evalName: string) => void;
-  onToggleEnabled: (evalName: string, enabled: boolean) => void;
+  repoName: string;
+  onCreateNew: () => void;
+  onViewEval: (evalName: string) => void;
 }
 
-export function EvalList({ evals, onEdit, onDelete, onRun, onToggleEnabled }: EvalListProps) {
-  if (evals.length === 0) {
+export function EvalList({ repoName, onCreateNew, onViewEval }: EvalListProps) {
+  const evals = useEvalStore((state) => state.evals);
+  const deleteEval = useEvalStore((state) => state.deleteEval);
+  const isLoading = useEvalStore((state) => state.isLoading);
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [evalToDelete, setEvalToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Filter evals based on search query
+  const filteredEvals = evals.filter((evalData) => {
+    const query = searchQuery.toLowerCase();
     return (
-      <Box
-        p={8}
-        textAlign="center"
-        border="1px dashed"
-        borderColor="gray.300"
-        borderRadius="md"
-      >
-        <Text fontSize="lg" color="gray.600">
-          No evals in this suite
-        </Text>
-        <Text fontSize="sm" color="gray.500">
-          Add an eval to get started
-        </Text>
+      evalData.name.toLowerCase().includes(query) ||
+      evalData.description.toLowerCase().includes(query) ||
+      evalData.tags.some((tag) => tag.toLowerCase().includes(query))
+    );
+  });
+
+  const handleDeleteClick = (evalName: string) => {
+    setEvalToDelete(evalName);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!evalToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      await deleteEval(repoName, evalToDelete);
+      setDeleteDialogOpen(false);
+      setEvalToDelete(null);
+    } catch (error) {
+      console.error('Failed to delete eval:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Box p={6} textAlign="center">
+        <Text>Loading evals...</Text>
       </Box>
     );
   }
 
   return (
-    <VStack align="stretch" gap={3}>
-      {evals.map((evalItem) => (
-        <Card.Root key={evalItem.name} opacity={evalItem.enabled ? 1 : 0.6}>
-          <Card.Body>
-            <HStack justify="space-between" align="start">
-              <VStack align="start" gap={2} flex={1}>
-                <HStack gap={2}>
-                  <Text fontSize="md" fontWeight="semibold">
-                    {evalItem.name}
-                  </Text>
-                  {!evalItem.enabled && (
-                    <Badge variant="subtle" colorPalette="gray">
-                      Disabled
-                    </Badge>
-                  )}
-                </HStack>
-                
-                {evalItem.description && (
-                  <Text fontSize="sm" color="gray.600">
-                    {evalItem.description}
-                  </Text>
-                )}
+    <Box>
+      <VStack align="stretch" gap={4}>
+        <HStack justify="space-between">
+          <Input
+            placeholder="Search evals..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            maxW="400px"
+          />
+          <Button onClick={onCreateNew}>
+            <LuPlus /> Create Eval
+          </Button>
+        </HStack>
 
-                <HStack gap={2} flexWrap="wrap" fontSize="sm">
-                  <Badge variant="outline" colorPalette="blue">
-                    Prompt: {evalItem.prompt_reference}
-                  </Badge>
-                  {evalItem.template_variables && Object.keys(evalItem.template_variables).length > 0 && (
-                    <Badge variant="outline" colorPalette="green">
-                      {Object.keys(evalItem.template_variables || {}).length} variables
-                    </Badge>
-                  )}
-                </HStack>
-              </VStack>
+        {filteredEvals.length === 0 ? (
+          <Box
+            p={8}
+            textAlign="center"
+            border="1px dashed"
+            borderColor="gray.300"
+            borderRadius="md"
+          >
+            <Text fontSize="lg" color="gray.600" mb={2}>
+              {evals.length === 0
+                ? 'No evals yet'
+                : 'No evals match your search'}
+            </Text>
+            {evals.length === 0 && (
+              <Text fontSize="sm" color="gray.500" mb={4}>
+                Create your first eval to get started
+              </Text>
+            )}
+            {evals.length === 0 && (
+              <Button onClick={onCreateNew} variant="outline">
+                <LuPlus /> Create Eval
+              </Button>
+            )}
+          </Box>
+        ) : (
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={4}>
+            {filteredEvals.map((evalData) => (
+              <EvalCard
+                key={evalData.name}
+                eval={evalData}
+                onView={onViewEval}
+                onDelete={handleDeleteClick}
+              />
+            ))}
+          </SimpleGrid>
+        )}
+      </VStack>
 
-              <HStack gap={1}>
-                <Checkbox.Root
-                  checked={evalItem.enabled}
-                  onCheckedChange={(e) => onToggleEnabled(eval.name, !!e.checked)}
-                  size="sm"
-                >
-                  <Checkbox.HiddenInput />
-                  <Checkbox.Control />
-                </Checkbox.Root>
-                <IconButton
-                  aria-label="Run eval"
-                  size="sm"
-                  variant="ghost"
-                  colorPalette="green"
-                  onClick={() => onRun(eval.name)}
-                  disabled={!evalItem.enabled}
-                >
-                  <LuPlay />
-                </IconButton>
-                <IconButton
-                  aria-label="Edit eval"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => onEdit(eval.name)}
-                >
-                  <LuPencil />
-                </IconButton>
-                <IconButton
-                  aria-label="Delete eval"
-                  size="sm"
-                  variant="ghost"
-                  colorPalette="red"
-                  onClick={() => onDelete(eval.name)}
-                >
-                  <LuTrash2 />
-                </IconButton>
-              </HStack>
-            </HStack>
-          </Card.Body>
-        </Card.Root>
-      ))}
-    </VStack>
+      <DeletePromptDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        promptName={evalToDelete || ''}
+        onConfirm={handleDeleteConfirm}
+        isDeleting={isDeleting}
+      />
+    </Box>
   );
 }

@@ -2,7 +2,7 @@
 import type { StateCreator } from '@/lib/zustand';
 import { chatService } from '@/services/llm/chat/chatService';
 import type { ChatStore, ChatActions, ChatSession } from './types';
-import type { ChatMessage, Tool } from '@/app/(prompts)/_types/ChatState';
+import type { ChatMessage, Tool } from '@/app/prompts/_types/ChatState';
 import type { components } from '@/types/generated/api';
 
 type PromptMeta = components['schemas']['PromptMeta'];

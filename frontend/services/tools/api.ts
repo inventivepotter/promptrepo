@@ -1,6 +1,10 @@
 import httpClient from '@/lib/httpClient';
 import type { OpenApiResponse } from '@/types/OpenApiResponse';
-import type { ToolDefinition, ToolSummary, ValidateToolResponse } from '@/types/tools';
+import type { components } from '@/types/generated/api';
+
+// Type aliases from generated types
+type ToolMeta = components['schemas']['ToolMeta'];
+type ToolData = components['schemas']['ToolData-Input'];
 
 /**
  * Tools API client matching backend endpoints
@@ -11,59 +15,59 @@ export const toolsApi = {
    * List all tools in a repository
    * GET /api/v0/tools/?repo_name=...
    */
-  listTools: async (repoName: string): Promise<OpenApiResponse<ToolSummary[]>> => {
+  listTools: async (repoName: string = 'default'): Promise<OpenApiResponse<ToolMeta[]>> => {
     const searchParams = new URLSearchParams();
     searchParams.append('repo_name', repoName);
     
-    return await httpClient.get<ToolSummary[]>(`/api/v0/tools/?${searchParams.toString()}`);
+    return await httpClient.get<ToolMeta[]>(`/api/v0/tools/?${searchParams.toString()}`);
   },
 
   /**
-   * Get a specific tool by name
-   * GET /api/v0/tools/{tool_name}?repo_name=...
+   * Get a specific tool by file path
+   * GET /api/v0/tools/{repo_name}/{file_path}
    */
-  getTool: async (toolName: string, repoName: string): Promise<OpenApiResponse<ToolDefinition>> => {
-    const searchParams = new URLSearchParams();
-    searchParams.append('repo_name', repoName);
+  getTool: async (repoName: string, filePath: string): Promise<OpenApiResponse<ToolMeta>> => {
+    const encodedRepoName = btoa(repoName);
+    const encodedFilePath = btoa(filePath);
     
-    return await httpClient.get<ToolDefinition>(`/api/v0/tools/${encodeURIComponent(toolName)}?${searchParams.toString()}`);
+    return await httpClient.get<ToolMeta>(`/api/v0/tools/${encodedRepoName}/${encodedFilePath}`);
   },
 
   /**
    * Create or update a tool
-   * POST /api/v0/tools/
+   * POST /api/v0/tools/{repo_name}/{file_path}
    */
-  saveTool: async (tool: ToolDefinition, repoName: string): Promise<OpenApiResponse<{ tool: ToolDefinition; pr_info?: { pr_url?: string; pr_number?: number; pr_id?: number } | null }>> => {
-    return await httpClient.post<{ tool: ToolDefinition; pr_info?: { pr_url?: string; pr_number?: number; pr_id?: number } | null }>(
-      '/api/v0/tools/',
-      {
-        repo_name: repoName,
-        ...tool
-      }
+  saveTool: async (repoName: string, filePath: string, toolData: ToolData): Promise<OpenApiResponse<ToolMeta>> => {
+    const encodedRepoName = btoa(repoName);
+    const encodedFilePath = filePath === 'new' ? 'new' : btoa(filePath);
+    
+    return await httpClient.post<ToolMeta>(
+      `/api/v0/tools/${encodedRepoName}/${encodedFilePath}`,
+      toolData
     );
   },
 
   /**
    * Delete a tool
-   * DELETE /api/v0/tools/{tool_name}?repo_name=...
+   * DELETE /api/v0/tools/{repo_name}/{file_path}
    */
-  deleteTool: async (toolName: string, repoName: string): Promise<OpenApiResponse<null>> => {
-    const searchParams = new URLSearchParams();
-    searchParams.append('repo_name', repoName);
+  deleteTool: async (repoName: string, filePath: string): Promise<OpenApiResponse<{ deleted: boolean; file_path: string }>> => {
+    const encodedRepoName = btoa(repoName);
+    const encodedFilePath = btoa(filePath);
     
-    return await httpClient.delete<null>(`/api/v0/tools/${encodeURIComponent(toolName)}?${searchParams.toString()}`);
+    return await httpClient.delete<{ deleted: boolean; file_path: string }>(`/api/v0/tools/${encodedRepoName}/${encodedFilePath}`);
   },
 
   /**
    * Validate a tool
-   * POST /api/v0/tools/{tool_name}/validate?repo_name=...
+   * POST /api/v0/tools/{repo_name}/{file_path}/validate
    */
-  validateTool: async (toolName: string, repoName: string): Promise<OpenApiResponse<ValidateToolResponse>> => {
-    const searchParams = new URLSearchParams();
-    searchParams.append('repo_name', repoName);
+  validateTool: async (repoName: string, filePath: string): Promise<OpenApiResponse<{ valid: boolean; file_path: string }>> => {
+    const encodedRepoName = btoa(repoName);
+    const encodedFilePath = btoa(filePath);
     
-    return await httpClient.post<ValidateToolResponse>(
-      `/api/v0/tools/${encodeURIComponent(toolName)}/validate?${searchParams.toString()}`
+    return await httpClient.post<{ valid: boolean; file_path: string }>(
+      `/api/v0/tools/${encodedRepoName}/${encodedFilePath}/validate`
     );
   },
 };

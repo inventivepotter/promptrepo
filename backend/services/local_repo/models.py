@@ -40,20 +40,6 @@ class RepoStatus(BaseModel):
     error: Optional[str] = None
 
 
-class CommitInfo(BaseModel):
-    """Represents information about a commit."""
-    commit_id: str
-    message: str
-    author: str
-    timestamp: datetime
-    
-    model_config = {
-        "json_encoders": {
-            datetime: lambda v: v.isoformat()
-        }
-    }
-
-
 class PRInfo(BaseModel):
     """
     Pull Request information returned after prompt save operations.
@@ -92,3 +78,24 @@ class ArtifactDiscoveryResult(BaseModel):
             self.prompts.append(file_path)
         elif artifact_type == ArtifactType.TOOL:
             self.tools.append(file_path)
+
+
+class SaveArtifactResult(BaseModel):
+    """Result from saving an artifact."""
+    file_path: str
+    is_update: bool
+    pr_info: Optional[PRInfo] = None
+
+
+class CommitInfo(BaseModel):
+    """Represents information about a commit."""
+    commit_id: str
+    message: str
+    author: str
+    timestamp: datetime
+    
+    model_config = {
+        "json_encoders": {
+            datetime: lambda v: v.isoformat()
+        }
+    }

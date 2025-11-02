@@ -15,14 +15,13 @@ router = APIRouter()
 # Include evals endpoints
 router.include_router(
     evals.router,
-    prefix="/evals",
     tags=["Eval evals"]
 )
 
 # Include eval execution endpoints
 router.include_router(
     execution.router,
-    prefix="/evals",
+    prefix="/executions",
     tags=["Eval Execution"]
 )
 

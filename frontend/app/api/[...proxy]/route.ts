@@ -25,7 +25,8 @@ const PUBLIC_ENDPOINTS = new Set([
   '/api/v0/prompts',
   '/api/v0/llm/completions',
   // Tools endpoints
-  '/api/v0/tools'
+  '/api/v0/tools',
+  '/api/v0/evals'
 ]);
 
 // Define public endpoint prefixes that should be matched with startsWith

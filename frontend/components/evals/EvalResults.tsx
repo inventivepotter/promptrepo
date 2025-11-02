@@ -17,27 +17,27 @@ import {
 import { FaCheckCircle, FaTimesCircle, FaChevronDown, FaChevronRight } from 'react-icons/fa';
 import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
 import { EvalMetrics } from './EvalMetrics';
-import type { EvalSuiteExecutionResult } from '@/types/eval';
+import type { EvalExecutionResult } from '@/types/eval';
 
 interface EvalResultsProps {
-  execution: EvalSuiteExecutionResult;
+  execution: EvalExecutionResult;
 }
 
 export function EvalResults({ execution }: EvalResultsProps) {
-  const [expandedEvals, setExpandedEvals] = useState<Set<string>>(new Set());
+  const [expandedTests, setExpandedTests] = useState<Set<string>>(new Set());
   const [isOpen, setIsOpen] = useState(true);
 
-  const toggleEval = (evalName: string) => {
-    const newExpanded = new Set(expandedEvals);
-    if (newExpanded.has(evalName)) {
-      newExpanded.delete(evalName);
+  const toggleTest = (testName: string) => {
+    const newExpanded = new Set(expandedTests);
+    if (newExpanded.has(testName)) {
+      newExpanded.delete(testName);
     } else {
-      newExpanded.add(evalName);
+      newExpanded.add(testName);
     }
-    setExpandedEvals(newExpanded);
+    setExpandedTests(newExpanded);
   };
 
-  const overallPassed = execution.failed_evals === 0;
+  const overallPassed = execution.failed_tests === 0;
 
   return (
     <Card.Root>
@@ -46,19 +46,19 @@ export function EvalResults({ execution }: EvalResultsProps) {
           <HStack justify="space-between" align="center">
             <Stack flex={1}>
               <HStack gap={2}>
-                <Fieldset.Legend>Eval Results</Fieldset.Legend>
+                <Fieldset.Legend>Test Results</Fieldset.Legend>
                 <Badge colorScheme={overallPassed ? 'green' : 'red'}>
                   {overallPassed ? 'Passed' : 'Failed'}
                 </Badge>
                 <Badge variant="outline">
-                  {execution.passed_evals}/{execution.total_evals} passed
+                  {execution.passed_tests}/{execution.total_tests} passed
                 </Badge>
                 <Badge variant="outline">
                   {(execution.total_execution_time_ms / 1000).toFixed(2)}s
                 </Badge>
               </HStack>
               <Fieldset.HelperText color="text.tertiary">
-                View detailed results for each eval execution
+                View detailed results for each test execution
               </Fieldset.HelperText>
             </Stack>
             <Button
@@ -66,7 +66,7 @@ export function EvalResults({ execution }: EvalResultsProps) {
               _hover={{ bg: "bg.subtle" }}
               size="sm"
               onClick={() => setIsOpen(!isOpen)}
-              aria-label={isOpen ? "Collapse eval results" : "Expand eval results"}
+              aria-label={isOpen ? "Collapse test results" : "Expand test results"}
             >
               <HStack gap={1}>
                 <Text fontSize="xs" fontWeight="medium">
@@ -81,19 +81,19 @@ export function EvalResults({ execution }: EvalResultsProps) {
             <Collapsible.Root open={isOpen}>
               <Collapsible.Content>
                 <VStack gap={3} align="stretch" mt={3}>
-                  {execution.eval_results.map((evalResult) => {
-                    const isExpanded = expandedEvals.has(evalResult.eval_name);
+                  {execution.test_results.map((testResult) => {
+                    const isExpanded = expandedTests.has(testResult.test_name);
                     
                     return (
                       <Card.Root
-                        key={evalResult.eval_name}
+                        key={testResult.test_name}
                         borderWidth="1px"
-                        borderColor={evalResult.overall_passed ? 'green.500' : 'red.500'}
+                        borderColor={testResult.overall_passed ? 'green.500' : 'red.500'}
                       >
                         <Card.Body>
                           <Collapsible.Root open={isExpanded}>
                             <Collapsible.Trigger
-                              onClick={() => toggleEval(evalResult.eval_name)}
+                              onClick={() => toggleTest(testResult.test_name)}
                               width="100%"
                             >
                               <HStack justify="space-between" width="100%">
@@ -104,26 +104,26 @@ export function EvalResults({ execution }: EvalResultsProps) {
                                     color="fg.subtle"
                                   />
                                   <Icon
-                                    as={evalResult.overall_passed ? FaCheckCircle : FaTimesCircle}
+                                    as={testResult.overall_passed ? FaCheckCircle : FaTimesCircle}
                                     boxSize={5}
-                                    color={evalResult.overall_passed ? 'green.500' : 'red.500'}
+                                    color={testResult.overall_passed ? 'green.500' : 'red.500'}
                                   />
                                   <VStack align="start" gap={0}>
-                                    <Text fontWeight="semibold">{evalResult.eval_name}</Text>
+                                    <Text fontWeight="semibold">{testResult.test_name}</Text>
                                     <Text fontSize="sm" color="fg.subtle">
-                                      {evalResult.prompt_reference}
+                                      {testResult.prompt_reference}
                                     </Text>
                                   </VStack>
                                 </HStack>
                                 <HStack gap={2}>
                                   <Badge
-                                    colorScheme={evalResult.overall_passed ? 'green' : 'red'}
+                                    colorScheme={testResult.overall_passed ? 'green' : 'red'}
                                   >
-                                    {(evalResult.metric_results || []).filter(m => m.passed).length}/
-                                    {evalResult.metric_results.length} metrics passed
+                                    {(testResult.metric_results || []).filter(m => m.passed).length}/
+                                    {testResult.metric_results.length} metrics passed
                                   </Badge>
                                   <Badge variant="outline">
-                                    {evalResult.actual_evaluation_fields.execution_time_ms}ms
+                                    {testResult.actual_test_fields.execution_time_ms}ms
                                   </Badge>
                                 </HStack>
                               </HStack>
@@ -132,7 +132,7 @@ export function EvalResults({ execution }: EvalResultsProps) {
                             <Collapsible.Content>
                               <VStack gap={4} align="stretch" pt={4} borderTopWidth="1px" mt={4}>
                                 {/* Template Variables */}
-                                {Object.keys(evalResult.template_variables).length > 0 && (
+                                {Object.keys(testResult.template_variables).length > 0 && (
                                   <Box>
                                     <Text fontSize="sm" fontWeight="semibold" mb={2}>
                                       Template Variables
@@ -144,7 +144,7 @@ export function EvalResults({ execution }: EvalResultsProps) {
                                       fontSize="sm"
                                       fontFamily="mono"
                                     >
-                                      <pre>{JSON.stringify(evalResult.template_variables, null, 2)}</pre>
+                                      <pre>{JSON.stringify(testResult.template_variables, null, 2)}</pre>
                                     </Box>
                                   </Box>
                                 )}
@@ -161,12 +161,12 @@ export function EvalResults({ execution }: EvalResultsProps) {
                                     fontSize="sm"
                                     whiteSpace="pre-wrap"
                                   >
-                                    {evalResult.actual_evaluation_fields.actual_output}
+                                    {testResult.actual_test_fields.actual_output}
                                   </Box>
                                 </Box>
 
                                 {/* Expected Output */}
-                                {evalResult.expected_evaluation_fields?.config && (
+                                {testResult.expected_test_fields?.config && (
                                   <Box>
                                     <Text fontSize="sm" fontWeight="semibold" mb={2}>
                                       Expected Fields
@@ -178,19 +178,19 @@ export function EvalResults({ execution }: EvalResultsProps) {
                                       fontSize="sm"
                                       fontFamily="mono"
                                     >
-                                      <pre>{JSON.stringify(evalResult.expected_evaluation_fields.config, null, 2)}</pre>
+                                      <pre>{JSON.stringify(testResult.expected_test_fields.config, null, 2)}</pre>
                                     </Box>
                                   </Box>
                                 )}
 
                                 {/* Tools Called */}
-                                {evalResult.actual_evaluation_fields.tools_called && evalResult.actual_evaluation_fields.tools_called.length > 0 && (
+                                {testResult.actual_test_fields.tools_called && testResult.actual_test_fields.tools_called.length > 0 && (
                                   <Box>
                                     <Text fontSize="sm" fontWeight="semibold" mb={2}>
                                       Tools Called
                                     </Text>
                                     <VStack align="stretch" gap={1}>
-                                      {evalResult.actual_evaluation_fields.tools_called.map((tool: { [key: string]: unknown }, idx: number) => (
+                                      {testResult.actual_test_fields.tools_called.map((tool: { [key: string]: unknown }, idx: number) => (
                                         <Box
                                           key={idx}
                                           p={2}
@@ -207,10 +207,10 @@ export function EvalResults({ execution }: EvalResultsProps) {
                                 )}
 
                                 {/* Metrics */}
-                                <EvalMetrics results={evalResult.metric_results} />
+                                <EvalMetrics results={testResult.metric_results} />
 
                                 {/* Error */}
-                                {evalResult.actual_evaluation_fields.error && (
+                                {testResult.actual_test_fields.error && (
                                   <Box>
                                     <Text fontSize="sm" fontWeight="semibold" color="red.500" mb={2}>
                                       Error
@@ -222,7 +222,7 @@ export function EvalResults({ execution }: EvalResultsProps) {
                                       fontSize="sm"
                                       color="red.700"
                                     >
-                                      {evalResult.actual_evaluation_fields.error}
+                                      {testResult.actual_test_fields.error}
                                     </Box>
                                   </Box>
                                 )}

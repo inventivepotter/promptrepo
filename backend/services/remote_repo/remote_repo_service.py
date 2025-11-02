@@ -161,7 +161,7 @@ class RemoteRepoService:
             if not repo or repo.user_id != user_id:
                 logger.error(f"Repository {repo_id} not found for user {user_id}")
                 return False
-            base_path = Path(settings.multi_user_repo_path) / user_id
+            base_path = Path(settings.repo_path) / user_id
             
             # Check if already cloned
             if repo.status == RepoStatus.CLONED and repo.local_path:

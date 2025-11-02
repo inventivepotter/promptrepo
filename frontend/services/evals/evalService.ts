@@ -2,10 +2,10 @@ import EvalApi from './api';
 import { errorNotification } from '@/lib/notifications';
 import { isStandardResponse, isErrorResponse } from '@/types/OpenApiResponse';
 import type {
-  EvalSuiteData,
-  EvalSuiteSummary,
-  EvalSuiteExecutionResult,
-  EvalExecutionResult
+  EvalData,
+  EvalSummary,
+  EvalExecutionResult,
+  TestExecutionResult
 } from '@/types/eval';
 
 /**
@@ -14,20 +14,20 @@ import type {
  */
 export class EvalService {
   /**
-   * List all eval suites in a repository
+   * List all evals in a repository
    * @param repoName - Repository name
-   * @returns List of eval suite summaries
+   * @returns List of eval summaries
    */
-  static async listEvalSuites(repoName: string): Promise<EvalSuiteSummary[]> {
+  static async listEvals(repoName: string): Promise<EvalSummary[]> {
     try {
-      const result = await EvalApi.listEvalSuites(repoName);
+      const result = await EvalApi.listEvals(repoName);
 
       if (isErrorResponse(result)) {
         errorNotification(
-          result.title || 'Failed to Load Eval Suites',
-          result.detail || 'Unable to load eval suites from server.'
+          result.title || 'Failed to Load Evals',
+          result.detail || 'Unable to load evals from server.'
         );
-        throw new Error(result.detail || 'Failed to load eval suites');
+        throw new Error(result.detail || 'Failed to load evals');
       }
 
       if (!isStandardResponse(result) || !result.data) {
@@ -52,21 +52,21 @@ export class EvalService {
   }
 
   /**
-   * Get specific eval suite definition
+   * Get specific eval definition
    * @param repoName - Repository name
-   * @param suiteName - Eval suite name
-   * @returns Eval suite data
+   * @param evalName - Eval name
+   * @returns Eval data
    */
-  static async getEvalSuite(repoName: string, suiteName: string): Promise<EvalSuiteData> {
+  static async getEval(repoName: string, evalName: string): Promise<EvalData> {
     try {
-      const result = await EvalApi.getEvalSuite(repoName, suiteName);
+      const result = await EvalApi.getEval(repoName, evalName);
 
       if (isErrorResponse(result)) {
         errorNotification(
-          result.title || 'Failed to Load Eval Suite',
-          result.detail || `Unable to load eval suite "${suiteName}".`
+          result.title || 'Failed to Load Eval',
+          result.detail || `Unable to load eval "${evalName}".`
         );
-        throw new Error(result.detail || 'Failed to load eval suite');
+        throw new Error(result.detail || 'Failed to load eval');
       }
 
       if (!isStandardResponse(result) || !result.data) {
@@ -88,21 +88,21 @@ export class EvalService {
   }
 
   /**
-   * Create or update eval suite
+   * Create or update eval
    * @param repoName - Repository name
-   * @param suiteData - Eval suite data to save
-   * @returns Saved eval suite data
+   * @param evalData - Eval data to save
+   * @returns Saved eval data
    */
-  static async saveEvalSuite(repoName: string, suiteData: EvalSuiteData): Promise<EvalSuiteData> {
+  static async saveEval(repoName: string, evalData: EvalData): Promise<EvalData> {
     try {
-      const result = await EvalApi.saveEvalSuite(repoName, suiteData);
+      const result = await EvalApi.saveEval(repoName, evalData);
 
       if (isErrorResponse(result)) {
         errorNotification(
-          result.title || 'Failed to Save Eval Suite',
-          result.detail || 'Unable to save eval suite. Changes may not be saved.'
+          result.title || 'Failed to Save Eval',
+          result.detail || 'Unable to save eval. Changes may not be saved.'
         );
-        throw new Error(result.detail || 'Failed to save eval suite');
+        throw new Error(result.detail || 'Failed to save eval');
       }
 
       if (!isStandardResponse(result) || !result.data) {
@@ -124,21 +124,21 @@ export class EvalService {
   }
 
   /**
-   * Delete eval suite
+   * Delete eval
    * @param repoName - Repository name
-   * @param suiteName - Eval suite name
+   * @param evalName - Eval name
    * @returns Success status
    */
-  static async deleteEvalSuite(repoName: string, suiteName: string): Promise<boolean> {
+  static async deleteEval(repoName: string, evalName: string): Promise<boolean> {
     try {
-      const result = await EvalApi.deleteEvalSuite(repoName, suiteName);
+      const result = await EvalApi.deleteEval(repoName, evalName);
 
       if (isErrorResponse(result)) {
         errorNotification(
-          result.title || 'Failed to Delete Eval Suite',
-          result.detail || `Unable to delete eval suite "${suiteName}".`
+          result.title || 'Failed to Delete Eval',
+          result.detail || `Unable to delete eval "${evalName}".`
         );
-        throw new Error(result.detail || 'Failed to delete eval suite');
+        throw new Error(result.detail || 'Failed to delete eval');
       }
 
       if (!isStandardResponse(result) || !result.data) {
@@ -160,60 +160,19 @@ export class EvalService {
   }
 
   /**
-   * Execute eval suite or specific evals
+   * Execute eval or specific tests
    * @param repoName - Repository name
-   * @param suiteName - Eval suite name
-   * @param evalNames - Optional array of specific eval names to execute
-   * @returns Eval suite execution results
-   */
-  static async executeEvalSuite(
-    repoName: string,
-    suiteName: string,
-    evalNames?: string[]
-  ): Promise<EvalSuiteExecutionResult> {
-    try {
-      const result = await EvalApi.executeEvalSuite(repoName, suiteName, evalNames);
-
-      if (isErrorResponse(result)) {
-        errorNotification(
-          result.title || 'Eval Execution Failed',
-          result.detail || `Unable to execute eval suite "${suiteName}".`
-        );
-        throw new Error(result.detail || 'Eval execution failed');
-      }
-
-      if (!isStandardResponse(result) || !result.data) {
-        errorNotification(
-          'Unexpected Response',
-          'Received an unexpected response from the server.'
-        );
-        throw new Error('Unexpected response format');
-      }
-
-      return result.data;
-    } catch (error: unknown) {
-      errorNotification(
-        'Connection Error',
-        'Unable to connect to eval execution service.'
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Execute single eval
-   * @param repoName - Repository name
-   * @param suiteName - Eval suite name
    * @param evalName - Eval name
-   * @returns Eval execution result
+   * @param testNames - Optional array of specific test names to execute
+   * @returns Eval execution results
    */
-  static async executeSingleEval(
+  static async executeEval(
     repoName: string,
-    suiteName: string,
-    evalName: string
+    evalName: string,
+    testNames?: string[]
   ): Promise<EvalExecutionResult> {
     try {
-      const result = await EvalApi.executeSingleEval(repoName, suiteName, evalName);
+      const result = await EvalApi.executeEval(repoName, evalName, testNames);
 
       if (isErrorResponse(result)) {
         errorNotification(
@@ -242,24 +201,65 @@ export class EvalService {
   }
 
   /**
-   * Get execution history for eval suite
+   * Execute single test
    * @param repoName - Repository name
-   * @param suiteName - Eval suite name
+   * @param evalName - Eval name
+   * @param testName - Test name
+   * @returns Test execution result
+   */
+  static async executeSingleTest(
+    repoName: string,
+    evalName: string,
+    testName: string
+  ): Promise<TestExecutionResult> {
+    try {
+      const result = await EvalApi.executeSingleTest(repoName, evalName, testName);
+
+      if (isErrorResponse(result)) {
+        errorNotification(
+          result.title || 'Test Execution Failed',
+          result.detail || `Unable to execute test "${testName}".`
+        );
+        throw new Error(result.detail || 'Test execution failed');
+      }
+
+      if (!isStandardResponse(result) || !result.data) {
+        errorNotification(
+          'Unexpected Response',
+          'Received an unexpected response from the server.'
+        );
+        throw new Error('Unexpected response format');
+      }
+
+      return result.data;
+    } catch (error: unknown) {
+      errorNotification(
+        'Connection Error',
+        'Unable to connect to eval execution service.'
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get execution history for eval
+   * @param repoName - Repository name
+   * @param evalName - Eval name
    * @param limit - Maximum number of executions to return
    * @returns List of execution results
    */
   static async getExecutionHistory(
     repoName: string,
-    suiteName: string,
+    evalName: string,
     limit: number = 10
-  ): Promise<EvalSuiteExecutionResult[]> {
+  ): Promise<EvalExecutionResult[]> {
     try {
-      const result = await EvalApi.getExecutionHistory(repoName, suiteName, limit);
+      const result = await EvalApi.getExecutionHistory(repoName, evalName, limit);
 
       if (isErrorResponse(result)) {
         errorNotification(
           result.title || 'Failed to Load Execution History',
-          result.detail || `Unable to load execution history for "${suiteName}".`
+          result.detail || `Unable to load execution history for "${evalName}".`
         );
         throw new Error(result.detail || 'Failed to load execution history');
       }
@@ -283,22 +283,22 @@ export class EvalService {
   }
 
   /**
-   * Get latest execution for eval suite
+   * Get latest execution for eval
    * @param repoName - Repository name
-   * @param suiteName - Eval suite name
+   * @param evalName - Eval name
    * @returns Latest execution result or null
    */
   static async getLatestExecution(
     repoName: string,
-    suiteName: string
-  ): Promise<EvalSuiteExecutionResult | null> {
+    evalName: string
+  ): Promise<EvalExecutionResult | null> {
     try {
-      const result = await EvalApi.getLatestExecution(repoName, suiteName);
+      const result = await EvalApi.getLatestExecution(repoName, evalName);
 
       if (isErrorResponse(result)) {
         errorNotification(
           result.title || 'Failed to Load Latest Execution',
-          result.detail || `Unable to load latest execution for "${suiteName}".`
+          result.detail || `Unable to load latest execution for "${evalName}".`
         );
         throw new Error(result.detail || 'Failed to load latest execution');
       }

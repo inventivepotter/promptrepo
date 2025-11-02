@@ -2,10 +2,11 @@
 Eval CRUD endpoints with standardized responses.
 """
 import logging
+import base64
 from typing import List
-from fastapi import APIRouter, Request, status, Body, Query
+from fastapi import APIRouter, Request, status, Body, Query, Path
 
-from services.evals.models import EvalData, EvalSummary
+from services.artifacts.evals.models import EvalData, EvalMeta
 from api.deps import EvalMetaServiceDep, CurrentUserDep, CurrentSessionDep
 from middlewares.rest import (
     StandardResponse,
@@ -20,8 +21,8 @@ router = APIRouter()
 
 
 @router.get(
-    "",
-    response_model=StandardResponse[List[EvalSummary]],
+    "/",
+    response_model=StandardResponse[List[EvalMeta]],
     status_code=status.HTTP_200_OK,
     responses={
         404: {
@@ -54,17 +55,17 @@ router = APIRouter()
     summary="List evals",
     description="Get list of all evals in a repository with summary information.",
 )
-async def list_evals(
+async def discover(
     request: Request,
     eval_service: EvalMetaServiceDep,
     user_id: CurrentUserDep,
     repo_name: str = Query(..., description="Repository name")
-) -> StandardResponse[List[EvalSummary]]:
+) -> StandardResponse[List[EvalMeta]]:
     """
     List all evals in a repository.
     
     Returns:
-        StandardResponse[List[EvalSummary]]: List of eval summaries
+        StandardResponse[List[EvalMeta]]: List of eval metadata
 
     Raises:
         NotFoundException: When repository doesn't exist
@@ -78,7 +79,7 @@ async def list_evals(
             extra={"request_id": request_id, "user_id": user_id}
         )
         
-        evals = await eval_service.list_evals(user_id, repo_name)
+        evals = await eval_service.discover(user_id=user_id, repo_name=repo_name)
         
         logger.info(
             f"Found {len(evals)} evals in {repo_name}",
@@ -106,8 +107,8 @@ async def list_evals(
 
 
 @router.get(
-    "/{eval_name}",
-    response_model=StandardResponse[EvalData],
+    "/{repo_name}/{file_path}",
+    response_model=StandardResponse[EvalMeta],
     status_code=status.HTTP_200_OK,
     responses={
         404: {
@@ -140,18 +141,18 @@ async def list_evals(
     summary="Get eval",
     description="Get detailed information about a specific eval including all eval definitions.",
 )
-async def get_eval(
+async def get(
     request: Request,
     eval_service: EvalMetaServiceDep,
     user_id: CurrentUserDep,
-    name: str,
-    repo_name: str = Query(..., description="Repository name")
-) -> StandardResponse[EvalData]:
+    repo_name: str = Path(..., description="Base64-encoded repository name"),
+    file_path: str = Path(..., description="Base64-encoded eval file path")
+) -> StandardResponse[EvalMeta]:
     """
     Get specific eval definition.
     
     Returns:
-        StandardResponse[EvalData]: Eval definition
+        StandardResponse[EvalMeta]: Eval metadata
     
     Raises:
         NotFoundException: When eval doesn't exist
@@ -160,20 +161,30 @@ async def get_eval(
     request_id = request.state.request_id
     
     try:
+        # Decode base64-encoded repo_name and file path
+        decoded_repo_name = base64.b64decode(repo_name).decode('utf-8')
+        decoded_file_path = base64.b64decode(file_path).decode('utf-8')
+        
         logger.info(
-            f"Getting eval {name} from repo {repo_name}",
-            extra={"request_id": request_id, "user_id": user_id}
+            f"Getting eval from {decoded_file_path} in repo {decoded_repo_name}",
+            extra={"request_id": request_id, "user_id": user_id, "file_path": decoded_file_path}
         )
         
-        eval_data = await eval_service.get_eval(user_id, repo_name, name)
+        eval_meta = await eval_service.get(user_id=user_id, repo_name=decoded_repo_name, file_path=decoded_file_path)
+        
+        if not eval_meta:
+            raise NotFoundException(
+                resource="Eval",
+                identifier=decoded_file_path
+            )
         
         logger.info(
-            f"Retrieved eval {name}",
-            extra={"request_id": request_id, "user_id": user_id}
+            f"Retrieved eval from {decoded_file_path}",
+            extra={"request_id": request_id, "user_id": user_id, "file_path": decoded_file_path}
         )
         
         return success_response(
-            data=eval_data,
+            data=eval_meta.model_dump(mode='json'),
             message="Eval retrieved successfully",
             meta={"request_id": request_id}
         )
@@ -181,20 +192,26 @@ async def get_eval(
     except (NotFoundException, AppException):
         raise
     except Exception as e:
+        try:
+            decoded_repo_name = base64.b64decode(repo_name).decode('utf-8')
+            decoded_file_path = base64.b64decode(file_path).decode('utf-8')
+        except:
+            decoded_repo_name = repo_name
+            decoded_file_path = file_path
         logger.error(
-            f"Failed to get eval {name}: {str(e)}",
+            f"Failed to get eval from {decoded_file_path}: {str(e)}",
             exc_info=True,
-            extra={"request_id": request_id, "user_id": user_id}
+            extra={"request_id": request_id, "user_id": user_id, "file_path": decoded_file_path}
         )
         raise AppException(
-            message=f"Failed to retrieve eval {name}",
+            message="Failed to retrieve eval",
             detail=str(e)
         )
 
 
 @router.post(
-    "",
-    response_model=StandardResponse[EvalData],
+    "/{repo_name}/{file_path}",
+    response_model=StandardResponse[EvalMeta],
     status_code=status.HTTP_200_OK,
     responses={
         404: {
@@ -225,21 +242,22 @@ async def get_eval(
         }
     },
     summary="Create or update eval",
-    description="Create a new eval or update an existing one. The eval name is taken from the request body.",
+    description="Create a new eval or update an existing one. Provide file_path for updates, or use 'new' for creation with auto-generated path.",
 )
-async def save_eval(
+async def save(
     request: Request,
     eval_service: EvalMetaServiceDep,
     user_id: CurrentUserDep,
     user_session: CurrentSessionDep,
     eval_data: EvalData = Body(...),
-    repo_name: str = Query(..., description="Repository name")
-) -> StandardResponse[EvalData]:
+    repo_name: str = Path(..., description="Base64-encoded repository name"),
+    file_path: str = Path(..., description="Base64-encoded eval file path or 'new' for creation")
+) -> StandardResponse[EvalMeta]:
     """
     Create or update eval with git workflow integration.
     
     Returns:
-        StandardResponse[EvalData]: Saved eval
+        StandardResponse[EvalMeta]: Saved eval metadata
     
     Raises:
         NotFoundException: When repository doesn't exist
@@ -248,23 +266,37 @@ async def save_eval(
     request_id = request.state.request_id
     
     try:
+        # Decode base64-encoded repo_name
+        decoded_repo_name = base64.b64decode(repo_name).decode('utf-8')
+        
+        # Decode base64-encoded file path if provided (skip for 'new')
+        decoded_file_path = None
+        if file_path and file_path not in ('new', 'null', 'undefined'):
+            try:
+                decoded_file_path = base64.b64decode(file_path).decode('utf-8')
+            except:
+                decoded_file_path = None
+        
+        action = "Updating" if decoded_file_path else "Creating"
         logger.info(
-            f"Saving eval {eval_data.eval.name} to repo {repo_name}",
-            extra={"request_id": request_id, "user_id": user_id}
+            f"{action} eval {eval_data.eval.name} in repo {decoded_repo_name}",
+            extra={"request_id": request_id, "user_id": user_id, "repo_name": decoded_repo_name, "file_path": decoded_file_path}
         )
         
         # Get OAuth token and user info from session
         oauth_token = getattr(user_session, 'oauth_token', None)
         
         # Get user information for git commit author
-        user = user_session.user if hasattr(user_session, 'user') else None
-        author_name = user.oauth_name or user.oauth_username if user else None
-        author_email = user.oauth_email if user else None
+        user = getattr(user_session, 'user', None)
+        author_name = (getattr(user, 'oauth_name', None)
+                       or getattr(user, 'oauth_username', None))
+        author_email = getattr(user, 'oauth_email', None)
         
-        saved_eval, pr_info = await eval_service.save_eval(
+        saved_eval_meta, pr_info = await eval_service.save(
             user_id=user_id,
-            repo_name=repo_name,
-            eval_data=eval_data,
+            repo_name=decoded_repo_name,
+            artifact_data=eval_data,
+            file_path=decoded_file_path,
             oauth_token=oauth_token,
             author_name=author_name,
             author_email=author_email,
@@ -276,15 +308,10 @@ async def save_eval(
             extra={"request_id": request_id, "user_id": user_id}
         )
         
-        # Include PR info in meta if available
-        meta_data = {"request_id": request_id}
-        if pr_info:
-            meta_data["pr_info"] = pr_info
-        
         return success_response(
-            data=saved_eval,
+            data=saved_eval_meta.model_dump(mode='json'),
             message="Eval saved successfully",
-            meta=meta_data
+            meta={"request_id": request_id}
         )
         
     except (NotFoundException, AppException):
@@ -302,7 +329,7 @@ async def save_eval(
 
 
 @router.delete(
-    "/{eval_name}",
+    "/{repo_name}/{file_path}",
     response_model=StandardResponse[dict],
     status_code=status.HTTP_200_OK,
     responses={
@@ -336,12 +363,12 @@ async def save_eval(
     summary="Delete eval",
     description="Delete an eval and all its execution history.",
 )
-async def delete_eval(
+async def delete(
     request: Request,
     eval_service: EvalMetaServiceDep,
     user_id: CurrentUserDep,
-    name: str,
-    repo_name: str = Query(..., description="Repository name")
+    repo_name: str = Path(..., description="Base64-encoded repository name"),
+    file_path: str = Path(..., description="Base64-encoded eval file path")
 ) -> StandardResponse[dict]:
     """
     Delete eval.
@@ -356,25 +383,30 @@ async def delete_eval(
     request_id = request.state.request_id
     
     try:
+        # Decode base64-encoded repo_name and file path
+        decoded_repo_name = base64.b64decode(repo_name).decode('utf-8')
+        decoded_file_path = base64.b64decode(file_path).decode('utf-8')
+        
         logger.info(
-            f"Deleting eval {name} from repo {repo_name}",
-            extra={"request_id": request_id, "user_id": user_id}
+            f"Deleting eval from {decoded_file_path} in repo {decoded_repo_name}",
+            extra={"request_id": request_id, "user_id": user_id, "file_path": decoded_file_path}
         )
         
-        success = await eval_service.delete_eval(user_id, repo_name, name)
+        success = await eval_service.delete(user_id=user_id, repo_name=decoded_repo_name, file_path=decoded_file_path)
         
         if not success:
-            raise AppException(
-                message=f"Failed to delete eval {name}"
+            raise NotFoundException(
+                resource="Eval",
+                identifier=decoded_file_path
             )
         
         logger.info(
-            f"Deleted eval {name}",
-            extra={"request_id": request_id, "user_id": user_id}
+            f"Deleted eval from {decoded_file_path}",
+            extra={"request_id": request_id, "user_id": user_id, "file_path": decoded_file_path}
         )
         
         return success_response(
-            data={"deleted": True, "eval_name": name},
+            data={"deleted": True, "file_path": decoded_file_path},
             message="Eval deleted successfully",
             meta={"request_id": request_id}
         )
@@ -382,12 +414,18 @@ async def delete_eval(
     except (NotFoundException, AppException):
         raise
     except Exception as e:
+        try:
+            decoded_repo_name = base64.b64decode(repo_name).decode('utf-8')
+            decoded_file_path = base64.b64decode(file_path).decode('utf-8')
+        except:
+            decoded_repo_name = repo_name
+            decoded_file_path = file_path
         logger.error(
-            f"Failed to delete eval {name}: {str(e)}",
+            f"Failed to delete eval from {decoded_file_path}: {str(e)}",
             exc_info=True,
-            extra={"request_id": request_id, "user_id": user_id}
+            extra={"request_id": request_id, "user_id": user_id, "file_path": decoded_file_path}
         )
         raise AppException(
-            message=f"Failed to delete eval {name}",
+            message="Failed to delete eval",
             detail=str(e)
         )

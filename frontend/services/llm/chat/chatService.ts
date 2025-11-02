@@ -1,6 +1,6 @@
 import { errorNotification } from '@/lib/notifications';
 import { ChatApi, type ChatCompletionRequest } from './api';
-import type { OpenAIMessage, ChatMessage } from '@/app/(prompts)/_types/ChatState';
+import type { OpenAIMessage, ChatMessage } from '@/app/prompts/_types/ChatState';
 import { isStandardResponse, isErrorResponse } from '@/types/OpenApiResponse';
 import type { components } from '@/types/generated/api';
 

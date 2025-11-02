@@ -10,7 +10,7 @@ from typing import List
 import logging
 
 from api.deps import CurrentUserDep, PromptServiceDep, ConfigServiceDep, RemoteRepoServiceDep, DBSession, CurrentSessionDep
-from services.prompt.models import PromptMeta
+from services.artifacts.prompt.models import PromptMeta
 from services.local_repo.local_repo_service import LocalRepoService
 from middlewares.rest import (
     StandardResponse,
@@ -146,7 +146,7 @@ async def discover_repository_prompts(
                 continue
                 
             try:
-                discovered_prompts = await prompt_service.discover_prompts(
+                discovered_prompts = await prompt_service.discover(
                     user_id=user_id,
                     repo_name=repo_name
                 )

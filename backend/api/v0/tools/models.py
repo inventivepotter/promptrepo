@@ -1,31 +1,8 @@
 """
 Request and response models for the tools API endpoints.
 """
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field
-
-from services.tool.models import (
-    ParametersDefinition,
-    MockConfig,
-    ToolDefinition,
-    ReturnsSchema
-)
-from services.local_repo.models import PRInfo
-
-
-class CreateToolRequest(BaseModel):
-    """Request model for creating/updating a tool."""
-    
-    name: str = Field(description="Tool name in function-name format")
-    description: str = Field(description="Human-readable description")
-    parameters: ParametersDefinition = Field(
-        default_factory=lambda: ParametersDefinition(type="object", properties={}, required=[]),
-        description="OpenAI-compatible parameters"
-    )
-    returns: Optional[ReturnsSchema] = Field(None, description="Return type schema")
-    mock: MockConfig = Field(description="Mock configuration")
-    repo_name: Optional[str] = Field("default", description="Repository name")
-
 
 class MockExecutionRequest(BaseModel):
     """Request model for executing mock response with parameters."""
@@ -45,10 +22,3 @@ class MockExecutionResponse(BaseModel):
         default_factory=dict,
         description="Parameters that were used in execution"
     )
-
-
-class ToolSaveResponse(BaseModel):
-    """Response model for tool save operation with git workflow."""
-    
-    tool: ToolDefinition = Field(description="The saved tool definition")
-    pr_info: Optional[Dict[str, Any]] = Field(None, description="Pull request information if PR was created")

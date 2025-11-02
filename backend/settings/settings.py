@@ -36,17 +36,16 @@ class Settings(BaseSettings):
         description="Secret key for session and other data encryption"
     )
 
-    # Core Repository Paths
-    local_repo_path: str = Field(
-        default="/persistence/repos/",
-        description="Path for individual local repositories"
-    )
-
-    multi_user_repo_path: str = Field(
+    repo_path: str = Field(
         default="/persistence/repos/workspaces/",
         description="Path for multi-user repository workspaces"
     )
-    
+
+    meta_directory: str = Field(
+        default=".promptrepo",
+        description="Directory for storing metadata files (e.g., tools, evals, executions)"
+    )
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

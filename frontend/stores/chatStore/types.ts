@@ -1,4 +1,4 @@
-import type { ChatMessage, Tool } from '@/app/(prompts)/_types/ChatState';
+import type { ChatMessage, Tool } from '@/app/prompts/_types/ChatState';
 import type { components } from '@/types/generated/api';
 
 type PromptMeta = components['schemas']['PromptMeta'];

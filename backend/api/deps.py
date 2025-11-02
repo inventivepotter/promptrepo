@@ -27,11 +27,12 @@ from services.llm.model_provider_service import ModelProviderService
 from services.local_repo.git_service import GitService
 from services.local_repo.local_repo_service import LocalRepoService
 from services.remote_repo.remote_repo_service import RemoteRepoService
-from services.prompt.prompt_service import PromptService
+from services.artifacts.prompt.prompt_meta_service import PromptMetaService
 from services.file_operations.file_operations_service import FileOperationsService
-from services.tool import ToolMetaService, ToolExecutionService
-from services.evals.eval_meta_service import EvalMetaService
-from services.evals.eval_execution_service import EvalExecutionService
+from services.artifacts.tool import ToolMetaService, ToolExecutionService
+from services.artifacts.evals.eval_meta_service import EvalMetaService
+from services.artifacts.evals.eval_execution_meta_service import EvalExecutionMetaService
+from services.artifacts.evals.eval_execution_service import EvalExecutionService
 from lib.deepeval.deepeval_adapter import DeepEvalAdapter
 
 
@@ -263,24 +264,20 @@ LocalRepoServiceDep = Annotated[LocalRepoService, Depends(get_local_repo_service
 # ==============================================================================
 
 def get_prompt_service(
-    config_service: ConfigServiceDep,
-    file_ops_service: FileOperationsServiceDep,
     local_repo_service: LocalRepoServiceDep
-) -> PromptService:
+) -> PromptMetaService:
     """
     Prompt service dependency.
     
     Creates a PromptService with all required dependencies injected.
     The service handles both individual and organization hosting types.
     """
-    return PromptService(
-        config_service=config_service.config,
-        file_ops_service=file_ops_service,
+    return PromptMetaService(
         local_repo_service=local_repo_service
     )
 
 
-PromptServiceDep = Annotated[PromptService, Depends(get_prompt_service)]
+PromptServiceDep = Annotated[PromptMetaService, Depends(get_prompt_service)]
 
 
 # ==============================================================================
@@ -288,9 +285,7 @@ PromptServiceDep = Annotated[PromptService, Depends(get_prompt_service)]
 # ==============================================================================
 
 def get_tool_meta_service(
-    config_service: ConfigServiceDep,
-    local_repo_service: LocalRepoServiceDep,
-    file_operations_service: FileOperationsServiceDep
+    local_repo_service: LocalRepoServiceDep
 ) -> ToolMetaService:
     """
     Tool metadata service dependency.
@@ -298,9 +293,7 @@ def get_tool_meta_service(
     Creates a ToolMetaService for managing tool definitions (CRUD operations).
     """
     return ToolMetaService(
-        config_service=config_service.config,
         local_repo_service=local_repo_service,
-        file_operations_service=file_operations_service
     )
 
 
@@ -348,23 +341,37 @@ ChatCompletionServiceDep = Annotated[ChatCompletionService, Depends(get_chat_com
 
 
 # ==============================================================================
-# Test Service
+# Eval Meta Service
 # ==============================================================================
 
-def get_eval_service(
-    config_service: ConfigServiceDep,
-    file_operations_service: FileOperationsServiceDep,
+def get_eval_execution_meta_service(
     local_repo_service: LocalRepoServiceDep
+) -> EvalExecutionMetaService:
+    """
+    Eval execution meta service dependency.
+    
+    Creates an EvalExecutionMetaService for managing eval execution history.
+    """
+    return EvalExecutionMetaService(
+        local_repo_service=local_repo_service
+    )
+
+
+EvalExecutionMetaServiceDep = Annotated[EvalExecutionMetaService, Depends(get_eval_execution_meta_service)]
+
+
+def get_eval_service(
+    local_repo_service: LocalRepoServiceDep,
+    eval_execution_meta_service: EvalExecutionMetaServiceDep
 ) -> EvalMetaService:
     """
     Eval service dependency.
     
-    Creates an EvalMetaService for managing evals and execution history.
+    Creates an EvalMetaService for managing evals.
     """
     return EvalMetaService(
-        config_service=config_service.config,
-        file_ops_service=file_operations_service,
-        local_repo_service=local_repo_service
+        local_repo_service=local_repo_service,
+        eval_execution_meta_service=eval_execution_meta_service
     )
 
 
@@ -394,6 +401,7 @@ DeepEvalAdapterDep = Annotated[DeepEvalAdapter, Depends(get_deepeval_adapter)]
 
 def get_eval_execution_service(
     eval_meta_service: EvalMetaServiceDep,
+    eval_execution_meta_service: EvalExecutionMetaServiceDep,
     prompt_service: PromptServiceDep,
     deepeval_adapter: DeepEvalAdapterDep,
     chat_completion_service: ChatCompletionServiceDep
@@ -405,6 +413,7 @@ def get_eval_execution_service(
     """
     return EvalExecutionService(
         eval_meta_service=eval_meta_service,
+        eval_execution_meta_service=eval_execution_meta_service,
         prompt_service=prompt_service,
         deepeval_adapter=deepeval_adapter,
         chat_completion_service=chat_completion_service

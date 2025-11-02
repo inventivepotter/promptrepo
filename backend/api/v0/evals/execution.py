@@ -6,7 +6,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Request, status, Query, Body
 from pydantic import BaseModel, Field
 
-from services.evals.models import (
+from services.artifacts.evals.models import (
     TestExecutionResult,
     EvalExecutionResult
 )
@@ -291,7 +291,7 @@ async def get_execution_history(
             extra={"request_id": request_id, "user_id": user_id}
         )
         
-        executions = await eval_execution_service.eval_meta_service.list_executions(
+        executions = await eval_execution_service.eval_execution_meta_service.list_executions_for_eval(
             user_id, repo_name, eval_name, limit
         )
         
@@ -380,7 +380,7 @@ async def get_latest_execution(
             extra={"request_id": request_id, "user_id": user_id}
         )
         
-        latest_execution = await eval_execution_service.eval_meta_service.get_latest_execution(
+        latest_execution = await eval_execution_service.eval_execution_meta_service.get_latest_execution(
             user_id, repo_name, eval_name
         )
         

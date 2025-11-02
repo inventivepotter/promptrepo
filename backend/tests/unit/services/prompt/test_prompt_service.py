@@ -7,7 +7,7 @@ import pytest
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import Mock, MagicMock, patch, AsyncMock
-from services.prompt.prompt_service import PromptService
+from services.prompt.prompt_meta_service import PromptMetaService
 from services.prompt.models import PromptData, PromptMeta, PromptDataUpdate
 from middlewares.rest.exceptions import NotFoundException, ConflictException, AppException
 from schemas.hosting_type_enum import HostingType
@@ -38,7 +38,7 @@ def mock_local_repo_service():
 @pytest.fixture
 def prompt_service(mock_config_service, mock_file_ops_service, mock_local_repo_service):
     """Create PromptService instance with mocked dependencies."""
-    return PromptService(
+    return PromptMetaService(
         config_service=mock_config_service,
         file_ops_service=mock_file_ops_service,
         local_repo_service=mock_local_repo_service

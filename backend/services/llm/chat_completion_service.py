@@ -8,8 +8,8 @@ from datetime import datetime
 from any_agent import AgentTrace
 from fastapi import HTTPException
 from services.config.config_service import ConfigService
-from services.prompt.prompt_service import PromptService
-from services.prompt.models import PromptMeta
+from services.artifacts.prompt.prompt_meta_service import PromptMetaService
+from services.artifacts.prompt.models import PromptMeta
 from agents.chat_agent.chat_agent import ChatAgent
 from schemas import MessageSchema, UserMessageSchema, AIMessageSchema, SystemMessageSchema, ToolMessageSchema
 from services.llm.models import (
@@ -23,7 +23,7 @@ from middlewares.rest.exceptions import (
     ServiceUnavailableException,
     NotFoundException
 )
-from services.tool.tool_execution_service import ToolExecutionService
+from services.artifacts.tool.tool_execution_service import ToolExecutionService
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 class ChatCompletionService:
     """Service class for handling chat completions using ChatAgent."""
     
-    def __init__(self, config_service: ConfigService, tool_execution_service: Optional[ToolExecutionService] = None, prompt_service: Optional[PromptService] = None):
+    def __init__(self, config_service: ConfigService, tool_execution_service: Optional[ToolExecutionService] = None, prompt_service: Optional[PromptMetaService] = None):
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.config_service = config_service
         self.tool_execution_service = tool_execution_service
@@ -200,7 +200,7 @@ class ChatCompletionService:
         if prompt_meta.repo_name and prompt_data.tools and len(prompt_data.tools) > 0 and active_tool_service:
             try:
                 self.logger.info(f"Loading {len(prompt_data.tools)} tools from paths: {prompt_data.tools}")
-                loaded_tools = active_tool_service.create_callable_tools(
+                loaded_tools = await active_tool_service.create_callable_tools(
                     tool_paths=prompt_data.tools,
                     repo_name=prompt_meta.repo_name,
                     user_id=user_id
@@ -461,7 +461,7 @@ class ChatCompletionService:
             )
         
         # Fetch the prompt using prompt service
-        prompt_meta = await self.prompt_service.get_prompt(
+        prompt_meta = await self.prompt_service.get(
             user_id=user_id,
             repo_name=repo_name,
             file_path=file_path

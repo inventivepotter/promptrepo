@@ -5,7 +5,7 @@ import type { StateCreator } from 'zustand';
 import { EvalService } from '@/services/evals/evalService';
 import { handleStoreError } from '@/lib/zustand';
 import type { EvalStore, EvalActions } from './types';
-import type { EvalSuiteData, EvalSuiteExecutionResult } from '@/types/eval';
+import type { EvalData, EvalExecutionResult } from '@/types/eval';
 
 export const createEvalActions: StateCreator<
   EvalStore,
@@ -13,99 +13,99 @@ export const createEvalActions: StateCreator<
   [],
   EvalActions
 > = (set, get) => ({
-  // Suite management actions
-  fetchEvalSuites: async (repoName: string) => {
+  // Eval management actions
+  fetchEvals: async (repoName: string) => {
     set({ isLoading: true, error: null });
     try {
-      const evalSuites = await EvalService.listEvalSuites(repoName);
-      set({ evalSuites, isLoading: false, selectedRepo: repoName });
+      const evals = await EvalService.listEvals(repoName);
+      set({ evals, isLoading: false, selectedRepo: repoName });
     } catch (error) {
-      const storeError = handleStoreError(error, 'fetchEvalSuites');
+      const storeError = handleStoreError(error, 'fetchEvals');
       set({ error: storeError.message, isLoading: false });
     }
   },
 
-  fetchEvalSuite: async (repoName: string, suiteName: string) => {
+  fetchEval: async (repoName: string, evalName: string) => {
     set({ isLoading: true, error: null });
     try {
-      const suiteData = await EvalService.getEvalSuite(repoName, suiteName);
-      set({ currentSuite: suiteData, isLoading: false });
+      const evalData = await EvalService.getEval(repoName, evalName);
+      set({ currentEval: evalData, isLoading: false });
     } catch (error) {
-      const storeError = handleStoreError(error, 'fetchEvalSuite');
+      const storeError = handleStoreError(error, 'fetchEval');
       set({ error: storeError.message, isLoading: false });
     }
   },
 
-  saveEvalSuite: async (repoName: string, suiteData: EvalSuiteData) => {
+  saveEval: async (repoName: string, evalData: EvalData) => {
     set({ isLoading: true, error: null });
     try {
-      const savedSuite = await EvalService.saveEvalSuite(repoName, suiteData);
-      set({ currentSuite: savedSuite, isLoading: false });
+      const savedEval = await EvalService.saveEval(repoName, evalData);
+      set({ currentEval: savedEval, isLoading: false });
       
-      // Refresh eval suites list
-      await get().fetchEvalSuites(repoName);
+      // Refresh evals list
+      await get().fetchEvals(repoName);
     } catch (error) {
-      const storeError = handleStoreError(error, 'saveEvalSuite');
+      const storeError = handleStoreError(error, 'saveEval');
       set({ error: storeError.message, isLoading: false });
     }
   },
 
-  deleteEvalSuite: async (repoName: string, suiteName: string) => {
+  deleteEval: async (repoName: string, evalName: string) => {
     set({ isLoading: true, error: null });
     try {
-      await EvalService.deleteEvalSuite(repoName, suiteName);
-      set({ currentSuite: null, isLoading: false });
+      await EvalService.deleteEval(repoName, evalName);
+      set({ currentEval: null, isLoading: false });
       
-      // Refresh eval suites list
-      await get().fetchEvalSuites(repoName);
+      // Refresh evals list
+      await get().fetchEvals(repoName);
     } catch (error) {
-      const storeError = handleStoreError(error, 'deleteEvalSuite');
+      const storeError = handleStoreError(error, 'deleteEval');
       set({ error: storeError.message, isLoading: false });
     }
   },
 
   // Execution actions
-  executeEvalSuite: async (repoName: string, suiteName: string, evalNames?: string[]) => {
+  executeEval: async (repoName: string, evalName: string, testNames?: string[]) => {
     set({ isLoading: true, error: null });
     try {
-      const executionResult = await EvalService.executeEvalSuite(repoName, suiteName, evalNames);
+      const executionResult = await EvalService.executeEval(repoName, evalName, testNames);
       set({ currentExecution: executionResult, isLoading: false });
       
       // Refresh execution history
-      await get().fetchExecutionHistory(repoName, suiteName);
+      await get().fetchExecutionHistory(repoName, evalName);
     } catch (error) {
-      const storeError = handleStoreError(error, 'executeEvalSuite');
+      const storeError = handleStoreError(error, 'executeEval');
       set({ error: storeError.message, isLoading: false });
     }
   },
 
-  executeSingleEval: async (repoName: string, suiteName: string, evalName: string) => {
+  executeSingleTest: async (repoName: string, evalName: string, testName: string) => {
     set({ isLoading: true, error: null });
     try {
-      const evalResult = await EvalService.executeSingleEval(repoName, suiteName, evalName);
+      const testResult = await EvalService.executeSingleTest(repoName, evalName, testName);
       
-      // Create a suite execution result with single eval
-      const suiteExecution: EvalSuiteExecutionResult = {
-        suite_name: suiteName,
-        eval_results: [evalResult],
-        total_evals: 1,
-        passed_evals: evalResult.overall_passed ? 1 : 0,
-        failed_evals: evalResult.overall_passed ? 0 : 1,
-        total_execution_time_ms: evalResult.actual_evaluation_fields.execution_time_ms || 0,
-        executed_at: evalResult.executed_at,
+      // Create an eval execution result with single test
+      const evalExecution: EvalExecutionResult = {
+        eval_name: evalName,
+        test_results: [testResult],
+        total_tests: 1,
+        passed_tests: testResult.overall_passed ? 1 : 0,
+        failed_tests: testResult.overall_passed ? 0 : 1,
+        total_execution_time_ms: testResult.actual_test_fields.execution_time_ms || 0,
+        executed_at: testResult.executed_at,
       };
       
-      set({ currentExecution: suiteExecution, isLoading: false });
+      set({ currentExecution: evalExecution, isLoading: false });
     } catch (error) {
-      const storeError = handleStoreError(error, 'executeSingleEval');
+      const storeError = handleStoreError(error, 'executeSingleTest');
       set({ error: storeError.message, isLoading: false });
     }
   },
 
-  fetchExecutionHistory: async (repoName: string, suiteName: string, limit: number = 10) => {
+  fetchExecutionHistory: async (repoName: string, evalName: string, limit: number = 10) => {
     set({ isLoading: true, error: null });
     try {
-      const history = await EvalService.getExecutionHistory(repoName, suiteName, limit);
+      const history = await EvalService.getExecutionHistory(repoName, evalName, limit);
       set({ executionHistory: history, isLoading: false });
     } catch (error) {
       const storeError = handleStoreError(error, 'fetchExecutionHistory');
@@ -113,10 +113,10 @@ export const createEvalActions: StateCreator<
     }
   },
 
-  fetchLatestExecution: async (repoName: string, suiteName: string) => {
+  fetchLatestExecution: async (repoName: string, evalName: string) => {
     set({ isLoading: true, error: null });
     try {
-      const latestExecution = await EvalService.getLatestExecution(repoName, suiteName);
+      const latestExecution = await EvalService.getLatestExecution(repoName, evalName);
       set({ currentExecution: latestExecution, isLoading: false });
     } catch (error) {
       const storeError = handleStoreError(error, 'fetchLatestExecution');
@@ -125,16 +125,16 @@ export const createEvalActions: StateCreator<
   },
 
   // Local state mutations
-  setCurrentSuite: (suite: EvalSuiteData | null) => {
-    set({ currentSuite: suite });
+  setCurrentEval: (evalData: EvalData | null) => {
+    set({ currentEval: evalData });
   },
 
-  setCurrentExecution: (execution: EvalSuiteExecutionResult | null) => {
+  setCurrentExecution: (execution: EvalExecutionResult | null) => {
     set({ currentExecution: execution });
   },
 
-  setEditingEval: (evalItem) => {
-    set({ editingEval: evalItem });
+  setEditingTest: (testItem) => {
+    set({ editingTest: testItem });
   },
 
   setLoading: (loading: boolean) => {
@@ -151,11 +151,11 @@ export const createEvalActions: StateCreator<
 
   clearEvalData: () => {
     set({
-      evalSuites: [],
-      currentSuite: null,
+      evals: [],
+      currentEval: null,
       currentExecution: null,
       executionHistory: [],
-      editingEval: null,
+      editingTest: null,
       error: null,
     });
   },

@@ -8,15 +8,18 @@ import type { components } from '@/types/generated/api';
 // Re-export generated types from OpenAPI schema
 export type MetricConfig = components['schemas']['MetricConfig'];
 export type MetricResult = components['schemas']['MetricResult'];
-export type EvalSuiteExecutionResult = components['schemas']['EvalSuiteExecutionResult'];
 export type EvalExecutionResult = components['schemas']['EvalExecutionResult'];
-export type EvalSuiteSummary = components['schemas']['EvalSuiteSummary'];
-export type ExpectedEvaluationFieldsModel = components['schemas']['ExpectedEvaluationFieldsModel'];
-export type ActualEvaluationFieldsModel = components['schemas']['ActualEvaluationFieldsModel'];
-export type EvalSuiteDefinition = components['schemas']['EvalSuiteDefinition-Output'];
-export type EvalSuiteData = components['schemas']['EvalSuiteData-Output'];
+export type TestExecutionResult = components['schemas']['TestExecutionResult'];
+export type EvalMeta = components['schemas']['EvalMeta'];
+export type ExpectedTestFieldsModel = components['schemas']['ExpectedTestFieldsModel'];
+export type ActualTestFieldsModel = components['schemas']['ActualTestFieldsModel'];
 export type EvalDefinition = components['schemas']['EvalDefinition-Output'];
+export type EvalData = components['schemas']['EvalData'];
+export type TestDefinition = components['schemas']['TestDefinition-Output'];
 export type MetricType = components['schemas']['MetricType'];
+
+// Backward compatibility alias
+export type EvalSummary = EvalMeta;
 
 // Re-export MetricMetadataModel from generated types
 export type MetricMetadata = components['schemas']['MetricMetadataModel'];

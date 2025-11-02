@@ -3,11 +3,11 @@
 import React from 'react';
 import { Box, VStack, HStack, Text, Badge, Card, Button } from '@chakra-ui/react';
 import { LuClock, LuCheck, LuX } from 'react-icons/lu';
-import type { EvalSuiteExecutionResult } from '@/types/eval';
+import type { EvalExecutionResult } from '@/types/eval';
 
 interface ExecutionHistoryProps {
-  executions: EvalSuiteExecutionResult[];
-  onViewExecution: (execution: EvalSuiteExecutionResult) => void;
+  executions: EvalExecutionResult[];
+  onViewExecution: (execution: EvalExecutionResult) => void;
 }
 
 export function ExecutionHistory({ executions, onViewExecution }: ExecutionHistoryProps) {
@@ -73,7 +73,7 @@ export function ExecutionHistory({ executions, onViewExecution }: ExecutionHisto
                 <VStack align="start" gap={2} flex={1}>
                   <HStack gap={2}>
                     <Text fontWeight="semibold">
-                      {formatDate(execution.executed_at)}
+                      {formatDate(execution.executed_at || '')}
                     </Text>
                     {execution.passed_tests === execution.total_tests ? (
                       <Badge variant="solid" colorPalette="green">

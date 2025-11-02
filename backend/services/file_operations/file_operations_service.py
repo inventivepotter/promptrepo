@@ -13,9 +13,20 @@ import shutil
 import yaml
 from pathlib import Path
 from typing import Optional, Dict, Any, Union
+from pydantic import BaseModel
+
+from schemas.artifact_type_enum import ArtifactType
+from settings import settings
 
 logger = logging.getLogger(__name__)
 
+
+class SavedFileData(BaseModel):
+    """Result of saving an artifact with path information."""
+    success: bool
+    relative_path: str  # Full relative path including .yaml (e.g., "evals/strict-match/eval.yaml")
+    directory_name: str  # Sanitized directory name (e.g., "strict-match")
+    filename: str  # The filename used (e.g., "eval.yaml")
 
 class FileOperationsService:
     """
@@ -95,41 +106,6 @@ class FileOperationsService:
             logger.error(f"Failed to create directory {dir_path}: {e}", exc_info=True)
             return False
     
-    def save_yaml_file(self, path: Union[str, Path], data: Dict[str, Any], exclusive: bool = False) -> bool:
-        """
-        Save data to a YAML file.
-        
-        Args:
-            path: Path to the YAML file
-            data: Data to save as YAML
-            exclusive: If True, fail if file already exists (atomic creation)
-            
-        Returns:
-            bool: True if save was successful, False otherwise
-            
-        Raises:
-            FileExistsError: If exclusive=True and file already exists
-        """
-        file_path = Path(path) if isinstance(path, str) else path
-        
-        try:
-            # Create parent directories if they don't exist
-            file_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            # Write YAML file with exclusive mode if requested
-            mode = 'x' if exclusive else 'w'
-            with open(file_path, mode) as f:
-                yaml.safe_dump(data, f)
-            
-            logger.info(f"Saved YAML file: {file_path}")
-            return True
-        except FileExistsError:
-            logger.warning(f"File already exists (exclusive mode): {file_path}")
-            raise
-        except Exception as e:
-            logger.error(f"Failed to save YAML file {file_path}: {e}", exc_info=True)
-            return False
-    
     def load_yaml_file(self, path: Union[str, Path]) -> Optional[Dict[str, Any]]:
         """
         Load data from a YAML file.
@@ -153,3 +129,72 @@ class FileOperationsService:
         except Exception as e:
             logger.error(f"Failed to load YAML file {file_path}: {e}", exc_info=True)
             return None
+    
+    def save_yaml_file(
+        self,
+        file_path: Path,
+        data: Dict[str, Any],
+        exclusive: bool = False
+    ) -> SavedFileData:
+        """
+        Save YAML file to the specified path.
+        
+        Args:
+            file_path: Full path to the file to save
+            data: Data to save as YAML
+            exclusive: If True, fail if file already exists
+            
+        Returns:
+            SavedFileData with success status and path information
+        """
+        directory_path = file_path.parent
+        filename = file_path.name
+
+        try:
+            # Create the directory
+            directory_path.mkdir(parents=True, exist_ok=True)
+            
+            # Save the YAML file
+            mode = 'x' if exclusive else 'w'
+            with open(file_path, mode) as f:
+                yaml.safe_dump(data, f)
+            
+            # Extract directory name from path
+            dir_name = directory_path.name
+            
+            # Calculate relative path from repo root
+            # The repo root is the directory containing the meta_directory (.promptrepo)
+            relative_path = str(file_path)
+            repo_root = None
+            
+            # Walk up the directory tree to find the repo root
+            for parent in file_path.parents:
+                if (parent / settings.meta_directory).exists():
+                    # This parent directory contains .promptrepo, so it's the repo root
+                    repo_root = parent
+                    break
+            
+            if repo_root:
+                relative_path = str(file_path.relative_to(repo_root))
+            else:
+                logger.warning(f"Could not find repo root for {file_path}, using absolute path")
+
+            logger.info(f"Saved file '{filename}' to {file_path} (relative: {relative_path})")
+            return SavedFileData(
+                success=True,
+                relative_path=relative_path,
+                directory_name=dir_name,
+                filename=filename
+            )
+            
+        except FileExistsError:
+            logger.warning(f"File already exists (exclusive mode): {file_path}")
+            raise
+        except Exception as e:
+            logger.error(f"Failed to save file {file_path}: {e}", exc_info=True)
+            return SavedFileData(
+                success=False,
+                relative_path=str(file_path),
+                directory_name=directory_path.name,
+                filename=filename
+            )

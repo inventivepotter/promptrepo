@@ -15,52 +15,52 @@ import {
 } from '@chakra-ui/react';
 import { FaPlay } from 'react-icons/fa';
 import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
-import type { EvalDefinition } from '@/types/eval';
+import type { TestDefinition } from '@/types/eval';
 
 interface EvalExecutorProps {
   repoName: string;
-  suiteName: string;
-  evals: EvalDefinition[];
-  onExecute: (repoName: string, suiteName: string, evalNames?: string[]) => Promise<void>;
+  evalName: string;
+  tests: TestDefinition[];
+  onExecute: (repoName: string, evalName: string, testNames?: string[]) => Promise<void>;
   isExecuting: boolean;
 }
 
 export function EvalExecutor({
   repoName,
-  suiteName,
-  evals,
+  evalName,
+  tests,
   onExecute,
   isExecuting,
 }: EvalExecutorProps) {
-  const [selectedEvals, setSelectedEvals] = useState<Set<string>>(new Set());
+  const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set());
   const [isOpen, setIsOpen] = useState(true);
 
-  const enabledEvals = evals.filter(evalItem => evalItem.enabled);
-  const allSelected = enabledEvals.length > 0 && selectedEvals.size === enabledEvals.length;
+  const enabledTests = tests.filter(testItem => testItem.enabled);
+  const allSelected = enabledTests.length > 0 && selectedTests.size === enabledTests.length;
 
   const handleToggleAll = () => {
     if (allSelected) {
-      setSelectedEvals(new Set());
+      setSelectedTests(new Set());
     } else {
-      setSelectedEvals(new Set(enabledEvals.map(e => e.name)));
+      setSelectedTests(new Set(enabledTests.map(t => t.name)));
     }
   };
 
-  const handleToggleEval = (evalName: string) => {
-    const newSelected = new Set(selectedEvals);
-    if (newSelected.has(evalName)) {
-      newSelected.delete(evalName);
+  const handleToggleTest = (testName: string) => {
+    const newSelected = new Set(selectedTests);
+    if (newSelected.has(testName)) {
+      newSelected.delete(testName);
     } else {
-      newSelected.add(evalName);
+      newSelected.add(testName);
     }
-    setSelectedEvals(newSelected);
+    setSelectedTests(newSelected);
   };
 
   const handleExecute = async () => {
-    if (selectedEvals.size > 0) {
-      await onExecute(repoName, suiteName, Array.from(selectedEvals));
+    if (selectedTests.size > 0) {
+      await onExecute(repoName, evalName, Array.from(selectedTests));
     } else {
-      await onExecute(repoName, suiteName);
+      await onExecute(repoName, evalName);
     }
   };
 
@@ -71,13 +71,13 @@ export function EvalExecutor({
           <HStack justify="space-between" align="center">
             <Stack flex={1}>
               <HStack gap={2}>
-                <Fieldset.Legend>Eval Execution</Fieldset.Legend>
+                <Fieldset.Legend>Test Execution</Fieldset.Legend>
                 <Badge colorScheme={isExecuting ? 'yellow' : 'gray'}>
                   {isExecuting ? 'Running...' : 'Ready'}
                 </Badge>
               </HStack>
               <Fieldset.HelperText color="text.tertiary">
-                Select and execute evals in this suite
+                Select and execute tests in this eval
               </Fieldset.HelperText>
             </Stack>
             <Button
@@ -85,7 +85,7 @@ export function EvalExecutor({
               _hover={{ bg: "bg.subtle" }}
               size="sm"
               onClick={() => setIsOpen(!isOpen)}
-              aria-label={isOpen ? "Collapse eval executor" : "Expand eval executor"}
+              aria-label={isOpen ? "Collapse test executor" : "Expand test executor"}
             >
               <HStack gap={1}>
                 <Text fontSize="xs" fontWeight="medium">
@@ -104,12 +104,12 @@ export function EvalExecutor({
                     <Checkbox.Root
                       checked={allSelected}
                       onCheckedChange={handleToggleAll}
-                      disabled={enabledEvals.length === 0 || isExecuting}
+                      disabled={enabledTests.length === 0 || isExecuting}
                     >
                       <Checkbox.HiddenInput />
                       <Checkbox.Control />
                       <Checkbox.Label>
-                        Select All ({selectedEvals.size} of {enabledEvals.length} selected)
+                        Select All ({selectedTests.size} of {enabledTests.length} selected)
                       </Checkbox.Label>
                     </Checkbox.Root>
 
@@ -117,36 +117,36 @@ export function EvalExecutor({
                       <Button
                         onClick={handleExecute}
                         colorScheme="green"
-                        disabled={enabledEvals.length === 0 || isExecuting}
+                        disabled={enabledTests.length === 0 || isExecuting}
                         loading={isExecuting}
                       >
                         <FaPlay />
-                        {selectedEvals.size > 0
-                          ? `Run Selected (${selectedEvals.size})`
-                          : 'Run All Evals'}
+                        {selectedTests.size > 0
+                          ? `Run Selected (${selectedTests.size})`
+                          : 'Run All Tests'}
                       </Button>
                     </HStack>
                   </HStack>
 
-                  {enabledEvals.length === 0 && (
+                  {enabledTests.length === 0 && (
                     <Text fontSize="sm" color="fg.subtle">
-                      No enabled tests to execute. Enable at least one test to run the suite.
+                      No enabled tests to execute. Enable at least one test to run the eval.
                     </Text>
                   )}
 
-                  {enabledEvals.length > 0 && (
+                  {enabledTests.length > 0 && (
                     <VStack align="stretch" gap={2} pt={2} borderTopWidth="1px">
-                      {enabledEvals.map(evalItem => (
+                      {enabledTests.map(testItem => (
                         <Checkbox.Root
-                          key={evalItem.name}
-                          checked={selectedEvals.has(evalItem.name)}
-                          onCheckedChange={() => handleToggleEval(evalItem.name)}
+                          key={testItem.name}
+                          checked={selectedTests.has(testItem.name)}
+                          onCheckedChange={() => handleToggleTest(testItem.name)}
                           disabled={isExecuting}
                         >
                           <Checkbox.HiddenInput />
                           <Checkbox.Control />
                           <Checkbox.Label>
-                            <Text>{evalItem.name}</Text>
+                            <Text>{testItem.name}</Text>
                           </Checkbox.Label>
                         </Checkbox.Root>
                       ))}

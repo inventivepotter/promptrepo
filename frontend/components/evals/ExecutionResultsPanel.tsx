@@ -4,23 +4,23 @@ import React, { useState } from 'react';
 import { Box, VStack, HStack, Text, Badge, Card, Collapsible, IconButton } from '@chakra-ui/react';
 import { LuChevronDown, LuChevronUp, LuCheck, LuX, LuClock } from 'react-icons/lu';
 import { MetricResultCard } from './MetricResultCard';
-import type { EvalSuiteExecutionResult, EvalExecutionResult } from '@/types/eval';
+import type { EvalExecutionResult, TestExecutionResult, MetricResult } from '@/types/eval';
 
 interface ExecutionResultsPanelProps {
-  execution: EvalSuiteExecutionResult;
+  execution: EvalExecutionResult;
 }
 
 export function ExecutionResultsPanel({ execution }: ExecutionResultsPanelProps) {
-  const [expandedEvals, setExpandedEvals] = useState<Set<string>>(new Set());
+  const [expandedTests, setExpandedTests] = useState<Set<string>>(new Set());
 
-  const toggleEvalExpanded = (evalName: string) => {
-    const newExpanded = new Set(expandedEvals);
-    if (newExpanded.has(evalName)) {
-      newExpanded.delete(evalName);
+  const toggleTestExpanded = (testName: string) => {
+    const newExpanded = new Set(expandedTests);
+    if (newExpanded.has(testName)) {
+      newExpanded.delete(testName);
     } else {
-      newExpanded.add(evalName);
+      newExpanded.add(testName);
     }
-    setExpandedEvals(newExpanded);
+    setExpandedTests(newExpanded);
   };
 
   const formatDuration = (ms: number): string => {
@@ -33,8 +33,8 @@ export function ExecutionResultsPanel({ execution }: ExecutionResultsPanelProps)
     return date.toLocaleString();
   };
 
-  const passRate = execution.total_evals > 0
-    ? (execution.passed_evals / execution.total_evals) * 100
+  const passRate = execution.total_tests > 0
+    ? (execution.passed_tests / execution.total_tests) * 100
     : 0;
 
   return (
@@ -49,9 +49,9 @@ export function ExecutionResultsPanel({ execution }: ExecutionResultsPanelProps)
               </Text>
               <Badge
                 variant="solid"
-                colorPalette={execution.passed_evals === execution.total_evals ? 'green' : 'red'}
+                colorPalette={execution.passed_tests === execution.total_tests ? 'green' : 'red'}
               >
-                {execution.passed_evals === execution.total_evals ? 'All Passed' : 'Some Failed'}
+                {execution.passed_tests === execution.total_tests ? 'All Passed' : 'Some Failed'}
               </Badge>
             </HStack>
           </Card.Header>
@@ -60,10 +60,10 @@ export function ExecutionResultsPanel({ execution }: ExecutionResultsPanelProps)
               <HStack justify="space-between" flexWrap="wrap" gap={4}>
                 <VStack align="start" gap={1}>
                   <Text fontSize="sm" color="gray.600">
-                    Total Evals
+                    Total Tests
                   </Text>
                   <Text fontSize="2xl" fontWeight="bold">
-                    {execution.total_evals}
+                    {execution.total_tests}
                   </Text>
                 </VStack>
 
@@ -74,7 +74,7 @@ export function ExecutionResultsPanel({ execution }: ExecutionResultsPanelProps)
                   <HStack gap={1}>
                     <LuCheck color="green" />
                     <Text fontSize="2xl" fontWeight="bold" color="green.600">
-                      {execution.passed_evals}
+                      {execution.passed_tests}
                     </Text>
                   </HStack>
                 </VStack>
@@ -86,7 +86,7 @@ export function ExecutionResultsPanel({ execution }: ExecutionResultsPanelProps)
                   <HStack gap={1}>
                     <LuX color="red" />
                     <Text fontSize="2xl" fontWeight="bold" color="red.600">
-                      {execution.failed_evals}
+                      {execution.failed_tests}
                     </Text>
                   </HStack>
                 </VStack>
@@ -114,24 +114,24 @@ export function ExecutionResultsPanel({ execution }: ExecutionResultsPanelProps)
               </HStack>
 
               <Text fontSize="sm" color="gray.600">
-                Executed at: {formatDate(execution.executed_at)}
+                Executed at: {formatDate(execution.executed_at || '')}
               </Text>
             </VStack>
           </Card.Body>
         </Card.Root>
 
-        {/* Individual Eval Results */}
+        {/* Individual Test Results */}
         <Box>
           <Text fontSize="lg" fontWeight="bold" mb={3}>
-            Eval Results
+            Test Results
           </Text>
           <VStack align="stretch" gap={3}>
-            {execution.eval_results.map((evalResult) => (
-              <EvalResultCard
-                key={evalResult.eval_name}
-                result={evalResult}
-                isExpanded={expandedEvals.has(evalResult.eval_name)}
-                onToggle={() => toggleEvalExpanded(evalResult.eval_name)}
+            {execution.test_results.map((testResult) => (
+              <TestResultCard
+                key={testResult.test_name}
+                result={testResult}
+                isExpanded={expandedTests.has(testResult.test_name)}
+                onToggle={() => toggleTestExpanded(testResult.test_name)}
               />
             ))}
           </VStack>
@@ -141,14 +141,14 @@ export function ExecutionResultsPanel({ execution }: ExecutionResultsPanelProps)
   );
 }
 
-// Internal component for individual eval result
-interface EvalResultCardProps {
-  result: EvalExecutionResult;
+// Internal component for individual test result
+interface TestResultCardProps {
+  result: TestExecutionResult;
   isExpanded: boolean;
   onToggle: () => void;
 }
 
-function EvalResultCard({ result, isExpanded, onToggle }: EvalResultCardProps) {
+function TestResultCard({ result, isExpanded, onToggle }: TestResultCardProps) {
   const formatDuration = (ms: number): string => {
     if (ms < 1000) return `${ms}ms`;
     return `${(ms / 1000).toFixed(2)}s`;
@@ -160,7 +160,7 @@ function EvalResultCard({ result, isExpanded, onToggle }: EvalResultCardProps) {
         <VStack align="stretch" gap={3}>
           <HStack justify="space-between" cursor="pointer" onClick={onToggle}>
             <HStack gap={2} flex={1}>
-              <Text fontWeight="semibold">{result.eval_name}</Text>
+              <Text fontWeight="semibold">{result.test_name}</Text>
               {result.overall_passed ? (
                 <Badge variant="solid" colorPalette="green">
                   <HStack gap={1}>
@@ -183,7 +183,7 @@ function EvalResultCard({ result, isExpanded, onToggle }: EvalResultCardProps) {
 
             <HStack gap={2}>
               <Text fontSize="sm" color="gray.600">
-                {formatDuration(result.actual_evaluation_fields.execution_time_ms || 0)}
+                {formatDuration(result.actual_test_fields.execution_time_ms || 0)}
               </Text>
               <IconButton
                 aria-label="Toggle details"
@@ -199,7 +199,7 @@ function EvalResultCard({ result, isExpanded, onToggle }: EvalResultCardProps) {
           <Collapsible.Root open={isExpanded}>
             <Collapsible.Content>
               <VStack align="stretch" gap={4} pt={2}>
-                {result.actual_evaluation_fields.error && (
+                {result.actual_test_fields.error && (
                   <Box
                     p={3}
                     bg="red.50"
@@ -211,7 +211,7 @@ function EvalResultCard({ result, isExpanded, onToggle }: EvalResultCardProps) {
                       Execution Error:
                     </Text>
                     <Text fontSize="sm" color="red.600">
-                      {result.actual_evaluation_fields.error}
+                      {result.actual_test_fields.error}
                     </Text>
                   </Box>
                 )}
@@ -234,11 +234,11 @@ function EvalResultCard({ result, isExpanded, onToggle }: EvalResultCardProps) {
                     maxH="200px"
                     overflowY="auto"
                   >
-                    {result.actual_evaluation_fields.actual_output}
+                    {result.actual_test_fields.actual_output}
                   </Box>
                 </Box>
 
-                {result.expected_evaluation_fields.config?.expected_output && (
+                {result.expected_test_fields.config?.expected_output != null && (
                   <Box>
                     <Text fontSize="sm" fontWeight="medium" mb={2}>
                       Expected Output:
@@ -251,7 +251,7 @@ function EvalResultCard({ result, isExpanded, onToggle }: EvalResultCardProps) {
                       maxH="200px"
                       overflowY="auto"
                     >
-                      {String(result.expected_evaluation_fields.config.expected_output)}
+                      {String(result.expected_test_fields.config.expected_output)}
                     </Box>
                   </Box>
                 )}
@@ -261,7 +261,7 @@ function EvalResultCard({ result, isExpanded, onToggle }: EvalResultCardProps) {
                     Metric Results:
                   </Text>
                   <VStack align="stretch" gap={3}>
-                    {result.metric_results.map((metricResult, index) => (
+                    {result.metric_results?.map((metricResult: MetricResult, index: number) => (
                       <MetricResultCard key={index} result={metricResult} />
                     ))}
                   </VStack>

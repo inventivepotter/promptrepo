@@ -13,6 +13,7 @@ class ArtifactType(str, Enum):
     TOOL = "tool"
     TEST = "test"
     EVAL = "eval"
+    EVAL_EXECUTION= "evalexec"
     
     def __str__(self) -> str:
         """Return the string value of the enum."""

@@ -4,8 +4,9 @@ CRUD operations for prompts.
 Handles create, read, update, delete operations for individual prompts.
 """
 
-from fastapi import APIRouter, Query, Request, status
+from fastapi import APIRouter, Query, Request, status, Path
 import logging
+import base64
 
 from api.deps import CurrentUserDep, PromptServiceDep, CurrentSessionDep
 from middlewares.rest import (
@@ -15,14 +16,14 @@ from middlewares.rest import (
     NotFoundException,
     ValidationException,
 )
-from services.prompt.models import PromptMeta, PromptData, PromptDataUpdate
+from services.artifacts.prompt.models import PromptMeta, PromptData, PromptDataUpdate
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
 @router.get(
-    "/",
+    "/{repo_name}/{file_path}",
     response_model=StandardResponse[PromptMeta],
     status_code=status.HTTP_200_OK,
     responses={
@@ -60,8 +61,8 @@ async def get_prompt(
     request: Request,
     user_id: CurrentUserDep,
     prompt_service: PromptServiceDep,
-    repo_name: str = Query(...),
-    file_path: str = Query(...)
+    repo_name: str = Path(..., description="Base64-encoded repository name"),
+    file_path: str = Path(..., description="Base64-encoded file path")
 ) -> StandardResponse[PromptMeta]:
     """
     Get a specific prompt by repository name and file path.
@@ -78,25 +79,29 @@ async def get_prompt(
     request_id = request.state.request_id
     
     try:
+        # Decode base64-encoded repo_name and file path
+        decoded_repo_name = base64.b64decode(repo_name).decode('utf-8')
+        decoded_file_path = base64.b64decode(file_path).decode('utf-8')
+        
         logger.info(
-            f"Fetching prompt {repo_name}:{file_path}",
+            f"Fetching prompt {decoded_repo_name}:{decoded_file_path}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
-        prompt = await prompt_service.get_prompt(
+        prompt = await prompt_service.get(
             user_id=user_id,
-            repo_name=repo_name,
-            file_path=file_path
+            repo_name=decoded_repo_name,
+            file_path=decoded_file_path
         )
         
         if not prompt:
             raise NotFoundException(
                 resource="Prompt",
-                identifier=f"{repo_name}:{file_path}"
+                identifier=f"{decoded_repo_name}:{decoded_file_path}"
             )
         
         logger.info(
-            f"Successfully retrieved prompt {repo_name}:{file_path}",
+            f"Successfully retrieved prompt {decoded_repo_name}:{decoded_file_path}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
@@ -110,8 +115,14 @@ async def get_prompt(
         # These will be handled by the global exception handlers
         raise
     except Exception as e:
+        try:
+            decoded_repo_name = base64.b64decode(repo_name).decode('utf-8')
+            decoded_file_path = base64.b64decode(file_path).decode('utf-8')
+        except:
+            decoded_repo_name = repo_name
+            decoded_file_path = file_path
         logger.error(
-            f"Failed to get prompt {repo_name}:{file_path}: {str(e)}",
+            f"Failed to get prompt {decoded_repo_name}:{decoded_file_path}: {str(e)}",
             exc_info=True,
             extra={"request_id": request_id, "user_id": user_id}
         )
@@ -122,7 +133,7 @@ async def get_prompt(
 
 
 @router.post(
-    "/",
+    "/{repo_name}/{file_path}",
     response_model=StandardResponse[PromptMeta],
     status_code=status.HTTP_200_OK,
     responses={
@@ -167,7 +178,7 @@ async def get_prompt(
         }
     },
     summary="Save prompt",
-    description="Save a prompt (create or update). If the file doesn't exist, creates a new prompt. If it exists, updates it.",
+    description="Save a prompt (create or update). Provide file_path for updates, or use 'new' for creation with auto-generated path.",
 )
 async def save_prompt(
     request: Request,
@@ -175,8 +186,8 @@ async def save_prompt(
     user_session: CurrentSessionDep,
     prompt_service: PromptServiceDep,
     prompt_data: PromptDataUpdate,
-    repo_name: str = Query(...),
-    file_path: str = Query(...)
+    repo_name: str = Path(..., description="Base64-encoded repository name"),
+    file_path: str = Path(..., description="Base64-encoded file path or 'new' for creation")
 ) -> StandardResponse[PromptMeta]:
     """
     Save a prompt (create or update).
@@ -195,8 +206,20 @@ async def save_prompt(
     request_id = request.state.request_id
     
     try:
+        # Decode base64-encoded repo_name
+        decoded_repo_name = base64.b64decode(repo_name).decode('utf-8')
+        
+        # Decode base64-encoded file path if provided (skip for 'new')
+        decoded_file_path = None
+        if file_path and file_path not in ('new', 'null', 'undefined'):
+            try:
+                decoded_file_path = base64.b64decode(file_path).decode('utf-8')
+            except:
+                decoded_file_path = None
+        
+        action = "Updating" if decoded_file_path else "Creating"
         logger.info(
-            f"Saving prompt {repo_name}:{file_path}",
+            f"{action} prompt {decoded_repo_name}:{decoded_file_path or 'new'}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
@@ -204,15 +227,16 @@ async def save_prompt(
         oauth_token = getattr(user_session, 'oauth_token', None)
         
         # Get user information for git commit author
-        user = user_session.user if hasattr(user_session, 'user') else None
-        author_name = user.oauth_name or user.oauth_username if user else None
-        author_email = user.oauth_email if user else None
+        user = getattr(user_session, 'user', None)
+        author_name = (getattr(user, 'oauth_name', None)
+                       or getattr(user, 'oauth_username', None))
+        author_email = getattr(user, 'oauth_email', None)
         
-        prompt, pr_info = await prompt_service.save_prompt(
+        prompt, pr_info = await prompt_service.save(
             user_id=user_id,
-            repo_name=repo_name,
-            file_path=file_path,
-            prompt_data=prompt_data,
+            repo_name=decoded_repo_name,
+            file_path=decoded_file_path,
+            artifact_data=prompt_data,
             oauth_token=oauth_token,
             author_name=author_name,
             author_email=author_email,
@@ -220,7 +244,7 @@ async def save_prompt(
         )
         
         logger.info(
-            f"Successfully saved prompt {repo_name}:{file_path}",
+            f"Successfully saved prompt {decoded_repo_name}:{decoded_file_path or 'new'}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
@@ -244,8 +268,14 @@ async def save_prompt(
         # These will be handled by the global exception handlers
         raise
     except Exception as e:
+        try:
+            decoded_repo_name = base64.b64decode(repo_name).decode('utf-8')
+            decoded_file_path = base64.b64decode(file_path).decode('utf-8') if file_path not in ('new', 'null', 'undefined') else 'new'
+        except:
+            decoded_repo_name = repo_name
+            decoded_file_path = file_path
         logger.error(
-            f"Failed to save prompt {repo_name}:{file_path}: {str(e)}",
+            f"Failed to save prompt {decoded_repo_name}:{decoded_file_path}: {str(e)}",
             exc_info=True,
             extra={"request_id": request_id, "user_id": user_id}
         )
@@ -256,7 +286,7 @@ async def save_prompt(
 
 
 @router.delete(
-    "/",
+    "/{repo_name}/{file_path}",
     response_model=StandardResponse[None],
     status_code=status.HTTP_200_OK,
     responses={
@@ -294,8 +324,8 @@ async def delete_prompt(
     request: Request,
     user_id: CurrentUserDep,
     prompt_service: PromptServiceDep,
-    repo_name: str = Query(...),
-    file_path: str = Query(...)
+    repo_name: str = Path(..., description="Base64-encoded repository name"),
+    file_path: str = Path(..., description="Base64-encoded file path")
 ) -> StandardResponse[None]:
     """
     Delete a prompt.
@@ -312,25 +342,29 @@ async def delete_prompt(
     request_id = request.state.request_id
     
     try:
+        # Decode base64-encoded repo_name and file path
+        decoded_repo_name = base64.b64decode(repo_name).decode('utf-8')
+        decoded_file_path = base64.b64decode(file_path).decode('utf-8')
+        
         logger.info(
-            f"Deleting prompt {repo_name}:{file_path}",
+            f"Deleting prompt {decoded_repo_name}:{decoded_file_path}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
-        success = await prompt_service.delete_prompt(
+        success = await prompt_service.delete(
             user_id=user_id,
-            repo_name=repo_name,
-            file_path=file_path
+            repo_name=decoded_repo_name,
+            file_path=decoded_file_path
         )
         
         if not success:
             raise NotFoundException(
                 resource="Prompt",
-                identifier=f"{repo_name}:{file_path}"
+                identifier=f"{decoded_repo_name}:{decoded_file_path}"
             )
         
         logger.info(
-            f"Successfully deleted prompt {repo_name}:{file_path}",
+            f"Successfully deleted prompt {decoded_repo_name}:{decoded_file_path}",
             extra={"request_id": request_id, "user_id": user_id}
         )
         
@@ -343,8 +377,14 @@ async def delete_prompt(
         # These will be handled by the global exception handlers
         raise
     except Exception as e:
+        try:
+            decoded_repo_name = base64.b64decode(repo_name).decode('utf-8')
+            decoded_file_path = base64.b64decode(file_path).decode('utf-8')
+        except:
+            decoded_repo_name = repo_name
+            decoded_file_path = file_path
         logger.error(
-            f"Failed to delete prompt {repo_name}:{file_path}: {str(e)}",
+            f"Failed to delete prompt {decoded_repo_name}:{decoded_file_path}: {str(e)}",
             exc_info=True,
             extra={"request_id": request_id, "user_id": user_id}
         )

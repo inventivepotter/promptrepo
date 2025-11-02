@@ -3,8 +3,9 @@ Tools API endpoints for CRUD operations on mock tools.
 Follows standardized response patterns with proper exception handling.
 """
 import logging
+import base64
 from typing import List
-from fastapi import APIRouter, Request, Query, status
+from fastapi import APIRouter, Request, Query, status, Path
 
 from api.deps import ToolMetaServiceDep, CurrentUserDep, CurrentSessionDep
 from middlewares.rest import (
@@ -14,13 +15,9 @@ from middlewares.rest import (
     NotFoundException,
     ValidationException,
 )
-from services.tool.models import (
-    ToolDefinition,
-    ToolSummary
-)
-from .models import (
-    CreateToolRequest,
-    ToolSaveResponse
+from services.artifacts.tool.models import (
+    ToolMeta,
+    ToolData
 )
 
 logger = logging.getLogger(__name__)
@@ -30,7 +27,7 @@ router = APIRouter()
 
 @router.get(
     "/",
-    response_model=StandardResponse[List[ToolSummary]],
+    response_model=StandardResponse[List[ToolMeta]],
     status_code=status.HTTP_200_OK,
     responses={
         500: {
@@ -50,17 +47,17 @@ router = APIRouter()
     summary="List all tools",
     description="Retrieve a list of all tools in a repository.",
 )
-async def list_tools(
+async def discover(
     request: Request,
     tool_meta_service: ToolMetaServiceDep,
     user_id: CurrentUserDep,
     repo_name: str = Query("default", description="Repository name")
-) -> StandardResponse[List[ToolSummary]]:
+) -> StandardResponse[List[ToolMeta]]:
     """
     List all tools in a repository.
     
     Returns:
-        StandardResponse[List[ToolSummary]]: List of tool summaries
+        StandardResponse[List[ToolMeta]]: List of tool metadata
     
     Raises:
         AppException: When tool listing fails
@@ -73,16 +70,17 @@ async def list_tools(
             extra={"request_id": request_id, "user_id": user_id, "repo_name": repo_name}
         )
         
-        tools = tool_meta_service.list_tools(repo_name=repo_name, user_id=user_id)
+        # Discover all tools in the repository
+        tool_metas = await tool_meta_service.discover(user_id=user_id, repo_name=repo_name)
         
         logger.info(
-            f"Successfully retrieved {len(tools)} tools",
-            extra={"request_id": request_id, "user_id": user_id, "tool_count": len(tools)}
+            f"Successfully retrieved {len(tool_metas)} tools",
+            extra={"request_id": request_id, "user_id": user_id, "tool_count": len(tool_metas)}
         )
         
         return success_response(
-            data=tools,
-            message=f"Retrieved {len(tools)} tools from repository '{repo_name}'",
+            data=tool_metas,
+            message=f"Retrieved {len(tool_metas)} tools from repository '{repo_name}'",
             meta={"request_id": request_id, "repo_name": repo_name}
         )
         
@@ -99,8 +97,8 @@ async def list_tools(
 
 
 @router.get(
-    "/{tool_name}",
-    response_model=StandardResponse[ToolDefinition],
+    "/{repo_name}/{file_path}",
+    response_model=StandardResponse[ToolMeta],
     status_code=status.HTTP_200_OK,
     responses={
         404: {
@@ -131,20 +129,20 @@ async def list_tools(
         }
     },
     summary="Get tool definition",
-    description="Retrieve a specific tool definition by name.",
+    description="Retrieve a specific tool definition by file path.",
 )
-async def get_tool(
+async def get(
     request: Request,
-    tool_name: str,
     tool_meta_service: ToolMetaServiceDep,
     user_id: CurrentUserDep,
-    repo_name: str = Query("default", description="Repository name")
-) -> StandardResponse[ToolDefinition]:
+    repo_name: str = Path(..., description="Base64-encoded Repository name"),
+    file_path: str = Path(..., description="Base64-encoded Tool file path")
+) -> StandardResponse[ToolMeta]:
     """
     Get a specific tool definition.
     
     Returns:
-        StandardResponse[ToolDefinition]: Tool definition
+        StandardResponse[ToolMeta]: Tool metadata
     
     Raises:
         NotFoundException: When tool is not found
@@ -153,35 +151,47 @@ async def get_tool(
     request_id = request.state.request_id
     
     try:
+        # Decode base64-encoded reponame, file path
+        decoded_repo_name = base64.b64decode(repo_name).decode('utf-8')
+        decoded_file_path = base64.b64decode(file_path).decode('utf-8')
+        
         logger.info(
-            f"Retrieving tool: {tool_name}",
-            extra={"request_id": request_id, "user_id": user_id, "tool_name": tool_name, "repo_name": repo_name}
+            f"Retrieving tool from {decoded_file_path}",
+            extra={"request_id": request_id, "user_id": user_id, "file_path": decoded_file_path, "repo_name": repo_name}
         )
         
-        tool = tool_meta_service.load_tool(tool_name=tool_name, repo_name=repo_name, user_id=user_id)
+        tool_meta = await tool_meta_service.get(user_id=user_id, repo_name=decoded_repo_name, file_path=decoded_file_path)
+        
+        if not tool_meta:
+            raise NotFoundException(
+                resource="Tool",
+                identifier=decoded_file_path
+            )
         
         logger.info(
-            f"Successfully retrieved tool: {tool_name}",
-            extra={"request_id": request_id, "user_id": user_id, "tool_name": tool_name}
+            f"Successfully retrieved tool from {decoded_file_path}",
+            extra={"request_id": request_id, "user_id": user_id, "file_path": decoded_file_path}
         )
         
         return success_response(
-            data=tool,
-            message=f"Tool '{tool_name}' retrieved successfully",
-            meta={"request_id": request_id, "repo_name": repo_name}
+            data=tool_meta.model_dump(mode='json'),
+            message=f"Tool retrieved successfully",
+            meta={"request_id": request_id}
         )
         
-    except NotFoundException:
-        logger.warning(
-            f"Tool not found: {tool_name}",
-            extra={"request_id": request_id, "user_id": user_id, "tool_name": tool_name, "repo_name": repo_name}
-        )
+    except (NotFoundException, AppException):
         raise
     except Exception as e:
+        try:
+            decoded_repo_name = base64.b64decode(repo_name).decode('utf-8')
+            decoded_file_path = base64.b64decode(file_path).decode('utf-8')
+        except:
+            decoded_repo_name = repo_name
+            decoded_file_path = file_path
         logger.error(
-            f"Failed to retrieve tool {tool_name}: {str(e)}",
+            f"Failed to retrieve tool from {decoded_file_path}: {str(e)}",
             exc_info=True,
-            extra={"request_id": request_id, "user_id": user_id, "tool_name": tool_name}
+            extra={"request_id": request_id, "user_id": user_id, "file_path": decoded_file_path}
         )
         raise AppException(
             message="Failed to retrieve tool",
@@ -190,8 +200,8 @@ async def get_tool(
 
 
 @router.post(
-    "/",
-    response_model=StandardResponse[ToolSaveResponse],
+    "/{repo_name}/{file_path}",
+    response_model=StandardResponse[ToolMeta],
     status_code=status.HTTP_201_CREATED,
     responses={
         422: {
@@ -207,6 +217,19 @@ async def get_tool(
                 }
             }
         },
+        404: {
+            "description": "Repository not found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "status": "error",
+                        "type": "/errors/not-found",
+                        "title": "Not Found",
+                        "detail": "Repository not found"
+                    }
+                }
+            }
+        },
         500: {
             "description": "Internal server error",
             "content": {
@@ -215,53 +238,62 @@ async def get_tool(
                         "status": "error",
                         "type": "/errors/internal-server-error",
                         "title": "Internal Server Error",
-                        "detail": "Failed to create tool"
+                        "detail": "Failed to save tool"
                     }
                 }
             }
         }
     },
-    summary="Create or update tool",
-    description="Create a new tool or update an existing tool definition.",
+    summary="Save tool",
+    description="Save a tool (create or update). Provide file_path for updates, or use 'new' for creation with auto-generated path.",
 )
-async def create_tool(
+async def save(
     request: Request,
-    tool_request: CreateToolRequest,
+    tool_data: ToolData,
     tool_meta_service: ToolMetaServiceDep,
     user_id: CurrentUserDep,
-    user_session: CurrentSessionDep
-) -> StandardResponse[ToolSaveResponse]:
+    user_session: CurrentSessionDep,
+    repo_name: str = Path(..., description="Base64-encoded repository name"),
+    file_path: str = Path(..., description="Base64-encoded tool file path or 'new' for creation")
+) -> StandardResponse[ToolMeta]:
     """
-    Create or update a tool definition.
+    Save a tool (create or update).
+    
+    If file_path is provided and not 'new', updates the existing tool.
+    If file_path is 'new', creates a new tool with auto-generated path.
     
     Returns:
-        StandardResponse[ToolSaveResponse]: Created/updated tool definition with PR info
+        StandardResponse[ToolMeta]: Saved tool metadata with PR info
     
     Raises:
         ValidationException: When tool validation fails
-        AppException: When creation/update fails
+        NotFoundException: When repository not found
+        AppException: When save operation fails
     """
     request_id = request.state.request_id
-    repo_name = tool_request.repo_name or "default"
     
     try:
+        # Decode base64-encoded repo_name
+        decoded_repo_name = base64.b64decode(repo_name).decode('utf-8')
+        
+        # Decode base64-encoded file path if provided (skip for 'new')
+        decoded_file_path = None
+        if file_path and file_path not in ('new', 'null', 'undefined'):
+            try:
+                decoded_file_path = base64.b64decode(file_path).decode('utf-8')
+            except:
+                decoded_file_path = None
+        
+        action = "Updating" if decoded_file_path else "Creating"
         logger.info(
-            f"Creating/updating tool: {tool_request.name}",
+            f"{action} tool: {tool_data.tool.name}",
             extra={
                 "request_id": request_id,
                 "user_id": user_id,
-                "tool_name": tool_request.name,
-                "repo_name": repo_name
+                "tool_name": tool_data.tool.name,
+                "repo_name": decoded_repo_name,
+                "file_path": decoded_file_path
             }
-        )
-        
-        # Create ToolDefinition from request
-        tool = ToolDefinition(
-            name=tool_request.name,
-            description=tool_request.description,
-            parameters=tool_request.parameters,
-            returns=tool_request.returns,
-            mock=tool_request.mock
         )
         
         # Get OAuth token and user info from session
@@ -274,10 +306,11 @@ async def create_tool(
         author_email = getattr(user, 'oauth_email', None)
         
         # Save the tool with git workflow
-        saved_tool, pr_info = await tool_meta_service.save_tool(
-            tool=tool,
-            repo_name=repo_name,
+        saved_tool_meta, pr_info = await tool_meta_service.save(
             user_id=user_id,
+            repo_name=decoded_repo_name,
+            artifact_data=tool_data,
+            file_path=decoded_file_path,
             oauth_token=oauth_token,
             author_name=author_name,
             author_email=author_email,
@@ -285,33 +318,27 @@ async def create_tool(
         )
         
         logger.info(
-            f"Successfully created/updated tool: {saved_tool.name}",
-            extra={"request_id": request_id, "user_id": user_id, "tool_name": saved_tool.name}
-        )
-        
-        # Create response with tool and PR info
-        response_data = ToolSaveResponse(
-            tool=saved_tool,
-            pr_info=pr_info.model_dump(mode='json') if pr_info else None
+            f"Successfully saved tool: {tool_data.tool.name}",
+            extra={"request_id": request_id, "user_id": user_id, "tool_name": tool_data.tool.name}
         )
         
         return success_response(
-            data=response_data,
-            message=f"Tool '{saved_tool.name}' created/updated successfully",
-            meta={"request_id": request_id, "repo_name": repo_name}
+            data=saved_tool_meta.model_dump(mode='json'),
+            message=f"Tool '{tool_data.tool.name}' saved successfully",
+            meta={"request_id": request_id}
         )
         
     except ValidationException:
         logger.warning(
-            f"Tool validation failed: {tool_request.name}",
-            extra={"request_id": request_id, "user_id": user_id, "tool_name": tool_request.name}
+            f"Tool validation failed: {tool_data.tool.name}",
+            extra={"request_id": request_id, "user_id": user_id, "tool_name": tool_data.tool.name}
         )
         raise
     except Exception as e:
         logger.error(
-            f"Failed to create/update tool {tool_request.name}: {str(e)}",
+            f"Failed to create/update tool {tool_data.tool.name}: {str(e)}",
             exc_info=True,
-            extra={"request_id": request_id, "user_id": user_id, "tool_name": tool_request.name}
+            extra={"request_id": request_id, "user_id": user_id, "tool_name": tool_data.tool.name}
         )
         raise AppException(
             message="Failed to create/update tool",
@@ -320,7 +347,7 @@ async def create_tool(
 
 
 @router.delete(
-    "/{tool_name}",
+    "/{repo_name}/{file_path}",
     response_model=StandardResponse[dict],
     status_code=status.HTTP_200_OK,
     responses={
@@ -354,12 +381,12 @@ async def create_tool(
     summary="Delete tool",
     description="Delete a tool definition from the repository.",
 )
-async def delete_tool(
+async def delete(
     request: Request,
-    tool_name: str,
     tool_meta_service: ToolMetaServiceDep,
     user_id: CurrentUserDep,
-    repo_name: str = Query("default", description="Repository name")
+    repo_name: str = Path(..., description="Repository name"),
+    file_path: str = Path(..., description="Base64-encoded tool file path")
 ) -> StandardResponse[dict]:
     """
     Delete a tool definition.
@@ -374,35 +401,47 @@ async def delete_tool(
     request_id = request.state.request_id
     
     try:
+        # Decode base64-encoded repo_name and file path
+        decoded_repo_name = base64.b64decode(repo_name).decode('utf-8')
+        decoded_file_path = base64.b64decode(file_path).decode('utf-8')
+        
         logger.info(
-            f"Deleting tool: {tool_name}",
-            extra={"request_id": request_id, "user_id": user_id, "tool_name": tool_name, "repo_name": repo_name}
+            f"Deleting tool from {decoded_file_path}",
+            extra={"request_id": request_id, "user_id": user_id, "file_path": decoded_file_path, "repo_name": decoded_repo_name}
         )
         
-        tool_meta_service.delete_tool(tool_name=tool_name, repo_name=repo_name, user_id=user_id)
+        success = await tool_meta_service.delete(user_id=user_id, repo_name=decoded_repo_name, file_path=decoded_file_path)
+        
+        if not success:
+            raise NotFoundException(
+                resource="Tool",
+                identifier=decoded_file_path
+            )
         
         logger.info(
-            f"Successfully deleted tool: {tool_name}",
-            extra={"request_id": request_id, "user_id": user_id, "tool_name": tool_name}
+            f"Successfully deleted tool from {decoded_file_path}",
+            extra={"request_id": request_id, "user_id": user_id, "file_path": decoded_file_path}
         )
         
         return success_response(
-            data={"deleted": True, "tool_name": tool_name},
-            message=f"Tool '{tool_name}' deleted successfully",
-            meta={"request_id": request_id, "repo_name": repo_name}
+            data={"deleted": True, "file_path": decoded_file_path},
+            message=f"Tool deleted successfully",
+            meta={"request_id": request_id}
         )
         
-    except NotFoundException:
-        logger.warning(
-            f"Tool not found for deletion: {tool_name}",
-            extra={"request_id": request_id, "user_id": user_id, "tool_name": tool_name}
-        )
+    except (NotFoundException, AppException):
         raise
     except Exception as e:
+        try:
+            decoded_repo_name = base64.b64decode(repo_name).decode('utf-8')
+            decoded_file_path = base64.b64decode(file_path).decode('utf-8')
+        except:
+            decoded_repo_name = repo_name
+            decoded_file_path = file_path
         logger.error(
-            f"Failed to delete tool {tool_name}: {str(e)}",
+            f"Failed to delete tool from {decoded_file_path}: {str(e)}",
             exc_info=True,
-            extra={"request_id": request_id, "user_id": user_id, "tool_name": tool_name}
+            extra={"request_id": request_id, "user_id": user_id, "file_path": decoded_file_path}
         )
         raise AppException(
             message="Failed to delete tool",
@@ -411,7 +450,7 @@ async def delete_tool(
 
 
 @router.post(
-    "/{tool_name}/validate",
+    "/{repo_name}/{file_path}/validate",
     response_model=StandardResponse[dict],
     status_code=status.HTTP_200_OK,
     responses={
@@ -445,12 +484,12 @@ async def delete_tool(
     summary="Validate tool definition",
     description="Validate a tool definition for correctness.",
 )
-async def validate_tool(
+async def validate(
     request: Request,
-    tool_name: str,
     tool_meta_service: ToolMetaServiceDep,
     user_id: CurrentUserDep,
-    repo_name: str = Query("default", description="Repository name")
+    repo_name: str = Path(..., description="Repository name"),
+    file_path: str = Path(..., description="Base64-encoded tool file path")
 ) -> StandardResponse[dict]:
     """
     Validate a tool definition.
@@ -465,45 +504,51 @@ async def validate_tool(
     request_id = request.state.request_id
     
     try:
+        # Decode base64-encoded repo_name and file path
+        decoded_repo_name = base64.b64decode(repo_name).decode('utf-8')
+        decoded_file_path = base64.b64decode(file_path).decode('utf-8')
+        
         logger.info(
-            f"Validating tool: {tool_name}",
-            extra={"request_id": request_id, "user_id": user_id, "tool_name": tool_name, "repo_name": repo_name}
+            f"Validating tool from {decoded_file_path}",
+            extra={"request_id": request_id, "user_id": user_id, "file_path": decoded_file_path, "repo_name": decoded_repo_name}
         )
         
         # Load the tool
-        tool = tool_meta_service.load_tool(tool_name=tool_name, repo_name=repo_name, user_id=user_id)
+        tool_meta = await tool_meta_service.get(user_id=user_id, repo_name=decoded_repo_name, file_path=decoded_file_path)
+        
+        if not tool_meta:
+            raise NotFoundException(
+                resource="Tool",
+                identifier=decoded_file_path
+            )
         
         # Validate the tool
-        tool_meta_service.validate_tool(tool)
+        tool_meta_service.validate(tool_meta.tool)
         
         logger.info(
-            f"Tool validation successful: {tool_name}",
-            extra={"request_id": request_id, "user_id": user_id, "tool_name": tool_name}
+            f"Tool validation successful for {decoded_file_path}",
+            extra={"request_id": request_id, "user_id": user_id, "file_path": decoded_file_path}
         )
         
         return success_response(
-            data={"valid": True, "tool_name": tool_name},
-            message=f"Tool '{tool_name}' is valid",
-            meta={"request_id": request_id, "repo_name": repo_name}
+            data={"valid": True, "file_path": decoded_file_path},
+            message=f"Tool is valid",
+            meta={"request_id": request_id}
         )
         
-    except NotFoundException:
-        logger.warning(
-            f"Tool not found for validation: {tool_name}",
-            extra={"request_id": request_id, "user_id": user_id, "tool_name": tool_name}
-        )
-        raise
-    except ValidationException as e:
-        logger.warning(
-            f"Tool validation failed: {tool_name} - {str(e)}",
-            extra={"request_id": request_id, "user_id": user_id, "tool_name": tool_name}
-        )
+    except (NotFoundException, ValidationException):
         raise
     except Exception as e:
+        try:
+            decoded_repo_name = base64.b64decode(repo_name).decode('utf-8')
+            decoded_file_path = base64.b64decode(file_path).decode('utf-8')
+        except:
+            decoded_repo_name = repo_name
+            decoded_file_path = file_path
         logger.error(
-            f"Failed to validate tool {tool_name}: {str(e)}",
+            f"Failed to validate tool from {decoded_file_path}: {str(e)}",
             exc_info=True,
-            extra={"request_id": request_id, "user_id": user_id, "tool_name": tool_name}
+            extra={"request_id": request_id, "user_id": user_id, "file_path": decoded_file_path}
         )
         raise AppException(
             message="Failed to validate tool",

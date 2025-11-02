@@ -4,11 +4,11 @@
 import type { EvalState } from './types';
 
 export const initialEvalState: EvalState = {
-  evalSuites: [],
-  currentSuite: null,
+  evals: [],
+  currentEval: null,
   currentExecution: null,
   executionHistory: [],
-  editingEval: null,
+  editingTest: null,
   isLoading: false,
   error: null,
   selectedRepo: '',

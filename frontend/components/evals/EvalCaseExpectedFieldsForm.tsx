@@ -3,23 +3,23 @@
 import React, { useMemo } from 'react';
 import { VStack, Box, Text, Field, Input, Textarea } from '@chakra-ui/react';
 import { useMetricsStore } from '@/stores/metricsStore';
-import type { MetricConfig, ExpectedEvaluationFieldsModel } from '@/types/eval';
+import type { MetricConfig, ExpectedTestFieldsModel } from '@/types/eval';
 
 interface EvalCaseExpectedFieldsFormProps {
-  /** Metrics configured in the parent eval suite */
-  suiteMetrics: MetricConfig[];
+  /** Metrics configured in the parent eval */
+  evalMetrics: MetricConfig[];
   /** Current expected fields values */
-  expectedFields: ExpectedEvaluationFieldsModel;
+  expectedFields: ExpectedTestFieldsModel;
   /** Callback when expected fields change */
-  onExpectedFieldsChange: (fields: ExpectedEvaluationFieldsModel) => void;
+  onExpectedFieldsChange: (fields: ExpectedTestFieldsModel) => void;
 }
 
 /**
- * Form component for configuring expected evaluation fields for an eval case.
- * Dynamically generates forms based on metrics selected in the parent eval suite.
+ * Form component for configuring expected evaluation fields for a test case.
+ * Dynamically generates forms based on metrics selected in the parent eval.
  */
 export function EvalCaseExpectedFieldsForm({
-  suiteMetrics,
+  evalMetrics,
   expectedFields,
   onExpectedFieldsChange,
 }: EvalCaseExpectedFieldsFormProps) {
@@ -36,7 +36,7 @@ export function EvalCaseExpectedFieldsForm({
       usedByMetrics: string[];
     }>();
 
-    suiteMetrics.forEach((metric) => {
+    evalMetrics.forEach((metric: MetricConfig) => {
       const metadata = getMetricMetadata(metric.type);
       const requiredFieldNames = getRequiredExpectedFields(metric.type);
 
@@ -53,7 +53,7 @@ export function EvalCaseExpectedFieldsForm({
 
         const metricName = metric.type
           .split('_')
-          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
           .join(' ');
 
         if (fieldsMap.has(fieldName)) {
@@ -64,7 +64,7 @@ export function EvalCaseExpectedFieldsForm({
           // New field
           fieldsMap.set(fieldName, {
             name: fieldName,
-            label: fieldName.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
+            label: fieldName.split('_').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
             description: fieldDef.description,
             type: fieldDef.type,
             required: true,
@@ -75,7 +75,7 @@ export function EvalCaseExpectedFieldsForm({
     });
 
     return Array.from(fieldsMap.values());
-  }, [suiteMetrics, getMetricMetadata, getRequiredExpectedFields]);
+  }, [evalMetrics, getMetricMetadata, getRequiredExpectedFields]);
 
   const handleFieldChange = (fieldName: string, value: unknown) => {
     onExpectedFieldsChange({
@@ -97,7 +97,7 @@ export function EvalCaseExpectedFieldsForm({
         borderRadius="md"
       >
         <Text fontSize="sm" color="gray.600">
-          No metrics in this eval suite require expected fields.
+          No metrics in this eval require expected fields.
         </Text>
         <Text fontSize="xs" color="gray.500" mt={2}>
           Deterministic metrics like exact match need expected values, while some LLM-based metrics may not.
@@ -114,7 +114,7 @@ export function EvalCaseExpectedFieldsForm({
           Expected Fields
         </Text>
         <Text fontSize="xs" color="gray.600">
-          Configure the expected values required by your metrics. These values will be used to evaluate this specific eval case.
+          Configure the expected values required by your metrics. These values will be used to evaluate this specific test case.
         </Text>
       </Box>
 

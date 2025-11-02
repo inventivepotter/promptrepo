@@ -33,12 +33,12 @@ export function EvalHeader() {
     return config.repo_configs?.map(rc => rc.repo_name) || [];
   }, [config]);
 
-  // Get fetchEvalSuites to refresh after get latest
-  const fetchEvalSuites = useEvalStore((state) => state.fetchEvalSuites);
+  // Get fetchEvals to refresh after get latest
+  const fetchEvals = useEvalStore((state) => state.fetchEvals);
 
   const handleRefreshAfterGetLatest = async () => {
     if (selectedRepository) {
-      await fetchEvalSuites(selectedRepository);
+      await fetchEvals(selectedRepository);
     }
   };
 
@@ -82,7 +82,7 @@ export function EvalHeader() {
               Evals
             </Text>
             <Text fontSize="sm" color="text.secondary">
-              Create and manage eval suites for your prompts using DeepEval metrics
+              Create and manage evals for your prompts using DeepEval metrics
             </Text>
           </VStack>
           
@@ -134,7 +134,7 @@ export function EvalHeader() {
               onClick={handleCreateNew}
               disabled={availableRepos.length === 0 || !selectedRepository}
             >
-              <LuPlus /> New Eval Suite
+              <LuPlus /> New Eval
             </Button>
           </HStack>
         </HStack>

@@ -15,45 +15,42 @@ type DiscoverRepositoriesRequest = components['schemas']['DiscoverRepositoriesRe
 export const promptsApi = {
   /**
    * Get individual prompt by repository name and file path
-   * GET /api/v0/prompts?repo_name=...&file_path=...
+   * GET /api/v0/prompts/{repo_name}/{file_path}
    */
   getPrompt: async (repoName: string, filePath: string): Promise<OpenApiResponse<PromptMeta>> => {
-    const searchParams = new URLSearchParams();
-    searchParams.append('repo_name', repoName);
-    searchParams.append('file_path', filePath);
+    const encodedRepoName = btoa(repoName);
+    const encodedFilePath = btoa(filePath);
     
-    return await httpClient.get<PromptMeta>(`/api/v0/prompts/?${searchParams.toString()}`);
+    return await httpClient.get<PromptMeta>(`/api/v0/prompts/${encodedRepoName}/${encodedFilePath}`);
   },
 
   /**
    * Save a prompt (create or update)
-   * POST /api/v0/prompts?repo_name=...&file_path=...
+   * POST /api/v0/prompts/{repo_name}/{file_path}
    */
   savePrompt: async (
     repoName: string,
     filePath: string,
     promptData: PromptDataUpdate
   ): Promise<OpenApiResponse<PromptMeta>> => {
-    const searchParams = new URLSearchParams();
-    searchParams.append('repo_name', repoName);
-    searchParams.append('file_path', filePath);
+    const encodedRepoName = btoa(repoName);
+    const encodedFilePath = filePath === 'new' ? 'new' : btoa(filePath);
     
     return await httpClient.post<PromptMeta>(
-      `/api/v0/prompts/?${searchParams.toString()}`,
+      `/api/v0/prompts/${encodedRepoName}/${encodedFilePath}`,
       promptData
     );
   },
 
   /**
    * Delete a prompt
-   * DELETE /api/v0/prompts?repo_name=...&file_path=...
+   * DELETE /api/v0/prompts/{repo_name}/{file_path}
    */
   deletePrompt: async (repoName: string, filePath: string): Promise<OpenApiResponse<null>> => {
-    const searchParams = new URLSearchParams();
-    searchParams.append('repo_name', repoName);
-    searchParams.append('file_path', filePath);
+    const encodedRepoName = btoa(repoName);
+    const encodedFilePath = btoa(filePath);
     
-    return await httpClient.delete<null>(`/api/v0/prompts/?${searchParams.toString()}`);
+    return await httpClient.delete<null>(`/api/v0/prompts/${encodedRepoName}/${encodedFilePath}`);
   },
 
   /**

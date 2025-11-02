@@ -5,7 +5,7 @@ Pydantic schemas for user repositories API endpoints.
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
-from models.user_repos import RepoStatus
+from database.models.user_repos import RepoStatus
 
 
 class AddRepositoryRequest(BaseModel):

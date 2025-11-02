@@ -348,7 +348,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v0/prompts/": {
+    "/api/v0/prompts/{repo_name}/{file_path}": {
         parameters: {
             query?: never;
             header?: never;
@@ -359,18 +359,18 @@ export interface paths {
          * Get prompt
          * @description Get a specific prompt by repository name and file path. Checks user permissions based on hosting type.
          */
-        get: operations["get_prompt_api_v0_prompts__get"];
+        get: operations["get_prompt_api_v0_prompts__repo_name___file_path__get"];
         put?: never;
         /**
          * Save prompt
-         * @description Save a prompt (create or update). If the file doesn't exist, creates a new prompt. If it exists, updates it.
+         * @description Save a prompt (create or update). Provide file_path for updates, or use 'new' for creation with auto-generated path.
          */
-        post: operations["save_prompt_api_v0_prompts__post"];
+        post: operations["save_prompt_api_v0_prompts__repo_name___file_path__post"];
         /**
          * Delete prompt
          * @description Delete a prompt. Removes the prompt file from the repository.
          */
-        delete: operations["delete_prompt_api_v0_prompts__delete"];
+        delete: operations["delete_prompt_api_v0_prompts__repo_name___file_path__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -407,20 +407,16 @@ export interface paths {
          * List all tools
          * @description Retrieve a list of all tools in a repository.
          */
-        get: operations["list_tools_api_v0_tools__get"];
+        get: operations["discover_api_v0_tools__get"];
         put?: never;
-        /**
-         * Create or update tool
-         * @description Create a new tool or update an existing tool definition.
-         */
-        post: operations["create_tool_api_v0_tools__post"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v0/tools/{tool_name}": {
+    "/api/v0/tools/{repo_name}/{file_path}": {
         parameters: {
             query?: never;
             header?: never;
@@ -429,22 +425,26 @@ export interface paths {
         };
         /**
          * Get tool definition
-         * @description Retrieve a specific tool definition by name.
+         * @description Retrieve a specific tool definition by file path.
          */
-        get: operations["get_tool_api_v0_tools__tool_name__get"];
+        get: operations["get_api_v0_tools__repo_name___file_path__get"];
         put?: never;
-        post?: never;
+        /**
+         * Save tool
+         * @description Save a tool (create or update). Provide file_path for updates, or use 'new' for creation with auto-generated path.
+         */
+        post: operations["save_api_v0_tools__repo_name___file_path__post"];
         /**
          * Delete tool
          * @description Delete a tool definition from the repository.
          */
-        delete: operations["delete_tool_api_v0_tools__tool_name__delete"];
+        delete: operations["delete_api_v0_tools__repo_name___file_path__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v0/tools/{tool_name}/validate": {
+    "/api/v0/tools/{repo_name}/{file_path}/validate": {
         parameters: {
             query?: never;
             header?: never;
@@ -457,14 +457,14 @@ export interface paths {
          * Validate tool definition
          * @description Validate a tool definition for correctness.
          */
-        post: operations["validate_tool_api_v0_tools__tool_name__validate_post"];
+        post: operations["validate_api_v0_tools__repo_name___file_path__validate_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v0/evals/evals": {
+    "/api/v0/evals/": {
         parameters: {
             query?: never;
             header?: never;
@@ -475,20 +475,16 @@ export interface paths {
          * List evals
          * @description Get list of all evals in a repository with summary information.
          */
-        get: operations["list_evals_api_v0_evals_evals_get"];
+        get: operations["discover_api_v0_evals__get"];
         put?: never;
-        /**
-         * Create or update eval
-         * @description Create a new eval or update an existing one. The eval name is taken from the request body.
-         */
-        post: operations["save_eval_api_v0_evals_evals_post"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v0/evals/evals/{eval_name}": {
+    "/api/v0/evals/{repo_name}/{file_path}": {
         parameters: {
             query?: never;
             header?: never;
@@ -499,20 +495,24 @@ export interface paths {
          * Get eval
          * @description Get detailed information about a specific eval including all eval definitions.
          */
-        get: operations["get_eval_api_v0_evals_evals__eval_name__get"];
+        get: operations["get_api_v0_evals__repo_name___file_path__get"];
         put?: never;
-        post?: never;
+        /**
+         * Create or update eval
+         * @description Create a new eval or update an existing one. Provide file_path for updates, or use 'new' for creation with auto-generated path.
+         */
+        post: operations["save_api_v0_evals__repo_name___file_path__post"];
         /**
          * Delete eval
          * @description Delete an eval and all its execution history.
          */
-        delete: operations["delete_eval_api_v0_evals_evals__eval_name__delete"];
+        delete: operations["delete_api_v0_evals__repo_name___file_path__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v0/evals/evals/{eval_name}/execute": {
+    "/api/v0/evals/executions/{eval_name}/execute": {
         parameters: {
             query?: never;
             header?: never;
@@ -525,14 +525,14 @@ export interface paths {
          * Execute eval
          * @description Execute all tests in an eval or specific tests if test_names are provided in request body.
          */
-        post: operations["execute_eval_api_v0_evals_evals__eval_name__execute_post"];
+        post: operations["execute_eval_api_v0_evals_executions__eval_name__execute_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v0/evals/evals/{eval_name}/tests/{test_name}/execute": {
+    "/api/v0/evals/executions/{eval_name}/tests/{test_name}/execute": {
         parameters: {
             query?: never;
             header?: never;
@@ -545,14 +545,14 @@ export interface paths {
          * Execute single test
          * @description Execute a specific test from an eval.
          */
-        post: operations["execute_single_test_api_v0_evals_evals__eval_name__tests__test_name__execute_post"];
+        post: operations["execute_single_test_api_v0_evals_executions__eval_name__tests__test_name__execute_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v0/evals/evals/{eval_name}/executions": {
+    "/api/v0/evals/executions/{eval_name}/executions": {
         parameters: {
             query?: never;
             header?: never;
@@ -563,7 +563,7 @@ export interface paths {
          * Get execution history
          * @description Get execution history for an eval, ordered by execution time (newest first).
          */
-        get: operations["get_execution_history_api_v0_evals_evals__eval_name__executions_get"];
+        get: operations["get_execution_history_api_v0_evals_executions__eval_name__executions_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -572,7 +572,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v0/evals/evals/{eval_name}/executions/latest": {
+    "/api/v0/evals/executions/{eval_name}/executions/latest": {
         parameters: {
             query?: never;
             header?: never;
@@ -583,7 +583,7 @@ export interface paths {
          * Get latest execution
          * @description Get the most recent execution result for an eval.
          */
-        get: operations["get_latest_execution_api_v0_evals_evals__eval_name__executions_latest_get"];
+        get: operations["get_latest_execution_api_v0_evals_executions__eval_name__executions_latest_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -926,7 +926,7 @@ export interface components {
          * @description Content types for mock responses.
          * @enum {string}
          */
-        ContentType: "json" | "xml" | "STRING";
+        ContentType: "json" | "xml" | "string";
         /**
          * CostInfo
          * @description Cost information from completion
@@ -949,34 +949,6 @@ export interface components {
             total_cost: number;
         };
         /**
-         * CreateToolRequest
-         * @description Request model for creating/updating a tool.
-         */
-        CreateToolRequest: {
-            /**
-             * Name
-             * @description Tool name in function-name format
-             */
-            name: string;
-            /**
-             * Description
-             * @description Human-readable description
-             */
-            description: string;
-            /** @description OpenAI-compatible parameters */
-            parameters?: components["schemas"]["ParametersDefinition-Input"];
-            /** @description Return type schema */
-            returns?: components["schemas"]["ReturnsSchema-Input"] | null;
-            /** @description Mock configuration */
-            mock: components["schemas"]["MockConfig"];
-            /**
-             * Repo Name
-             * @description Repository name
-             * @default default
-             */
-            repo_name: string | null;
-        };
-        /**
          * DiscoverRepositoriesRequest
          * @description Request model for discovering prompts from repositories.
          */
@@ -991,15 +963,8 @@ export interface components {
          * EvalData
          * @description Wrapper for YAML serialization
          */
-        "EvalData-Input": {
+        EvalData: {
             eval: components["schemas"]["EvalDefinition-Input"];
-        };
-        /**
-         * EvalData
-         * @description Wrapper for YAML serialization
-         */
-        "EvalData-Output": {
-            eval: components["schemas"]["EvalDefinition-Output"];
         };
         /**
          * EvalDefinition
@@ -1109,24 +1074,30 @@ export interface components {
             executed_at?: string;
         };
         /**
-         * EvalSummary
-         * @description Summary of eval for listing
+         * EvalMeta
+         * @description Eval metadata model that wraps EvalDefinition with repository information.
+         *     Similar to PromptMeta and ToolMeta.
          */
-        EvalSummary: {
-            /** Name */
-            name: string;
-            /** Description */
-            description: string;
-            /** Test Count */
-            test_count: number;
-            /** Tags */
-            tags: string[];
-            /** File Path */
+        EvalMeta: {
+            /** @description Complete eval definition */
+            eval: components["schemas"]["EvalDefinition-Output"];
+            /**
+             * Repo Name
+             * @description Repository name where eval is stored
+             */
+            repo_name: string;
+            /**
+             * File Path
+             * @description File path within the repository
+             */
             file_path: string;
-            /** Last Execution */
-            last_execution?: string | null;
-            /** Last Execution Passed */
-            last_execution_passed?: boolean | null;
+            /**
+             * Pr Info
+             * @description Pull request information when applicable
+             */
+            pr_info?: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * ExecuteTestsRequest
@@ -1405,7 +1376,7 @@ export interface components {
             mock_type: components["schemas"]["MockType"];
             /**
              * @description Content type of mock response
-             * @default STRING
+             * @default string
              */
             content_type: components["schemas"]["ContentType"];
             /**
@@ -1563,12 +1534,6 @@ export interface components {
          *     This model represents the complete prompt configuration including LLM parameters.
          */
         PromptData: {
-            /**
-             * Id
-             * @description Unique identifier for the prompt
-             * @default
-             */
-            id: string;
             /**
              * Name
              * @description Prompt name
@@ -2420,44 +2385,6 @@ export interface components {
             meta?: components["schemas"]["ResponseMeta"];
         };
         /**
-         * StandardResponse[EvalData]
-         * @example {
-         *       "data": {
-         *         "id": 1,
-         *         "name": "Example"
-         *       },
-         *       "message": "Operation completed successfully",
-         *       "meta": {
-         *         "request_id": "req_123",
-         *         "timestamp": "2024-01-01T00:00:00Z",
-         *         "version": "1.0.0"
-         *       },
-         *       "status": "success"
-         *     }
-         */
-        StandardResponse_EvalData_: {
-            /**
-             * @description Response status indicator
-             * @default success
-             */
-            status: components["schemas"]["ResponseStatus"];
-            /**
-             * Status Code
-             * @description HTTP status code
-             * @default 200
-             */
-            status_code: number;
-            /** @description Response payload */
-            data?: components["schemas"]["EvalData-Output"] | null;
-            /**
-             * Message
-             * @description Human-readable message about the response
-             */
-            message?: string | null;
-            /** @description Response metadata */
-            meta?: components["schemas"]["ResponseMeta"];
-        };
-        /**
          * StandardResponse[EvalExecutionResult]
          * @example {
          *       "data": {
@@ -2487,6 +2414,44 @@ export interface components {
             status_code: number;
             /** @description Response payload */
             data?: components["schemas"]["EvalExecutionResult"] | null;
+            /**
+             * Message
+             * @description Human-readable message about the response
+             */
+            message?: string | null;
+            /** @description Response metadata */
+            meta?: components["schemas"]["ResponseMeta"];
+        };
+        /**
+         * StandardResponse[EvalMeta]
+         * @example {
+         *       "data": {
+         *         "id": 1,
+         *         "name": "Example"
+         *       },
+         *       "message": "Operation completed successfully",
+         *       "meta": {
+         *         "request_id": "req_123",
+         *         "timestamp": "2024-01-01T00:00:00Z",
+         *         "version": "1.0.0"
+         *       },
+         *       "status": "success"
+         *     }
+         */
+        StandardResponse_EvalMeta_: {
+            /**
+             * @description Response status indicator
+             * @default success
+             */
+            status: components["schemas"]["ResponseStatus"];
+            /**
+             * Status Code
+             * @description HTTP status code
+             * @default 200
+             */
+            status_code: number;
+            /** @description Response payload */
+            data?: components["schemas"]["EvalMeta"] | null;
             /**
              * Message
              * @description Human-readable message about the response
@@ -2537,7 +2502,7 @@ export interface components {
             meta?: components["schemas"]["ResponseMeta"];
         };
         /**
-         * StandardResponse[List[EvalSummary]]
+         * StandardResponse[List[EvalMeta]]
          * @example {
          *       "data": {
          *         "id": 1,
@@ -2552,7 +2517,7 @@ export interface components {
          *       "status": "success"
          *     }
          */
-        StandardResponse_List_EvalSummary__: {
+        StandardResponse_List_EvalMeta__: {
             /**
              * @description Response status indicator
              * @default success
@@ -2568,7 +2533,7 @@ export interface components {
              * Data
              * @description Response payload
              */
-            data?: components["schemas"]["EvalSummary"][] | null;
+            data?: components["schemas"]["EvalMeta"][] | null;
             /**
              * Message
              * @description Human-readable message about the response
@@ -2619,7 +2584,7 @@ export interface components {
             meta?: components["schemas"]["ResponseMeta"];
         };
         /**
-         * StandardResponse[List[ToolSummary]]
+         * StandardResponse[List[ToolMeta]]
          * @example {
          *       "data": {
          *         "id": 1,
@@ -2634,7 +2599,7 @@ export interface components {
          *       "status": "success"
          *     }
          */
-        StandardResponse_List_ToolSummary__: {
+        StandardResponse_List_ToolMeta__: {
             /**
              * @description Response status indicator
              * @default success
@@ -2650,7 +2615,7 @@ export interface components {
              * Data
              * @description Response payload
              */
-            data?: components["schemas"]["ToolSummary"][] | null;
+            data?: components["schemas"]["ToolMeta"][] | null;
             /**
              * Message
              * @description Human-readable message about the response
@@ -2967,7 +2932,7 @@ export interface components {
             meta?: components["schemas"]["ResponseMeta"];
         };
         /**
-         * StandardResponse[ToolDefinition]
+         * StandardResponse[ToolMeta]
          * @example {
          *       "data": {
          *         "id": 1,
@@ -2982,7 +2947,7 @@ export interface components {
          *       "status": "success"
          *     }
          */
-        StandardResponse_ToolDefinition_: {
+        StandardResponse_ToolMeta_: {
             /**
              * @description Response status indicator
              * @default success
@@ -2995,45 +2960,7 @@ export interface components {
              */
             status_code: number;
             /** @description Response payload */
-            data?: components["schemas"]["ToolDefinition"] | null;
-            /**
-             * Message
-             * @description Human-readable message about the response
-             */
-            message?: string | null;
-            /** @description Response metadata */
-            meta?: components["schemas"]["ResponseMeta"];
-        };
-        /**
-         * StandardResponse[ToolSaveResponse]
-         * @example {
-         *       "data": {
-         *         "id": 1,
-         *         "name": "Example"
-         *       },
-         *       "message": "Operation completed successfully",
-         *       "meta": {
-         *         "request_id": "req_123",
-         *         "timestamp": "2024-01-01T00:00:00Z",
-         *         "version": "1.0.0"
-         *       },
-         *       "status": "success"
-         *     }
-         */
-        StandardResponse_ToolSaveResponse_: {
-            /**
-             * @description Response status indicator
-             * @default success
-             */
-            status: components["schemas"]["ResponseStatus"];
-            /**
-             * Status Code
-             * @description HTTP status code
-             * @default 200
-             */
-            status_code: number;
-            /** @description Response payload */
-            data?: components["schemas"]["ToolSaveResponse"] | null;
+            data?: components["schemas"]["ToolMeta"] | null;
             /**
              * Message
              * @description Human-readable message about the response
@@ -3382,10 +3309,60 @@ export interface components {
             };
         };
         /**
+         * ToolData
+         * @description Wrapper for tool YAML data.
+         */
+        "ToolData-Input": {
+            /** @description Tool definition */
+            tool: components["schemas"]["ToolDefinition-Input"];
+        };
+        /**
+         * ToolData
+         * @description Wrapper for tool YAML data.
+         */
+        "ToolData-Output": {
+            /** @description Tool definition */
+            tool: components["schemas"]["ToolDefinition-Output"];
+        };
+        /**
          * ToolDefinition
          * @description Complete tool definition following simplified design.
          */
-        ToolDefinition: {
+        "ToolDefinition-Input": {
+            /**
+             * Name
+             * @description Tool name in function-name format
+             */
+            name: string;
+            /**
+             * Description
+             * @description Human-readable description
+             */
+            description: string;
+            /** @description OpenAI-compatible parameters */
+            parameters?: components["schemas"]["ParametersDefinition-Input"];
+            /** @description Return type schema (OpenAI compatible) */
+            returns?: components["schemas"]["ReturnsSchema-Input"] | null;
+            /** @description Mock configuration */
+            mock?: components["schemas"]["MockConfig"];
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp
+             */
+            created_at?: string;
+            /**
+             * Updated At
+             * Format: date-time
+             * @description Last update timestamp
+             */
+            updated_at?: string;
+        };
+        /**
+         * ToolDefinition
+         * @description Complete tool definition following simplified design.
+         */
+        "ToolDefinition-Output": {
             /**
              * Name
              * @description Tool name in function-name format
@@ -3402,6 +3379,18 @@ export interface components {
             returns?: components["schemas"]["ReturnsSchema-Output"] | null;
             /** @description Mock configuration */
             mock?: components["schemas"]["MockConfig"];
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp
+             */
+            created_at?: string;
+            /**
+             * Updated At
+             * Format: date-time
+             * @description Last update timestamp
+             */
+            updated_at?: string;
         };
         /**
          * ToolMessageSchema
@@ -3458,64 +3447,36 @@ export interface components {
             is_error: boolean;
         };
         /**
-         * ToolParameterType
-         * @description Parameter types for tool parameters.
-         * @enum {string}
+         * ToolMeta
+         * @description Tool metadata model that wraps ToolData with repository information.
          */
-        ToolParameterType: "string" | "integer" | "number" | "boolean" | "array" | "object";
-        /**
-         * ToolSaveResponse
-         * @description Response model for tool save operation with git workflow.
-         */
-        ToolSaveResponse: {
-            /** @description The saved tool definition */
-            tool: components["schemas"]["ToolDefinition"];
+        ToolMeta: {
+            /** @description Complete tool data */
+            tool: components["schemas"]["ToolData-Output"];
+            /**
+             * Repo Name
+             * @description Repository name where tool is stored
+             */
+            repo_name: string;
+            /**
+             * File Path
+             * @description File path within the repository
+             */
+            file_path: string;
             /**
              * Pr Info
-             * @description Pull request information if PR was created
+             * @description Pull request information when applicable
              */
             pr_info?: {
                 [key: string]: unknown;
             } | null;
         };
         /**
-         * ToolSummary
-         * @description Tool summary for listing.
-         *
-         *     Note: file_path is populated during discovery and not stored in YAML files.
+         * ToolParameterType
+         * @description Parameter types for tool parameters.
+         * @enum {string}
          */
-        ToolSummary: {
-            /**
-             * Name
-             * @description Tool name
-             */
-            name: string;
-            /**
-             * Description
-             * @description Tool description
-             */
-            description: string;
-            /**
-             * Mock Enabled
-             * @description Whether mock is enabled
-             */
-            mock_enabled: boolean;
-            /**
-             * Parameter Count
-             * @description Number of parameters
-             */
-            parameter_count: number;
-            /**
-             * Required Count
-             * @description Number of required parameters
-             */
-            required_count: number;
-            /**
-             * File Path
-             * @description Tool file path (populated during discovery, not stored in YAML)
-             */
-            file_path: string;
-        };
+        ToolParameterType: "string" | "integer" | "number" | "boolean" | "array" | "object";
         /**
          * User
          * @description User table model representing authenticated users.
@@ -4566,14 +4527,16 @@ export interface operations {
             };
         };
     };
-    get_prompt_api_v0_prompts__get: {
+    get_prompt_api_v0_prompts__repo_name___file_path__get: {
         parameters: {
-            query: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Base64-encoded repository name */
                 repo_name: string;
+                /** @description Base64-encoded file path */
                 file_path: string;
             };
-            header?: never;
-            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -4632,14 +4595,16 @@ export interface operations {
             };
         };
     };
-    save_prompt_api_v0_prompts__post: {
+    save_prompt_api_v0_prompts__repo_name___file_path__post: {
         parameters: {
-            query: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Base64-encoded repository name */
                 repo_name: string;
+                /** @description Base64-encoded file path or 'new' for creation */
                 file_path: string;
             };
-            header?: never;
-            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -4719,14 +4684,16 @@ export interface operations {
             };
         };
     };
-    delete_prompt_api_v0_prompts__delete: {
+    delete_prompt_api_v0_prompts__repo_name___file_path__delete: {
         parameters: {
-            query: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Base64-encoded repository name */
                 repo_name: string;
+                /** @description Base64-encoded file path */
                 file_path: string;
             };
-            header?: never;
-            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -4852,7 +4819,7 @@ export interface operations {
             };
         };
     };
-    list_tools_api_v0_tools__get: {
+    discover_api_v0_tools__get: {
         parameters: {
             query?: {
                 /** @description Repository name */
@@ -4870,7 +4837,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StandardResponse_List_ToolSummary__"];
+                    "application/json": components["schemas"]["StandardResponse_List_ToolMeta__"];
                 };
             };
             /** @description Validation Error */
@@ -4901,73 +4868,15 @@ export interface operations {
             };
         };
     };
-    create_tool_api_v0_tools__post: {
+    get_api_v0_tools__repo_name___file_path__get: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateToolRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StandardResponse_ToolSaveResponse_"];
-                };
-            };
-            /** @description Validation error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "status": "error",
-                     *       "type": "/errors/validation-error",
-                     *       "title": "Validation Error",
-                     *       "detail": "Tool validation failed"
-                     *     }
-                     */
-                    "application/json": unknown;
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "status": "error",
-                     *       "type": "/errors/internal-server-error",
-                     *       "title": "Internal Server Error",
-                     *       "detail": "Failed to create tool"
-                     *     }
-                     */
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    get_tool_api_v0_tools__tool_name__get: {
-        parameters: {
-            query?: {
-                /** @description Repository name */
-                repo_name?: string;
-            };
-            header?: never;
             path: {
-                tool_name: string;
+                /** @description Base64-encoded Repository name */
+                repo_name: string;
+                /** @description Base64-encoded Tool file path */
+                file_path: string;
             };
             cookie?: never;
         };
@@ -4979,7 +4888,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StandardResponse_ToolDefinition_"];
+                    "application/json": components["schemas"]["StandardResponse_ToolMeta_"];
                 };
             };
             /** @description Tool not found */
@@ -5027,15 +4936,95 @@ export interface operations {
             };
         };
     };
-    delete_tool_api_v0_tools__tool_name__delete: {
+    save_api_v0_tools__repo_name___file_path__post: {
         parameters: {
-            query?: {
-                /** @description Repository name */
-                repo_name?: string;
-            };
+            query?: never;
             header?: never;
             path: {
-                tool_name: string;
+                /** @description Base64-encoded repository name */
+                repo_name: string;
+                /** @description Base64-encoded tool file path or 'new' for creation */
+                file_path: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ToolData-Input"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_ToolMeta_"];
+                };
+            };
+            /** @description Repository not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Not Found",
+                     *       "detail": "Repository not found"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/validation-error",
+                     *       "title": "Validation Error",
+                     *       "detail": "Tool validation failed"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to save tool"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    delete_api_v0_tools__repo_name___file_path__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Repository name */
+                repo_name: string;
+                /** @description Base64-encoded tool file path */
+                file_path: string;
             };
             cookie?: never;
         };
@@ -5095,15 +5084,15 @@ export interface operations {
             };
         };
     };
-    validate_tool_api_v0_tools__tool_name__validate_post: {
+    validate_api_v0_tools__repo_name___file_path__validate_post: {
         parameters: {
-            query?: {
-                /** @description Repository name */
-                repo_name?: string;
-            };
+            query?: never;
             header?: never;
             path: {
-                tool_name: string;
+                /** @description Repository name */
+                repo_name: string;
+                /** @description Base64-encoded tool file path */
+                file_path: string;
             };
             cookie?: never;
         };
@@ -5154,7 +5143,7 @@ export interface operations {
             };
         };
     };
-    list_evals_api_v0_evals_evals_get: {
+    discover_api_v0_evals__get: {
         parameters: {
             query: {
                 /** @description Repository name */
@@ -5172,7 +5161,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StandardResponse_List_EvalSummary__"];
+                    "application/json": components["schemas"]["StandardResponse_List_EvalMeta__"];
                 };
             };
             /** @description Repository not found */
@@ -5220,85 +5209,16 @@ export interface operations {
             };
         };
     };
-    save_eval_api_v0_evals_evals_post: {
+    get_api_v0_evals__repo_name___file_path__get: {
         parameters: {
-            query: {
-                /** @description Repository name */
-                repo_name: string;
-            };
+            query?: never;
             header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EvalData-Input"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StandardResponse_EvalData_"];
-                };
-            };
-            /** @description Repository not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "status": "error",
-                     *       "type": "/errors/not-found",
-                     *       "title": "Not Found",
-                     *       "detail": "Repository not found"
-                     *     }
-                     */
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "status": "error",
-                     *       "type": "/errors/internal-server-error",
-                     *       "title": "Internal Server Error",
-                     *       "detail": "Failed to save eval"
-                     *     }
-                     */
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    get_eval_api_v0_evals_evals__eval_name__get: {
-        parameters: {
-            query: {
-                name: string;
-                /** @description Repository name */
+            path: {
+                /** @description Base64-encoded repository name */
                 repo_name: string;
+                /** @description Base64-encoded eval file path */
+                file_path: string;
             };
-            header?: never;
-            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -5309,7 +5229,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StandardResponse_EvalData_"];
+                    "application/json": components["schemas"]["StandardResponse_EvalMeta_"];
                 };
             };
             /** @description Eval not found */
@@ -5357,15 +5277,88 @@ export interface operations {
             };
         };
     };
-    delete_eval_api_v0_evals_evals__eval_name__delete: {
+    save_api_v0_evals__repo_name___file_path__post: {
         parameters: {
-            query: {
-                name: string;
-                /** @description Repository name */
-                repo_name: string;
-            };
+            query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description Base64-encoded repository name */
+                repo_name: string;
+                /** @description Base64-encoded eval file path or 'new' for creation */
+                file_path: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EvalData"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardResponse_EvalMeta_"];
+                };
+            };
+            /** @description Repository not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/not-found",
+                     *       "title": "Not Found",
+                     *       "detail": "Repository not found"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "error",
+                     *       "type": "/errors/internal-server-error",
+                     *       "title": "Internal Server Error",
+                     *       "detail": "Failed to save eval"
+                     *     }
+                     */
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    delete_api_v0_evals__repo_name___file_path__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Base64-encoded repository name */
+                repo_name: string;
+                /** @description Base64-encoded eval file path */
+                file_path: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -5424,7 +5417,7 @@ export interface operations {
             };
         };
     };
-    execute_eval_api_v0_evals_evals__eval_name__execute_post: {
+    execute_eval_api_v0_evals_executions__eval_name__execute_post: {
         parameters: {
             query: {
                 /** @description Repository name */
@@ -5496,7 +5489,7 @@ export interface operations {
             };
         };
     };
-    execute_single_test_api_v0_evals_evals__eval_name__tests__test_name__execute_post: {
+    execute_single_test_api_v0_evals_executions__eval_name__tests__test_name__execute_post: {
         parameters: {
             query: {
                 /** @description Repository name */
@@ -5565,7 +5558,7 @@ export interface operations {
             };
         };
     };
-    get_execution_history_api_v0_evals_evals__eval_name__executions_get: {
+    get_execution_history_api_v0_evals_executions__eval_name__executions_get: {
         parameters: {
             query: {
                 /** @description Repository name */
@@ -5635,7 +5628,7 @@ export interface operations {
             };
         };
     };
-    get_latest_execution_api_v0_evals_evals__eval_name__executions_latest_get: {
+    get_latest_execution_api_v0_evals_executions__eval_name__executions_latest_get: {
         parameters: {
             query: {
                 /** @description Repository name */

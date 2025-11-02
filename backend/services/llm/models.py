@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, Literal, Any, Dict
-from services.prompt.models import PromptMeta
+from services.artifacts.prompt.models import PromptMeta
 from schemas import MessageSchema
 
 

@@ -17,6 +17,7 @@ import { LuPlus } from 'react-icons/lu';
 import { useSelectedRepository, useRepositoryFilterActions } from '@/stores/repositoryFilterStore';
 import { useUniqueRepositories, usePromptActions } from '@/stores/promptStore';
 import { GetLatestButton } from './GetLatestButton';
+import { buildEditorUrl } from '@/lib/urlEncoder';
 
 export function PromptsHeader() {
   const router = useRouter();
@@ -46,7 +47,7 @@ export function PromptsHeader() {
 
   const handleCreateNew = () => {
     if (selectedRepository) {
-      router.push(`/editor?mode=new&repo_name=${encodeURIComponent(selectedRepository)}`);
+      router.push(buildEditorUrl(selectedRepository, undefined, 'new'));
     }
   };
 
@@ -116,7 +117,6 @@ export function PromptsHeader() {
               </Select.Root>
               <GetLatestButton
                 repoName={selectedRepository}
-                artifactType="prompts"
                 onSuccess={discoverAllPromptsFromRepos}
                 disabled={availableRepos.length === 0 || !selectedRepository}
               />
