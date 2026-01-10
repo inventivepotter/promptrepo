@@ -3,6 +3,7 @@ import { errorNotification } from '@/lib/notifications';
 import { isStandardResponse, isErrorResponse } from '@/types/OpenApiResponse';
 import type {
   EvalData,
+  EvalMeta,
   EvalSummary,
   EvalExecutionResult,
   TestExecutionResult
@@ -54,17 +55,17 @@ export class EvalService {
   /**
    * Get specific eval definition
    * @param repoName - Repository name
-   * @param evalName - Eval name
-   * @returns Eval data
+   * @param filePath - Eval file path
+   * @returns Eval metadata with full context
    */
-  static async getEval(repoName: string, evalName: string): Promise<EvalData> {
+  static async getEval(repoName: string, filePath: string): Promise<EvalData> {
     try {
-      const result = await EvalApi.getEval(repoName, evalName);
+      const result = await EvalApi.getEval(repoName, filePath);
 
       if (isErrorResponse(result)) {
         errorNotification(
           result.title || 'Failed to Load Eval',
-          result.detail || `Unable to load eval "${evalName}".`
+          result.detail || `Unable to load eval from "${filePath}".`
         );
         throw new Error(result.detail || 'Failed to load eval');
       }
@@ -77,7 +78,8 @@ export class EvalService {
         throw new Error('Unexpected response format');
       }
 
-      return result.data;
+      // Return just the EvalData portion for backward compatibility
+      return { eval: result.data.eval };
     } catch (error: unknown) {
       errorNotification(
         'Connection Error',
@@ -91,11 +93,14 @@ export class EvalService {
    * Create or update eval
    * @param repoName - Repository name
    * @param evalData - Eval data to save
-   * @returns Saved eval data
+   * @param filePath - Optional file path for updates (defaults to 'new' for creation)
+   * @returns Saved eval metadata with file path
    */
-  static async saveEval(repoName: string, evalData: EvalData): Promise<EvalData> {
+  static async saveEval(repoName: string, evalData: EvalData, filePath?: string): Promise<EvalMeta> {
     try {
-      const result = await EvalApi.saveEval(repoName, evalData);
+      // Use provided filePath or default to 'new' for creation
+      const pathToUse = filePath || 'new';
+      const result = await EvalApi.saveEval(repoName, pathToUse, evalData);
 
       if (isErrorResponse(result)) {
         errorNotification(
@@ -113,6 +118,7 @@ export class EvalService {
         throw new Error('Unexpected response format');
       }
 
+      // Return the full EvalMeta which includes file_path
       return result.data;
     } catch (error: unknown) {
       errorNotification(
@@ -162,22 +168,22 @@ export class EvalService {
   /**
    * Execute eval or specific tests
    * @param repoName - Repository name
-   * @param evalName - Eval name
+   * @param filePath - Eval file path
    * @param testNames - Optional array of specific test names to execute
    * @returns Eval execution results
    */
   static async executeEval(
     repoName: string,
-    evalName: string,
+    filePath: string,
     testNames?: string[]
   ): Promise<EvalExecutionResult> {
     try {
-      const result = await EvalApi.executeEval(repoName, evalName, testNames);
+      const result = await EvalApi.executeEval(repoName, filePath, testNames);
 
       if (isErrorResponse(result)) {
         errorNotification(
           result.title || 'Eval Execution Failed',
-          result.detail || `Unable to execute eval "${evalName}".`
+          result.detail || `Unable to execute eval.`
         );
         throw new Error(result.detail || 'Eval execution failed');
       }
@@ -203,17 +209,17 @@ export class EvalService {
   /**
    * Execute single test
    * @param repoName - Repository name
-   * @param evalName - Eval name
+   * @param filePath - Eval file path
    * @param testName - Test name
    * @returns Test execution result
    */
   static async executeSingleTest(
     repoName: string,
-    evalName: string,
+    filePath: string,
     testName: string
   ): Promise<TestExecutionResult> {
     try {
-      const result = await EvalApi.executeSingleTest(repoName, evalName, testName);
+      const result = await EvalApi.executeSingleTest(repoName, filePath, testName);
 
       if (isErrorResponse(result)) {
         errorNotification(
@@ -244,22 +250,22 @@ export class EvalService {
   /**
    * Get execution history for eval
    * @param repoName - Repository name
-   * @param evalName - Eval name
+   * @param filePath - Eval file path
    * @param limit - Maximum number of executions to return
    * @returns List of execution results
    */
   static async getExecutionHistory(
     repoName: string,
-    evalName: string,
+    filePath: string,
     limit: number = 10
   ): Promise<EvalExecutionResult[]> {
     try {
-      const result = await EvalApi.getExecutionHistory(repoName, evalName, limit);
+      const result = await EvalApi.getExecutionHistory(repoName, filePath, limit);
 
       if (isErrorResponse(result)) {
         errorNotification(
           result.title || 'Failed to Load Execution History',
-          result.detail || `Unable to load execution history for "${evalName}".`
+          result.detail || `Unable to load execution history.`
         );
         throw new Error(result.detail || 'Failed to load execution history');
       }
@@ -285,20 +291,20 @@ export class EvalService {
   /**
    * Get latest execution for eval
    * @param repoName - Repository name
-   * @param evalName - Eval name
+   * @param filePath - Eval file path
    * @returns Latest execution result or null
    */
   static async getLatestExecution(
     repoName: string,
-    evalName: string
+    filePath: string
   ): Promise<EvalExecutionResult | null> {
     try {
-      const result = await EvalApi.getLatestExecution(repoName, evalName);
+      const result = await EvalApi.getLatestExecution(repoName, filePath);
 
       if (isErrorResponse(result)) {
         errorNotification(
           result.title || 'Failed to Load Latest Execution',
-          result.detail || `Unable to load latest execution for "${evalName}".`
+          result.detail || `Unable to load latest execution.`
         );
         throw new Error(result.detail || 'Failed to load latest execution');
       }

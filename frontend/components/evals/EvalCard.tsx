@@ -16,8 +16,8 @@ import type { EvalSummary } from '@/types/eval';
 
 interface EvalCardProps {
   eval: EvalSummary;
-  onView: (evalName: string) => void;
-  onDelete?: (evalName: string) => void;
+  onView: (filePath: string) => void;
+  onDelete?: (filePath: string) => void;
 }
 
 const formatTimeAgo = (dateString: string): string => {
@@ -38,26 +38,28 @@ const formatTimeAgo = (dateString: string): string => {
   return `${years} year${years > 1 ? 's' : ''} ago`;
 };
 
-export function EvalCard({ eval: evalData, onView, onDelete }: EvalCardProps) {
+export function EvalCard({ eval: evalMeta, onView, onDelete }: EvalCardProps) {
+  // Access the nested eval definition
+  const evalDef = evalMeta.eval;
+  
   const handleClick = () => {
-    onView(evalData.name);
+    onView(evalMeta.file_path);
   };
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onDelete) {
-      onDelete(evalData.name);
+      onDelete(evalMeta.file_path);
     }
   };
 
+  // EvalMeta doesn't have execution info - just show pending status for now
   const getStatusColor = () => {
-    if (evalData.last_execution_passed === null) return 'gray';
-    return evalData.last_execution_passed ? 'green' : 'red';
+    return 'gray';
   };
 
   const getStatusIcon = () => {
-    if (evalData.last_execution_passed === null) return FaClock;
-    return evalData.last_execution_passed ? FaCheckCircle : FaTimesCircle;
+    return FaClock;
   };
 
   return (
@@ -79,11 +81,11 @@ export function EvalCard({ eval: evalData, onView, onDelete }: EvalCardProps) {
           <HStack justify="space-between" align="start">
             <VStack align="start" gap={1} flex={1}>
               <Text fontSize="lg" fontWeight="semibold" lineClamp={1}>
-                {evalData.name}
+                {evalDef.name}
               </Text>
-              {evalData.description && (
+              {evalDef.description && (
                 <Text fontSize="sm" color="fg.subtle" lineClamp={2}>
-                  {evalData.description}
+                  {evalDef.description}
                 </Text>
               )}
             </VStack>
@@ -110,40 +112,30 @@ export function EvalCard({ eval: evalData, onView, onDelete }: EvalCardProps) {
           {/* Test count and tags */}
           <HStack justify="space-between" align="center">
             <Badge colorScheme="blue" variant="subtle">
-              {evalData.test_count} {evalData.test_count === 1 ? 'test' : 'tests'}
+              {evalDef.tests?.length ?? 0} {(evalDef.tests?.length ?? 0) === 1 ? 'test' : 'tests'}
             </Badge>
-            {evalData.tags.length > 0 && (
+            {(evalDef.tags?.length ?? 0) > 0 && (
               <HStack gap={1}>
-                {evalData.tags.slice(0, 2).map((tag) => (
+                {evalDef.tags?.slice(0, 2).map((tag) => (
                   <Badge key={tag} variant="outline" size="sm">
                     {tag}
                   </Badge>
                 ))}
-                {evalData.tags.length > 2 && (
+                {(evalDef.tags?.length ?? 0) > 2 && (
                   <Badge variant="outline" size="sm">
-                    +{evalData.tags.length - 2}
+                    +{(evalDef.tags?.length ?? 0) - 2}
                   </Badge>
                 )}
               </HStack>
             )}
           </HStack>
 
-          {/* Last execution info */}
-          {evalData.last_execution && (
-            <Box pt={2} borderTopWidth="1px" borderTopColor="bg.muted">
-              <Text fontSize="xs" color="fg.subtle">
-                Last run: {formatTimeAgo(evalData.last_execution)}
-              </Text>
-            </Box>
-          )}
-
-          {!evalData.last_execution && (
-            <Box pt={2} borderTopWidth="1px" borderTopColor="bg.muted">
-              <Text fontSize="xs" color="fg.subtle">
-                Never executed
-              </Text>
-            </Box>
-          )}
+          {/* Repository info */}
+          <Box pt={2} borderTopWidth="1px" borderTopColor="bg.muted">
+            <Text fontSize="xs" color="fg.subtle">
+              {evalMeta.file_path}
+            </Text>
+          </Box>
         </VStack>
       </Card.Body>
     </Card.Root>

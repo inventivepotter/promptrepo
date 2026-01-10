@@ -14,8 +14,8 @@ const providerConfig = {
   github: {
     icon: SiGithub,
     label: 'GitHub',
-    bgColor: '#24292e',
-    hoverBgColor: '#1a1e22',
+    bgColor: '#000000',
+    hoverBgColor: '#1a1a1a',
     textColor: 'white',
   },
   gitlab: {

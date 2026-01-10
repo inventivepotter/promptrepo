@@ -63,6 +63,8 @@ class ArtifactDiscoveryResult(BaseModel):
     """Result of artifact discovery operation grouped by type."""
     prompts: List[str] = Field(default_factory=list)
     tools: List[str] = Field(default_factory=list)
+    tests: List[str] = Field(default_factory=list)
+    evals: List[str] = Field(default_factory=list)
     
     def get_files_by_type(self, artifact_type: ArtifactType) -> List[str]:
         """Get files for a specific artifact type."""
@@ -70,6 +72,10 @@ class ArtifactDiscoveryResult(BaseModel):
             return self.prompts
         elif artifact_type == ArtifactType.TOOL:
             return self.tools
+        elif artifact_type == ArtifactType.TEST:
+            return self.tests
+        elif artifact_type == ArtifactType.EVAL:
+            return self.evals
         return []
     
     def add_file(self, file_path: str, artifact_type: ArtifactType) -> None:
@@ -78,6 +84,10 @@ class ArtifactDiscoveryResult(BaseModel):
             self.prompts.append(file_path)
         elif artifact_type == ArtifactType.TOOL:
             self.tools.append(file_path)
+        elif artifact_type == ArtifactType.TEST:
+            self.tests.append(file_path)
+        elif artifact_type == ArtifactType.EVAL:
+            self.evals.append(file_path)
 
 
 class SaveArtifactResult(BaseModel):

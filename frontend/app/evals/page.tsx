@@ -20,8 +20,9 @@ import { useSelectedRepository, useRepositoryFilterActions } from '@/stores/repo
 import { EvalHeader } from '@/components/EvalHeader';
 import { EvalCard } from '@/components/evals/EvalCard';
 import { buildEvalEditorUrl } from '@/lib/urlEncoder';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
-export default function EvalsPage() {
+function EvalsPageContent() {
   const router = useRouter();
   
   // Use eval store
@@ -62,9 +63,9 @@ export default function EvalsPage() {
     }
   }, [selectedRepository, config, fetchEvals, setSelectedRepo]);
 
-  const handleViewEval = (evalName: string) => {
+  const handleViewEval = (filePath: string) => {
     if (selectedRepository) {
-      router.push(buildEvalEditorUrl(selectedRepository, evalName));
+      router.push(buildEvalEditorUrl(selectedRepository, filePath));
     }
   };
 
@@ -169,9 +170,9 @@ export default function EvalsPage() {
                       }}
                       gap={6}
                     >
-                      {evals.map((evalData) => (
+                      {evals.map((evalData, index) => (
                         <EvalCard
-                          key={evalData.name}
+                          key={`${selectedRepository}:${evalData.eval.name}:${index}`}
                           eval={evalData}
                           onView={handleViewEval}
                         />
@@ -188,5 +189,13 @@ export default function EvalsPage() {
         </ScrollArea.Scrollbar>
       </ScrollArea.Root>
     </Box>
+  );
+}
+
+export default function EvalsPage() {
+  return (
+    <ProtectedRoute>
+      <EvalsPageContent />
+    </ProtectedRoute>
   );
 }

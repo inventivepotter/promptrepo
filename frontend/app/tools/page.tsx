@@ -26,18 +26,22 @@ import {
 import { HiPencil, HiTrash } from 'react-icons/hi';
 import { LuSearch, LuWrench, LuPlus } from 'react-icons/lu';
 import { FaGitAlt } from 'react-icons/fa';
-import type { ToolSummary } from '@/types/tools';
+import type { ToolMeta } from '@/types/tools';
 import { ToolsService } from '@/services/tools';
 import { successNotification } from '@/lib/notifications';
 import { useConfig } from '@/stores/configStore';
 import { useSelectedRepository, useRepositoryFilterActions } from '@/stores/repositoryFilterStore';
 import { GetLatestButton } from '@/components/GetLatestButton';
 import { buildToolEditorUrl } from '@/lib/urlEncoder';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { useIsAuthenticated, useIsInitialized } from '@/stores/authStore/hooks';
 
 export default function ToolsPage() {
   const router = useRouter();
   const config = useConfig();
-  const [tools, setTools] = useState<ToolSummary[]>([]);
+  const isAuthenticated = useIsAuthenticated();
+  const isInitialized = useIsInitialized();
+  const [tools, setTools] = useState<ToolMeta[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -70,13 +74,13 @@ export default function ToolsPage() {
     }
   }, [availableRepos, selectedRepository, setSelectedRepository]);
 
-  // Load tools when selected repo changes
+  // Load tools when selected repo changes and user is authenticated
   useEffect(() => {
-    if (selectedRepository) {
+    if (selectedRepository && isAuthenticated && isInitialized) {
       loadTools();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRepository]);
+  }, [selectedRepository, isAuthenticated, isInitialized]);
 
   const loadTools = async () => {
     if (!selectedRepository) return;
@@ -128,12 +132,13 @@ export default function ToolsPage() {
 
   // Filter tools based on search
   const filteredTools = tools.filter(tool =>
-    tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    tool.description.toLowerCase().includes(searchQuery.toLowerCase())
+    (tool.tool?.tool?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (tool.tool?.tool?.description || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <Box height="100vh" width="100%" display="flex" flexDirection="column">
+    <ProtectedRoute>
+      <Box height="100vh" width="100%" display="flex" flexDirection="column">
       {/* Header */}
       <Box
         bg="bg.subtle"
@@ -330,62 +335,71 @@ export default function ToolsPage() {
                       }}
                       gap={6}
                     >
-                      {filteredTools.map((tool) => (
-                        <Card.Root
-                          key={tool.name}
-                          borderWidth="1px"
-                          borderColor="bg.muted"
-                          _hover={{ bg: "bg.subtle" }}
-                          transition="background-color 0.2s"
-                        >
-                          <Card.Body>
-                            <VStack align="stretch" gap={3}>
-                              <HStack justify="space-between">
-                                <Text fontSize="lg" fontWeight="bold">
-                                  {tool.name}
-                                </Text>
-                                <HStack gap={1}>
-                                  <IconButton
-                                    aria-label="Edit tool"
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleEdit(tool.name)}
-                                  >
-                                    <HiPencil />
-                                  </IconButton>
-                                  <IconButton
-                                    aria-label="Delete tool"
-                                    size="sm"
-                                    variant="ghost"
-                                    colorPalette="red"
-                                    onClick={() => handleDelete(tool.name)}
-                                  >
-                                    <HiTrash />
-                                  </IconButton>
+                      {filteredTools.map((toolMeta) => {
+                        const tool = toolMeta.tool?.tool;
+                        const toolName = tool?.name || '';
+                        const toolDescription = tool?.description || '';
+                        const mockEnabled = tool?.mock?.enabled || false;
+                        const parameterCount = Object.keys(tool?.parameters?.properties || {}).length;
+                        const requiredCount = tool?.parameters?.required?.length || 0;
+                        
+                        return (
+                          <Card.Root
+                            key={toolMeta.file_path}
+                            borderWidth="1px"
+                            borderColor="bg.muted"
+                            _hover={{ bg: "bg.subtle" }}
+                            transition="background-color 0.2s"
+                          >
+                            <Card.Body>
+                              <VStack align="stretch" gap={3}>
+                                <HStack justify="space-between">
+                                  <Text fontSize="lg" fontWeight="bold">
+                                    {toolName}
+                                  </Text>
+                                  <HStack gap={1}>
+                                    <IconButton
+                                      aria-label="Edit tool"
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleEdit(toolMeta.file_path)}
+                                    >
+                                      <HiPencil />
+                                    </IconButton>
+                                    <IconButton
+                                      aria-label="Delete tool"
+                                      size="sm"
+                                      variant="ghost"
+                                      colorPalette="red"
+                                      onClick={() => handleDelete(toolMeta.file_path)}
+                                    >
+                                      <HiTrash />
+                                    </IconButton>
+                                  </HStack>
                                 </HStack>
-                              </HStack>
-                              
-                              <Text fontSize="sm" color="gray.600" lineClamp={2}>
-                                {tool.description}
-                              </Text>
+                                
+                                <Text fontSize="sm" color="gray.600" lineClamp={2}>
+                                  {toolDescription}
+                                </Text>
 
-                              <HStack gap={2} flexWrap="wrap">
-                                <Badge colorPalette={tool.mock_enabled ? 'green' : 'gray'}>
-                                  {tool.mock_enabled ? 'Mock Enabled' : 'Mock Disabled'}
-                                </Badge>
-                                <Badge colorPalette="blue">
-                                  {tool.parameter_count} param{tool.parameter_count !== 1 ? 's' : ''}
-                                </Badge>
-                                {tool.required_count > 0 && (
-                                  <Badge colorPalette="orange">
-                                    {tool.required_count} required
+                                <HStack gap={2} flexWrap="wrap">
+                                  <Badge colorPalette={mockEnabled ? 'green' : 'gray'}>
+                                    {mockEnabled ? 'Mock Enabled' : 'Mock Disabled'}
                                   </Badge>
-                                )}
-                              </HStack>
-                            </VStack>
-                          </Card.Body>
-                        </Card.Root>
-                      ))}
+                                  <Badge colorPalette="blue">
+                                    {parameterCount} param{parameterCount !== 1 ? 's' : ''}
+                                  </Badge>
+                                  {requiredCount > 0 && (
+                                    <Badge colorPalette="orange">
+                                      {requiredCount} required
+                                    </Badge>
+                                  )}
+                                </HStack>
+                              </VStack>
+                            </Card.Body>
+                          </Card.Root>
+                        );
+                      })}
                     </Grid>
                   )}
                 </VStack>
@@ -397,6 +411,7 @@ export default function ToolsPage() {
           <ScrollArea.Thumb />
         </ScrollArea.Scrollbar>
       </ScrollArea.Root>
-    </Box>
+      </Box>
+    </ProtectedRoute>
   );
 }

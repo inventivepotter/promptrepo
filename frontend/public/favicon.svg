@@ -1,7 +1,67 @@
-<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="32" height="32" rx="6"/>
-  <text x="16" y="20" font-family="Inter, sans-serif" font-size="16" text-anchor="middle" fill="white">
-    <tspan font-weight="300">{P}</tspan>
-    <tspan font-weight="700" dx="-3">R</tspan>
-  </text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <style>
+    .brace { fill: #84a98c; }
+    .letter-p { fill: #84a98c; }
+    .letter-r { fill: #4A6F65; }
+    .border-line { stroke: #84a98c; stroke-width: 1; }
+    
+    @media (prefers-color-scheme: dark) {
+      .brace { fill: #8fae9d; }
+      .letter-p { fill: #8fae9d; }
+      .letter-r { fill: #b8d4be; }
+      .border-line { stroke: #b8d4be; }
+    }
+  </style>
+  
+  <!-- Top border line -->
+  <!-- <line x1="0" y1="0.5" x2="64" y2="0.5" class="border-line" /> -->
+  
+  <!-- Bottom border line -->
+  <!-- <line x1="0" y1="63.5" x2="64" y2="63.5" class="border-line" /> -->
+  
+  <!-- Clean typographic curly braces matching the branding style -->
+  
+  <!-- Left curly brace { -->
+  <text 
+    x="6" 
+    y="42" 
+    font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    font-size="36"
+    font-weight="200"
+    class="letter-r"
+    text-anchor="middle"
+  >{</text>
+
+  <!-- P  -->
+  <text 
+    x="21" 
+    y="42" 
+    font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    font-size="32"
+    font-weight="300"
+    class="letter-r"
+    text-anchor="middle"
+  >P</text>
+
+  <!-- R  -->
+  <text 
+    x="42" 
+    y="42" 
+    font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    font-size="32"
+    font-weight="700"
+    class="letter-r"
+    text-anchor="middle"
+  >R</text>
+  
+  <!-- Right curly brace } -->
+  <text 
+    x="58" 
+    y="42" 
+    font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    font-size="36"
+    font-weight="200"
+    class="letter-r"
+    text-anchor="middle"
+  >}</text>
 </svg>

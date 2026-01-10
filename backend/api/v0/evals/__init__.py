@@ -12,10 +12,11 @@ from . import evals, execution, metrics
 
 router = APIRouter()
 
-# Include evals endpoints
+# Include metrics metadata endpoints FIRST (more specific routes should come before generic ones)
 router.include_router(
-    evals.router,
-    tags=["Eval evals"]
+    metrics.router,
+    prefix="/metrics",
+    tags=["Metrics"]
 )
 
 # Include eval execution endpoints
@@ -25,11 +26,10 @@ router.include_router(
     tags=["Eval Execution"]
 )
 
-# Include metrics metadata endpoints
+# Include evals endpoints (generic parameterized routes should be last)
 router.include_router(
-    metrics.router,
-    prefix="/metrics",
-    tags=["Metrics"]
+    evals.router,
+    tags=["Eval evals"]
 )
 
 __all__ = ["router"]

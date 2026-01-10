@@ -25,10 +25,10 @@ export const createEvalActions: StateCreator<
     }
   },
 
-  fetchEval: async (repoName: string, evalName: string) => {
+  fetchEval: async (repoName: string, filePath: string) => {
     set({ isLoading: true, error: null });
     try {
-      const evalData = await EvalService.getEval(repoName, evalName);
+      const evalData = await EvalService.getEval(repoName, filePath);
       set({ currentEval: evalData, isLoading: false });
     } catch (error) {
       const storeError = handleStoreError(error, 'fetchEval');
@@ -36,26 +36,31 @@ export const createEvalActions: StateCreator<
     }
   },
 
-  saveEval: async (repoName: string, evalData: EvalData) => {
+  saveEval: async (repoName: string, evalData: EvalData, filePath?: string) => {
     set({ isLoading: true, error: null });
     try {
-      const savedEval = await EvalService.saveEval(repoName, evalData);
-      set({ currentEval: savedEval, isLoading: false });
-      
+      const savedEvalMeta = await EvalService.saveEval(repoName, evalData, filePath);
+      // Convert EvalMeta back to EvalData for the store
+      set({ currentEval: { eval: savedEvalMeta.eval }, isLoading: false });
+
       // Refresh evals list
       await get().fetchEvals(repoName);
+
+      // Return the full EvalMeta so the caller can access file_path and pr_info
+      return savedEvalMeta;
     } catch (error) {
       const storeError = handleStoreError(error, 'saveEval');
       set({ error: storeError.message, isLoading: false });
+      throw error;
     }
   },
 
-  deleteEval: async (repoName: string, evalName: string) => {
+  deleteEval: async (repoName: string, filePath: string) => {
     set({ isLoading: true, error: null });
     try {
-      await EvalService.deleteEval(repoName, evalName);
+      await EvalService.deleteEval(repoName, filePath);
       set({ currentEval: null, isLoading: false });
-      
+
       // Refresh evals list
       await get().fetchEvals(repoName);
     } catch (error) {
@@ -65,28 +70,28 @@ export const createEvalActions: StateCreator<
   },
 
   // Execution actions
-  executeEval: async (repoName: string, evalName: string, testNames?: string[]) => {
+  executeEval: async (repoName: string, filePath: string, testNames?: string[]) => {
     set({ isLoading: true, error: null });
     try {
-      const executionResult = await EvalService.executeEval(repoName, evalName, testNames);
+      const executionResult = await EvalService.executeEval(repoName, filePath, testNames);
       set({ currentExecution: executionResult, isLoading: false });
-      
+
       // Refresh execution history
-      await get().fetchExecutionHistory(repoName, evalName);
+      await get().fetchExecutionHistory(repoName, filePath);
     } catch (error) {
       const storeError = handleStoreError(error, 'executeEval');
       set({ error: storeError.message, isLoading: false });
     }
   },
 
-  executeSingleTest: async (repoName: string, evalName: string, testName: string) => {
+  executeSingleTest: async (repoName: string, filePath: string, testName: string) => {
     set({ isLoading: true, error: null });
     try {
-      const testResult = await EvalService.executeSingleTest(repoName, evalName, testName);
-      
+      const testResult = await EvalService.executeSingleTest(repoName, filePath, testName);
+
       // Create an eval execution result with single test
       const evalExecution: EvalExecutionResult = {
-        eval_name: evalName,
+        eval_name: filePath,
         test_results: [testResult],
         total_tests: 1,
         passed_tests: testResult.overall_passed ? 1 : 0,
@@ -94,7 +99,7 @@ export const createEvalActions: StateCreator<
         total_execution_time_ms: testResult.actual_test_fields.execution_time_ms || 0,
         executed_at: testResult.executed_at,
       };
-      
+
       set({ currentExecution: evalExecution, isLoading: false });
     } catch (error) {
       const storeError = handleStoreError(error, 'executeSingleTest');
@@ -102,10 +107,10 @@ export const createEvalActions: StateCreator<
     }
   },
 
-  fetchExecutionHistory: async (repoName: string, evalName: string, limit: number = 10) => {
+  fetchExecutionHistory: async (repoName: string, filePath: string, limit: number = 10) => {
     set({ isLoading: true, error: null });
     try {
-      const history = await EvalService.getExecutionHistory(repoName, evalName, limit);
+      const history = await EvalService.getExecutionHistory(repoName, filePath, limit);
       set({ executionHistory: history, isLoading: false });
     } catch (error) {
       const storeError = handleStoreError(error, 'fetchExecutionHistory');
@@ -113,10 +118,10 @@ export const createEvalActions: StateCreator<
     }
   },
 
-  fetchLatestExecution: async (repoName: string, evalName: string) => {
+  fetchLatestExecution: async (repoName: string, filePath: string) => {
     set({ isLoading: true, error: null });
     try {
-      const latestExecution = await EvalService.getLatestExecution(repoName, evalName);
+      const latestExecution = await EvalService.getLatestExecution(repoName, filePath);
       set({ currentExecution: latestExecution, isLoading: false });
     } catch (error) {
       const storeError = handleStoreError(error, 'fetchLatestExecution');

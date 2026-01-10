@@ -12,9 +12,10 @@ export type ReturnsSchema = components['schemas']['ReturnsSchema-Output'];
 export type MockConfig = components['schemas']['MockConfig'];
 export type ContentType = components['schemas']['ContentType'];
 export type MockType = components['schemas']['MockType'];
-export type ToolDefinition = components['schemas']['ToolDefinition'];
-export type ToolSummary = components['schemas']['ToolSummary'];
-export type ToolSaveResponse = components['schemas']['ToolSaveResponse'];
+export type ToolDefinition = components['schemas']['ToolDefinition-Output'];
+export type ToolMeta = components['schemas']['ToolMeta'];
+export type ToolData = components['schemas']['ToolData-Output'];
+export type ToolDataInput = components['schemas']['ToolData-Input'];
 export type ToolParameterType = components['schemas']['ToolParameterType'];
 
 // Form state for tool editor
@@ -39,10 +40,7 @@ export interface ParameterFormState {
   defaultValue?: unknown;
 }
 
-// Request/Response types for API calls
-// Match server schema exactly to avoid drift
-export type CreateToolRequest = components['schemas']['CreateToolRequest'];
-
+// Validation response
 export interface ValidateToolResponse {
   valid: boolean;
   errors?: string[];

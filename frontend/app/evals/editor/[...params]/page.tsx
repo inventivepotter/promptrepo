@@ -23,10 +23,11 @@ import { useEvalStore } from '@/stores/evalStore';
 import { EvalEditor } from '@/components/evals/EvalEditor';
 import { TestList } from '@/components/evals/TestList';
 import { EvalExecutor } from '@/components/evals/EvalExecutor';
-import { EvalResults } from '@/components/evals/EvalResults';
+import { EvalExecutionHistory } from '@/components/evals/EvalExecutionHistory';
 import { TestEditor } from '@/components/evals/TestEditor';
 import { errorNotification } from '@/lib/notifications';
 import { decodeBase64Url, buildEvalEditorUrl } from '@/lib/urlEncoder';
+import { toaster } from '@/components/ui/toaster';
 
 export default function EvalEditorPage() {
   const params = useParams();
@@ -41,24 +42,24 @@ export default function EvalEditorPage() {
   const repoName = encodedRepo ? decodeBase64Url(encodedRepo) : '';
   // Check if it's 'new' BEFORE decoding to avoid decoding the literal string 'new'
   const isNewEval = encodedEvalId === 'new';
-  const evalName = isNewEval ? 'new' : (encodedEvalId ? decodeBase64Url(encodedEvalId) : '');
+  const filePath = isNewEval ? 'new' : (encodedEvalId ? decodeBase64Url(encodedEvalId) : '');
   
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isTestsListOpen, setIsTestsListOpen] = useState(true);
   
   // Store state
   const currentEval = useEvalStore((state) => state.currentEval);
-  const currentExecution = useEvalStore((state) => state.currentExecution);
+  const executionHistory = useEvalStore((state) => state.executionHistory);
   const editingTest = useEvalStore((state) => state.editingTest);
   const isLoading = useEvalStore((state) => state.isLoading);
   const error = useEvalStore((state) => state.error);
-  
+
   // Store actions
   const fetchEval = useEvalStore((state) => state.fetchEval);
   const saveEval = useEvalStore((state) => state.saveEval);
   const deleteEval = useEvalStore((state) => state.deleteEval);
   const executeEval = useEvalStore((state) => state.executeEval);
-  const fetchLatestExecution = useEvalStore((state) => state.fetchLatestExecution);
+  const fetchExecutionHistory = useEvalStore((state) => state.fetchExecutionHistory);
   const setCurrentEval = useEvalStore((state) => state.setCurrentEval);
   const setEditingTest = useEvalStore((state) => state.setEditingTest);
 
@@ -78,39 +79,82 @@ export default function EvalEditorPage() {
             updated_at: now,
           },
         });
-      } else if (evalName) {
-        // Fetch existing eval
-        fetchEval(repoName, evalName);
-        fetchLatestExecution(repoName, evalName);
+      } else if (filePath) {
+        // Fetch existing eval and last 3 executions
+        fetchEval(repoName, filePath);
+        fetchExecutionHistory(repoName, filePath, 3);
       }
     }
-  }, [repoName, evalName, isNewEval, fetchEval, fetchLatestExecution, setCurrentEval]);
+  }, [repoName, filePath, isNewEval, fetchEval, fetchExecutionHistory, setCurrentEval]);
 
   const handleBack = () => {
     router.push('/evals');
   };
 
   const handleSave = async () => {
-    if (currentEval && repoName) {
-      await saveEval(repoName, currentEval);
-      
-      // If we're creating a new eval, redirect to the actual eval page
-      if (isNewEval && currentEval.eval.name) {
-        router.push(buildEvalEditorUrl(repoName, currentEval.eval.name));
-      }
-    }
+    if (!currentEval || !repoName) return;
+
+    // Use 'new' for new evals, or the existing filePath for updates
+    const pathToSave = isNewEval ? 'new' : filePath;
+
+    const savePromise = saveEval(repoName, currentEval, pathToSave);
+
+    toaster.promise(savePromise, {
+      loading: {
+        title: 'Saving...',
+        description: 'Creating a PR for your changes.',
+      },
+      success: (data) => {
+        const prInfo = data?.pr_info as { pr_url?: string; pr_number?: number } | null | undefined;
+        const prUrl = prInfo?.pr_url;
+        const prNumber = prInfo?.pr_number;
+
+        // If we're creating a new eval, redirect to the actual eval page using the file_path
+        if (isNewEval && data?.file_path) {
+          setTimeout(() => {
+            router.push(buildEvalEditorUrl(repoName, data.file_path));
+          }, 100);
+        }
+
+        if (prUrl) {
+          return {
+            title: 'Successfully saved!',
+            description: `Pull Request #${prNumber} created`,
+            duration: 30000, // Sticky notification - 30 seconds
+            closable: true,
+            action: {
+              label: 'View PR',
+              onClick: () => {
+                window.open(prUrl, '_blank', 'noopener,noreferrer');
+              },
+            },
+          };
+        }
+
+        return {
+          title: 'Successfully saved!',
+          description: 'Changes committed successfully',
+          duration: 5000, // Auto-dismiss after 5 seconds
+          closable: true,
+        };
+      },
+      error: {
+        title: 'Save failed',
+        description: 'Something went wrong while saving',
+      },
+    });
   };
 
   const handleDelete = async () => {
-    if (repoName && evalName && confirm(`Are you sure you want to delete eval "${evalName}"?`)) {
-      await deleteEval(repoName, evalName);
+    if (repoName && filePath && confirm(`Are you sure you want to delete this eval?`)) {
+      await deleteEval(repoName, filePath);
       router.push('/evals');
     }
   };
 
   const handleExecute = async () => {
-    if (repoName && evalName) {
-      await executeEval(repoName, evalName);
+    if (repoName && filePath) {
+      await executeEval(repoName, filePath);
     }
   };
 
@@ -279,9 +323,9 @@ export default function EvalEditorPage() {
                                     setCurrentEval(updatedEval);
 
                                     // Save the changes to backend
-                                    if (repoName) {
+                                    if (repoName && !isNewEval) {
                                       try {
-                                        await saveEval(repoName, updatedEval);
+                                        await saveEval(repoName, updatedEval, filePath);
                                       } catch (error) {
                                         console.error('Failed to save eval after delete:', error);
                                         // Revert the local change if save fails
@@ -293,7 +337,7 @@ export default function EvalEditorPage() {
                                 }}
                                 onRun={(testName) => {
                                   if (repoName) {
-                                    executeEval(repoName, evalName, [testName]);
+                                    executeEval(repoName, filePath, [testName]);
                                   }
                                 }}
                                 onToggleEnabled={(testName, enabled) => {
@@ -324,16 +368,14 @@ export default function EvalEditorPage() {
                       {/* Eval Executor */}
                       <EvalExecutor
                         repoName={repoName || ''}
-                        evalName={evalName}
+                        filePath={filePath}
                         tests={currentEval.eval.tests || []}
                         onExecute={executeEval}
                         isExecuting={isLoading}
                       />
 
-                      {/* Eval Results */}
-                      {currentExecution && (
-                        <EvalResults execution={currentExecution} />
-                      )}
+                      {/* Eval Execution History - Show all executions in one panel */}
+                      <EvalExecutionHistory executions={executionHistory} />
                     </VStack>
                   </Box>
                 </HStack>

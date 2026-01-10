@@ -1,15 +1,15 @@
 import { toolsApi } from './api';
 import { errorNotification } from '@/lib/notifications';
 import { isStandardResponse, isErrorResponse } from '@/types/OpenApiResponse';
-import type { ToolDefinition, ToolSummary } from '@/types/tools';
+import type { ToolDefinition, ToolMeta } from '@/types/tools';
 
 export class ToolsService {
   /**
    * List all tools from a repository
    * @param repoName - The repository name
-   * @returns Array of tool summaries
+   * @returns Array of tool metadata
    */
-  static async listTools(repoName: string = 'default'): Promise<ToolSummary[]> {
+  static async listTools(repoName: string = 'default'): Promise<ToolMeta[]> {
     try {
       const result = await toolsApi.listTools(repoName);
 
@@ -41,13 +41,13 @@ export class ToolsService {
 
   /**
    * Get a specific tool by name
-   * @param toolName - The tool name
+   * @param toolName - The tool name (file path)
    * @param repoName - The repository name
-   * @returns The tool definition
+   * @returns The tool definition extracted from ToolMeta
    */
   static async getTool(toolName: string, repoName: string = 'default'): Promise<ToolDefinition> {
     try {
-      const result = await toolsApi.getTool(toolName, repoName);
+      const result = await toolsApi.getTool(repoName, toolName);
 
       if (isErrorResponse(result)) {
         errorNotification(
@@ -65,7 +65,9 @@ export class ToolsService {
         throw new Error('Unexpected response format');
       }
 
-      return result.data;
+      // Extract the tool definition from the nested structure
+      // ToolMeta has { tool: ToolData, ... } and ToolData has { tool: ToolDefinition }
+      return result.data.tool.tool;
     } catch (error: unknown) {
       errorNotification(
         'Connection Error',
@@ -79,11 +81,14 @@ export class ToolsService {
    * Create or update a tool
    * @param tool - The tool definition
    * @param repoName - The repository name
-   * @returns The saved tool definition with PR info
+   * @param filePath - The file path (optional, defaults to 'new' for creating new tools)
+   * @returns The saved tool definition with file path and PR info
    */
-  static async saveTool(tool: ToolDefinition, repoName: string = 'default'): Promise<{ tool: ToolDefinition; pr_info?: { pr_url?: string; pr_number?: number; pr_id?: number } | null }> {
+  static async saveTool(tool: ToolDefinition, repoName: string = 'default', filePath: string = 'new'): Promise<{ tool: ToolDefinition; file_path: string; pr_info?: { pr_url?: string; pr_number?: number; pr_id?: number } | null }> {
     try {
-      const result = await toolsApi.saveTool(tool, repoName);
+      // Wrap tool in ToolData object as expected by the API
+      const toolData = { tool };
+      const result = await toolsApi.saveTool(repoName, filePath, toolData);
 
       if (isErrorResponse(result)) {
         errorNotification(
@@ -101,7 +106,13 @@ export class ToolsService {
         throw new Error('Unexpected response format');
       }
 
-      return result.data;
+      // Extract the tool definition from the nested structure and return with file_path and pr_info
+      // ToolMeta has { tool: ToolData, file_path, pr_info, ... } and ToolData has { tool: ToolDefinition }
+      return {
+        tool: result.data.tool.tool,
+        file_path: result.data.file_path,
+        pr_info: result.data.pr_info
+      };
     } catch (error: unknown) {
       errorNotification(
         'Connection Error',
@@ -118,7 +129,7 @@ export class ToolsService {
    */
   static async deleteTool(toolName: string, repoName: string = 'default'): Promise<void> {
     try {
-      const result = await toolsApi.deleteTool(toolName, repoName);
+      const result = await toolsApi.deleteTool(repoName, toolName);
 
       if (isErrorResponse(result)) {
         errorNotification(
@@ -152,7 +163,7 @@ export class ToolsService {
    */
   static async validateTool(toolName: string, repoName: string = 'default'): Promise<{ valid: boolean; errors?: string[] }> {
     try {
-      const result = await toolsApi.validateTool(toolName, repoName);
+      const result = await toolsApi.validateTool(repoName, toolName);
 
       if (isErrorResponse(result)) {
         errorNotification(

@@ -1,0 +1,7 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="32" height="32" rx="6"/>
+  <text x="16" y="20" font-family="Inter, sans-serif" font-size="16" text-anchor="middle" fill="white">
+    <tspan font-weight="300">{P}</tspan>
+    <tspan font-weight="700" dx="-3">R</tspan>
+  </text>
+</svg>

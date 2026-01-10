@@ -39,48 +39,61 @@ export function EvalResults({ execution }: EvalResultsProps) {
 
   const overallPassed = execution.failed_tests === 0;
 
-  return (
-    <Card.Root>
-      <Card.Body>
-        <Fieldset.Root>
-          <HStack justify="space-between" align="center">
-            <Stack flex={1}>
-              <HStack gap={2}>
-                <Fieldset.Legend>Test Results</Fieldset.Legend>
-                <Badge colorScheme={overallPassed ? 'green' : 'red'}>
-                  {overallPassed ? 'Passed' : 'Failed'}
-                </Badge>
-                <Badge variant="outline">
-                  {execution.passed_tests}/{execution.total_tests} passed
-                </Badge>
-                <Badge variant="outline">
-                  {(execution.total_execution_time_ms / 1000).toFixed(2)}s
-                </Badge>
-              </HStack>
-              <Fieldset.HelperText color="text.tertiary">
-                View detailed results for each test execution
-              </Fieldset.HelperText>
-            </Stack>
-            <Button
-              variant="ghost"
-              _hover={{ bg: "bg.subtle" }}
-              size="sm"
-              onClick={() => setIsOpen(!isOpen)}
-              aria-label={isOpen ? "Collapse test results" : "Expand test results"}
-            >
-              <HStack gap={1}>
-                <Text fontSize="xs" fontWeight="medium">
-                  {isOpen ? "Hide" : "Show"}
-                </Text>
-                {isOpen ? <LuChevronUp /> : <LuChevronDown />}
-              </HStack>
-            </Button>
-          </HStack>
+  // Format execution timestamp
+  const formatExecutionTime = (timestamp: string | Date) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
 
-          <Fieldset.Content>
-            <Collapsible.Root open={isOpen}>
-              <Collapsible.Content>
-                <VStack gap={3} align="stretch" mt={3}>
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+
+    return date.toLocaleString();
+  };
+
+  return (
+    <Box borderWidth="1px" borderRadius="md" p={4} mb={3}>
+      <HStack justify="space-between" align="center" mb={3}>
+        <HStack gap={2} flex={1}>
+          <Badge colorScheme={overallPassed ? 'green' : 'red'} size="sm">
+            {overallPassed ? 'Passed' : 'Failed'}
+          </Badge>
+          <Badge variant="outline" size="sm">
+            {execution.passed_tests}/{execution.total_tests} passed
+          </Badge>
+          <Badge variant="outline" size="sm">
+            {(execution.total_execution_time_ms / 1000).toFixed(2)}s
+          </Badge>
+          {execution.executed_at && (
+            <Text fontSize="sm" color="fg.muted">
+              • {formatExecutionTime(execution.executed_at)}
+            </Text>
+          )}
+        </HStack>
+        <Button
+          variant="ghost"
+          _hover={{ bg: "bg.subtle" }}
+          size="sm"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label={isOpen ? "Collapse test results" : "Expand test results"}
+        >
+          <HStack gap={1}>
+            <Text fontSize="xs" fontWeight="medium">
+              {isOpen ? "Hide" : "Show"}
+            </Text>
+            {isOpen ? <LuChevronUp /> : <LuChevronDown />}
+          </HStack>
+        </Button>
+      </HStack>
+
+      <Collapsible.Root open={isOpen}>
+        <Collapsible.Content>
+          <VStack gap={3} align="stretch">
                   {execution.test_results.map((testResult) => {
                     const isExpanded = expandedTests.has(testResult.test_name);
                     
@@ -169,16 +182,24 @@ export function EvalResults({ execution }: EvalResultsProps) {
                                 {testResult.expected_test_fields?.config && (
                                   <Box>
                                     <Text fontSize="sm" fontWeight="semibold" mb={2}>
-                                      Expected Fields
+                                      {testResult.expected_test_fields.config.expected_output != null &&
+                                       Object.keys(testResult.expected_test_fields.config).length === 1
+                                        ? 'Expected Output'
+                                        : 'Expected Fields'}
                                     </Text>
                                     <Box
                                       p={3}
                                       bg="bg.subtle"
                                       borderRadius="md"
                                       fontSize="sm"
-                                      fontFamily="mono"
+                                      whiteSpace="pre-wrap"
                                     >
-                                      <pre>{JSON.stringify(testResult.expected_test_fields.config, null, 2)}</pre>
+                                      {testResult.expected_test_fields.config.expected_output != null &&
+                                       Object.keys(testResult.expected_test_fields.config).length === 1 ? (
+                                        String(testResult.expected_test_fields.config.expected_output)
+                                      ) : (
+                                        <pre style={{ fontFamily: 'mono' }}>{JSON.stringify(testResult.expected_test_fields.config, null, 2)}</pre>
+                                      )}
                                     </Box>
                                   </Box>
                                 )}
@@ -189,19 +210,101 @@ export function EvalResults({ execution }: EvalResultsProps) {
                                     <Text fontSize="sm" fontWeight="semibold" mb={2}>
                                       Tools Called
                                     </Text>
-                                    <VStack align="stretch" gap={1}>
-                                      {testResult.actual_test_fields.tools_called.map((tool: { [key: string]: unknown }, idx: number) => (
-                                        <Box
-                                          key={idx}
-                                          p={2}
-                                          bg="bg.subtle"
-                                          borderRadius="md"
-                                          fontSize="sm"
-                                          fontFamily="mono"
-                                        >
-                                          <pre>{JSON.stringify(tool, null, 2)}</pre>
-                                        </Box>
-                                      ))}
+                                    <VStack align="stretch" gap={3}>
+                                      {(() => {
+                                        // Extract tool calls and results
+                                        const toolCalls: Array<{ name: string; arguments: Record<string, unknown>; id: string }> = [];
+                                        const toolResults: Array<{ content: string; toolCallId: string; toolName: string }> = [];
+
+                                        testResult.actual_test_fields.tools_called.forEach((item: any) => {
+                                          if (item.role === 'assistant' && item.tool_calls) {
+                                            item.tool_calls.forEach((tc: any) => {
+                                              toolCalls.push({
+                                                name: tc.name,
+                                                arguments: tc.arguments || {},
+                                                id: tc.id
+                                              });
+                                            });
+                                          } else if (item.role === 'tool' && item.content) {
+                                            toolResults.push({
+                                              content: item.content,
+                                              toolCallId: item.tool_call_id,
+                                              toolName: item.tool_name
+                                            });
+                                          }
+                                        });
+
+                                        return toolCalls.map((toolCall, idx) => {
+                                          // Try to match by ID first, then by name and index
+                                          let result = toolResults.find(r => r.toolCallId === toolCall.id);
+                                          if (!result && toolResults[idx]) {
+                                            // Fallback: match by sequential order if IDs don't match
+                                            result = toolResults[idx];
+                                          }
+
+                                          return (
+                                            <Box
+                                              key={idx}
+                                              p={3}
+                                              bg="gray.50"
+                                              borderRadius="md"
+                                              borderWidth="1px"
+                                              borderColor="gray.200"
+                                              _dark={{ bg: "gray.800", borderColor: "gray.700" }}
+                                            >
+                                              <VStack align="stretch" gap={2}>
+                                                <HStack gap={2}>
+                                                  <Badge colorPalette="purple" size="sm">
+                                                    {toolCall.name}
+                                                  </Badge>
+                                                </HStack>
+
+                                                {Object.keys(toolCall.arguments).length > 0 && (
+                                                  <Box>
+                                                    <Text fontSize="xs" fontWeight="semibold" color="gray.600" mb={1} _dark={{ color: "gray.400" }}>
+                                                      Parameters:
+                                                    </Text>
+                                                    <Box
+                                                      p={2}
+                                                      bg="white"
+                                                      borderRadius="sm"
+                                                      fontSize="xs"
+                                                      _dark={{ bg: "gray.900" }}
+                                                    >
+                                                      {Object.entries(toolCall.arguments).map(([key, value]) => (
+                                                        <HStack key={key} gap={1} flexWrap="wrap">
+                                                          <Text fontWeight="semibold" color="gray.700" _dark={{ color: "gray.300" }}>{key}:</Text>
+                                                          <Text color="gray.600" _dark={{ color: "gray.400" }}>{String(value)}</Text>
+                                                        </HStack>
+                                                      ))}
+                                                    </Box>
+                                                  </Box>
+                                                )}
+
+                                                {result && (
+                                                  <Box>
+                                                    <Text fontSize="xs" fontWeight="semibold" color="gray.600" mb={1} _dark={{ color: "gray.400" }}>
+                                                      Output:
+                                                    </Text>
+                                                    <Box
+                                                      p={2}
+                                                      bg="white"
+                                                      borderRadius="sm"
+                                                      fontSize="xs"
+                                                      whiteSpace="pre-wrap"
+                                                      fontFamily="mono"
+                                                      color="gray.700"
+                                                      _dark={{ bg: "gray.900", color: "gray.300" }}
+                                                    >
+                                                      {result.content}
+                                                    </Box>
+                                                  </Box>
+                                                )}
+                                              </VStack>
+                                            </Box>
+                                          );
+                                        });
+                                      })()}
                                     </VStack>
                                   </Box>
                                 )}
@@ -233,12 +336,9 @@ export function EvalResults({ execution }: EvalResultsProps) {
                       </Card.Root>
                     );
                   })}
-                </VStack>
-              </Collapsible.Content>
-            </Collapsible.Root>
-          </Fieldset.Content>
-        </Fieldset.Root>
-      </Card.Body>
-    </Card.Root>
+          </VStack>
+        </Collapsible.Content>
+      </Collapsible.Root>
+    </Box>
   );
 }

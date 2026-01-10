@@ -19,15 +19,15 @@ import type { TestDefinition } from '@/types/eval';
 
 interface EvalExecutorProps {
   repoName: string;
-  evalName: string;
+  filePath: string;
   tests: TestDefinition[];
-  onExecute: (repoName: string, evalName: string, testNames?: string[]) => Promise<void>;
+  onExecute: (repoName: string, filePath: string, testNames?: string[]) => Promise<void>;
   isExecuting: boolean;
 }
 
 export function EvalExecutor({
   repoName,
-  evalName,
+  filePath,
   tests,
   onExecute,
   isExecuting,
@@ -58,9 +58,9 @@ export function EvalExecutor({
 
   const handleExecute = async () => {
     if (selectedTests.size > 0) {
-      await onExecute(repoName, evalName, Array.from(selectedTests));
+      await onExecute(repoName, filePath, Array.from(selectedTests));
     } else {
-      await onExecute(repoName, evalName);
+      await onExecute(repoName, filePath);
     }
   };
 

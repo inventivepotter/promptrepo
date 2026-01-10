@@ -4,6 +4,7 @@
 import type {
   EvalData,
   EvalSummary,
+  EvalMeta,
   EvalExecutionResult,
   TestDefinition
 } from '@/types/eval';
@@ -38,22 +39,22 @@ export interface EvalActions {
   /** Fetch all evals for a repository */
   fetchEvals: (repoName: string) => Promise<void>;
   /** Fetch specific eval */
-  fetchEval: (repoName: string, evalName: string) => Promise<void>;
-  /** Save eval (create or update) */
-  saveEval: (repoName: string, evalData: EvalData) => Promise<void>;
+  fetchEval: (repoName: string, filePath: string) => Promise<void>;
+  /** Save eval (create or update) - returns saved EvalMeta */
+  saveEval: (repoName: string, evalData: EvalData, filePath?: string) => Promise<EvalMeta>;
   /** Delete eval */
-  deleteEval: (repoName: string, evalName: string) => Promise<void>;
-  
+  deleteEval: (repoName: string, filePath: string) => Promise<void>;
+
   // Execution actions
   /** Execute entire eval or specific tests */
-  executeEval: (repoName: string, evalName: string, testNames?: string[]) => Promise<void>;
+  executeEval: (repoName: string, filePath: string, testNames?: string[]) => Promise<void>;
   /** Execute single test */
-  executeSingleTest: (repoName: string, evalName: string, testName: string) => Promise<void>;
+  executeSingleTest: (repoName: string, filePath: string, testName: string) => Promise<void>;
   /** Fetch execution history */
-  fetchExecutionHistory: (repoName: string, evalName: string, limit?: number) => Promise<void>;
+  fetchExecutionHistory: (repoName: string, filePath: string, limit?: number) => Promise<void>;
   /** Fetch latest execution */
-  fetchLatestExecution: (repoName: string, evalName: string) => Promise<void>;
-  
+  fetchLatestExecution: (repoName: string, filePath: string) => Promise<void>;
+
   // Local state mutations
   /** Set currently selected eval */
   setCurrentEval: (evalData: EvalData | null) => void;

@@ -81,17 +81,19 @@ export default class EvalApi {
   /**
    * Execute eval or specific tests
    * @param repoName - Repository name
-   * @param evalName - Eval name
+   * @param filePath - Eval file path
    * @param testNames - Optional array of specific test names to execute
    * @returns OpenAPI response with execution results
    */
   static async executeEval(
     repoName: string,
-    evalName: string,
+    filePath: string,
     testNames?: string[]
   ): Promise<OpenApiResponse<EvalExecutionResult>> {
+    const encodedRepoName = btoa(repoName);
+    const encodedFilePath = btoa(filePath);
     return httpClient.post<EvalExecutionResult>(
-      `/api/v0/evals/executions/${encodeURIComponent(evalName)}/execute?repo_name=${encodeURIComponent(repoName)}`,
+      `/api/v0/evals/executions/${encodedRepoName}/${encodedFilePath}/execute`,
       { test_names: testNames }
     );
   }
@@ -99,49 +101,55 @@ export default class EvalApi {
   /**
    * Execute single test
    * @param repoName - Repository name
-   * @param evalName - Eval name
+   * @param filePath - Eval file path
    * @param testName - Test name
    * @returns OpenAPI response with test execution result
    */
   static async executeSingleTest(
     repoName: string,
-    evalName: string,
+    filePath: string,
     testName: string
   ): Promise<OpenApiResponse<TestExecutionResult>> {
+    const encodedRepoName = btoa(repoName);
+    const encodedFilePath = btoa(filePath);
     return httpClient.post<TestExecutionResult>(
-      `/api/v0/evals/executions/${encodeURIComponent(evalName)}/tests/${encodeURIComponent(testName)}/execute?repo_name=${encodeURIComponent(repoName)}`
+      `/api/v0/evals/executions/${encodedRepoName}/${encodedFilePath}/tests/${encodeURIComponent(testName)}/execute`
     );
   }
 
   /**
    * Get execution history for eval
    * @param repoName - Repository name
-   * @param evalName - Eval name
+   * @param filePath - Eval file path
    * @param limit - Maximum number of executions to return (default: 10)
    * @returns OpenAPI response with execution history
    */
   static async getExecutionHistory(
     repoName: string,
-    evalName: string,
+    filePath: string,
     limit: number = 10
   ): Promise<OpenApiResponse<EvalExecutionResult[]>> {
+    const encodedRepoName = btoa(repoName);
+    const encodedFilePath = btoa(filePath);
     return httpClient.get<EvalExecutionResult[]>(
-      `/api/v0/evals/executions/${encodeURIComponent(evalName)}/executions?repo_name=${encodeURIComponent(repoName)}&limit=${limit}`
+      `/api/v0/evals/executions/${encodedRepoName}/${encodedFilePath}/executions?limit=${limit}`
     );
   }
 
   /**
    * Get latest execution for eval
    * @param repoName - Repository name
-   * @param evalName - Eval name
+   * @param filePath - Eval file path
    * @returns OpenAPI response with latest execution or null
    */
   static async getLatestExecution(
     repoName: string,
-    evalName: string
+    filePath: string
   ): Promise<OpenApiResponse<EvalExecutionResult | null>> {
+    const encodedRepoName = btoa(repoName);
+    const encodedFilePath = btoa(filePath);
     return httpClient.get<EvalExecutionResult | null>(
-      `/api/v0/evals/executions/${encodeURIComponent(evalName)}/executions/latest?repo_name=${encodeURIComponent(repoName)}`
+      `/api/v0/evals/executions/${encodedRepoName}/${encodedFilePath}/executions/latest`
     );
   }
 }

@@ -29,7 +29,7 @@ interface ConditionalRule {
 
 export function MockDataEditor({ mockConfig, parameters, onChange }: MockDataEditorProps) {
   const mockType = mockConfig.mock_type || 'static';
-  const contentType = mockConfig.content_type || 'STRING';
+  const contentType = mockConfig.content_type || 'string';
   const [conditionalRules, setConditionalRules] = useState<ConditionalRule[]>(
     (mockConfig.conditional_rules as ConditionalRule[]) || []
   );
@@ -171,7 +171,7 @@ export function MockDataEditor({ mockConfig, parameters, onChange }: MockDataEdi
           }}
         >
           <HStack gap={4}>
-            <RadioGroup.Item value="STRING">
+            <RadioGroup.Item value="string">
               <RadioGroup.ItemHiddenInput />
               <RadioGroup.ItemControl />
               <RadioGroup.ItemText fontSize="sm">String</RadioGroup.ItemText>

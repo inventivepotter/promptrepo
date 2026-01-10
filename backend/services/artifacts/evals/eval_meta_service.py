@@ -72,7 +72,10 @@ class EvalMetaService(ArtifactMetaInterface[EvalData, EvalMeta]):
         """
         repo_path = self.local_repo_service.get_repo_path(user_id, repo_name)
         
+        logger.info(f"Discovery: user_id={user_id}, repo_name={repo_name}, repo_path={repo_path}, exists={repo_path.exists()}")
+        
         if not repo_path.exists():
+            logger.error(f"Repository not found at {repo_path}")
             raise NotFoundException(
                 resource="Repository",
                 identifier=repo_name

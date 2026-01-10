@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     )
 
     repo_path: str = Field(
-        default="/persistence/repos/workspaces/",
+        default="/persistence/repos",
         description="Path for multi-user repository workspaces"
     )
 

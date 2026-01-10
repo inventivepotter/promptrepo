@@ -5,6 +5,7 @@ import { GlobalLoadingOverlay } from "@/components/GlobalLoadingOverlay"
 import { LayoutContent } from "@/components/LayoutContent"
 
 export const metadata: Metadata = {
+  title: "Prompt Repo",
   icons: "/favicon.svg",
 }
 

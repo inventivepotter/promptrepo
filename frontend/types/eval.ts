@@ -18,11 +18,11 @@ export type EvalData = components['schemas']['EvalData'];
 export type TestDefinition = components['schemas']['TestDefinition-Output'];
 export type MetricType = components['schemas']['MetricType'];
 
-// Backward compatibility alias
-export type EvalSummary = EvalMeta;
-
 // Re-export MetricMetadataModel from generated types
 export type MetricMetadata = components['schemas']['MetricMetadataModel'];
+
+// EvalMeta is used as the summary type (API returns EvalMeta[])
+export type EvalSummary = EvalMeta;
 
 /**
  * Response from metrics metadata endpoint

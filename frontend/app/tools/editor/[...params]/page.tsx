@@ -49,7 +49,7 @@ export default function ToolEditorPage() {
   const [mockConfig, setMockConfig] = useState<MockConfig>({
     enabled: true,
     mock_type: 'static',
-    content_type: 'STRING',
+    content_type: 'string',
     static_response: '',
   });
   // Collapsible section state
@@ -85,7 +85,7 @@ export default function ToolEditorPage() {
       setMockConfig({
         enabled: tool.mock?.enabled ?? true,
         mock_type: tool.mock?.mock_type || 'static',
-        content_type: tool.mock?.content_type || 'STRING',
+        content_type: tool.mock?.content_type || 'string',
         static_response: tool.mock?.static_response,
         conditional_rules: tool.mock?.conditional_rules,
         python_code: tool.mock?.python_code,
@@ -138,7 +138,7 @@ export default function ToolEditorPage() {
     setIsSaving(true);
     
     try {
-      const savePromise = ToolsService.saveTool(tool, repoName);
+      const savePromise = ToolsService.saveTool(tool, repoName, isNewTool ? 'new' : toolName);
 
       toaster.promise(savePromise, {
         loading: {
@@ -149,13 +149,6 @@ export default function ToolEditorPage() {
           const prInfo = data?.pr_info as { pr_url?: string; pr_number?: number } | null | undefined;
           const prUrl = prInfo?.pr_url;
           const prNumber = prInfo?.pr_number;
-
-          // If we're creating a new tool, redirect to the actual tool URL
-          if (isNewTool && tool.name) {
-            setTimeout(() => {
-              router.push(buildToolEditorUrl(repoName, tool.name));
-            }, 100);
-          }
 
           if (prUrl) {
             return {
@@ -185,7 +178,14 @@ export default function ToolEditorPage() {
         },
       });
 
-      await savePromise;
+      const result = await savePromise;
+      
+      // Redirect after successful save for new tools
+      if (isNewTool && result?.file_path) {
+        setTimeout(() => {
+          router.push(buildToolEditorUrl(repoName, result.file_path));
+        }, 1000);
+      }
     } catch (error) {
       console.error('Failed to save tool:', error);
     } finally {

@@ -24,7 +24,7 @@ export function PromptSelector({ repoName, value, onChange, disabled = false }: 
   useEffect(() => {
     const loadPrompts = async () => {
       if (!repoName) return;
-      
+
       setIsLoading(true);
       try {
         const response = await httpClient.post<PromptMeta[]>(
@@ -33,7 +33,7 @@ export function PromptSelector({ repoName, value, onChange, disabled = false }: 
             repo_names: [repoName]
           }
         );
-        
+
         if (response.status === ResponseStatus.SUCCESS && isStandardResponse(response) && response.data) {
           const prompts = Array.isArray(response.data) ? response.data : [];
           setAvailablePrompts(prompts);
@@ -47,6 +47,18 @@ export function PromptSelector({ repoName, value, onChange, disabled = false }: 
 
     loadPrompts();
   }, [repoName]);
+
+  // Synchronize inputValue with the selected value
+  useEffect(() => {
+    if (value && availablePrompts.length > 0) {
+      const selectedPrompt = availablePrompts.find(p => p.file_path === value);
+      if (selectedPrompt?.prompt?.name) {
+        setInputValue(selectedPrompt.prompt.name);
+      }
+    } else if (!value) {
+      setInputValue('');
+    }
+  }, [value, availablePrompts]);
 
   // Filter prompts based on input
   const filteredPrompts = useMemo(() => {

@@ -37,7 +37,7 @@ class EvalExecutionMetaService(ArtifactMetaInterface[EvalExecutionData, EvalExec
     - File-based storage in .promptrepo/evals/<eval-name>/executions/ directory
     """
 
-    EXECUTIONS_DIR = ArtifactType.EVAL_EXECUTION
+    EXECUTIONS_DIR = "evalexec"
     EXECUTION_SUFFIX = f".{ArtifactType.EVAL_EXECUTION}.yaml"
     
     def __init__(
@@ -197,11 +197,19 @@ class EvalExecutionMetaService(ArtifactMetaInterface[EvalExecutionData, EvalExec
         
         # Generate file path if not provided
         if not file_path:
-            # Find the eval file to determine where to save the execution
-            # For now, we'll save in .promptrepo/evals/executions/{eval_name}-{timestamp}.eval_execution.yaml
+            # Extract just the filename from eval_name (strip directory path)
+            # eval_name might be like ".promptrepo/evals/temp-check.eval.yaml" or just "temp-check.eval.yaml"
             timestamp = execution_result.executed_at.strftime("%Y-%m-%dT%H-%M-%S")
             eval_name = execution_result.eval_name
-            file_path = f".promptrepo/evals/executions/{eval_name}-{timestamp}{self.EXECUTION_SUFFIX}"
+
+            # Get just the filename part (remove any directory path)
+            from pathlib import Path
+            eval_filename = Path(eval_name).name
+
+            # Save in eval file's directory under evalexec subdirectory
+            # Extract the directory from eval_name to save alongside it
+            eval_dir = Path(eval_name).parent
+            file_path = f"{eval_dir}/{self.EXECUTIONS_DIR}/{eval_filename}-{timestamp}{self.EXECUTION_SUFFIX}"
         
         # Convert to dict for YAML serialization
         exec_dict = artifact_data.model_dump(mode='json')

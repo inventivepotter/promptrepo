@@ -19,9 +19,15 @@ import { LuChevronDown, LuChevronUp, LuPlus, LuX } from 'react-icons/lu';
 import { useCurrentPrompt, useUpdateCurrentPromptField } from '@/stores/promptStore/hooks';
 import httpClient from '@/lib/httpClient';
 import type { components } from '@/types/generated/api';
-import { ResponseStatus, isStandardResponse } from '@/types/OpenApiResponse';
+import { ResponseStatus, isStandardResponse, type StandardResponse } from '@/types/OpenApiResponse';
 
-type ToolSummary = components['schemas']['ToolSummary'];
+type ToolMeta = components['schemas']['ToolMeta'];
+
+interface ToolSummary {
+  name: string;
+  description: string;
+  file_path: string;
+}
 
 export function ToolsFieldGroup() {
   const currentPrompt = useCurrentPrompt();
@@ -40,14 +46,19 @@ export function ToolsFieldGroup() {
         const searchParams = new URLSearchParams();
         searchParams.append('repo_name', currentPrompt.repo_name);
         
-        const response = await httpClient.get<ToolSummary[]>(
+        const response = await httpClient.get<ToolMeta[]>(
           `/api/v0/tools/?${searchParams.toString()}`
         );
         
         if (response.status === ResponseStatus.SUCCESS && isStandardResponse(response) && response.data) {
-          // response.data is ToolSummary[] when using StandardResponse[List[ToolSummary]]
-          const tools = Array.isArray(response.data) ? response.data : [];
-          setAvailableTools(tools);
+          // Extract tool summaries from ToolMeta array
+          const toolMetas = Array.isArray(response.data) ? response.data : [];
+          const toolSummaries: ToolSummary[] = toolMetas.map((toolMeta: ToolMeta) => ({
+            name: toolMeta.tool?.tool?.name || '',
+            description: toolMeta.tool?.tool?.description || '',
+            file_path: toolMeta.file_path,
+          }));
+          setAvailableTools(toolSummaries);
         }
       } catch (error) {
         console.error('Failed to load tools:', error);

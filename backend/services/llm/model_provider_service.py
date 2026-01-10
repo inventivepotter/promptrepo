@@ -79,6 +79,8 @@ class ModelProviderService:
         """
         try:
             providers = []
+            existing_ids = set()
+            
             # Add providers from any_llm
             for provider_enum in LLMProvider:
                 provider_info = PROVIDER_NAMES_MAP.get(provider_enum)
@@ -90,24 +92,27 @@ class ModelProviderService:
                     "name": display_name,
                     "custom_api_base": provider_info.get("custom_api_base", False) if provider_info else False
                 })
+                existing_ids.add(provider_enum)
             
-            # Add Z.AI provider (not in any_llm)
-            zai_info = PROVIDER_NAMES_MAP.get("zai")
-            if zai_info:
-                providers.append({
-                    "id": "zai",
-                    "name": zai_info.get("name", "Z.AI"),
-                    "custom_api_base": zai_info.get("custom_api_base", False)
-                })
+            # Add Z.AI provider only if not already in any_llm
+            if "zai" not in existing_ids:
+                zai_info = PROVIDER_NAMES_MAP.get("zai")
+                if zai_info:
+                    providers.append({
+                        "id": "zai",
+                        "name": zai_info.get("name", "Z.AI"),
+                        "custom_api_base": zai_info.get("custom_api_base", False)
+                    })
             
-            # Add LiteLLM provider (not in any_llm)
-            litellm_info = PROVIDER_NAMES_MAP.get("litellm")
-            if litellm_info:
-                providers.append({
-                    "id": "litellm",
-                    "name": litellm_info.get("name", "LiteLLM"),
-                    "custom_api_base": litellm_info.get("custom_api_base", True)
-                })
+            # Add LiteLLM provider only if not already in any_llm
+            if "litellm" not in existing_ids:
+                litellm_info = PROVIDER_NAMES_MAP.get("litellm")
+                if litellm_info:
+                    providers.append({
+                        "id": "litellm",
+                        "name": litellm_info.get("name", "LiteLLM"),
+                        "custom_api_base": litellm_info.get("custom_api_base", True)
+                    })
             
             return providers
             
