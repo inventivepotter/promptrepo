@@ -46,7 +46,7 @@ class SyntheticsNewProvider(AnyLLM):
     SUPPORTS_COMPLETION_IMAGE = False
     SUPPORTS_COMPLETION_PDF = False
     SUPPORTS_EMBEDDING = False
-    SUPPORTS_LIST_MODELS = False
+    SUPPORTS_LIST_MODELS = True
 
     MISSING_PACKAGES_ERROR = None
 
@@ -55,8 +55,9 @@ class SyntheticsNewProvider(AnyLLM):
     @staticmethod
     def _convert_completion_params(params: CompletionParams, **kwargs: Any) -> dict[str, Any]:
         """Convert CompletionParams to kwargs for Synthetics.New API."""
+        # Exclude reasoning_effort as Synthetics.New doesn't support it
         converted_params = params.model_dump(
-            exclude_none=True, exclude={"model_id", "messages", "stream"}
+            exclude_none=True, exclude={"model_id", "messages", "stream", "reasoning_effort"}
         )
         converted_params.update(kwargs)
         return converted_params
@@ -149,16 +150,22 @@ class SyntheticsNewProvider(AnyLLM):
         raise NotImplementedError("Synthetics.New does not support embeddings")
 
     @staticmethod
-    def _convert_list_models_response(response: Any) -> Sequence[Model]:
+    def _convert_list_models_response(response: dict[str, Any]) -> Sequence[Model]:
         """Convert Synthetics.New list models response to OpenAI format."""
         from any_llm.types.model import Model
 
-        # Synthetics.New has predefined models (can be updated based on actual available models)
-        predefined_models = ["gpt-4", "gpt-3.5-turbo", "claude-3-5-sonnet-20241022"]
-        return [
-            Model(id=model_id, object="model", created=0, owned_by="synthetics-new")
-            for model_id in predefined_models
-        ]
+        # Parse the actual API response
+        models = []
+        for model_data in response.get("data", []):
+            models.append(
+                Model(
+                    id=model_data.get("id", ""),
+                    object=model_data.get("object", "model"),
+                    created=model_data.get("created", 0),
+                    owned_by=model_data.get("owned_by", "synthetics-new")
+                )
+            )
+        return models
 
     def _init_client(self, api_key: str | None = None, api_base: str | None = None, **kwargs: Any) -> None:
         """Initialize httpx async client for Synthetics.New API."""
@@ -191,6 +198,11 @@ class SyntheticsNewProvider(AnyLLM):
         **kwargs: Any,
     ) -> AsyncIterator[ChatCompletionChunk]:
         """Handle streaming completion."""
+        # Ensure model has hf: prefix (required by Synthetics.New API)
+        if not model.startswith("hf:"):
+            model = f"hf:{model}"
+            logger.info(f"Added hf: prefix to streaming model: {model}")
+
         payload = {
             "model": model,
             "messages": messages,
@@ -199,6 +211,7 @@ class SyntheticsNewProvider(AnyLLM):
         }
 
         try:
+            logger.info(f"Synthetics.New streaming request payload: {payload}")
             async with self.client.stream("POST", "/chat/completions", json=payload) as response:
                 response.raise_for_status()
 
@@ -217,8 +230,10 @@ class SyntheticsNewProvider(AnyLLM):
                             continue
 
         except httpx.HTTPStatusError as e:
-            logger.error(f"Synthetics.New streaming API error: {e.response.status_code} - {e.response.text}")
-            raise Exception(f"Synthetics.New streaming API error: {e.response.status_code}")
+            error_detail = e.response.text
+            logger.error(f"Synthetics.New streaming API error: {e.response.status_code} - {error_detail}")
+            logger.error(f"Request payload was: {payload}")
+            raise Exception(f"Synthetics.New streaming API error: {e.response.status_code} - {error_detail}")
         except Exception as e:
             logger.error(f"Error creating Synthetics.New streaming completion: {e}")
             raise
@@ -229,6 +244,12 @@ class SyntheticsNewProvider(AnyLLM):
         **kwargs: Any,
     ) -> ChatCompletion | AsyncIterator[ChatCompletionChunk]:
         """Create a chat completion using Synthetics.New."""
+        # Ensure model has hf: prefix (required by Synthetics.New API)
+        model_id = params.model_id
+        if not model_id.startswith("hf:"):
+            model_id = f"hf:{model_id}"
+            logger.info(f"Added hf: prefix to model: {params.model_id} -> {model_id}")
+
         # Handle response_format
         response_format = None
         if params.response_format is not None:
@@ -255,17 +276,18 @@ class SyntheticsNewProvider(AnyLLM):
             completion_kwargs["response_format"] = response_format
 
         if params.stream:
-            return self._stream_completion_async(params.model_id, messages, **completion_kwargs)
+            return self._stream_completion_async(model_id, messages, **completion_kwargs)
 
         # Non-streaming completion
         payload = {
-            "model": params.model_id,
+            "model": model_id,
             "messages": messages,
             "stream": False,
             **completion_kwargs,
         }
 
         try:
+            logger.info(f"Synthetics.New request payload: {payload}")
             response = await self.client.post("/chat/completions", json=payload)
             response.raise_for_status()
             data = response.json()
@@ -276,8 +298,10 @@ class SyntheticsNewProvider(AnyLLM):
             return self._convert_completion_response(data)
 
         except httpx.HTTPStatusError as e:
-            logger.error(f"Synthetics.New API error: {e.response.status_code} - {e.response.text}")
-            raise Exception(f"Synthetics.New API error: {e.response.status_code}")
+            error_detail = e.response.text
+            logger.error(f"Synthetics.New API error: {e.response.status_code} - {error_detail}")
+            logger.error(f"Request payload was: {payload}")
+            raise Exception(f"Synthetics.New API error: {e.response.status_code} - {error_detail}")
         except Exception as e:
             logger.error(f"Error creating Synthetics.New completion: {e}")
             raise
@@ -292,8 +316,21 @@ class SyntheticsNewProvider(AnyLLM):
         raise NotImplementedError("Synthetics.New does not support embeddings")
 
     async def _alist_models(self, **kwargs: Any) -> Sequence[Model]:
-        """List available models."""
-        return self._convert_list_models_response(None)
+        """List available models from Synthetics.New API."""
+        try:
+            response = await self.client.get("/models")
+            response.raise_for_status()
+            data = response.json()
+
+            logger.info(f"Synthetics.New models response: {data}")
+
+            return self._convert_list_models_response(data)
+        except httpx.HTTPStatusError as e:
+            logger.error(f"Synthetics.New API error fetching models: {e.response.status_code} - {e.response.text}")
+            raise Exception(f"Synthetics.New API error: {e.response.status_code}")
+        except Exception as e:
+            logger.error(f"Error fetching Synthetics.New models: {e}")
+            raise
 
     async def __aenter__(self):
         """Async context manager entry."""
