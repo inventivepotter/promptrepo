@@ -92,13 +92,10 @@ class ChatCompletionService:
 
         try:
             all_messages = trace.spans_to_messages()  # type: ignore
-            self.logger.info(f"Extracted {len(all_messages) if all_messages else 0} messages from trace")
 
             for i, msg in enumerate(all_messages or []):
-                self.logger.info(f"Message {i}: role={getattr(msg, 'role', 'no_role')}, content={getattr(msg, 'content', 'no_content')[:200]}")
                 if hasattr(msg, 'role') and msg.role == 'assistant':
                     content = getattr(msg, 'content', '')
-                    self.logger.info(f"Assistant message content type: {type(content)}, value: {content}")
 
                     # Try to parse tool calls from JSON string
                     if isinstance(content, str) and content.startswith('['):
@@ -277,11 +274,7 @@ class ChatCompletionService:
             
             # Run the agent with the formatted prompt
             trace: AgentTrace = await chat_agent.run(prompt_to_send)
-            
-            # Log trace details for debugging
-            self.logger.info(f"Agent trace final_output: {trace.final_output}")
-            self.logger.info(f"Agent trace type: {type(trace.final_output)}")
-            
+
             # Extract content from trace
             content = ""
             
@@ -296,14 +289,11 @@ class ChatCompletionService:
             
             # If final_output is empty, try to extract from messages in trace
             if not content:
-                self.logger.info("final_output is empty, attempting to extract from trace messages")
                 try:
                     messages = trace.spans_to_messages()
-                    self.logger.info(f"Extracted {len(messages)} messages from trace")
 
                     # Get the last assistant message with actual content (not empty or tool calls)
                     for msg in reversed(messages):
-                        self.logger.info(f"Message role: {msg.role}, content preview: {str(msg.content)[:100] if msg.content else 'empty'}")
                         if msg.role == "assistant":
                             msg_content = msg.content if isinstance(msg.content, str) else str(msg.content) if msg.content else ""
                             # Skip empty content and content that looks like tool call JSON
@@ -312,9 +302,6 @@ class ChatCompletionService:
                                 break
                 except Exception as e:
                     self.logger.error(f"Failed to extract content from trace messages: {e}")
-
-            # Log final content state for debugging
-            self.logger.info(f"Final content extraction result: content_length={len(content) if content else 0}, content_preview={content[:100] if content else 'empty'}")
 
             # Extract token usage from trace
             token_usage: Optional[TokenUsage] = None
@@ -392,12 +379,6 @@ class ChatCompletionService:
         last_user_msg: Optional[str] = None
         conversation_history: Optional[List[MessageSchema]] = None
 
-        # Debug logging
-        self.logger.info(f"[execute_completion] Received {len(request.messages) if request.messages else 0} messages")
-        if request.messages:
-            for i, msg in enumerate(request.messages):
-                self.logger.info(f"[execute_completion] Message {i}: role={msg.role}, content={msg.content[:50] if msg.content else 'empty'}...")
-
         if request.messages:
             # Filter out system messages from the conversation
             from schemas import SystemMessageSchema
@@ -418,13 +399,6 @@ class ChatCompletionService:
                     msg for msg in non_system_messages
                     if not (isinstance(msg, UserMessageSchema) and msg.content == last_user_msg)
                 ]
-
-        # Debug logging for extracted data
-        self.logger.info(f"[execute_completion] Extracted last_user_msg: {last_user_msg[:50] if last_user_msg else 'None'}...")
-        self.logger.info(f"[execute_completion] Conversation history count: {len(conversation_history) if conversation_history else 0}")
-        if conversation_history:
-            for i, msg in enumerate(conversation_history):
-                self.logger.info(f"[execute_completion] History {i}: role={msg.role}, content={msg.content[:50] if msg.content else 'empty'}...")
 
         # Execute using the private method
         return await self._execute_completion_from_prompt_meta(

@@ -12,7 +12,7 @@ type PromptMeta = components['schemas']['PromptMeta'];
 type MessageSchema = components['schemas']['UserMessageSchema'] | components['schemas']['AIMessageSchema'] | components['schemas']['SystemMessageSchema'] | components['schemas']['ToolMessageSchema'];
 
 // Helper function to generate unique IDs
-const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+const generateId = () => `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
 // Create all chat actions as a single StateCreator
 export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (set, get, api) => ({
@@ -160,8 +160,6 @@ export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (
     try {
       // Convert messages to MessageSchema format for backend
       const currentMessages = get().messages;
-      console.log('[sendMessage] Current messages count:', currentMessages.length);
-      console.log('[sendMessage] Current messages:', currentMessages.map(m => ({ role: m.role, content: m.content?.substring(0, 50) })));
 
       const messageSchemas: MessageSchema[] = currentMessages.map(msg => {
         if (msg.role === 'user') {

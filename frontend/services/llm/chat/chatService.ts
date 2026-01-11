@@ -76,7 +76,7 @@ export class ChatService {
 
       // Create chat message from response
       const chatMessage: ChatMessage = {
-        id: `assistant-${Date.now()}`,
+        id: `assistant-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
         role: 'assistant',
         content: responseData.content,
         timestamp: new Date(),
@@ -136,7 +136,7 @@ export class ChatService {
     };
 
     return {
-      id: id || `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: id || `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       timestamp: new Date(),
       usage: usage ? {
         prompt_tokens: usage.prompt_tokens ?? undefined,
@@ -160,7 +160,7 @@ export class ChatService {
     }
   ): ChatMessage {
     return {
-      id: `${role}-${Date.now()}`,
+      id: `${role}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       role,
       content,
       timestamp: new Date(),
