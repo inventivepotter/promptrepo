@@ -31,6 +31,7 @@ from api.v0.info import router as info_router
 from api.v0.prompts import router as prompts_router
 from api.v0.tools import router as tools_router
 from api.v0.evals import router as evals_router
+from api.v0.promptimizer import router as promptimizer_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -103,6 +104,12 @@ app.include_router(
     evals_router,
     prefix="/api/v0/evals",
     tags=["evals"]
+)
+
+app.include_router(
+    promptimizer_router,
+    prefix="/api/v0/promptimizer",
+    tags=["promptimizer"]
 )
 
 

@@ -16,9 +16,11 @@ import {
   Text,
 } from '@chakra-ui/react';
 import { useState } from 'react';
-import { FaTimes } from 'react-icons/fa';
+import { FaTimes, FaMagic } from 'react-icons/fa';
 import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
 import { useCurrentPrompt, usePromptActions } from '@/stores/promptStore/hooks';
+import { usePromptOptimizerActions } from '@/stores/promptimizerStore';
+import { PromptOptimizerModal } from './PromptOptimizerModal';
 import { FaGitAlt, FaFolder } from 'react-icons/fa';
 
 interface PromptFieldGroupProps {
@@ -29,12 +31,17 @@ interface PromptFieldGroupProps {
 export function PromptFieldGroup({ repoName, filePath }: PromptFieldGroupProps) {
   const currentPrompt = useCurrentPrompt();
   const { setCurrentPrompt } = usePromptActions();
+  const { openDialog } = usePromptOptimizerActions();
   const [tagInput, setTagInput] = useState('');
   const [showPromptDetails, setShowPromptDetails] = useState(true);
 
   if (!currentPrompt) {
     return null;
   }
+
+  const handleApplyOptimizedPrompt = (optimizedPrompt: string) => {
+    updateField('prompt', optimizedPrompt);
+  };
 
   const updateField = (field: string, value: string | number | boolean | string[] | null | Record<string, unknown>) => {
     if (!currentPrompt) return;
@@ -111,7 +118,23 @@ export function PromptFieldGroup({ repoName, filePath }: PromptFieldGroupProps) 
 
           {/* Prompt Content - Main Focus */}
           <Field.Root required>
-            <Field.Label fontSize="xs" fontWeight="medium">Prompt <Field.RequiredIndicator /></Field.Label>
+            <HStack justify="space-between" align="center" w="100%">
+              <Field.Label fontSize="xs" fontWeight="medium" mb={0}>
+                Prompt <Field.RequiredIndicator />
+              </Field.Label>
+              <Button
+                size="xs"
+                variant="ghost"
+                onClick={openDialog}
+                colorPalette="purple"
+                _hover={{ bg: 'purple.50' }}
+              >
+                <HStack gap={1}>
+                  <FaMagic size={12} />
+                  <Text fontSize="xs">Promptimizer</Text>
+                </HStack>
+              </Button>
+            </HStack>
             <Textarea
               value={prompt?.prompt || ''}
               onChange={(e) => updateField('prompt', e.target.value)}
@@ -190,6 +213,14 @@ export function PromptFieldGroup({ repoName, filePath }: PromptFieldGroupProps) 
           </Fieldset.Content>
         </Fieldset.Root>
       </Card.Body>
+
+      {/* Promptimizer Modal */}
+      <PromptOptimizerModal
+        provider={prompt?.provider || 'openai'}
+        model={prompt?.model || 'gpt-4'}
+        currentPrompt={prompt?.prompt || ''}
+        onApply={handleApplyOptimizedPrompt}
+      />
     </Card.Root>
   );
 }
