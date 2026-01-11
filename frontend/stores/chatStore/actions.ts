@@ -1,9 +1,12 @@
 // Chat store actions implementation
 import type { StateCreator } from '@/lib/zustand';
 import { chatService } from '@/services/llm/chat/chatService';
+import { SharedChatApi } from '@/services/sharedChat';
+import type { SharedChatMessage } from '@/services/sharedChat';
 import type { ChatStore, ChatActions, ChatSession } from './types';
 import type { ChatMessage, Tool } from '@/app/prompts/_types/ChatState';
 import type { components } from '@/types/generated/api';
+import { ResponseStatus } from '@/types/OpenApiResponse';
 
 type PromptMeta = components['schemas']['PromptMeta'];
 type MessageSchema = components['schemas']['UserMessageSchema'] | components['schemas']['AIMessageSchema'] | components['schemas']['SystemMessageSchema'] | components['schemas']['ToolMessageSchema'];
@@ -120,19 +123,31 @@ export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (
       draft.isSending = true;
       draft.error = null;
       draft.inputMessage = '';
-      
+
+      const session = draft.sessions.find(s => s.id === draft.currentSessionId);
+
+      // Update session's modelConfig from promptMeta on first message
+      if (session && isFirstMessage && options.promptMeta?.prompt) {
+        const prompt = options.promptMeta.prompt;
+        session.modelConfig = {
+          ...session.modelConfig,
+          provider: prompt.provider || session.modelConfig.provider,
+          model: prompt.model || session.modelConfig.model,
+          temperature: prompt.temperature ?? session.modelConfig.temperature,
+          max_tokens: prompt.max_tokens ?? session.modelConfig.max_tokens,
+        };
+      }
+
       // Add system message if needed
       if (systemMessage) {
-        const session = draft.sessions.find(s => s.id === draft.currentSessionId);
         if (session) {
           session.messages.push(systemMessage);
         }
         draft.messages.push(systemMessage);
       }
-      
+
       // Add user message to current session only if it exists
       if (userMessage) {
-        const session = draft.sessions.find(s => s.id === draft.currentSessionId);
         if (session) {
           session.messages.push(userMessage);
           session.updatedAt = new Date();
@@ -145,6 +160,9 @@ export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (
     try {
       // Convert messages to MessageSchema format for backend
       const currentMessages = get().messages;
+      console.log('[sendMessage] Current messages count:', currentMessages.length);
+      console.log('[sendMessage] Current messages:', currentMessages.map(m => ({ role: m.role, content: m.content?.substring(0, 50) })));
+
       const messageSchemas: MessageSchema[] = currentMessages.map(msg => {
         if (msg.role === 'user') {
           return {
@@ -652,7 +670,106 @@ export const createChatActions: StateCreator<ChatStore, [], [], ChatActions> = (
       draft.selectedTools = [];
       draft.totalTokensUsed = 0;
       draft.totalCost = 0;
+      draft.isSharing = false;
     // @ts-expect-error - Immer middleware supports 3 params
     }, false, 'chat/reset');
+  },
+
+  // Sharing
+  shareCurrentSession: async (title?: string, includeSystemPrompt: boolean = true) => {
+    const state = get();
+    const { currentSessionId, sessions, messages, totalTokensUsed, totalCost } = state;
+
+    if (!currentSessionId || messages.length === 0) {
+      return null;
+    }
+
+    const currentSession = sessions.find(s => s.id === currentSessionId);
+    if (!currentSession) {
+      return null;
+    }
+
+    set((draft) => {
+      draft.isSharing = true;
+      draft.error = null;
+    // @ts-expect-error - Immer middleware supports 3 params
+    }, false, 'chat/share-start');
+
+    try {
+      // Filter out system messages if not including them
+      const messagesToShare = includeSystemPrompt
+        ? messages
+        : messages.filter(msg => msg.role !== 'system');
+
+      // Convert messages to SharedChatMessage format
+      const sharedMessages: SharedChatMessage[] = messagesToShare.map(msg => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.timestamp?.toISOString() || new Date().toISOString(),
+        usage: msg.usage ? {
+          prompt_tokens: msg.usage.prompt_tokens,
+          completion_tokens: msg.usage.completion_tokens,
+          total_tokens: msg.usage.total_tokens,
+          reasoning_tokens: msg.usage.reasoning_tokens,
+        } : undefined,
+        cost: msg.cost,
+        inference_time_ms: msg.inferenceTimeMs,
+        tool_calls: msg.tool_calls && Array.isArray(msg.tool_calls) ?
+          msg.tool_calls.map(tc => {
+            if ('function' in tc) {
+              return {
+                id: tc.id,
+                name: tc.function.name,
+                arguments: typeof tc.function.arguments === 'string'
+                  ? JSON.parse(tc.function.arguments)
+                  : tc.function.arguments,
+              };
+            }
+            return {
+              id: '',
+              name: '',
+              arguments: {},
+            };
+          }).filter(tc => tc.id !== '') : undefined,
+      }));
+
+      // Use custom title if provided, otherwise fall back to session title
+      const chatTitle = title || currentSession.title;
+
+      const response = await SharedChatApi.createSharedChat({
+        title: chatTitle,
+        messages: sharedMessages,
+        model_config_data: {
+          provider: currentSession.modelConfig.provider,
+          model: currentSession.modelConfig.model,
+          temperature: currentSession.modelConfig.temperature,
+          max_tokens: currentSession.modelConfig.max_tokens,
+        },
+        total_tokens: totalTokensUsed,
+        total_cost: totalCost,
+      });
+
+      set((draft) => {
+        draft.isSharing = false;
+      // @ts-expect-error - Immer middleware supports 3 params
+      }, false, 'chat/share-success');
+
+      if (response.status === ResponseStatus.SUCCESS && response.data) {
+        return {
+          shareId: response.data.share_id,
+          shareUrl: response.data.share_url,
+        };
+      }
+
+      throw new Error('Failed to create shared chat');
+    } catch (error) {
+      set((draft) => {
+        draft.isSharing = false;
+        draft.error = error instanceof Error ? error.message : 'Failed to share chat';
+      // @ts-expect-error - Immer middleware supports 3 params
+      }, false, 'chat/share-error');
+      return null;
+    }
   },
 });

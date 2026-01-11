@@ -300,16 +300,22 @@ class ChatCompletionService:
                 try:
                     messages = trace.spans_to_messages()
                     self.logger.info(f"Extracted {len(messages)} messages from trace")
-                    
-                    # Get the last assistant message
+
+                    # Get the last assistant message with actual content (not empty or tool calls)
                     for msg in reversed(messages):
-                        self.logger.info(f"Message role: {msg.role}, content preview: {str(msg.content)[:100]}")
+                        self.logger.info(f"Message role: {msg.role}, content preview: {str(msg.content)[:100] if msg.content else 'empty'}")
                         if msg.role == "assistant":
-                            content = msg.content if isinstance(msg.content, str) else str(msg.content)
-                            break
+                            msg_content = msg.content if isinstance(msg.content, str) else str(msg.content) if msg.content else ""
+                            # Skip empty content and content that looks like tool call JSON
+                            if msg_content and not msg_content.startswith('[{"tool.'):
+                                content = msg_content
+                                break
                 except Exception as e:
                     self.logger.error(f"Failed to extract content from trace messages: {e}")
-            
+
+            # Log final content state for debugging
+            self.logger.info(f"Final content extraction result: content_length={len(content) if content else 0}, content_preview={content[:100] if content else 'empty'}")
+
             # Extract token usage from trace
             token_usage: Optional[TokenUsage] = None
             if trace.tokens:
@@ -374,18 +380,24 @@ class ChatCompletionService:
     ) -> ChatCompletionResponse:
         """
         Execute completion using PromptMeta from the request.
-        
+
         Args:
             request: ChatCompletionRequest containing prompt_meta and optional conversation history
             user_id: User ID for API key lookup
-            
+
         Returns:
             ChatCompletionResponse with content and metadata
         """
         # Extract last user message from conversation history if present
         last_user_msg: Optional[str] = None
         conversation_history: Optional[List[MessageSchema]] = None
-        
+
+        # Debug logging
+        self.logger.info(f"[execute_completion] Received {len(request.messages) if request.messages else 0} messages")
+        if request.messages:
+            for i, msg in enumerate(request.messages):
+                self.logger.info(f"[execute_completion] Message {i}: role={msg.role}, content={msg.content[:50] if msg.content else 'empty'}...")
+
         if request.messages:
             # Filter out system messages from the conversation
             from schemas import SystemMessageSchema
@@ -406,7 +418,14 @@ class ChatCompletionService:
                     msg for msg in non_system_messages
                     if not (isinstance(msg, UserMessageSchema) and msg.content == last_user_msg)
                 ]
-        
+
+        # Debug logging for extracted data
+        self.logger.info(f"[execute_completion] Extracted last_user_msg: {last_user_msg[:50] if last_user_msg else 'None'}...")
+        self.logger.info(f"[execute_completion] Conversation history count: {len(conversation_history) if conversation_history else 0}")
+        if conversation_history:
+            for i, msg in enumerate(conversation_history):
+                self.logger.info(f"[execute_completion] History {i}: role={msg.role}, content={msg.content[:50] if msg.content else 'empty'}...")
+
         # Execute using the private method
         return await self._execute_completion_from_prompt_meta(
             prompt_meta=request.prompt_meta,

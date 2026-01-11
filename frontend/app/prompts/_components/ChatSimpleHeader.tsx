@@ -9,6 +9,7 @@ import {
 } from '@chakra-ui/react';
 import { LuRefreshCw, LuBot, LuChevronDown, LuChevronUp } from 'react-icons/lu';
 import { useColorModeValue } from '@/components/ui/color-mode';
+import { ShareChatButton } from './ShareChatButton';
 
 interface ChatSimpleHeaderProps {
   onReset: () => void;
@@ -45,6 +46,7 @@ export function ChatSimpleHeader({
             </Text>
           </VStack>
           <HStack gap={2}>
+            <ShareChatButton disabled={isLoading} />
             <Button
               variant="ghost"
               _hover={{ bg: "bg.subtle" }}

@@ -34,6 +34,8 @@ from services.artifacts.evals.eval_meta_service import EvalMetaService
 from services.artifacts.evals.eval_execution_meta_service import EvalExecutionMetaService
 from services.artifacts.evals.eval_execution_service import EvalExecutionService
 from lib.deepeval.deepeval_adapter import DeepEvalAdapter
+from services.shared_chat import SharedChatService
+from database.daos.shared_chat import SharedChatDAO
 
 
 # ==============================================================================
@@ -421,6 +423,34 @@ def get_eval_execution_service(
 
 
 EvalExecutionServiceDep = Annotated[EvalExecutionService, Depends(get_eval_execution_service)]
+
+
+# ==============================================================================
+# Shared Chat Service
+# ==============================================================================
+
+def get_shared_chat_service(
+    db: DBSession,
+    config_service: ConfigServiceDep
+) -> SharedChatService:
+    """
+    Shared chat service dependency.
+
+    Creates a SharedChatService for managing shared chat links.
+    """
+    dao = SharedChatDAO(db)
+    # Get base URL from config if available, otherwise use empty string
+    base_url = ""
+    try:
+        app_config = config_service.get_configs_for_public_api()
+        if hasattr(app_config, 'app_url') and app_config.app_url:
+            base_url = app_config.app_url
+    except Exception:
+        pass
+    return SharedChatService(dao=dao, base_url=base_url)
+
+
+SharedChatServiceDep = Annotated[SharedChatService, Depends(get_shared_chat_service)]
 
 
 # Note: For RemoteRepoService, it's often better to create it dynamically

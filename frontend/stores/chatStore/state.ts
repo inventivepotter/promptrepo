@@ -51,4 +51,7 @@ export const initialChatState: ChatState = {
   // Statistics
   totalTokensUsed: 0,
   totalCost: 0,
+
+  // Sharing
+  isSharing: false,
 };

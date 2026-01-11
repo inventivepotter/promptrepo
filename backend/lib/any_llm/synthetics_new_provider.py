@@ -76,9 +76,26 @@ class SyntheticsNewProvider(AnyLLM):
         for choice_data in response.get("choices", []):
             message_data = choice_data.get("message", {})
 
+            # Handle None content - use reasoning_content as fallback or empty string
+            content = message_data.get("content")
+            if content is None:
+                # Check if model hit token limit with reasoning but no content
+                reasoning_content = message_data.get("reasoning_content")
+                finish_reason = choice_data.get("finish_reason")
+
+                if finish_reason == "length" and reasoning_content:
+                    # Model ran out of tokens during reasoning - log warning
+                    logger.warning(
+                        f"Model hit token limit during reasoning without producing content. "
+                        f"Consider increasing max_tokens. Reasoning preview: {reasoning_content[:100]}..."
+                    )
+                    content = ""
+                else:
+                    content = ""
+
             message = ChatCompletionMessage(
                 role=message_data.get("role", "assistant"),
-                content=message_data.get("content", ""),
+                content=content,
                 tool_calls=message_data.get("tool_calls"),
             )
             choice = Choice(

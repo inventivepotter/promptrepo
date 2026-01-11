@@ -72,6 +72,9 @@ export interface ChatState {
   // Statistics
   totalTokensUsed: number;
   totalCost: number;
+
+  // Sharing state
+  isSharing: boolean;
 }
 
 // Chat actions interface
@@ -143,6 +146,9 @@ export interface ChatActions {
   
   // Reset
   reset: () => void;
+
+  // Sharing
+  shareCurrentSession: (title?: string, includeSystemPrompt?: boolean) => Promise<{ shareId: string; shareUrl: string } | null>;
 }
 
 export interface ChatStore extends ChatState, ChatActions {}

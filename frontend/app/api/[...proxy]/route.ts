@@ -26,7 +26,9 @@ const PUBLIC_ENDPOINTS = new Set([
   '/api/v0/llm/completions',
   // Tools endpoints
   '/api/v0/tools',
-  '/api/v0/evals'
+  '/api/v0/evals',
+  // Shared chats endpoints
+  '/api/v0/shared-chats'
 ]);
 
 // Define public endpoint prefixes that should be matched with startsWith
@@ -36,7 +38,9 @@ const PUBLIC_ENDPOINT_PREFIXES = [
   '/api/v0/llm/provider/',
   '/api/v0/tools/',
   '/api/v0/evals/',
-  '/api/v0/promptimizer/'
+  '/api/v0/promptimizer/',
+  // Shared chats - public access for viewing shared chats
+  '/api/v0/shared-chats/'
 ];
 
 function isPublicEndpoint(path: string): boolean {

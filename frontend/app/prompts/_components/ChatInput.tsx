@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef, useEffect } from 'react';
 import {
   Box,
   HStack,
@@ -25,9 +26,17 @@ export function ChatInput({
   disabled = false,
   disabledMessage,
 }: ChatInputProps) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { inputMessage, setInputMessage } = useChatInput();
   const isSending = useIsSending();
   const { stopStreaming, clearInput } = useChatActions();
+
+  // Keep focus on textarea after sending completes
+  useEffect(() => {
+    if (!isSending && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [isSending]);
   const borderColor = "bg.muted";
   const bgColor = useColorModeValue('white', 'gray.800');
   const disabledBgColor = useColorModeValue('orange.50', 'orange.900/20');
@@ -90,6 +99,7 @@ export function ChatInput({
         <HStack gap={3} align="flex-start">
           <Box flex={1} position="relative">
             <Textarea
+              ref={textareaRef}
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyDown={handleKeyDown}
