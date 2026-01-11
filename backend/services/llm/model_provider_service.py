@@ -113,7 +113,17 @@ class ModelProviderService:
                         "name": litellm_info.get("name", "LiteLLM"),
                         "custom_api_base": litellm_info.get("custom_api_base", True)
                     })
-            
+
+            # Add Synthetics.New provider only if not already in any_llm
+            if "syntheticsnew" not in existing_ids:
+                syntheticsnew_info = PROVIDER_NAMES_MAP.get("syntheticsnew")
+                if syntheticsnew_info:
+                    providers.append({
+                        "id": "syntheticsnew",
+                        "name": syntheticsnew_info.get("name", "Synthetics.New"),
+                        "custom_api_base": syntheticsnew_info.get("custom_api_base", False)
+                    })
+
             return providers
             
         except Exception as e:

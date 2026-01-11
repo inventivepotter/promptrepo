@@ -322,16 +322,51 @@ export default function EvalEditorPage() {
                                     };
                                     setCurrentEval(updatedEval);
 
-                                    // Save the changes to backend
+                                    // Save the changes to backend with toast notification
                                     if (repoName && !isNewEval) {
-                                      try {
-                                        await saveEval(repoName, updatedEval, filePath);
-                                      } catch (error) {
-                                        console.error('Failed to save eval after delete:', error);
-                                        // Revert the local change if save fails
-                                        setCurrentEval(currentEval);
-                                        errorNotification('Save Failed', 'Failed to delete test. Please try again.');
-                                      }
+                                      const savePromise = saveEval(repoName, updatedEval, filePath);
+
+                                      toaster.promise(savePromise, {
+                                        loading: {
+                                          title: 'Deleting test...',
+                                          description: 'Creating a PR for your changes.',
+                                        },
+                                        success: (data) => {
+                                          const prInfo = data?.pr_info as { pr_url?: string; pr_number?: number } | null | undefined;
+                                          const prUrl = prInfo?.pr_url;
+                                          const prNumber = prInfo?.pr_number;
+
+                                          if (prUrl) {
+                                            return {
+                                              title: 'Test deleted!',
+                                              description: `Pull Request #${prNumber} created`,
+                                              duration: 30000,
+                                              closable: true,
+                                              action: {
+                                                label: 'View PR',
+                                                onClick: () => {
+                                                  window.open(prUrl, '_blank', 'noopener,noreferrer');
+                                                },
+                                              },
+                                            };
+                                          }
+
+                                          return {
+                                            title: 'Test deleted!',
+                                            description: 'Changes committed successfully',
+                                            duration: 5000,
+                                            closable: true,
+                                          };
+                                        },
+                                        error: (error) => {
+                                          // Revert the local change if save fails
+                                          setCurrentEval(currentEval);
+                                          return {
+                                            title: 'Delete failed',
+                                            description: 'Failed to delete test. Please try again.',
+                                          };
+                                        },
+                                      });
                                     }
                                   }
                                 }}

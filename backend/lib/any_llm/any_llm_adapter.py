@@ -11,6 +11,7 @@ from any_llm.api import alist_models as any_llm_alist_models
 from any_llm.constants import LLMProvider
 
 from lib.any_llm.litellm_provider import LiteLLMProvider
+from lib.any_llm.synthetics_new_provider import SyntheticsNewProvider
 from lib.any_llm.zai_provider import ZAIProvider
 
 if TYPE_CHECKING:
@@ -24,6 +25,7 @@ if TYPE_CHECKING:
 CUSTOM_PROVIDERS = {
     "zai": ZAIProvider,
     "litellm": LiteLLMProvider,
+    "syntheticsnew": SyntheticsNewProvider,
 }
 
 

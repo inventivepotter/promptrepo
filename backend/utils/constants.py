@@ -40,5 +40,6 @@ PROVIDER_NAMES_MAP: dict[str, dict[str, Any]] = {
     "watsonx": {"name": "WatsonX", "custom_api_base": False},
     "xai": {"name": "XAI", "custom_api_base": False},
     "zai": {"name": "Z.AI", "custom_api_base": False},
-    "litellm": {"name": "LiteLLM", "custom_api_base": True}
+    "litellm": {"name": "LiteLLM", "custom_api_base": True},
+    "syntheticsnew": {"name": "Synthetics.New", "custom_api_base": False}
 }
