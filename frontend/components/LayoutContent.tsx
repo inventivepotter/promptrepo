@@ -8,8 +8,8 @@ import { Sidebar } from '@/components/sidebar/Sidebar';
 export function LayoutContent({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   
-  // Don't show sidebar on login page or shared chat pages
-  const showSidebar = !pathname?.startsWith('/login') && !pathname?.startsWith('/shared');
+  // Don't show sidebar on homepage, login page, or shared chat pages
+  const showSidebar = pathname !== '/' && !pathname?.startsWith('/login') && !pathname?.startsWith('/shared');
 
   if (!showSidebar) {
     return <>{children}</>;

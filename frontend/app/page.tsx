@@ -47,7 +47,9 @@ import {
   FaLinkedin,
   FaEnvelope,
   FaHeart,
-  FaCodeBranch
+  FaCodeBranch,
+  FaShareAlt,
+  FaVial
 } from 'react-icons/fa';
 import Link from 'next/link';
 
@@ -187,7 +189,19 @@ const HomePage = () => {
         mx="auto"
       >
         <Branding fontSize="3xl" />
-        <AuthButton />
+        <HStack gap={4}>
+          <ChakraLink
+            href="https://github.com/inventivepotter/promptrepo"
+            target="_blank"
+            rel="noopener noreferrer"
+            _hover={{ color: "primary.500" }}
+            display="flex"
+            alignItems="center"
+          >
+            <Icon as={FaGithub} boxSize={6} />
+          </ChakraLink>
+          <AuthButton />
+        </HStack>
       </Flex>
 
       <ScrollArea.Root flex="1" width="100%">
@@ -317,6 +331,234 @@ const HomePage = () => {
                 </VStack>
               </MotionBox>
 
+              {/* Feature Highlights Section */}
+              <Box w="full">
+                <VStack gap={0}>
+                  {/* Fading Divider - Top */}
+                  <Box
+                    w="full"
+                    maxW="4xl"
+                    mx="auto"
+                    h="1px"
+                    style={{
+                      background: `linear-gradient(to right, transparent, ${useColorModeValue('#CBD5E0', '#4A5568')}, transparent)`
+                    }}
+                  />
+
+                  {/* Prompt Optimizer - Text Left, Image Right */}
+                  <MotionBox
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.2 }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    w="full"
+                    py={{ base: 10, md: 14 }}
+                  >
+                    <Flex
+                      direction={{ base: "column", md: "row" }}
+                      align="center"
+                      gap={{ base: 6, md: 10 }}
+                      maxW="5xl"
+                      mx="auto"
+                      px={{ base: 4, md: 8 }}
+                    >
+                      <VStack align={{ base: "center", md: "start" }} gap={4} flex={1} textAlign={{ base: "center", md: "left" }}>
+                        <HStack gap={2}>
+                          <Icon as={FaMagic} boxSize={4} color="primary.500" />
+                          <Text fontSize="xs" fontWeight="semibold" textTransform="uppercase" letterSpacing="wider" color="primary.500">
+                            AI-Powered
+                          </Text>
+                        </HStack>
+                        <Heading size={{ base: "lg", md: "xl" }} lineHeight="1.2">
+                          Optimize Your Prompts with AI
+                        </Heading>
+                        <Text color="fg.subtle" fontSize="md" lineHeight="1.7">
+                          Use AI to analyze and enhance your prompts. Get intelligent suggestions for clarity, effectiveness, and edge case handling. Our optimizer identifies ambiguities, suggests improvements, and helps you craft production-ready prompts that deliver consistent results.
+                        </Text>
+                        <Link href="/prompts" passHref>
+                          <Button size="md" colorScheme="primary">
+                            Try Prompt Optimizer
+                          </Button>
+                        </Link>
+                      </VStack>
+                      <Box
+                        flex={1}
+                        w="full"
+                        maxW={{ base: "full", md: "200px" }}
+                        borderRadius="xl"
+                        position="relative"
+                        overflow="hidden"
+                      >
+                        <Image
+                          src="/promptoptimizer.png"
+                          alt="Prompt Optimizer"
+                          objectFit="contain"
+                          w="full"
+                          borderRadius="xl"
+                        />
+                        <Box
+                          position="absolute"
+                          top={3}
+                          right={3}
+                          bg="primary.500"
+                          color="white"
+                          px={2}
+                          py={0.5}
+                          borderRadius="full"
+                          fontSize="2xs"
+                          fontWeight="bold"
+                        >
+                          NEW
+                        </Box>
+                      </Box>
+                    </Flex>
+                  </MotionBox>
+
+                  {/* Fading Divider */}
+                  <Box
+                    w="full"
+                    maxW="4xl"
+                    mx="auto"
+                    h="1px"
+                    style={{
+                      background: `linear-gradient(to right, transparent, ${useColorModeValue('#CBD5E0', '#4A5568')}, transparent)`
+                    }}
+                  />
+
+                  {/* Share Conversations - Image Left, Text Right */}
+                  <MotionBox
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.2 }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    w="full"
+                    py={{ base: 10, md: 14 }}
+                  >
+                    <Flex
+                      direction={{ base: "column-reverse", md: "row" }}
+                      align="center"
+                      gap={{ base: 6, md: 10 }}
+                      maxW="5xl"
+                      mx="auto"
+                      px={{ base: 4, md: 8 }}
+                    >
+                      <Box
+                        flex={1}
+                        w="full"
+                        maxW={{ base: "full", md: "200px" }}
+                        borderRadius="xl"
+                        position="relative"
+                        overflow="hidden"
+                      >
+                        <Image
+                          src="/sharechat.png"
+                          alt="Share Conversations"
+                          objectFit="contain"
+                          w="full"
+                          borderRadius="xl"
+                        />
+                      </Box>
+                      <VStack align={{ base: "center", md: "start" }} gap={4} flex={1} textAlign={{ base: "center", md: "left" }}>
+                        <HStack gap={2}>
+                          <Icon as={FaShareAlt} boxSize={4} color="primary.500" />
+                          <Text fontSize="xs" fontWeight="semibold" textTransform="uppercase" letterSpacing="wider" color="primary.500">
+                            Collaboration
+                          </Text>
+                        </HStack>
+                        <Heading size={{ base: "lg", md: "xl" }} lineHeight="1.2">
+                          Share Conversations with Your Team
+                        </Heading>
+                        <Text color="fg.subtle" fontSize="md" lineHeight="1.7">
+                          Share chat sessions with your team via a simple link. Collaborate on prompt testing, gather feedback from stakeholders, and build shared knowledge around what works. Perfect for team reviews, client demos, and documenting successful prompt strategies.
+                        </Text>
+                        <Link href="/prompts" passHref>
+                          <Button size="md" colorScheme="primary">
+                            Start Sharing
+                          </Button>
+                        </Link>
+                      </VStack>
+                    </Flex>
+                  </MotionBox>
+
+                  {/* Fading Divider */}
+                  <Box
+                    w="full"
+                    maxW="4xl"
+                    mx="auto"
+                    h="1px"
+                    style={{
+                      background: `linear-gradient(to right, transparent, ${useColorModeValue('#CBD5E0', '#4A5568')}, transparent)`
+                    }}
+                  />
+
+                  {/* Test System Prompts - Text Left, Image Right */}
+                  <MotionBox
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.2 }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    w="full"
+                    py={{ base: 10, md: 14 }}
+                  >
+                    <Flex
+                      direction={{ base: "column", md: "row" }}
+                      align="center"
+                      gap={{ base: 6, md: 10 }}
+                      maxW="5xl"
+                      mx="auto"
+                      px={{ base: 4, md: 8 }}
+                    >
+                      <VStack align={{ base: "center", md: "start" }} gap={4} flex={1} textAlign={{ base: "center", md: "left" }}>
+                        <HStack gap={2}>
+                          <Icon as={FaVial} boxSize={4} color="primary.500" />
+                          <Text fontSize="xs" fontWeight="semibold" textTransform="uppercase" letterSpacing="wider" color="primary.500">
+                            Quality Assurance
+                          </Text>
+                        </HStack>
+                        <Heading size={{ base: "lg", md: "xl" }} lineHeight="1.2">
+                          Test Prompts Like You Test Code
+                        </Heading>
+                        <Text color="fg.subtle" fontSize="md" lineHeight="1.7">
+                          Write test cases for your system prompts just like unit tests for code. Define expected behaviors, catch regressions before they hit production, and ensure consistent AI responses across updates. Build confidence in your prompts with automated validation.
+                        </Text>
+                        <Link href="/evals" passHref>
+                          <Button size="md" colorScheme="primary">
+                            Explore Evaluations
+                          </Button>
+                        </Link>
+                      </VStack>
+                      <Box
+                        flex={1}
+                        w="full"
+                        maxW={{ base: "full", md: "200px" }}
+                        borderRadius="xl"
+                        position="relative"
+                        overflow="hidden"
+                      >
+                        <Image
+                          src="/tests.png"
+                          alt="Test System Prompts"
+                          objectFit="contain"
+                          w="full"
+                          borderRadius="xl"
+                        />
+                      </Box>
+                    </Flex>
+                  </MotionBox>
+
+                  {/* Fading Divider - Bottom */}
+                  <Box
+                    w="full"
+                    maxW="4xl"
+                    mx="auto"
+                    h="1px"
+                    style={{
+                      background: `linear-gradient(to right, transparent, ${useColorModeValue('#CBD5E0', '#4A5568')}, transparent)`
+                    }}
+                  />
+                </VStack>
+              </Box>
+
               {/* Yet Another Prompt Registry Section */}
               <Box w="full" px={{ base: 4, md: 0 }}>
                 <VStack gap={16}>
@@ -359,7 +601,7 @@ const HomePage = () => {
                     </Text>
                   </MotionBox>
 
-                  <SimpleGrid columns={{ base: 1, lg: 2 }} gap={8} w="full" maxW="5xl" mx="auto">
+                  <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={8} w="full" maxW="6xl" mx="auto">
                     {/* Source Control First Card */}
                     <MotionBox
                       initial={{ opacity: 0, x: -30 }}
@@ -579,139 +821,117 @@ const HomePage = () => {
                         </Card.Body>
                       </Card.Root>
                     </MotionBox>
-                  </SimpleGrid>
 
-                  {/* Open Source Card - Full width below */}
-                  <MotionBox
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.2 }}
-                    transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
-                    w="full"
-                    maxW="5xl"
-                    mx="auto"
-                  >
-                    <Card.Root
-                      bg={useColorModeValue('white', 'gray.800')}
-                      borderWidth="1px"
-                      borderColor={borderColor}
-                      overflow="hidden"
-                      position="relative"
-                      transition="all 0.3s"
-                      _hover={{
-                        transform: 'translateY(-4px)',
-                        shadow: 'xl',
-                        borderColor: 'primary.400'
-                      }}
+                    {/* Open Source Card */}
+                    <MotionBox
+                      initial={{ opacity: 0, x: 30 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true, amount: 0.2 }}
+                      transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
+                      h="full"
                     >
-                      <Box
-                        position="absolute"
-                        top="-40px"
-                        right="-40px"
-                        boxSize="160px"
-                        bg="primary.500"
-                        borderRadius="full"
-                        opacity={0.05}
-                      />
-                      <Box
-                        position="absolute"
-                        bottom="-40px"
-                        left="-40px"
-                        boxSize="160px"
-                        bg="primary.500"
-                        borderRadius="full"
-                        opacity={0.05}
-                      />
-                      <Card.Body p={{ base: 6, md: 8 }}>
-                        <VStack align="start" gap={5}>
-                          <Box>
-                            <Box
-                              bg={useColorModeValue('primary.50', 'primary.900')}
-                              p={3}
-                              borderRadius="xl"
-                              display="inline-flex"
-                              mb={4}
-                            >
-                              <Icon
-                                as={FaCodeBranch}
-                                boxSize={7}
-                                color={useColorModeValue('primary.600', 'primary.300')}
-                              />
+                      <Card.Root
+                        h="full"
+                        bg={useColorModeValue('white', 'gray.800')}
+                        borderWidth="1px"
+                        borderColor={borderColor}
+                        overflow="hidden"
+                        position="relative"
+                        transition="all 0.3s"
+                        _hover={{
+                          transform: 'translateY(-4px)',
+                          shadow: 'xl',
+                          borderColor: 'primary.400'
+                        }}
+                      >
+                        <Box
+                          position="absolute"
+                          top="-20px"
+                          right="-20px"
+                          boxSize="120px"
+                          bg="primary.500"
+                          borderRadius="full"
+                          opacity={0.05}
+                        />
+                        <Card.Body p={{ base: 6, md: 8 }}>
+                          <VStack align="start" gap={5}>
+                            <Box>
+                              <Box
+                                bg={useColorModeValue('primary.50', 'primary.900')}
+                                p={3}
+                                borderRadius="xl"
+                                display="inline-flex"
+                                mb={4}
+                              >
+                                <Icon
+                                  as={FaCodeBranch}
+                                  boxSize={7}
+                                  color={useColorModeValue('primary.600', 'primary.300')}
+                                />
+                              </Box>
+                              <Heading size="lg" mb={2}>
+                                100% Open Source
+                              </Heading>
+                              <Text
+                                fontSize="sm"
+                                color="primary.500"
+                                fontWeight="semibold"
+                                textTransform="uppercase"
+                                letterSpacing="wider"
+                              >
+                                Community-Driven
+                              </Text>
                             </Box>
-                            <Heading size="lg" mb={2}>
-                              100% Open Source
-                            </Heading>
-                            <Text
-                              fontSize="sm"
-                              color="primary.500"
-                              fontWeight="semibold"
-                              textTransform="uppercase"
-                              letterSpacing="wider"
-                            >
-                              Community-Driven Development
-                            </Text>
-                          </Box>
-                          
-                          <VStack align="start" gap={3}>
-                            <Text color="fg.subtle" lineHeight="tall" fontSize="md">
-                              Built in the open, for the community. <Text as="span" fontWeight="semibold">MIT licensed</Text>,
-                              transparent development, and community contributions welcomed. Fork it, improve it, make it yours.
-                            </Text>
-                            <HStack gap={2} flexWrap="wrap">
-                              <Text
-                                as="span"
-                                px={2}
-                                py={1}
-                                bg={useColorModeValue('cyan.50', 'cyan.900')}
-                                color={useColorModeValue('cyan.700', 'cyan.200')}
-                                borderRadius="md"
-                                fontSize="xs"
-                                fontWeight="semibold"
-                              >
-                                ✓ MIT License
+
+                            <VStack align="start" gap={3}>
+                              <Text color="fg.subtle" lineHeight="tall" fontSize="md">
+                                Built in the open, for the community. <Text as="span" fontWeight="semibold">MIT licensed</Text>,
+                                fork it, improve it, make it yours.
                               </Text>
-                              <Text
-                                as="span"
-                                px={2}
-                                py={1}
-                                bg={useColorModeValue('indigo.50', 'indigo.900')}
-                                color={useColorModeValue('indigo.700', 'indigo.200')}
-                                borderRadius="md"
-                                fontSize="xs"
-                                fontWeight="semibold"
-                              >
-                                ✓ Community PRs welcome
-                              </Text>
-                              <Text
-                                as="span"
-                                px={2}
-                                py={1}
-                                bg={useColorModeValue('green.50', 'green.900')}
-                                color={useColorModeValue('green.700', 'green.200')}
-                                borderRadius="md"
-                                fontSize="xs"
-                                fontWeight="semibold"
-                              >
-                                ✓ Self-hostable
-                              </Text>
-                              <Text
-                                as="span"
-                                px={2}
-                                py={1}
-                                bg={useColorModeValue('purple.50', 'purple.900')}
-                                color={useColorModeValue('purple.700', 'purple.200')}
-                                borderRadius="md"
-                                fontSize="xs"
-                                fontWeight="semibold"
-                              >
-                                ✓ No telemetry
-                              </Text>
-                            </HStack>
+                              <HStack gap={2} flexWrap="wrap">
+                                <Text
+                                  as="span"
+                                  px={2}
+                                  py={1}
+                                  bg={useColorModeValue('cyan.50', 'cyan.900')}
+                                  color={useColorModeValue('cyan.700', 'cyan.200')}
+                                  borderRadius="md"
+                                  fontSize="xs"
+                                  fontWeight="semibold"
+                                >
+                                  ✓ MIT License
+                                </Text>
+                                <Text
+                                  as="span"
+                                  px={2}
+                                  py={1}
+                                  bg={useColorModeValue('green.50', 'green.900')}
+                                  color={useColorModeValue('green.700', 'green.200')}
+                                  borderRadius="md"
+                                  fontSize="xs"
+                                  fontWeight="semibold"
+                                >
+                                  ✓ Self-hostable
+                                </Text>
+                                <Text
+                                  as="span"
+                                  px={2}
+                                  py={1}
+                                  bg={useColorModeValue('purple.50', 'purple.900')}
+                                  color={useColorModeValue('purple.700', 'purple.200')}
+                                  borderRadius="md"
+                                  fontSize="xs"
+                                  fontWeight="semibold"
+                                >
+                                  ✓ No telemetry
+                                </Text>
+                              </HStack>
+                            </VStack>
                           </VStack>
-                        </VStack>
-                      </Card.Body>
-                    </Card.Root>
-                  </MotionBox>
+                        </Card.Body>
+                      </Card.Root>
+                    </MotionBox>
+                  </SimpleGrid>
 
                   {/* Bottom highlight message */}
                   <MotionBox

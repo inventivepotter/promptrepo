@@ -37,7 +37,7 @@ export function MockDataEditor({ mockConfig, parameters, onChange }: MockDataEdi
   const handleMockTypeChange = (value: string) => {
     onChange({
       ...mockConfig,
-      mock_type: value as 'static' | 'conditional' | 'python',
+      mock_type: value as 'static' | 'conditional',
     });
   };
 
@@ -52,13 +52,6 @@ export function MockDataEditor({ mockConfig, parameters, onChange }: MockDataEdi
     onChange({
       ...mockConfig,
       static_response: value,
-    });
-  };
-
-  const handlePythonCodeChange = (value: string) => {
-    onChange({
-      ...mockConfig,
-      python_code: value,
     });
   };
 
@@ -146,11 +139,6 @@ export function MockDataEditor({ mockConfig, parameters, onChange }: MockDataEdi
               <RadioGroup.ItemHiddenInput />
               <RadioGroup.ItemControl />
               <RadioGroup.ItemText fontSize="sm">Conditional</RadioGroup.ItemText>
-            </RadioGroup.Item>
-            <RadioGroup.Item value="python">
-              <RadioGroup.ItemHiddenInput />
-              <RadioGroup.ItemControl />
-              <RadioGroup.ItemText fontSize="sm">Python Code</RadioGroup.ItemText>
             </RadioGroup.Item>
           </HStack>
         </RadioGroup.Root>
@@ -302,24 +290,6 @@ export function MockDataEditor({ mockConfig, parameters, onChange }: MockDataEdi
         </VStack>
       )}
 
-      {/* Python Code Mock UI */}
-      {mockType === 'python' && (
-        <Field.Root>
-          <Field.Label fontSize="xs" fontWeight="medium">Python Code</Field.Label>
-          <Field.HelperText fontSize="xs" color="fg.muted" mb={2}>
-            Python code that returns the mock response. Parameters available as variables.
-          </Field.HelperText>
-          <Textarea
-            value={mockConfig.python_code || ''}
-            onChange={(e) => handlePythonCodeChange(e.target.value)}
-            placeholder={`# Example:\nresult = f"Hello {name}"\nreturn result`}
-            rows={12}
-            resize="vertical"
-            fontFamily="mono"
-            fontSize="sm"
-          />
-        </Field.Root>
-      )}
     </VStack>
   );
 }

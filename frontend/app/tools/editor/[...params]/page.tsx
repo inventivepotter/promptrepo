@@ -19,7 +19,7 @@ import {
 } from '@chakra-ui/react';
 import { HiCheck } from 'react-icons/hi';
 import { LuArrowLeft, LuChevronDown, LuChevronUp } from 'react-icons/lu';
-import type { ToolDefinition, ParameterSchema, MockConfig, ReturnsSchema } from '@/types/tools';
+import type { ToolDefinition, ParameterSchema, MockConfig } from '@/types/tools';
 import { ToolsService } from '@/services/tools';
 import { errorNotification } from '@/lib/notifications';
 import { ParameterEditor } from '../../_components/ParameterEditor';
@@ -45,7 +45,6 @@ export default function ToolEditorPage() {
   const [description, setDescription] = useState('');
   const [parameters, setParameters] = useState<Record<string, ParameterSchema>>({});
   const [required, setRequired] = useState<string[]>([]);
-  const [returns, setReturns] = useState<ReturnsSchema | undefined | null>(undefined);
   const [mockConfig, setMockConfig] = useState<MockConfig>({
     enabled: true,
     mock_type: 'static',
@@ -55,7 +54,6 @@ export default function ToolEditorPage() {
   // Collapsible section state
   const [showBasicInfo, setShowBasicInfo] = useState(true);
   const [showParameters, setShowParameters] = useState(true);
-  const [showReturns, setShowReturns] = useState(false);
 
   // Load existing tool if editing
   useEffect(() => {
@@ -81,7 +79,6 @@ export default function ToolEditorPage() {
       setDescription(tool.description);
       setParameters(tool.parameters?.properties || {});
       setRequired(tool.parameters?.required || []);
-      setReturns(tool.returns);
       setMockConfig({
         enabled: tool.mock?.enabled ?? true,
         mock_type: tool.mock?.mock_type || 'static',
@@ -131,7 +128,6 @@ export default function ToolEditorPage() {
         properties: parameters,
         required: required,
       },
-      returns: returns,
       mock: mockConfig,
     };
 
@@ -383,53 +379,6 @@ export default function ToolEditorPage() {
                                       onParametersChange={setParameters}
                                       onRequiredChange={setRequired}
                                     />
-                                  </Box>
-                                </Collapsible.Content>
-                              </Collapsible.Root>
-                            </Fieldset.Content>
-                          </Fieldset.Root>
-                        </Card.Body>
-                      </Card.Root>
-
-                      {/* Returns Section */}
-                      <Card.Root>
-                        <Card.Body>
-                          <Fieldset.Root>
-                            <HStack justify="space-between" align="center">
-                              <Stack flex={1}>
-                                <Fieldset.Legend>Return Type (Optional)</Fieldset.Legend>
-                                <Fieldset.HelperText color="fg.muted">
-                                  Define the structure of the return value
-                                </Fieldset.HelperText>
-                              </Stack>
-                              <Button
-                                variant="ghost"
-                                _hover={{ bg: "bg.subtle" }}
-                                size="sm"
-                                onClick={() => setShowReturns(!showReturns)}
-                                aria-label={showReturns ? "Collapse returns" : "Expand returns"}
-                              >
-                                <HStack gap={1}>
-                                  <Text fontSize="xs" fontWeight="medium">
-                                    {showReturns ? "Hide" : "Show"}
-                                  </Text>
-                                  {showReturns ? <LuChevronUp /> : <LuChevronDown />}
-                                </HStack>
-                              </Button>
-                            </HStack>
-
-                            <Fieldset.Content>
-                              <Collapsible.Root open={showReturns}>
-                                <Collapsible.Content>
-                                  <Box mt={3}>
-                                    <VStack gap={3} align="stretch">
-                                      <Text fontSize="xs" color="fg.muted">
-                                        {returns ? 'Return type is configured' : 'No return type configured'}
-                                      </Text>
-                                      <Text fontSize="xs" color="fg.muted">
-                                        Note: Return type configuration UI will be added in a future update.
-                                      </Text>
-                                    </VStack>
                                   </Box>
                                 </Collapsible.Content>
                               </Collapsible.Root>
