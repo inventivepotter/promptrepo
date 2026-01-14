@@ -15,7 +15,12 @@ from .models import (
     TestExecutionResult,
     EvalExecutionResult,
     EvalExecutionData,
-    EvalSummary
+    EvalSummary,
+    # Conversational test models
+    Turn,
+    TurnRole,
+    TestType,
+    ConversationalTestConfig,
 )
 from .eval_meta_service import EvalMetaService
 from .eval_execution_meta_service import EvalExecutionMetaService
@@ -35,4 +40,9 @@ __all__ = [
     "EvalMetaService",
     "EvalExecutionMetaService",
     "EvalExecutionService",
+    # Conversational test models
+    "Turn",
+    "TurnRole",
+    "TestType",
+    "ConversationalTestConfig",
 ]

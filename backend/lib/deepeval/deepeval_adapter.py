@@ -9,10 +9,19 @@ Wraps DeepEval library interactions to provide a clean interface for:
 
 import logging
 from typing import List, Optional, Any, Type, Dict
+from pydantic import BaseModel
 
 from .models import MetricConfig, MetricResult, MetricType
 
 logger = logging.getLogger(__name__)
+
+
+class LLMConfig(BaseModel):
+    """Configuration for LLM used in non-deterministic metrics."""
+    provider: str
+    model: str
+    api_key: str
+    api_base: Optional[str] = None
 
 
 class DeepEvalAdapter:
@@ -84,31 +93,37 @@ class DeepEvalAdapter:
             self.metric_mapping: Dict[MetricType, Type[Any]] = {}
             self.LLMTestCase: Optional[Type[Any]] = None
     
-    def create_metric(self, config: MetricConfig) -> Any:
+    def create_metric(
+        self,
+        config: MetricConfig,
+        llm_config: Optional[LLMConfig] = None
+    ) -> Any:
         """
         Create DeepEval metric instance from configuration.
-        
+
         Args:
             config: Metric configuration
-            
+            llm_config: Optional LLM configuration for non-deterministic metrics.
+                        If provided, uses our custom LLM wrapper instead of DeepEval's default.
+
         Returns:
             DeepEval metric instance
-            
+
         Raises:
             ImportError: If DeepEval is not available
             ValueError: If metric type is not supported
         """
         if not self.deepeval_available:
             raise ImportError("DeepEval is not installed. Install with: pip install deepeval")
-        
+
         metric_class = self.metric_mapping.get(config.type)
         if not metric_class:
             raise ValueError(f"Unsupported metric type: {config.type}")
-        
+
         try:
             # Check if this is a deterministic metric (doesn't need LLM configuration)
             is_deterministic = MetricType.is_deterministic(config.type)
-            
+
             if is_deterministic:
                 # Deterministic metrics don't need model/provider
                 # Just instantiate them directly
@@ -116,17 +131,32 @@ class DeepEvalAdapter:
                 return metric
             else:
                 # Non-deterministic metrics need model/provider
-                # Extract model name from "provider:model" format
-                # If format is "provider:model", extract just the model part
-                # Otherwise, use the value as-is for backward compatibility
-                model_name = config.model
-                if config.model and ':' in config.model:
-                    _, model_name = config.model.split(':', 1)
-                
+                model_instance = None
+
+                if llm_config:
+                    # Use our custom LLM wrapper with the user's API key
+                    from .custom_llm import CustomDeepEvalLLM
+                    model_instance = CustomDeepEvalLLM(
+                        provider=llm_config.provider,
+                        model=llm_config.model,
+                        api_key=llm_config.api_key,
+                        api_base=llm_config.api_base,
+                    )
+                    logger.info(
+                        f"Using custom LLM for metric {config.type}: "
+                        f"{llm_config.provider}/{llm_config.model}"
+                    )
+                else:
+                    # Fall back to model name string (uses DeepEval's default behavior)
+                    # Extract model name from "provider:model" format
+                    model_instance = config.model
+                    if config.model and ':' in config.model:
+                        _, model_instance = config.model.split(':', 1)
+
                 # Create metric with configuration
                 metric = metric_class(
                     threshold=config.threshold or 0.7,
-                    model=model_name,
+                    model=model_instance,
                     include_reason=config.include_reason,
                     strict_mode=config.strict_mode
                 )

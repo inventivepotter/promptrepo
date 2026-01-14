@@ -6,9 +6,89 @@ across eval definitions and execution results.
 """
 
 from datetime import datetime
-from typing import Dict, Any, List, Optional, TypeAlias
-from pydantic import BaseModel, Field, model_validator, computed_field
+from enum import Enum
+from typing import Dict, Any, List, Optional, TypeAlias, Literal
+from pydantic import BaseModel, Field, model_validator
 from lib.deepeval import MetricType, BaseMetricConfig, MetricConfig, MetricResult
+
+
+class TurnRole(str, Enum):
+    """Role of a turn in a conversation."""
+    USER = "user"
+    ASSISTANT = "assistant"
+
+
+class Turn(BaseModel):
+    """
+    A single turn in a conversation.
+
+    Represents one message exchange in a multi-turn conversation,
+    compatible with DeepEval's Turn class.
+    """
+    role: TurnRole = Field(description="Role of the speaker (user or assistant)")
+    content: str = Field(description="Content of the message")
+
+    # Optional fields for more detailed evaluation
+    retrieval_context: Optional[List[str]] = Field(
+        default=None,
+        description="Retrieved context for this turn (for RAG evaluation)"
+    )
+    tools_called: Optional[List[Dict[str, Any]]] = Field(
+        default=None,
+        description="Tools called during this turn (for agent evaluation)"
+    )
+
+
+class TestType(str, Enum):
+    """Type of test - single turn or conversational."""
+    SINGLE_TURN = "single_turn"
+    CONVERSATIONAL = "conversational"
+
+
+class ConversationalTestConfig(BaseModel):
+    """
+    Configuration for conversational test generation.
+
+    Used when the test type is CONVERSATIONAL and user wants
+    the system to generate the conversation based on a goal.
+    """
+    # User persona/goal for simulation
+    user_goal: Optional[str] = Field(
+        default=None,
+        description="Goal for the simulated user (e.g., 'Get help with order refund')"
+    )
+    user_persona: Optional[str] = Field(
+        default=None,
+        description="Persona description for the simulated user (e.g., 'Frustrated customer')"
+    )
+
+    # Generation parameters
+    min_turns: int = Field(
+        default=3,
+        ge=1,
+        le=20,
+        description="Minimum number of conversation turns"
+    )
+    max_turns: int = Field(
+        default=6,
+        ge=1,
+        le=20,
+        description="Maximum number of conversation turns"
+    )
+    stopping_criteria: Optional[str] = Field(
+        default=None,
+        description="When to stop the conversation (e.g., 'When user's concern is resolved')"
+    )
+
+    # Expected outcome for evaluation
+    expected_outcome: Optional[str] = Field(
+        default=None,
+        description="Expected outcome of the conversation for evaluation"
+    )
+    chatbot_role: Optional[str] = Field(
+        default=None,
+        description="Role description for the chatbot being tested"
+    )
 
 class ExpectedTestFieldsModel(BaseModel):
     """
@@ -112,13 +192,13 @@ class ActualTestFieldsModel(BaseModel):
 
 
 class TestDefinition(BaseModel):
-    """Individual test case definition"""
+    """Individual test case definition - supports both single-turn and conversational tests"""
     name: str = Field(description="Unique test name within eval")
     description: Optional[str] = Field(default="", description="test description")
     prompt_reference: str = Field(description="Reference to prompt file path")
     user_message: Optional[str] = Field(
         default=None,
-        description="User message input for the prompt"
+        description="User message input for the prompt (for single-turn tests)"
     )
     template_variables: Dict[str, Any] = Field(
         default_factory=dict,
@@ -129,6 +209,32 @@ class TestDefinition(BaseModel):
         description="Expected test fields for different metric types"
     )
     enabled: bool = Field(default=True, description="Whether test is enabled")
+
+    # Conversational test fields
+    test_type: TestType = Field(
+        default=TestType.SINGLE_TURN,
+        description="Type of test - single_turn or conversational"
+    )
+    turns: Optional[List[Turn]] = Field(
+        default=None,
+        description="Conversation turns for conversational tests (manually defined)"
+    )
+    conversational_config: Optional[ConversationalTestConfig] = Field(
+        default=None,
+        description="Configuration for conversational test generation"
+    )
+
+    @model_validator(mode='after')
+    def validate_conversational_test(self) -> 'TestDefinition':
+        """Validate that conversational tests have required fields."""
+        if self.test_type == TestType.CONVERSATIONAL:
+            # For conversational tests, either turns or conversational_config must be provided
+            if not self.turns and not self.conversational_config:
+                raise ValueError(
+                    "Conversational tests must have either 'turns' (manually defined) "
+                    "or 'conversational_config' (for simulation-based generation)"
+                )
+        return self
 
 
 class EvalDefinition(BaseModel):
@@ -168,6 +274,16 @@ class TestExecutionResult(BaseModel):
     metric_results: List[MetricResult] = Field(description="Results from all metrics")
     overall_passed: bool = Field(description="Whether all metrics passed")
     executed_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Conversational test execution fields
+    test_type: TestType = Field(
+        default=TestType.SINGLE_TURN,
+        description="Type of test that was executed"
+    )
+    executed_turns: Optional[List[Turn]] = Field(
+        default=None,
+        description="Conversation turns executed during the test (for conversational tests)"
+    )
 
     model_config = {
         "json_encoders": {

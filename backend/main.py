@@ -33,6 +33,7 @@ from api.v0.tools import router as tools_router
 from api.v0.evals import router as evals_router
 from api.v0.promptimizer import router as promptimizer_router
 from api.v0.shared_chats import router as shared_chats_router
+from api.v0.conversational import router as conversational_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -117,6 +118,12 @@ app.include_router(
     shared_chats_router,
     prefix="/api/v0/shared-chats",
     tags=["shared-chats"]
+)
+
+app.include_router(
+    conversational_router,
+    prefix="/api/v0/conversational",
+    tags=["conversational"]
 )
 
 

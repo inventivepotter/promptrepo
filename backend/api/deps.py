@@ -36,6 +36,7 @@ from services.artifacts.evals.eval_execution_service import EvalExecutionService
 from lib.deepeval.deepeval_adapter import DeepEvalAdapter
 from services.shared_chat import SharedChatService
 from database.daos.shared_chat import SharedChatDAO
+from services.conversational.conversation_simulator_service import ConversationSimulatorService
 
 
 # ==============================================================================
@@ -406,11 +407,12 @@ def get_eval_execution_service(
     eval_execution_meta_service: EvalExecutionMetaServiceDep,
     prompt_service: PromptServiceDep,
     deepeval_adapter: DeepEvalAdapterDep,
-    chat_completion_service: ChatCompletionServiceDep
+    chat_completion_service: ChatCompletionServiceDep,
+    config_service: ConfigServiceDep,
 ) -> EvalExecutionService:
     """
     Eval execution service dependency.
-    
+
     Creates an EvalExecutionService for executing evals and evaluating metrics.
     """
     return EvalExecutionService(
@@ -418,7 +420,8 @@ def get_eval_execution_service(
         eval_execution_meta_service=eval_execution_meta_service,
         prompt_service=prompt_service,
         deepeval_adapter=deepeval_adapter,
-        chat_completion_service=chat_completion_service
+        chat_completion_service=chat_completion_service,
+        config_service=config_service,
     )
 
 
@@ -612,3 +615,27 @@ async def get_optional_user(
 CurrentUserDep = Annotated[str, Depends(get_current_user)]
 CurrentSessionDep = Annotated[UserSessions, Depends(get_current_session)]
 OptionalUserDep = Annotated[Optional[str], Depends(get_optional_user)]
+
+
+# ==============================================================================
+# Conversation Simulator Service
+# ==============================================================================
+
+def get_conversation_simulator_service(
+    config_service: ConfigServiceDep,
+    prompt_service: PromptServiceDep,
+    chat_completion_service: ChatCompletionServiceDep,
+) -> ConversationSimulatorService:
+    """
+    Conversation simulator service dependency.
+
+    Creates a ConversationSimulatorService for goal-based conversation simulation.
+    """
+    return ConversationSimulatorService(
+        config_service=config_service,
+        prompt_service=prompt_service,
+        chat_completion_service=chat_completion_service,
+    )
+
+
+ConversationSimulatorServiceDep = Annotated[ConversationSimulatorService, Depends(get_conversation_simulator_service)]

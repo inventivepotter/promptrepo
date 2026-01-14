@@ -6,13 +6,13 @@ All pending tasks in order of priority
 - [x] State updates only after backend success and spinner
 - [x] Front End Backend seperation
 - [x] Docker compose
-- [ ] Write Agent.md
+- [x] Write Agent.md
 - [x] Design Home Page
 - [x] Route HomePage
 - [x] Fix Hosting Types
 - [x] Delete All Local Storage on Logout
-- [ ] Commit & Push for each prompt and all
-- [ ] Playground
+- [x] Commit & Push for each prompt and all
+- [x] Playground
 - [ ] Documentation
     - [ ] About PromptRepo
         - [ ] What is PromptRepo
@@ -25,10 +25,10 @@ All pending tasks in order of priority
     - [ ] compare option at each node
     - [ ] Latest is draft version.
 - [ ] Migration (Agentic)
-- [ ] Generate Prompt (Agentic)
-- [ ] Transition to Evals from Editor view.
-- [ ] browser side caching
-- [ ] raise PR button
+- [x] Generate Prompt (Agentic)
+- [x] Transition to Evals from Editor view.
+- [x] browser side caching
+- [x] raise PR button
 - [ ] Open in git - prompt
 - [ ] HELM Chart
 - [ ] Breadcrumbs

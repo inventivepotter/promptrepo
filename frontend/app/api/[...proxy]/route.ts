@@ -40,7 +40,9 @@ const PUBLIC_ENDPOINT_PREFIXES = [
   '/api/v0/evals/',
   '/api/v0/promptimizer/',
   // Shared chats - public access for viewing shared chats
-  '/api/v0/shared-chats/'
+  '/api/v0/shared-chats/',
+  // Conversational - turn generation and simulation
+  '/api/v0/conversational/'
 ];
 
 function isPublicEndpoint(path: string): boolean {

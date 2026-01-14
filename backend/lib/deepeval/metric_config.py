@@ -515,24 +515,179 @@ class ProfessionalismConfig(BaseMetricConfig):
 
 class ConcisenessConfig(BaseMetricConfig):
     """Configuration for conciseness metric."""
-    
+
     # No additional fields required - uses input and actual_output
-    
+
     @classmethod
     def get_metric_type_name(cls) -> str:
         return "conciseness"
-    
+
     @classmethod
     def get_category(cls) -> MetricCategory:
         return MetricCategory.NON_DETERMINISTIC
-    
+
     @classmethod
     def get_description(cls) -> str:
         return "Measures if the LLM's response is brief and to the point, without unnecessary filler"
-    
+
     @classmethod
     def get_required_actual_fields(cls) -> List[str]:
         return ["actual_output"]
+
+
+# ============================================================================
+# CONVERSATIONAL METRIC CONFIGURATIONS
+# ============================================================================
+
+class ConversationalMetricCategory(str, Enum):
+    """Category for conversational-specific metrics."""
+    CONVERSATIONAL = "conversational"
+
+
+class ConversationCompletenessConfig(BaseMetricConfig):
+    """Configuration for conversation completeness metric."""
+
+    # Optional: expected outcome for the conversation
+    expected_outcome: Optional[str] = Field(
+        default=None,
+        description="Expected outcome the conversation should achieve"
+    )
+
+    @classmethod
+    def get_metric_type_name(cls) -> str:
+        return "conversation_completeness"
+
+    @classmethod
+    def get_category(cls) -> MetricCategory:
+        return MetricCategory.NON_DETERMINISTIC
+
+    @classmethod
+    def get_description(cls) -> str:
+        return "Evaluates whether the conversation successfully achieved its intended goal or resolved the user's request"
+
+    @classmethod
+    def get_required_actual_fields(cls) -> List[str]:
+        return ["turns"]  # Requires conversation turns
+
+
+class KnowledgeRetentionConfig(BaseMetricConfig):
+    """Configuration for knowledge retention metric."""
+
+    @classmethod
+    def get_metric_type_name(cls) -> str:
+        return "knowledge_retention"
+
+    @classmethod
+    def get_category(cls) -> MetricCategory:
+        return MetricCategory.NON_DETERMINISTIC
+
+    @classmethod
+    def get_description(cls) -> str:
+        return "Checks if the chatbot remembers and correctly references information from earlier turns in the conversation"
+
+    @classmethod
+    def get_required_actual_fields(cls) -> List[str]:
+        return ["turns"]
+
+
+class RoleAdherenceConfig(BaseMetricConfig):
+    """Configuration for role adherence metric."""
+
+    role: str = Field(
+        description="The role/persona the chatbot should maintain throughout the conversation"
+    )
+
+    @classmethod
+    def get_metric_type_name(cls) -> str:
+        return "role_adherence"
+
+    @classmethod
+    def get_category(cls) -> MetricCategory:
+        return MetricCategory.NON_DETERMINISTIC
+
+    @classmethod
+    def get_description(cls) -> str:
+        return "Evaluates whether the chatbot consistently maintains its assigned role/persona throughout the conversation"
+
+    @classmethod
+    def get_required_actual_fields(cls) -> List[str]:
+        return ["turns"]
+
+
+class ConversationalGEvalConfig(BaseMetricConfig):
+    """Configuration for conversational G-Eval metric - custom criteria evaluation."""
+
+    name: str = Field(
+        description="Name for this custom evaluation metric"
+    )
+    criteria: str = Field(
+        description="Custom evaluation criteria to assess the conversation against"
+    )
+    evaluation_steps: Optional[List[str]] = Field(
+        default=None,
+        description="Optional step-by-step evaluation instructions"
+    )
+
+    @classmethod
+    def get_metric_type_name(cls) -> str:
+        return "conversational_g_eval"
+
+    @classmethod
+    def get_category(cls) -> MetricCategory:
+        return MetricCategory.NON_DETERMINISTIC
+
+    @classmethod
+    def get_description(cls) -> str:
+        return "Flexible LLM-based evaluation of conversation quality using custom criteria (G-Eval for conversations)"
+
+    @classmethod
+    def get_required_actual_fields(cls) -> List[str]:
+        return ["turns"]
+
+
+class GoalAccuracyConfig(BaseMetricConfig):
+    """Configuration for goal accuracy metric."""
+
+    goal: Optional[str] = Field(
+        default=None,
+        description="The specific goal the conversation should achieve"
+    )
+
+    @classmethod
+    def get_metric_type_name(cls) -> str:
+        return "goal_accuracy"
+
+    @classmethod
+    def get_category(cls) -> MetricCategory:
+        return MetricCategory.NON_DETERMINISTIC
+
+    @classmethod
+    def get_description(cls) -> str:
+        return "Measures how accurately the chatbot helped achieve the user's stated goal in the conversation"
+
+    @classmethod
+    def get_required_actual_fields(cls) -> List[str]:
+        return ["turns"]
+
+
+class TurnRelevancyConfig(BaseMetricConfig):
+    """Configuration for turn relevancy metric."""
+
+    @classmethod
+    def get_metric_type_name(cls) -> str:
+        return "turn_relevancy"
+
+    @classmethod
+    def get_category(cls) -> MetricCategory:
+        return MetricCategory.NON_DETERMINISTIC
+
+    @classmethod
+    def get_description(cls) -> str:
+        return "Evaluates whether each assistant turn is relevant to the user's previous turn in the conversation"
+
+    @classmethod
+    def get_required_actual_fields(cls) -> List[str]:
+        return ["turns"]
 
 
 # ============================================================================
@@ -556,7 +711,7 @@ class MetricRegistry:
         "output_length": OutputLengthConfig,
         "tools_called": ToolsCalledConfig,
         "json_schema_verification": JsonSchemaVerificationConfig,
-        
+
         # Non-deterministic
         "answer_relevancy": AnswerRelevancyConfig,
         "faithfulness": FaithfulnessConfig,
@@ -569,6 +724,14 @@ class MetricRegistry:
         "summarization": SummarizationConfig,
         "professionalism": ProfessionalismConfig,
         "conciseness": ConcisenessConfig,
+
+        # Conversational metrics
+        "conversation_completeness": ConversationCompletenessConfig,
+        "knowledge_retention": KnowledgeRetentionConfig,
+        "role_adherence": RoleAdherenceConfig,
+        "conversational_g_eval": ConversationalGEvalConfig,
+        "goal_accuracy": GoalAccuracyConfig,
+        "turn_relevancy": TurnRelevancyConfig,
     }
     
     @classmethod

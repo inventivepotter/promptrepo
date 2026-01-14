@@ -19,10 +19,10 @@ from lib.deepeval.metric_config import (
 class MetricType(str, Enum):
     """
     Predefined DeepEval metrics supported in UI.
-    
+
     This enum delegates to MetricRegistry for metadata, following DRY principle.
     """
-    
+
     # Deterministic metrics (exact comparisons, no LLM involvement)
     EXACT_MATCH = "exact_match"
     TOOLS_CALLED = "tools_called"
@@ -31,7 +31,7 @@ class MetricType(str, Enum):
     OUTPUT_LENGTH = "output_length"
     FUZZY_MATCH = "fuzzy_match"
     SEMANTIC_SIMILARITY = "semantic_similarity"
-    
+
     # Non-deterministic metrics (LLM-based evaluation)
     ANSWER_RELEVANCY = "answer_relevancy"
     FAITHFULNESS = "faithfulness"
@@ -44,6 +44,14 @@ class MetricType(str, Enum):
     SUMMARIZATION = "summarization"
     PROFESSIONALISM = "professionalism"
     CONCISENESS = "conciseness"
+
+    # Conversational metrics (require full conversation history)
+    CONVERSATION_COMPLETENESS = "conversation_completeness"
+    KNOWLEDGE_RETENTION = "knowledge_retention"
+    ROLE_ADHERENCE = "role_adherence"
+    CONVERSATIONAL_G_EVAL = "conversational_g_eval"
+    GOAL_ACCURACY = "goal_accuracy"
+    TURN_RELEVANCY = "turn_relevancy"
     
     @property
     def description(self) -> str:
@@ -67,6 +75,19 @@ class MetricType(str, Enum):
     def is_non_deterministic(cls, metric_type: 'MetricType') -> bool:
         """Check if a metric type is non-deterministic (LLM-based evaluation)"""
         return not cls.is_deterministic(metric_type)
+
+    @classmethod
+    def is_conversational(cls, metric_type: 'MetricType') -> bool:
+        """Check if a metric type requires conversation history (multi-turn)"""
+        conversational_metrics = {
+            cls.CONVERSATION_COMPLETENESS,
+            cls.KNOWLEDGE_RETENTION,
+            cls.ROLE_ADHERENCE,
+            cls.CONVERSATIONAL_G_EVAL,
+            cls.GOAL_ACCURACY,
+            cls.TURN_RELEVANCY,
+        }
+        return metric_type in conversational_metrics
     
     @classmethod
     def get_required_expected_fields(cls, metric_type: 'MetricType') -> List[str]:

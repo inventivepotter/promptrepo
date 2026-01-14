@@ -208,20 +208,28 @@ class TestGitService:
             mock_repo.active_branch.name = "main"
             mock_remote = MagicMock()
             mock_remote.url = "https://github.com/test/repo.git"
-            
+
             # Mock the remote('origin') call specifically
             mock_repo.remote.return_value = mock_remote
-            
+
+            # Mock _add_token_to_url to return authenticated URL
+            mock_add_token.return_value = "https://x-access-token:test-token@github.com/test/repo.git"
+
             # Set up to Repo constructor to return our mock
             mock_repo_class.return_value = mock_repo
-            
+
             result = git_service.pull_latest("test-token")
-            
+
             assert isinstance(result, GitOperationResult)
             assert result.success is True
             assert "Pulled latest changes" in result.message
             # Verify that remote('origin') was called
             mock_repo.remote.assert_called_with('origin')
+            # Verify git.pull was called with authenticated URL and branch
+            mock_repo.git.pull.assert_called_once_with(
+                "https://x-access-token:test-token@github.com/test/repo.git",
+                "main"
+            )
     @patch('services.local_repo.git_service.GitService._add_token_to_url')
     @patch('services.local_repo.git_service.Repo')
     def test_pull_latest_with_force(self, mock_repo_class, mock_add_token, git_service):
@@ -234,15 +242,18 @@ class TestGitService:
             mock_repo.active_branch.name = "main"
             mock_remote = MagicMock()
             mock_remote.url = "https://github.com/test/repo.git"
-            
+
             # Mock remote('origin') call specifically
             mock_repo.remote.return_value = mock_remote
-            
+
+            # Mock _add_token_to_url to return authenticated URL
+            mock_add_token.return_value = "https://x-access-token:test-token@github.com/test/repo.git"
+
             # Set up to Repo constructor to return our mock
             mock_repo_class.return_value = mock_repo
-            
+
             result = git_service.pull_latest("test-token", force=True)
-            
+
             assert isinstance(result, GitOperationResult)
             assert result.success is True
             assert "Force pulled latest changes" in result.message
@@ -250,6 +261,11 @@ class TestGitService:
             mock_repo.remote.assert_called_with('origin')
             # Verify that stash was called with force=True
             mock_repo.git.stash.assert_called_once_with('-u', '-m', 'Stashing local changes before getting latest')
+            # Verify git.pull was called with authenticated URL and branch
+            mock_repo.git.pull.assert_called_once_with(
+                "https://x-access-token:test-token@github.com/test/repo.git",
+                "main"
+            )
 
     @patch('services.local_repo.git_service.GitService._add_token_to_url')
     @patch('services.local_repo.git_service.Repo')
@@ -260,18 +276,21 @@ class TestGitService:
 
             # Create mock repo and remote
             mock_repo = MagicMock()
-            mock_repo.active_branch.name = "feature-branch"
+            mock_repo.active_branch.name = "develop"  # After checkout
             mock_remote = MagicMock()
             mock_remote.url = "https://github.com/test/repo.git"
-            
+
             # Mock remote('origin') call specifically
             mock_repo.remote.return_value = mock_remote
-            
+
+            # Mock _add_token_to_url to return authenticated URL
+            mock_add_token.return_value = "https://x-access-token:test-token@github.com/test/repo.git"
+
             # Set up to Repo constructor to return our mock
             mock_repo_class.return_value = mock_repo
-            
+
             result = git_service.pull_latest("test-token", branch_name="develop")
-            
+
             assert isinstance(result, GitOperationResult)
             assert result.success is True
             assert "Pulled latest changes" in result.message
@@ -279,6 +298,11 @@ class TestGitService:
             mock_repo.remote.assert_called_with('origin')
             # Verify that checkout was called with specified branch
             mock_repo.git.checkout.assert_called_with('develop')
+            # Verify git.pull was called with authenticated URL and the current branch
+            mock_repo.git.pull.assert_called_once_with(
+                "https://x-access-token:test-token@github.com/test/repo.git",
+                "develop"
+            )
 
     @patch('services.local_repo.git_service.GitService._add_token_to_url')
     @patch('services.local_repo.git_service.Repo')
@@ -292,19 +316,49 @@ class TestGitService:
             mock_repo.active_branch.name = "main"
             mock_remote = MagicMock()
             mock_remote.url = "https://github.com/test/repo.git"
-            mock_remote.pull.side_effect = Exception("Pull failed")
-            
+            # Mock git.pull to fail with authentication error
+            mock_repo.git.pull.side_effect = Exception("Pull failed")
+
             # Mock remote('origin') call specifically
             mock_repo.remote.return_value = mock_remote
-            
+
+            # Mock _add_token_to_url to return authenticated URL
+            mock_add_token.return_value = "https://x-access-token:test-token@github.com/test/repo.git"
+
             # Set up to Repo constructor to return our mock
             mock_repo_class.return_value = mock_repo
-            
+
             result = git_service.pull_latest("test-token")
-            
+
             assert isinstance(result, GitOperationResult)
             assert result.success is False
             assert "Failed to pull latest changes" in result.message
+
+    @patch('services.local_repo.git_service.Repo')
+    def test_pull_latest_without_oauth_token(self, mock_repo_class, git_service):
+        """Test pulling latest changes without OAuth token uses origin.pull()."""
+        with patch.object(git_service, '_get_git_config') as mock_config:
+            mock_config.return_value = None
+
+            # Create mock repo and remote
+            mock_repo = MagicMock()
+            mock_repo.active_branch.name = "main"
+            mock_remote = MagicMock()
+            mock_remote.url = "https://github.com/test/repo.git"
+
+            # Mock remote('origin') call specifically
+            mock_repo.remote.return_value = mock_remote
+
+            # Set up to Repo constructor to return our mock
+            mock_repo_class.return_value = mock_repo
+
+            result = git_service.pull_latest()  # No token
+
+            assert isinstance(result, GitOperationResult)
+            assert result.success is True
+            assert "Pulled latest changes" in result.message
+            # Verify that origin.pull() was called (not git.pull())
+            mock_remote.pull.assert_called_once()
 
     def test_add_token_to_url(self):
         """Test adding OAuth token to GitHub URL."""
