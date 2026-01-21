@@ -2,9 +2,9 @@
 
 **Take back control of your System Prompts. Store them in your repository, not in scattered services.**
 
-[![Beta](https://img.shields.io/badge/status-beta-yellow)](https://promptrepo.dev)
+[![Beta](https://img.shields.io/badge/status-beta-yellow)](https://beta.promptrepo.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Live Demo](https://img.shields.io/badge/demo-promptrepo.dev-green)](https://promptrepo.dev)
+[![Live Beta](https://img.shields.io/badge/beta-beta.promptrepo.dev-green)](https://beta.promptrepo.dev)
 
 > **Note:** This project is currently in **beta**. We welcome feedback and contributions!
 
@@ -21,7 +21,7 @@ Managing AI system prompts across environments is painful:
 
 PromptRepo brings your system prompts into your Git repository where they belong. Treat prompts like code - version them, review them, and deploy them with confidence.
 
-**Try it live at [promptrepo.dev](https://promptrepo.dev)**
+**Beta coming soon at [beta.promptrepo.dev](https://beta.promptrepo.dev)**
 
 ## Key Features
 
@@ -190,7 +190,7 @@ Before submitting a PR:
 
 This is a beta release - your feedback shapes the future of PromptRepo!
 
-- **Try it out**: [promptrepo.dev](https://promptrepo.dev)
+- **Try it out**: [beta.promptrepo.dev](https://beta.promptrepo.dev) (coming soon)
 - **Report issues**: [GitHub Issues](https://github.com/YOUR_USERNAME/promptrepo/issues)
 - **Share feedback**: We'd love to hear how you're using PromptRepo
 
